@@ -316,7 +316,7 @@
         </header>
 
         <div class="actions">
-            <button class="btn btn-main" onclick="generateRandom()">اسحب كلمة</button>
+            <button class="btn btn-main" id="drawBtn" onclick="generateRandom()">اسحب كلمة</button>
             <button class="btn btn-alt" id="pickBtn" onclick="openSheet()" aria-haspopup="dialog">اختر سورة</button>
         </div>
 
@@ -331,7 +331,7 @@
             <div class="sources" id="sourcesText" hidden></div>
 
             <div class="after-actions" id="afterActions" hidden>
-                <button class="btn btn-main next-btn" onclick="nextWord()">كلمة أخرى</button>
+                <button class="btn btn-main next-btn" id="nextBtn" onclick="nextWord()">كلمة أخرى</button>
                 <button class="report-btn" onclick="reportError()">أبلغ عن خطأ</button>
             </div>
         </div>
@@ -353,8 +353,8 @@
         <div class="sheet-settings">
             <div class="seg" role="group" aria-label="طريقة السحب العشوائي">
                 <span>السحب العشوائي:</span>
-                <button class="seg-btn" data-mode="surah" onclick="setMode('surah')">سورة كاملة</button>
                 <button class="seg-btn" data-mode="word" onclick="setMode('word')">كلمة واحدة</button>
+                <button class="seg-btn" data-mode="surah" onclick="setMode('surah')">سورة كاملة</button>
             </div>
             <div class="progress-row">
                 <span id="progressText"></span>
@@ -654,7 +654,7 @@
             set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
         };
         const seen = new Set(store.get("ghareeb_seen", []));   // الكلمات التي كُشفت معانيها
-        let mode = store.get("ghareeb_mode", "surah");         // "surah" أو "word"
+        let mode = store.get("ghareeb_mode", "word");           // "word" (الافتراضي) أو "surah"
         let lastKey = null, busy = false, spinTimer = null;
 
         const wKey = (d, w) => d.surah + "|" + w;
@@ -676,7 +676,11 @@
             document.getElementById("progressText").innerText = `تم كشف معاني ${seenCount()} من ${totalWords} كلمة`;
             document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
         }
-        function setMode(m) { mode = m; store.set("ghareeb_mode", m); renderSheet(); }
+        function updateLabels() {
+            document.getElementById("drawBtn").innerText = mode === "word" ? "اسحب كلمة" : "اسحب سورة";
+            document.getElementById("nextBtn").innerText = mode === "word" ? "كلمة أخرى" : "سورة أخرى";
+        }
+        function setMode(m) { mode = m; store.set("ghareeb_mode", m); updateLabels(); renderSheet(); }
         function resetProgress() {
             if (!confirm("مسح سجل الكلمات التي كُشفت معانيها والبدء من جديد؟")) return;
             seen.clear(); store.set("ghareeb_seen", []); renderSheet();
@@ -816,6 +820,7 @@
             document.getElementById("sheet").classList.remove("show");
         }
         document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+        updateLabels();
     </script>
 </body>
 </html>
