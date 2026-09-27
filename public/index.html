@@ -459,7 +459,7 @@
                 surah: "سورة الفلق",
                 words: ["غَاسِقٍ إِذَا وَقَبَ", "النَّفَّاثَاتِ فِي الْعُقَدِ"],
                 meanings: [
-                    "غَاسِقٍ إِذَا وَقَبَ: الليل إذا اشتد ظلامه ودخل على الناس، وما فيه من شرور ومؤذيات.",
+                    "غَاسِقٍ إِذَا وَقَبَ: الليل إذا اشتد ظلامه ودخل على الناس، وما فيه من شرور ومؤذيات.<br><br><b>غاسق:</b> الليل إذا اشتد.<br><b>وقب:</b> دخل سواده وغطّى.",
                     "النَّفَّاثَاتِ فِي الْعُقَدِ: السواحر اللاتي ينفخن في العُقَد التي يعقدنها للسحر."
                 ],
                 ayahs: [
@@ -874,7 +874,7 @@
         const JUZ_AMMA = ["النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
         const ALIASES = { "عم": "النبأ", "الانشراح": "الشرح", "الزلزال": "الزلزلة", "التوحيد": "الإخلاص", "اللهب": "المسد", "تبت": "المسد", "اقرأ": "العلق" };
         const norm = s => s.replace(/[\u064B-\u065F\u0670\u0640]/g, "").replace(/^\s*سورة\s+/, "")
-                           .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").trim();
+                            .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").trim();
         const ORDER_BY_NAME = {};
         JUZ_AMMA.forEach((n, i) => { ORDER_BY_NAME[norm(n)] = i + 1; });
         Object.entries(ALIASES).forEach(([a, n]) => { ORDER_BY_NAME[norm(a)] = ORDER_BY_NAME[norm(n)]; });
@@ -979,7 +979,7 @@
             document.getElementById("sheetList").innerHTML = sortedData.map((d, i) => {
                 const n = d.words.filter(w => isSeen(d, w)).length;
                 const mark = n === d.words.length ? '<span class="sheet-done" aria-label="تم كشف معانيها">✓</span>'
-                           : n ? `<span class="sheet-part">${n}/${d.words.length}</span>` : "";
+                            : n ? `<span class="sheet-part">${n}/${d.words.length}</span>` : "";
                 return `<button class="sheet-item" onclick="chooseSurah(${i})">
                     <span class="sheet-num">${orderLabel(d)}</span><span class="sheet-name">${d.surah}</span>${mark}</button>`;
             }).join("");
