@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+// Quran data array containing surah details, words, meanings, and ayahs
 const quranData = [
     {
         surah: "سورة الناس",
@@ -429,41 +430,40 @@ const quranData = [
     }
 ];
 
-// دالة لتنظيف الكلمة من التشكيل عشان اسم الملف يكون سليم
+// Clean tashkeel for file names
 const removeTashkeel = (s) => s.replace(/[\u064B-\u065F\u0670\u0640]/g, "").trim();
 
-// دالة لفصل الكلمة عن المعنى عشان الـ HTML
+// Extract meaning text for HTML output
 const getMeaningText = (m = "") => { 
     const i = m.indexOf(":"); 
     return (i === -1 ? m : m.slice(i + 1)).trim(); 
 };
 
-// مسار فولدر الـ public اللي هنحفظ فيه الملفات
-const publicDir = __dirname;if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir);
-}
+// Current directory to place the files (which is the public folder since the script is executed from inside it)
+const publicDir = __dirname;
 
-// بناء الصفحات
+// Build the HTML pages
 quranData.forEach(surahData => {
     surahData.words.forEach((word, index) => {
         const cleanWord = removeTashkeel(word);
         const meaning = getMeaningText(surahData.meanings[index]);
         const ayahObj = surahData.ayahs[index];
         
-        // تجهيز الآية بالشكل الملون
+        // Prepare highlighted ayah format
         const ayahHTML = ayahObj.segments.map(seg => 
             `${seg.before}<mark style="background: rgba(56, 189, 248, 0.16); color: #7DD3FC; font-weight: bold; padding: 0 4px; border-radius: 4px;">${seg.hl}</mark>${seg.after}`
         ).join(" ");
 
-        // قالب صفحة الـ HTML لكل كلمة بألوان موقعك
+        // HTML template with the custom SEO title and description
         const htmlContent = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معنى ${cleanWord} في القرآن | غريب عمّ</title>
-    <meta name="description" content="تعرف على معنى كلمة ${cleanWord} في ${surahData.surah}. تفسير مبسط لمعاني كلمات القرآن الكريم في موقع غريب عمّ.">
+    <!-- Custom SEO Title & Description for each word -->
+    <title>معنى كلمة ${cleanWord} في ${surahData.surah} | غريب عمّ</title>
+    <meta name="description" content="تعرف على تفسير ومعنى كلمة ${cleanWord} في ${surahData.surah} من جزء عمّ. شرح مبسط وميسر لمعاني كلمات القرآن الكريم.">
     <meta name="theme-color" content="#0A1128">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Amiri+Quran&display=swap" rel="stylesheet">
     <style>
@@ -493,11 +493,11 @@ quranData.forEach(surahData => {
 </body>
 </html>`;
 
-        // حفظ الملف باسم الكلمة العربية جوه فولدر public
+        // Save file with the arabic word name
         const fileName = `${cleanWord.replace(/\s+/g, " ")}.html`;
         fs.writeFileSync(path.join(publicDir, fileName), htmlContent, 'utf8');
-        console.log(`✅ تم إنشاء صفحة: ${fileName}`);
+        console.log(`✅ Page created: ${fileName}`);
     });
 });
 
-console.log('🎉 تم توليد جميع الصفحات بنجاح!');
+console.log('🎉 All pages generated successfully!');
