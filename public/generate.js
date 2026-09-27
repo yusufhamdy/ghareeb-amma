@@ -439,8 +439,7 @@ const getMeaningText = (m = "") => {
 };
 
 // مسار فولدر الـ public اللي هنحفظ فيه الملفات
-const publicDir = path.join(__dirname, 'public');
-if (!fs.existsSync(publicDir)) {
+const publicDir = __dirname;if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir);
 }
 
