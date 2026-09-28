@@ -67,3 +67,14 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Ignore draft and backup HTML files
+*قبل تعديل*.html
+index-*.html
+
+# Ignore local AI and agent files
+.agents/
+skills-lock.json
+
+# Ignore Firebase local cache
+.firebase/
