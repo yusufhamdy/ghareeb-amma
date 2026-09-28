@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://yusufhamdy.github.io/ghareeb-amma/sitemap.xml
