@@ -5,27 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <!-- Primary Title (Crucial for Google Search results) -->
-    <title>تحدي غريب عمّ | تعلم معاني كلمات القرآن في 30 يوم</title>
+    <!-- Primary Title (Blended identity for SEO) -->
+    <title>غريب القرآن | اكتشف معاني كلمات جزء عمّ</title>
 
-    <!-- Meta Description (The text that appears under the title in search results) -->
-    <meta name="description" content="تحدي تفاعلي لتعلم معاني الكلمات الغريبة في جزء عمّ من القرآن الكريم. اكتشف كلمة جديدة كل يوم واختبر معلوماتك بطريقة سهلة ومبسطة.">
+    <!-- Meta Description -->
+    <meta name="description" content="منصة غريب القرآن تساعدك على فهم معاني الكلمات الصعبة. نبدأ رحلتنا بجزء عمّ، وبدعمكم سنغطي القرآن كاملاً. ابحث الآن أو شارك في تحدي الـ 30 يوم.">
     
     <!-- Keywords for SEO -->
-    <meta name="keywords" content="تحدي غريب عم, معاني كلمات القرآن, جزء عم, تفسير القرآن, كلمات القرآن, تحدي 30 يوم">
+    <meta name="keywords" content="غريب القرآن, غريب عم, معاني كلمات القرآن, جزء عم, تفسير القرآن, كلمات القرآن, تحدي 30 يوم">
     <meta name="author" content="Yusuf Hamdy">
 
-    <!-- Open Graph / Social Media Meta Tags (For WhatsApp, Facebook, etc.) -->
-    <meta property="og:title" content="تحدي غريب عمّ 🌙">
-    <meta property="og:description" content="انضم لتحدي الـ 30 يوم لتعلم معاني كلمات جزء عمّ. هل أنت جاهز؟">
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="غريب القرآن | جزء عمّ 🌙">
+    <meta property="og:description" content="نبدأ رحلتنا بجزء عمّ لتعلم معاني كلمات القرآن بطريقة مبسطة. هل أنت جاهز للتحدي؟">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ghareebalquran.com/">
     <meta property="og:image" content="https://ghareebalquran.com/og-image.png">
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="تحدي غريب عمّ 🌙">
-    <meta name="twitter:description" content="انضم لتحدي الـ 30 يوم لتعلم معاني كلمات جزء عمّ.">
+    <meta name="twitter:title" content="غريب القرآن | جزء عمّ 🌙">
+    <meta name="twitter:description" content="نبدأ رحلتنا بجزء عمّ لتعلم معاني كلمات القرآن بطريقة مبسطة.">
     <meta name="twitter:image" content="https://ghareebalquran.com/og-image.png">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
@@ -291,13 +291,15 @@
         }
         .sheet.show { transform: none; visibility: visible; }
         .sheet-settings { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed rgba(148, 163, 184, 0.35); }
-        .seg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px; color: var(--text-muted); }
+       /* ---------- Mode Toggle (Main Screen) ---------- */
+        .mode-wrap { margin-bottom: 16px; display: flex; justify-content: center; }
+        .seg { display: inline-flex; background: rgba(148, 163, 184, 0.15); padding: 4px; border-radius: 10px; gap: 4px; }
         .seg-btn {
-            min-height: 38px; padding: 4px 14px; font-family: inherit; font-size: 15px; font-weight: 700;
-            background: transparent; color: var(--text-main); cursor: pointer;
-            border: 2px solid rgba(148, 163, 184, 0.5); border-radius: 8px;
+            min-height: 38px; padding: 4px 20px; font-family: inherit; font-size: 15px; font-weight: 700;
+            background: transparent; color: var(--text-muted); cursor: pointer;
+            border: none; border-radius: 8px; transition: background 0.2s, color 0.2s;
         }
-        .seg-btn.active { background: var(--accent-color); border-color: var(--accent-color); color: #0A1128; }
+        .seg-btn.active { background: var(--accent-color); color: #0A1128; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--text-muted); }
         .reset-btn { background: none; border: 0; min-height: 36px; padding: 4px 8px; font-family: inherit; font-size: 13px; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
         .sheet-name { flex: 1; }
@@ -493,14 +495,28 @@
             <button class="btn btn-alt" id="pickBtn" onclick="openSheet()" aria-haspopup="dialog">اختر سورة</button>
         </div>
         
-     <!-- شريط تحدي الـ 30 يوم -->
-        <div class="challenge-container" dir="rtl">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-left: 10px; margin-bottom: 15px;">
-                <h3 class="challenge-title" style="margin-bottom: 0;">تحدي غريب عمّ 🌙</h3>
-                <button class="report-btn" onclick="resetChallenge()" style="color: var(--text-muted); font-size: 13px;">إعادة التحدي ↺</button>
+     <!-- شريط تحدي الـ 30 يوم (قابل للطي) -->
+        <div class="challenge-container" dir="rtl" id="challengeContainer">
+            <!-- المستطيل الخارجي (الزر) -->
+            <div onclick="toggleChallenge()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--card-bg); padding: 18px 20px; border: 2px solid var(--border-color); border-radius: 12px; transition: border-color 0.2s;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <h3 class="challenge-title" style="margin: 0; padding: 0; color: var(--accent-color);">تحدي غريب عمّ 🌙</h3>
+                    <span style="font-size: 13px; color: var(--text-muted);">اكتشف التحدي وتابع تقدمك</span>
+                </div>
+                <span id="challengeIcon" style="font-size: 16px; transition: transform 0.3s ease; color: var(--text-muted);">▼</span>
             </div>
-            <div class="days-scroll" id="daysScroll">
-                <!-- سيتم توليد الأيام هنا عبر الجافاسكريبت -->
+            
+            <!-- المحتوى المخفي (الوصف والدواير) -->
+            <div id="challengeContent" style="display: none; padding: 20px 0; background: rgba(22, 34, 66, 0.4); border-radius: 0 0 12px 12px; margin-top: -8px; border: 2px solid var(--border-color); border-top: none;">
+                <p style="text-align: right; color: var(--text-muted); font-size: 14px; margin: 0 15px 15px; line-height: 1.7; font-weight: 500;">
+                    تحدي لمدة ٣٠ يوم لتعلم جميع غريب كلمات جزء عمّ.<br>اكتشف الكلمات، افهم معانيها، وشاهد فيديوهات الشرح يومياً!
+                </p>
+                <div style="display: flex; justify-content: flex-end; padding-left: 15px; margin-bottom: 5px;">
+                    <button class="report-btn" onclick="resetChallenge()" style="color: var(--text-muted); font-size: 13px;">إعادة التحدي ↺</button>
+                </div>
+                <div class="days-scroll" id="daysScroll">
+                    <!-- سيتم توليد الأيام هنا عبر الجافاسكريبت -->
+                </div>
             </div>
         </div>
         
@@ -526,12 +542,11 @@
         </div>
 
         <footer class="site-footer">
-            <p class="footer-about">غريب عمّ: موقع يعرض الكلمات الغريبة في جزء عمّ ويشرح معانيها باختصار. الشروح مبسّطة ومستفادة من التفسير الميسر وكتب التفاسير. وللتوسع يُرجى الرجوع لكتب التفسير.</p>
+            <p class="footer-about"><strong>غريب القرآن:</strong> منصة تهدف لشرح غريب القرآن باختصار. نبدأ رحلتنا بـ "غريب عمّ"، وبدعمكم سيمتد المشروع ليشمل القرآن كاملاً. الشروح مبسّطة ومستفادة من التفسير الميسر.</p>
             <div class="footer-bottom">
                 <p class="footer-credit">تصميم وتطوير: <a class="handle" href="https://www.instagram.com/yusuf.hamdy" target="_blank" rel="noopener noreferrer">@yusuf.hamdy</a></p>
-                <p>© 2026 غريب عمّ · جميع الحقوق محفوظة للتصميم وصياغة الشروحات.</p>
-                <p>نص القرآن الكريم والمصادر المذكورة ليست ملكاً للموقع.</p>
-                <p>نص الآيات من قاعدة بيانات Quran JSON (رواية حفص، برواية مصحف عثماني إلكتروني)، وخط الآيات "Amiri Quran" من مشروع Amiri للخطوط (ترخيص OFL مفتوح المصدر).</p>
+                <p>© 2026 مشروع غريب القرآن · جميع الحقوق محفوظة.</p>
+                <p>نص الآيات من قاعدة بيانات Quran JSON، وخط الآيات "Amiri Quran" مفتوح المصدر.</p>
             </div>
         </footer>
     </div>
@@ -541,11 +556,6 @@
     <div class="sheet" id="sheet" role="dialog" aria-label="اختر سورة">
         <p class="sheet-title">اختر سورة من جزء عمّ</p>
         <div class="sheet-settings">
-            <div class="seg" role="group" aria-label="طريقة السحب العشوائي">
-                <span>السحب العشوائي:</span>
-                <button class="seg-btn" data-mode="word" onclick="setMode('word')">كلمة واحدة</button>
-                <button class="seg-btn" data-mode="surah" onclick="setMode('surah')">سورة كاملة</button>
-            </div>
             <div class="progress-row">
                 <span id="progressText"></span>
                 <button class="reset-btn" onclick="resetProgress()">ابدأ من جديد</button>
@@ -1158,11 +1168,43 @@
         // 1. منطق تحدي الـ 30 يوم
         // ==========================================
      
-       // 1. دالة حساب اليوم المتاح (متأمنة ضد الأخطاء)
+       // ==========================================
+        // 1. Challenge 30-Days Logic
+        // ==========================================
+
+        // Toggle the collapsible challenge container
+        function toggleChallenge(forceOpen = false) {
+            const content = document.getElementById('challengeContent');
+            const icon = document.getElementById('challengeIcon');
+            const container = document.getElementById('challengeContainer');
+            
+            if (forceOpen || content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+                container.style.borderColor = 'var(--accent-color)';
+                
+                // Smooth scroll to the active or available day after opening
+                setTimeout(() => {
+                    const activeDay = document.querySelector('.day-circle.active') || document.querySelector('.day-circle.available');
+                    if(activeDay) {
+                        activeDay.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                }, 150);
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+                container.style.borderColor = 'var(--border-color)';
+            }
+        }
+
+        // Calculate the current available day safely
+        // Calculate the current available day safely (Progress-based)
         function getTodayIndex() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const simDay = urlParams.get('day');
+                
+                // If ?day=X is provided, force the current day to be X - 1 and lock the rest
                 if (simDay !== null) return parseInt(simDay) - 1; 
                 
                 if (typeof campaignStartDate !== 'undefined' && campaignStartDate !== null) {
@@ -1170,13 +1212,20 @@
                     const now = new Date().setHours(0,0,0,0);
                     return Math.floor((now - start) / (1000 * 60 * 60 * 24));
                 }
+
+                // Progress-based logic: Unlock days sequentially based on completion
+                const completedChallengeDays = JSON.parse(localStorage.getItem('completedChallengeDays') || '[]');
+                if (completedChallengeDays.length === 0) return 0; // Start at Day 1
+                
+                const maxCompleted = Math.max(...completedChallengeDays);
+                return Math.min(maxCompleted + 1, 29); // Next day, cap at Day 30
             } catch (e) {
-                console.error("خطأ في حساب اليوم:", e);
+                console.error("Error calculating day index:", e);
             }
-            return 30; // الوضع الافتراضي كله مفتوح
+            return 0; // Default fallback to Day 1
         }
 
-        // 2. دالة رسم الدواير وشريط التحدي
+        // Render the day circles in the scrollable slider
         function renderChallengeDays() {
             const container = document.getElementById('daysScroll');
             if (!container) return;
@@ -1191,12 +1240,11 @@
                 const dayData = challengePlan[i];
                 let stateClass = 'locked';
 
-                if ((typeof campaignStartDate !== 'undefined' && campaignStartDate !== null || simDay !== null) && i > todayIndex) {
+                // Determine the state of each day
+                if (i > todayIndex) {
                     stateClass = 'locked'; 
                 } else if (i === todayIndex) {
                     stateClass = 'active'; 
-                } else if (simDay !== null && i < todayIndex) {
-                    stateClass = 'completed'; 
                 } else if (completedChallengeDays.includes(i)) {
                     stateClass = 'completed'; 
                 } else {
@@ -1218,16 +1266,15 @@
                 container.appendChild(circle);
             }
 
-            // التمرير الذكي لمكان اليوم المتاح
-            setTimeout(() => {
-                const targetCircle = container.querySelector('.active') || container.querySelector('.available');
-                if (targetCircle) {
-                    targetCircle.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                }
-            }, 100);
+            // Smart auto-open and scroll if simulating a specific day via URL
+            if (simDay !== null) {
+                setTimeout(() => {
+                    toggleChallenge(true); // Open the collapsible container
+                }, 300);
+            }
         }
 
-        // 3. دالة تشغيل كلمات اليوم المختار
+        // Play the selected challenge day
         function playChallengeDay(index) {
             if (typeof busy !== 'undefined' && busy) return;
             
@@ -1278,18 +1325,16 @@
                 source: "المصدر: التفسير الميسر وكتب التفاسير" 
             };
             
-            const cardEl = document.getElementById("resultCard");
-            if (cardEl && cardEl.style.display === "block") {
-                cardEl.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-
             if (typeof spinThen === 'function') {
-                spinThen(() => showSurah(pick, `🌙 تحدي اليوم ${index + 1}`));
+                spinThen(() => {
+                    showSurah(pick, `🌙 تحدي اليوم ${index + 1}`);
+                    document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+                });
             } else {
                 showSurah(pick, `🌙 تحدي اليوم ${index + 1}`);
+                document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
             }
         }
-
         // ==========================================
         // 2. زرار استكشاف المزيد في نفس السورة
         // ==========================================
@@ -1403,7 +1448,9 @@
             </div>`;
         }
 
-       function showSurah(data, badgeText) {
+       // Render the surah and words card
+        // Render the surah and words card
+        function showSurah(data, badgeText) {
             if (spinTimer) { clearInterval(spinTimer); spinTimer = null; busy = false; }
             currentData = data;
             lastSurah = data.surah;
@@ -1423,7 +1470,8 @@
 
             const wSurahs = data.wordSurahs || data.words.map(() => data.surah);
 
-            document.getElementById("wordsContainer").innerHTML = data.words.map((w, i) => `
+            document.getElementById("wordsContainer").innerHTML = data.words.map((w, i) => {
+                return `
                 <div class="word-row">
                     ${data.isChallenge ? `<div style="display:inline-block; font-size: 13px; background: rgba(56, 189, 248, 0.15); color: var(--accent-color); padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; font-weight: bold;">${wSurahs[i]}</div>` : ''}
                     <div class="word-text">﴿ ${w} ﴾</div>
@@ -1436,23 +1484,45 @@
                             <button class="share-btn" onclick="shareWordImage(${i})" style="width: 100%; justify-content: center;">📤 شارك كصورة</button>
                         </div>
                     </div>
-                </div>`).join("");
+                </div>`;
+            }).join("");
 
             const actionsContainer = document.getElementById("afterActions");
             if (data.isChallenge) {
                 const todayIdx = getTodayIndex();
                 
-                // لو مفيش يوم سابق، بنحط ديف فاضي عشان يحافظ على التنسيق
                 const prevBtn = data.challengeIndex === 0 
                     ? `<div style="flex: 1;"></div>` 
                     : `<button class="btn btn-alt" style="flex: 1; font-size: 15px; padding: 10px; min-height: 48px;" onclick="playChallengeDay(${data.challengeIndex - 1})">▶ اليوم السابق</button>`;
                 
-                // لو مفيش يوم تالي، بنشيل الزرار تماماً ونحط ديف فاضي مكانه
                 const nextBtn = (data.challengeIndex >= challengePlan.length - 1 || data.challengeIndex >= todayIdx) 
                     ? `<div style="flex: 1;"></div>` 
                     : `<button class="btn btn-main" style="flex: 1; font-size: 15px; padding: 10px; min-height: 48px;" onclick="playChallengeDay(${data.challengeIndex + 1})">اليوم التالي ◀</button>`;
                 
+                const ytLink = "https://www.youtube.com/@yusuf_hamdy";
+                const igLink = "https://www.instagram.com/yusuf.hamdy";
+                const ttLink = "https://www.tiktok.com/@yusuf.hamdy";
+                
+                // Reward section (hidden initially)
+                const rewardHTML = `
+                    <div id="challengeReward" hidden style="width: 100%; margin-bottom: 20px; padding-top: 15px; border-top: 1px dashed rgba(148, 163, 184, 0.35); text-align: center;">
+                        <p style="font-size: 14px; color: var(--text-main); font-weight: bold; margin: 0 0 12px 0;">🎥 شاهد شرح فيديو اليوم ${data.challengeIndex + 1}:</p>
+                        <div style="display: flex; justify-content: center; gap: 24px; align-items: center; margin-bottom: 15px;">
+                            <a href="${igLink}" target="_blank" rel="noopener noreferrer" style="transition: transform 0.2s; display: block;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" aria-label="إنستجرام">
+                                <svg viewBox="0 0 24 24" width="30" height="30" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                            </a>
+                            <a href="${ttLink}" target="_blank" rel="noopener noreferrer" style="transition: transform 0.2s; display: block;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" aria-label="تيك توك">
+                                <svg viewBox="0 0 24 24" width="30" height="30" fill="var(--text-main)"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+                            </a>
+                            <a href="${ytLink}" target="_blank" rel="noopener noreferrer" style="transition: transform 0.2s; display: block;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" aria-label="يوتيوب">
+                                <svg viewBox="0 0 24 24" width="34" height="34" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                `;
+                
                 actionsContainer.innerHTML = `
+                    ${rewardHTML}
                     <div style="display: flex; gap: 10px; width: 100%; max-width: 340px; justify-content: space-between; margin-bottom: 8px;">
                         ${prevBtn}
                         ${nextBtn}
@@ -1475,6 +1545,7 @@
             card.style.transition = "";
             card.style.opacity = "1";
         }
+        
         function generateRandom() {
             if (busy) return;
             let pick;
@@ -1491,7 +1562,10 @@
                 if (!pool.length) pool = sortedData;
                 pick = pool[rand(pool.length)];
             }
-            spinThen(() => showSurah(pick, mode === "word" ? "جزء عمّ • كلمة عشوائية" : "جزء عمّ • اختيار عشوائي"));
+            spinThen(() => {
+                showSurah(pick, mode === "word" ? "جزء عمّ • كلمة عشوائية" : "جزء عمّ • اختيار عشوائي");
+                document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+            });
         }
 
         function nextWord() {
@@ -1510,7 +1584,8 @@
             const btn = document.getElementById("wordBtn" + i);
             if (!btn || btn.hidden) return;
             btn.hidden = true;
-            document.getElementById("meaning" + i).classList.add("open");
+            const meaningEl = document.getElementById("meaning" + i);
+            meaningEl.classList.add("open");
             revealedCount++;
             
             let originalSurah = currentData.surah;
@@ -1526,7 +1601,6 @@
             document.getElementById("afterActions").hidden = false;
             document.getElementById("revealAllBtn").hidden = revealedCount >= currentData.words.length;
             
-            // تسجيل اكتمال اليوم في التحدي فقط عند كشف جميع الكلمات
             if (currentData.isChallenge && revealedCount >= currentData.words.length) {
                 let completedDays = JSON.parse(localStorage.getItem('completedChallengeDays') || '[]');
                 if (!completedDays.includes(currentData.challengeIndex)) {
@@ -1534,11 +1608,19 @@
                     localStorage.setItem('completedChallengeDays', JSON.stringify(completedDays));
                     renderChallengeDays(); 
                 }
+                
+                const rewardDiv = document.getElementById("challengeReward");
+                if (rewardDiv) rewardDiv.hidden = false;
             }
             
             if (!currentData.isChallenge && mode === "word") {
                 renderDiscoverMore(originalSurah);
             }
+
+            // Auto-scroll smoothly to the revealed meaning
+            setTimeout(() => {
+                meaningEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }, 250);
         }
         
         function revealAll() { currentData.words.forEach((_, i) => revealWord(i)); }
