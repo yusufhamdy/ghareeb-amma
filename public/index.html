@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <!-- PWA Manifest and Theme Color -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#38BDF8">
    <!-- Basic display and language settings -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <!-- Primary Title (Blended identity for SEO) -->
     <title>غريب القرآن | اكتشف معاني كلمات جزء عمّ</title>
+    <!-- Favicon -->
+    <link rel="icon" href="apple-touch-icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <!-- Meta Description -->
     <meta name="description" content="منصة غريب القرآن تساعدك على فهم معاني الكلمات الصعبة. نبدأ رحلتنا بجزء عمّ، وبدعمكم سنغطي القرآن كاملاً. ابحث الآن أو شارك في تحدي الـ 30 يوم.">
@@ -153,12 +159,8 @@
         .search-item-surah { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
         .search-empty { padding: 14px; text-align: center; color: var(--text-muted); font-size: 14px; }
 
-        .progress-mini {
-            height: 6px; border-radius: 999px; overflow: hidden;
-            background: rgba(148, 163, 184, 0.15); margin-bottom: 26px;
-        }
-        .progress-mini-fill { height: 100%; width: 0%; background: var(--accent-color); transition: width 0.4s ease; }
-
+        
+        
         .btn {
             flex: 1;
             min-height: 56px;
@@ -290,7 +292,6 @@
             z-index: 11; text-align: right;
         }
         .sheet.show { transform: none; visibility: visible; }
-        .sheet-settings { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed rgba(148, 163, 184, 0.35); }
        /* ---------- Mode Toggle (Main Screen) ---------- */
         .mode-wrap { margin-bottom: 16px; display: flex; justify-content: center; }
         .seg { display: inline-flex; background: rgba(148, 163, 184, 0.15); padding: 4px; border-radius: 10px; gap: 4px; }
@@ -300,8 +301,8 @@
             border: none; border-radius: 8px; transition: background 0.2s, color 0.2s;
         }
         .seg-btn.active { background: var(--accent-color); color: #0A1128; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--text-muted); }
-        .reset-btn { background: none; border: 0; min-height: 36px; padding: 4px 8px; font-family: inherit; font-size: 13px; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+        
+        
         .sheet-name { flex: 1; }
         .sheet-done { color: var(--accent-color); font-size: 20px; }
         .sheet-part { color: var(--text-muted); font-size: 13px; font-weight: 500; direction: ltr; }
@@ -453,11 +454,64 @@
             * { transition: none !important; }
             .chip::after { animation: none; }
         }
+        
+        /* Main Progress Tracker */
+        .progress-wrapper {
+            margin: 20px auto 30px auto;
+            width: 100%;
+            max-width: 600px;
+            background: rgba(148, 163, 184, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: right;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 15px;
+            color: var(--text-main);
+            font-weight: 700;
+            direction: rtl;
+        }
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 0.5s ease-out;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+        .reset-btn-wrap { text-align: left; }
+        .reset-btn-new {
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 13px; text-decoration: underline; text-underline-offset: 3px;
+            cursor: pointer; font-family: inherit; padding: 0; transition: color 0.2s;
+        }
+        .reset-btn-new:hover { color: #ef4444; }
     </style>
     <script>
         // تحميل خط Amiri Quran مبكراً عشان أول كلمة تظهر بخطها الصح من غير فلاش
         if (window.FontFace || (document.fonts && document.fonts.load)) {
             try { document.fonts.load("400 16px 'Amiri Quran'"); } catch (e) {}
+        }
+        // Register Service Worker for PWA setup
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registered successfully!', reg))
+                    .catch(err => console.error('SW registration failed!', err));
+            });
         }
     </script>
 </head>
@@ -520,7 +574,19 @@
             </div>
         </div>
         
-        <div class="progress-mini" aria-hidden="true"><div class="progress-mini-fill" id="progressFill"></div></div>
+<!-- Main Progress Bar -->
+        <div class="progress-wrapper" id="progressWrapper" dir="rtl">
+            <div class="progress-header">
+                <span id="progressTextMain">تم كشف معاني 0 من 0 كلمة</span>
+                <span id="progressPercent" style="color: var(--accent-color); direction: ltr;">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFillMain"></div>
+            </div>
+            <div class="reset-btn-wrap">
+                <button class="reset-btn-new" onclick="resetProgress()">إعادة تصفير الإنجاز العام</button>
+            </div>
+        </div>
 
         <div class="result-card" id="resultCard">
             <span class="badge" id="badge"></span>
@@ -555,12 +621,7 @@
     <div class="backdrop" id="backdrop" onclick="closeSheet()"></div>
     <div class="sheet" id="sheet" role="dialog" aria-label="اختر سورة">
         <p class="sheet-title">اختر سورة من جزء عمّ</p>
-        <div class="sheet-settings">
-            <div class="progress-row">
-                <span id="progressText"></span>
-                <button class="reset-btn" onclick="resetProgress()">ابدأ من جديد</button>
-            </div>
-        </div>
+      
         <div id="sheetList"></div>
     </div>
 
@@ -1133,13 +1194,26 @@
                 return `<button class="sheet-item" onclick="chooseSurah(${i})">
                     <span class="sheet-num">${orderLabel(d)}</span><span class="sheet-name">${d.surah}</span>${mark}</button>`;
             }).join("");
-            document.getElementById("progressText").innerText = `تم كشف معاني ${seenCount()} من ${totalWords} كلمة`;
             document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
             updateProgressBar();
         }
+       // Update the new progress bar dynamically
         function updateProgressBar() {
-            const el = document.getElementById("progressFill");
-            if (el) el.style.width = Math.round((seenCount() / totalWords) * 100) + "%";
+            const currentSeen = seenCount();
+            let percent = 0;
+            
+            if (totalWords > 0) {
+                percent = Math.round((currentSeen / totalWords) * 100);
+            }
+            if (percent > 100) percent = 100;
+
+            const pText = document.getElementById("progressTextMain");
+            const pPercent = document.getElementById("progressPercent");
+            const pFill = document.getElementById("progressFillMain");
+
+            if (pText) pText.innerText = `تم كشف معاني ${currentSeen} من ${totalWords} كلمة`;
+            if (pPercent) pPercent.innerText = `${percent}%`;
+            if (pFill) pFill.style.width = `${percent}%`;
         }
         function updateLabels() {
             document.getElementById("drawBtn").innerText = mode === "word" ? "اسحب كلمة" : "اسحب سورة";
