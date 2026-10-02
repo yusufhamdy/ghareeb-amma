@@ -501,6 +501,7 @@
         .reset-btn-new:hover { color: #ef4444; }
     </style>
     <script>
+     
         // تحميل خط Amiri Quran مبكراً عشان أول كلمة تظهر بخطها الصح من غير فلاش
         if (window.FontFace || (document.fonts && document.fonts.load)) {
             try { document.fonts.load("400 16px 'Amiri Quran'"); } catch (e) {}
@@ -628,504 +629,82 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
-        // قاعدة البيانات: order = ترتيب السورة داخل جزء عمّ (النبأ = 1 ... الناس = 37)
-        const quranData = [
-            {
-                surah: "سورة الناس",
-                words: ["الْخَنَّاسِ"],
-                meanings: [
-                    "الْخَنَّاسِ: الشيطان الذي يوسوس، ويتأخر ويختفي إذا ذُكر الله."
-                ],
-                ayahs: [
-                    { label: "4", segments: [{ num: 4, before: "مِن شَرِّ ٱلۡوَسۡوَاسِ ", hl: "ٱلۡخَنَّاسِ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الفلق",
-                words: ["غَاسِقٍ إِذَا وَقَبَ", "النَّفَّاثَاتِ فِي الْعُقَدِ"],
-                meanings: [
-                    "غَاسِقٍ إِذَا وَقَبَ: الليل إذا اشتد ظلامه ودخل على الناس، وما فيه من شرور ومؤذيات.",
-                    "النَّفَّاثَاتِ فِي الْعُقَدِ: السواحر اللاتي ينفخن في العُقَد التي يعقدنها للسحر."
-                ],
-                ayahs: [
-                    { label: "3", segments: [{ num: 3, before: "وَمِن شَرِّ ", hl: "غَاسِقٍ إِذَا وَقَبَ", after: "" }] },
-                    { label: "4", segments: [{ num: 4, before: "وَمِن شَرِّ ", hl: "ٱلنَّفَّـٰثَٰتِ فِي ٱلۡعُقَدِ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الإخلاص",
-                words: ["الصَّمَدُ", "كُفُوًا"],
-                meanings: [
-                    "الصَّمَدُ: الذي يقصده جميع الخلق في حوائجهم.",
-                    "كُفُوًا: مماثلًا؛ أي لا أحد من خلقه يماثله أو يشبهه."
-                ],
-                ayahs: [
-                    { label: "2", segments: [{ num: 2, before: "ٱللَّهُ ", hl: "ٱلصَّمَدُ", after: "" }] },
-                    { label: "4", segments: [{ num: 4, before: "وَلَمۡ يَكُن لَّهُۥ ", hl: "كُفُوًا", after: " أَحَدُۢ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة المسد",
-                words: ["جِيدِهَا", "مَسَدٍ"],
-                meanings: [
-                    "جِيدِهَا: العنق والرقبة.",
-                    "مَسَدٍ: ليف خشن شديد يُفتل منه حبل محكم."
-                ],
-                ayahs: [
-                    { label: "5", segments: [{ num: 5, before: "فِي ", hl: "جِيدِهَا", after: " حَبۡلٞ مِّن مَّسَدِۭ" }] },
-                    { label: "5", segments: [{ num: 5, before: "فِي جِيدِهَا حَبۡلٞ مِّن ", hl: "مَّسَدِۭ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الكوثر",
-                words: ["شَانِئَكَ", "الْأَبْتَرُ"],
-                meanings: [
-                    "شَانِئَكَ: الكاره والمبغض.",
-                    "الْأَبْتَرُ: المقطوع من كل خير، المنقطع الذكر والأثر."
-                ],
-                ayahs: [
-                    { label: "3", segments: [{ num: 3, before: "إِنَّ ", hl: "شَانِئَكَ", after: " هُوَ ٱلۡأَبۡتَرُ" }] },
-                    { label: "3", segments: [{ num: 3, before: "إِنَّ شَانِئَكَ هُوَ ", hl: "ٱلۡأَبۡتَرُ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة قريش",
-                words: ["إِيلَافِهِمْ"],
-                meanings: [
-                    "إِيلَافِهِمْ: ألفتهم واعتيادهم رحلتي الشتاء إلى اليمن والصيف إلى الشام في أمان."
-                ],
-                ayahs: [
-                    { label: "2", segments: [{ num: 2, before: "", hl: "إِۦلَٰفِهِمۡ", after: " رِحۡلَةَ ٱلشِّتَآءِ وَٱلصَّيۡفِ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الماعون",
-                words: ["الْمَاعُونَ", "يَدُعُّ الْيَتِيمَ"],
-                meanings: [
-                    "الْمَاعُونَ: الأشياء البسيطة التي لا يضر إعارتها، كالإناء والدلو والفأس.",
-                    "يَدُعُّ الْيَتِيمَ: يدفع اليتيم بعنف وشدة عن حقه، ولا يرحمه."
-                ],
-                ayahs: [
-                    { label: "7", segments: [{ num: 7, before: "وَيَمۡنَعُونَ ", hl: "ٱلۡمَاعُونَ", after: "" }] },
-                    { label: "2", segments: [{ num: 2, before: "فَذَٰلِكَ ٱلَّذِي ", hl: "يَدُعُّ ٱلۡيَتِيمَ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الفيل",
-                words: ["عَصْفٍ مَأْكُولٍ", "سِجِّيلٍ"],
-                meanings: [
-                    "عَصْفٍ مَأْكُولٍ: أوراق الزرع اليابسة التي أكلتها البهائم ثم رمتها.",
-                    "سِجِّيلٍ: حجارة من طين متحجّر."
-                ],
-                ayahs: [
-                    { label: "5", segments: [{ num: 5, before: "فَجَعَلَهُمۡ كَ", hl: "عَصۡفٖ مَّأۡكُولِۭ", after: "" }] },
-                    { label: "4", segments: [{ num: 4, before: "تَرۡمِيهِم بِحِجَارَةٖ مِّن ", hl: "سِجِّيلٖ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الهمزة",
-                words: ["هُمَزَةٍ لُمَزَةٍ", "الْحُطَمَةُ"],
-                meanings: [
-                    "هُمَزَةٍ لُمَزَةٍ: العيّاب بالإشارة والغمز، والعيّاب باللسان.",
-                    "الْحُطَمَةُ: النار التي تحطم وتكسر كل ما يُلقى فيها."
-                ],
-                ayahs: [
-                    { label: "1", segments: [{ num: 1, before: "وَيۡلٞ لِّكُلِّ ", hl: "هُمَزَةٖ لُّمَزَةٍ", after: "" }] },
-                    { label: "4", segments: [{ num: 4, before: "كَلَّاۖ لَيُنۢبَذَنَّ فِي ", hl: "ٱلۡحُطَمَةِ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة العاديات",
-                words: ["ضَبْحًا", "قَدْحًا", "لَكَنُودٌ"],
-                meanings: [
-                    "ضَبْحًا: صوت أنفاس الخيل.",
-                    "قَدْحًا: الشرار الناجم عن احتكاك حوافرها بالصخر.",
-                    "لَكَنُودٌ: الإنسان الجاحد للنعم."
-                ],
-                ayahs: [
-                    { label: "1", segments: [{ num: 1, before: "وَٱلۡعَٰدِيَٰتِ ", hl: "ضَبۡحٗا", after: "" }] },
-                    { label: "2", segments: [{ num: 2, before: "فَٱلۡمُورِيَٰتِ ", hl: "قَدۡحٗا", after: "" }] },
-                    { label: "6", segments: [{ num: 6, before: "إِنَّ ٱلۡإِنسَٰنَ لِرَبِّهِۦ ", hl: "لَكَنُودٞ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة القارعة",
-                words: ["كَالْعِهْنِ الْمَنْفُوشِ", "هَاوِيَةٌ"],
-                meanings: [
-                    "كَالْعِهْنِ الْمَنْفُوشِ: الصوف الملون المتطاير المشتت.",
-                    "هَاوِيَةٌ: اسم من أسماء النار، ومأوى من خفّت موازين حسناته."
-                ],
-                ayahs: [
-                    { label: "5", segments: [{ num: 5, before: "وَتَكُونُ ٱلۡجِبَالُ ", hl: "كَٱلۡعِهۡنِ ٱلۡمَنفُوشِ", after: "" }] },
-                    { label: "9", segments: [{ num: 9, before: "فَأُمُّهُۥ ", hl: "هَاوِيَةٞ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة العلق",
-                words: ["لَنَسْفَعًا بِالنَّاصِيَةِ", "الزَّبَانِيَةَ"],
-                meanings: [
-                    "لَنَسْفَعًا بِالنَّاصِيَةِ: الجذب بقوة من مقدمة الرأس.",
-                    "الزَّبَانِيَةَ: ملائكة العذاب، وهم خزنة جهنم."
-                ],
-                ayahs: [
-                    { label: "15", segments: [{ num: 15, before: "كَلَّا لَئِن لَّمۡ يَنتَهِ ", hl: "لَنَسۡفَعَۢا بِٱلنَّاصِيَةِ", after: "" }] },
-                    { label: "18", segments: [{ num: 18, before: "سَنَدۡعُ ", hl: "ٱلزَّبَانِيَةَ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الشرح",
-                words: ["أَنقَضَ ظَهْرَكَ"],
-                meanings: [
-                    "أَنقَضَ ظَهْرَكَ: الذي أتعبك حتى كاد أن يكسر ظهرك."
-                ],
-                ayahs: [
-                    { label: "3", segments: [{ num: 3, before: "ٱلَّذِيٓ ", hl: "أَنقَضَ ظَهۡرَكَ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الضحى",
-                words: ["سَجَى", "قَلَى"],
-                meanings: [
-                    "سَجَى: الليل إذا سكن واشتد ظلامه.",
-                    "قَلَى: أبغضك."
-                ],
-                ayahs: [
-                    { label: "2", segments: [{ num: 2, before: "وَٱلَّيۡلِ إِذَا ", hl: "سَجَىٰ", after: "" }] },
-                    { label: "3", segments: [{ num: 3, before: "مَا وَدَّعَكَ رَبُّكَ وَمَا ", hl: "قَلَىٰ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الليل",
-                words: ["تَرَدَّى", "تَلَظَّى"],
-                meanings: [
-                    "تَرَدَّى: السقوط والهلاك في النار.",
-                    "تَلَظَّى: الاشتعال والتوهج الشديد."
-                ],
-                ayahs: [
-                    { label: "11", segments: [{ num: 11, before: "وَمَا يُغۡنِي عَنۡهُ مَالُهُۥٓ إِذَا ", hl: "تَرَدَّىٰٓ", after: "" }] },
-                    { label: "14", segments: [{ num: 14, before: "فَأَنذَرۡتُكُمۡ نَارٗا ", hl: "تَلَظَّىٰ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الشمس",
-                words: ["طَحَاهَا", "دَسَّاهَا"],
-                meanings: [
-                    "طَحَاهَا: بسط الأرض وتوسيعها.",
-                    "دَسَّاهَا: إخفاء النفس وتدنيسها بالمعاصي."
-                ],
-                ayahs: [
-                    { label: "6", segments: [{ num: 6, before: "وَٱلۡأَرۡضِ وَمَا ", hl: "طَحَىٰهَا", after: "" }] },
-                    { label: "10", segments: [{ num: 10, before: "وَقَدۡ خَابَ مَن ", hl: "دَسَّىٰهَا", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة البلد",
-                words: ["مَتْرَبَةٍ", "حِلٌّ"],
-                meanings: [
-                    "مَتْرَبَةٍ: الفقر الشديد الملتصق بالتراب.",
-                    "حِلٌّ: الإقامة والحلول بالبلد."
-                ],
-                ayahs: [
-                    { label: "16", segments: [{ num: 16, before: "أَوۡ مِسۡكِينٗا ذَا ", hl: "مَتۡرَبَةٖ", after: "" }] },
-                    { label: "2", segments: [{ num: 2, before: "وَأَنتَ ", hl: "حِلُّۢ", after: " بِهَٰذَا ٱلۡبَلَدِ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الفجر",
-                words: ["جَابُوا الصَّخْرَ", "تُرَاثَ", "حِجْرٍ", "أَكْلًا لَّمًّا"],
-                meanings: [
-                    "جَابُوا الصَّخْرَ: قطع ونحت الصخر لبناء البيوت.",
-                    "تُرَاثَ: الميراث المأكول طمعاً.",
-                    "حِجْرٍ: العقل؛ سُمّي حِجْرًا لأنه يمنع صاحبه مما لا يحل ولا ينبغي.",
-                    "أَكْلًا لَّمًّا: أكلًا شديدًا لحقوق الضعفاء من النساء واليتامى دون النظر في حلاله وحرامه."
-                ],
-                ayahs: [
-                    { label: "9", segments: [{ num: 9, before: "وَثَمُودَ ٱلَّذِينَ ", hl: "جَابُواْ ٱلصَّخۡرَ", after: " بِٱلۡوَادِ" }] },
-                    { label: "19", segments: [{ num: 19, before: "وَتَأۡكُلُونَ ٱل", hl: "تُّرَاثَ", after: " أَكۡلٗا لَّمّٗا" }] },
-                    { label: "5", segments: [{ num: 5, before: "هَلۡ فِي ذَٰلِكَ قَسَمٞ لِّذِي ", hl: "حِجۡرٍ", after: "" }] },
-                    { label: "19", segments: [{ num: 19, before: "وَتَأۡكُلُونَ ٱلتُّرَاثَ ", hl: "أَكۡلٗا لَّمّٗا", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الغاشية",
-                words: ["ضَرِيعٍ", "نَمَارِقُ", "زَرَابِيُّ"],
-                meanings: [
-                    "ضَرِيعٍ: نبات ذو شوك من أخبث الطعام وأبشعه، لا يُشبع ولا يُسمن.",
-                    "نَمَارِقُ: الوسائد والمخدات المصفوفة.",
-                    "زَرَابِيُّ: السجاد الفاخر المبثوث."
-                ],
-                ayahs: [
-                    { label: "6", segments: [{ num: 6, before: "لَّيۡسَ لَهُمۡ طَعَامٌ إِلَّا مِن ", hl: "ضَرِيعٖ", after: "" }] },
-                    { label: "15", segments: [{ num: 15, before: "وَ", hl: "نَمَارِقُ", after: " مَصۡفُوفَةٞ" }] },
-                    { label: "16", segments: [{ num: 16, before: "وَ", hl: "زَرَابِيُّ", after: " مَبۡثُوثَةٌ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الأعلى",
-                words: ["غُثَاءً أَحْوَى"],
-                meanings: [
-                    "غُثَاءً أَحْوَى: نبات يابس متكسّر صار لونه أسود."
-                ],
-                ayahs: [
-                    { label: "5", segments: [{ num: 5, before: "فَجَعَلَهُۥ ", hl: "غُثَآءً أَحۡوَىٰ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الطارق",
-                words: ["الثَّاقِبُ", "التَّرَائِبِ", "تُبْلَى السَّرَائِرُ"],
-                meanings: [
-                    "الثَّاقِبُ: النجم المضيء المخرق للظلام.",
-                    "التَّرَائِبِ: عظام الصدر عند المرأة.",
-                    "تُبْلَى السَّرَائِرُ: كشف واختبار الخبايا والنوايا."
-                ],
-                ayahs: [
-                    { label: "3", segments: [{ num: 3, before: "ٱلنَّجۡمُ ", hl: "ٱلثَّاقِبُ", after: "" }] },
-                    { label: "7", segments: [{ num: 7, before: "يَخۡرُجُ مِنۢ بَيۡنِ ٱلصُّلۡبِ وَ", hl: "ٱلتَّرَآئِبِ", after: "" }] },
-                    { label: "9", segments: [{ num: 9, before: "يَوۡمَ ", hl: "تُبۡلَى ٱلسَّرَآئِرُ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الانشقاق",
-                words: ["ثُبُورًا", "وَسَقَ", "يَحُورَ", "كَدْحًا"],
-                meanings: [
-                    "ثُبُورًا: الدعاء على النفس بالهلاك.",
-                    "وَسَقَ: ما جمعه الليل وضمه.",
-                    "يَحُورَ: يرجع لربه للحساب.",
-                    "كَدْحًا: تعبًا وسعيًا شديدًا إلى لقاء ربك."
-                ],
-                ayahs: [
-                    { label: "11", segments: [{ num: 11, before: "فَسَوۡفَ يَدۡعُواْ ", hl: "ثُبُورٗا", after: "" }] },
-                    { label: "17", segments: [{ num: 17, before: "وَٱلَّيۡلِ وَمَا ", hl: "وَسَقَ", after: "" }] },
-                    { label: "14", segments: [{ num: 14, before: "إِنَّهُۥ ظَنَّ أَن لَّن ", hl: "يَحُورَ", after: "" }] },
-                    { label: "6", segments: [{ num: 6, before: "يَـٰٓأَيُّهَا ٱلۡإِنسَٰنُ إِنَّكَ كَادِحٌ إِلَىٰ رَبِّكَ ", hl: "كَدۡحٗا", after: " فَمُلَٰقِيهِ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة المطففين",
-                words: ["سِجِّينٍ", "عِلِّيُّونَ", "تَسْنِيمٍ", "رَانَ"],
-                meanings: [
-                    "سِجِّينٍ: كتاب ومكان الفجار الضيق.",
-                    "عِلِّيُّونَ: الموضع العالي.",
-                    "تَسْنِيمٍ: عين الجنة.",
-                    "رَانَ: الصدأ الذي غطّى قلوبهم وحجبها بسبب كثرة ذنوبهم."
-                ],
-                ayahs: [
-                    { label: "7", segments: [{ num: 7, before: "كَلَّآ إِنَّ كِتَٰبَ ٱلۡفُجَّارِ لَفِي ", hl: "سِجِّينٖ", after: "" }] },
-                    { label: "19", segments: [{ num: 19, before: "وَمَآ أَدۡرَىٰكَ مَا ", hl: "عِلِّيُّونَ", after: "" }] },
-                    { label: "27", segments: [{ num: 27, before: "وَمِزَاجُهُۥ مِن ", hl: "تَسۡنِيمٍ", after: "" }] },
-                    { label: "14", segments: [{ num: 14, before: "كَلَّاۖ بَلۡۜ ", hl: "رَانَ", after: " عَلَىٰ قُلُوبِهِم مَّا كَانُواْ يَكۡسِبُونَ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة التكوير",
-                words: ["عَسْعَسَ", "الْخُنَّسِ الْجَوَارِ الْكُنَّسِ", "بِضَنِينٍ", "الْعِشَارُ عُطِّلَتْ"],
-                meanings: [
-                    "عَسْعَسَ: إقبال الليل أو إدباره.",
-                    "الْخُنَّسِ الْجَوَارِ الْكُنَّسِ: النجوم التي تختفي أنوارها نهارًا، فتجري وتستتر في أبراجها.",
-                    "بِضَنِينٍ: بخيل في تبليغ الوحي.",
-                    "الْعِشَارُ عُطِّلَتْ: النوق الحوامل الثمينة التي أُهملت من شدة الرعب."
-                ],
-                ayahs: [
-                    { label: "17", segments: [{ num: 17, before: "وَٱلَّيۡلِ إِذَا ", hl: "عَسۡعَسَ", after: "" }] },
-                    { label: "15-16", segments: [{ num: 15, before: "فَلَآ أُقۡسِمُ بِ", hl: "ٱلۡخُنَّسِ", after: "" }, { num: 16, before: "", hl: "ٱلۡجَوَارِ ٱلۡكُنَّسِ", after: "" }] },
-                    { label: "24", segments: [{ num: 24, before: "وَمَا هُوَ عَلَى ٱلۡغَيۡبِ ", hl: "بِضَنِينٖ", after: "" }] },
-                    { label: "4", segments: [{ num: 4, before: "وَإِذَا ", hl: "ٱلۡعِشَارُ عُطِّلَتۡ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة عبس",
-                words: ["أَبًّا", "الصَّاخَّةُ", "غُلْبًا", "قَضْبًا"],
-                meanings: [
-                    "أَبًّا: العشب المخصص للأنعام.",
-                    "الصَّاخَّةُ: صيحة القيامة التي تَصُمّ الأسماع من هولها.",
-                    "غُلْبًا: الحدائق ذات الأشجار الضخمة الملتفة.",
-                    "قَضْبًا: العلف الأخضر من الزرع."
-                ],
-                ayahs: [
-                    { label: "31", segments: [{ num: 31, before: "وَفَٰكِهَةٗ وَ", hl: "أَبّٗا", after: "" }] },
-                    { label: "33", segments: [{ num: 33, before: "فَإِذَا جَآءَتِ ", hl: "ٱلصَّآخَّةُ", after: "" }] },
-                    { label: "30", segments: [{ num: 30, before: "وَحَدَآئِقَ ", hl: "غُلۡبٗا", after: "" }] },
-                    { label: "28", segments: [{ num: 28, before: "وَعِنَبٗا وَ", hl: "قَضۡبٗا", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة النازعات",
-                words: ["الطَّامَّةُ الْكُبْرَى", "دَحَاهَا", "الْحَافِرَةِ", "سَبْحًا"],
-                meanings: [
-                    "الطَّامَّةُ الْكُبْرَى: القيامة الكبرى وشدتها العظمى.",
-                    "دَحَاهَا: بسط الأرض.",
-                    "الْحَافِرَةِ: الحياة الأولى التي كانوا عليها قبل الموت.",
-                    "سَبْحًا: تصرّفًا وسعيًا حثيثًا في الأمور."
-                ],
-                ayahs: [
-                    { label: "34", segments: [{ num: 34, before: "فَإِذَا جَآءَتِ ", hl: "ٱلطَّآمَّةُ ٱلۡكُبۡرَىٰ", after: "" }] },
-                    { label: "30", segments: [{ num: 30, before: "وَٱلۡأَرۡضَ بَعۡدَ ذَٰلِكَ ", hl: "دَحَىٰهَآ", after: "" }] },
-                    { label: "10", segments: [{ num: 10, before: "يَقُولُونَ أَءِنَّا لَمَرۡدُودُونَ فِي ", hl: "ٱلۡحَافِرَةِ", after: "" }] },
-                    { label: "3", segments: [{ num: 3, before: "وَٱلسَّـٰبِحَٰتِ ", hl: "سَبۡحٗا", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة النبأ",
-                words: ["ثَجَّاجًا", "مِهَادًا", "أَوْتَادًا", "غَسَّاقًا", "دِهَاقًا"],
-                meanings: [
-                    "ثَجَّاجًا: الماء المندفع بكثرة وغزارة من السحاب.",
-                    "مِهَادًا: فراشًا ممهّدًا صالحًا للاستقرار.",
-                    "أَوْتَادًا: الجبال أوتاد تثبّت الأرض وتمنعها من الاضطراب.",
-                    "غَسَّاقًا: سائل بارد منتن من صديد أهل النار.",
-                    "دِهَاقًا: كأسًا مملوءة متتابعة."
-                ],
-                ayahs: [
-                    { label: "14", segments: [{ num: 14, before: "وَأَنزَلۡنَا مِنَ ٱلۡمُعۡصِرَٰتِ مَآءٗ ", hl: "ثَجَّاجٗا", after: "" }] },
-                    { label: "6", segments: [{ num: 6, before: "أَلَمۡ نَجۡعَلِ ٱلۡأَرۡضَ ", hl: "مِهَٰدٗا", after: "" }] },
-                    { label: "7", segments: [{ num: 7, before: "وَٱلۡجِبَالَ ", hl: "أَوۡتَادٗا", after: "" }] },
-                    { label: "25", segments: [{ num: 25, before: "إِلَّا حَمِيمٗا وَ", hl: "غَسَّاقٗا", after: "" }] },
-                    { label: "34", segments: [{ num: 34, before: "وَكَأۡسٗا ", hl: "دِهَاقٗا", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الانفطار",
-                words: ["بُعْثِرَتْ"],
-                meanings: [
-                    "بُعْثِرَتْ: أُخرج موتاها وبُعثروا من قبورهم."
-                ],
-                ayahs: [
-                    { label: "4", segments: [{ num: 4, before: "وَإِذَا ٱلۡقُبُورُ ", hl: "بُعۡثِرَتۡ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة البروج",
-                words: ["الْأُخْدُودِ"],
-                meanings: [
-                    "الْأُخْدُودِ: الشقّ الطويل الغائر في الأرض."
-                ],
-                ayahs: [
-                    { label: "4", segments: [{ num: 4, before: "قُتِلَ أَصۡحَٰبُ ", hl: "ٱلۡأُخۡدُودِ", after: "" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة البينة",
-                words: ["مُنفَكِّينَ"],
-                meanings: [
-                    "مُنفَكِّينَ: زائلين تاركين ما هم عليه من كفر."
-                ],
-                ayahs: [
-                    { label: "1", segments: [{ num: 1, before: "لَمۡ يَكُنِ ٱلَّذِينَ كَفَرُواْ مِنۡ أَهۡلِ ٱلۡكِتَٰبِ وَٱلۡمُشۡرِكِينَ ", hl: "مُنفَكِّينَ", after: " حَتَّىٰ تَأۡتِيَهُمُ ٱلۡبَيِّنَةُ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            },
-            {
-                surah: "سورة الزلزلة",
-                words: ["أَثْقَالَهَا", "أَشْتَاتًا"],
-                meanings: [
-                    "أَثْقَالَهَا: ما في بطنها من موتى وكنوز.",
-                    "أَشْتَاتًا: متفرّقين متفاوتين بحسب أعمالهم."
-                ],
-                ayahs: [
-                    { label: "2", segments: [{ num: 2, before: "وَأَخۡرَجَتِ ٱلۡأَرۡضُ ", hl: "أَثۡقَالَهَا", after: "" }] },
-                    { label: "6", segments: [{ num: 6, before: "يَوۡمَئِذٖ يَصۡدُرُ ٱلنَّاسُ ", hl: "أَشۡتَاتٗا", after: " لِّيُرَوۡاْ أَعۡمَٰلَهُمۡ" }] }
-                ],
-                source: "المصدر: التفسير الميسر وكتب التفاسير"
-            }
-        ];
+       // Load Amiri Quran font early to prevent FOUT
+        if (window.FontFace || (document.fonts && document.fonts.load)) {
+            try { document.fonts.load("400 16px 'Amiri Quran'"); } catch (e) {}
+        }
+        
+        // Register Service Worker for PWA setup
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registered successfully!', reg))
+                    .catch(err => console.error('SW registration failed!', err));
+            });
+        }
 
-        // ==========================================
-        // إعدادات خطة التحدي (30 يوم)
-        // ==========================================
-        const campaignStartDate = null; // غيّر null لتاريخ بداية الحملة مثلا "2026-10-01"
+        // Global variables
+        let quranData = [];
+        let merged = {};
+        let sortedData = [];
+        let allWords = [];
+        let totalWords = 0;
+        let searchIndex = [];
+        let currentData = null;
+        let lastSurah = null; 
 
+        // 30-day challenge settings
+        const campaignStartDate = null; 
         const challengePlan = [
-            { day: 1, words: ["الْمَاعُونَ"] },
-            { day: 2, words: ["هُمَزَةٍ لُّمَزَةٍ", "الْحُطَمَةُ"] },
-            { day: 3, words: ["رَانَ"] },
-            { day: 4, words: ["أَكْلًا لَّمًّا", "تُرَاثَ"] },
-            { day: 5, words: ["بِضَنِينٍ", "شَانِئَكَ", "الْأَبْتَرُ"] },
-            { day: 6, words: ["جَابُوا الصَّخْرَ", "حِجْرٍ"] },
-            { day: 7, words: ["يَدُعُّ الْيَتِيمَ", "مُنفَكِّينَ"] },
-            { day: 8, words: ["ضَبْحًا", "قَدْحًا", "لَكَنُودٌ"] },
-            { day: 9, words: ["عَسْعَسَ", "الْخُنَّسِ الْجَوَارِ الْكُنَّسِ", "الْعِشَارُ عُطِّلَتْ"] },
-            { day: 10, words: ["الثَّاقِبُ", "التَّرَائِبِ", "تُبْلَى السَّرَائِرُ"] },
-            { day: 11, words: ["الطَّامَّةُ الْكُبْرَى", "دَحَاهَا", "الْحَافِرَةِ", "سَبْحًا"] },
-            { day: 12, words: ["عَصْفٍ مَّأْكُولٍ", "سِجِّيلٍ"] },
-            { day: 13, words: ["كَالْعِهْنِ الْمَنفُوشِ", "هَاوِيَةٌ", "أَثْقَالَهَا", "أَشْتَاتًا"] },
-            { day: 14, words: ["أَبًّا", "الصَّاخَّةُ", "غُلْبًا", "قَضْبًا"] },
-            { day: 15, words: ["أَنقَضَ ظَهْرَكَ"] },
-            { day: 16, words: ["سَجَى", "قَلَى"] },
-            { day: 17, words: ["الصَّمَدُ", "كُفُوًا"] },
-            { day: 18, words: ["طَحَاهَا", "دَسَّاهَا"] },
-            { day: 19, words: ["غَاسِقٍ إِذَا وَقَبَ", "النَّفَّاثَاتِ فِي الْعُقَدِ", "الْخَنَّاسِ"] },
-            { day: 20, words: ["مَتْرَبَةٍ", "حِلٌّ"] },
-            { day: 21, words: ["لَنَسْفَعًا بِالنَّاصِيَةِ", "الزَّبَانِيَةَ"] },
-            { day: 22, words: ["ثَجَّاجًا", "مِهَادًا", "أَوْتَادًا"] },
-            { day: 23, words: ["غَسَّاقًا", "دِهَاقًا"] },
-            { day: 24, words: ["ضَرِيعٍ", "نَمَارِقُ", "زَرَابِيُّ"] },
-            { day: 25, words: ["سِجِّينٍ", "عِلِّيُّونَ", "تَسْنِيمٍ"] },
-            { day: 26, words: ["إِيلَافِهِمْ"] },
-            { day: 27, words: ["جِيدِهَا", "مَسَدٍ"] },
-            { day: 28, words: ["غُثَاءً أَحْوَى", "تَرَدَّى", "تَلَظَّى"] },
-            { day: 29, words: ["ثُبُورًا", "وَسَقَ", "يَحُورَ", "كَدْحًا"] },
-            { day: 30, words: ["الْأُخْدُودِ", "بُعْثِرَتْ"] }
+            { day: 1, words: ["الْخَنَّاسِ", "غَاسِقٍ إِذَا وَقَبَ", "النَّفَّاثَاتِ فِي الْعُقَدِ"] },
+            { day: 2, words: ["الصَّمَدُ"] },
+            { day: 3, words: ["شَانِئَكَ", "الْأَبْتَرُ"] },
+            { day: 4, words: ["الْمَاعُونَ"] },
+            { day: 5, words: ["إِيلَافِهِمْ"] },
+            { day: 6, words: ["سِجِّيلٍ", "عَصْفٍ مَّأْكُولٍ"] },
+            { day: 7, words: ["هُمَزَةٍ لُّمَزَةٍ", "الْحُطَمَةُ"] },
+            { day: 8, words: ["كَالْعِهْنِ الْمَنفُوشِ", "هَاوِيَةٌ"] },
+            { day: 9, words: ["وَٱلۡعَٰدِيَٰتِ ضَبۡحٗا", "فَٱلۡمُورِيَٰتِ قَدۡحٗا", "فَٱلۡمُغِيرَٰتِ صُبۡحٗا", "فَأَثَرۡنَ بِهِۦ نَقْعٗا", "فَوَسَطۡنَ بِهِۦ جَمۡعًا", "لَكَنُودٞ"] },
+            { day: 10, words: ["أَثْقَالَهَا"] },
+            { day: 11, words: ["مُنفَكِّينَ"] },
+            { day: 12, words: ["لَنَسْفَعًا بِالنَّاصِيَةِ", "الزَّبَانِيَةَ"] },
+            { day: 13, words: ["أَنقَضَ ظَهْرَكَ"] },
+            { day: 14, words: ["سَجَى", "قَلَى"] },
+            { day: 15, words: ["تَرَدَّى", "تَلَظَّى"] },
+            { day: 16, words: ["طَحَاهَا", "دَسَّاهَا"] },
+            { day: 17, words: ["حِلٌّ", "مَتْرَبَةٍ", "مَسْغَبَةٍ"] },
+            { day: 18, words: ["حِجْرٍ", "أَكْلًا لَّمًّا", "تُرَاثَ"] },
+            { day: 19, words: ["ضَرِيعٍ", "نَمَارِقُ", "زَرَابِيُّ"] },
+            { day: 20, words: ["غُثَاءً أَحْوَى"] },
+            { day: 21, words: ["الطَّارِقُ", "الثَّاقِبُ", "التَّرَائِبِ", "تُبْلَى السَّرَائِرُ"] },
+            { day: 22, words: ["ثُبُورًا", "يَحُورَ", "وَسَقَ"] },
+            { day: 23, words: ["سِجِّينٍ", "رَانَ"] },
+            { day: 24, words: ["عِلِّيُّونَ", "تَسْنِيمٍ"] },
+            { day: 25, words: ["انْكَدَرَتْ", "الْعِشَارُ عُطِّلَتْ", "الْبِحَارُ سُجِّرَتْ"] },
+            { day: 26, words: ["الْخُنَّسِ الْجَوَارِ الْكُنَّسِ", "عَسْعَسَ", "بِضَنِينٍ"] },
+            { day: 27, words: ["قَضْبًا", "غُلْبًا", "أَبًّا", "الصَّاخَّةُ"] },
+            { day: 28, words: ["وَالنَّازِعَاتِ غَرْقًا", "وَالنَّاشِطَاتِ نَشْطًا", "وَالسَّابِحَاتِ سَبْحًا", "فَالسَّابِقَاتِ سَبْقًا", "فَالْمُدَبِّرَاتِ أَمْرًا"] },
+            { day: 29, words: ["الْحَافِرَةِ", "دَحَاهَا", "الطَّامَّةُ الْكُبْرَى"] },
+            { day: 30, words: ["ثَجَّاجًا", "غَسَّاقًا", "دِهَاقًا"] }
         ];
 
-        // ترتيب السور ومعالجة الداتا
-        const JUZ_AMMA = ["النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
-        const ALIASES = { "عم": "النبأ", "الانشراح": "الشرح", "الزلزال": "الزلزلة", "التوحيد": "الإخلاص", "اللهب": "المسد", "تبت": "المسد", "اقرأ": "العلق" };
+        // Surah sorting
+        const JUZ_AMMA = ["النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","الإخلاص","الفلق","الناس"];
+        const ALIASES = { "عم": "النبأ", "الانشراح": "الشرح", "الزلزال": "الزلزلة", "التوحيد": "الإخلاص", "اقرأ": "العلق" };
         const norm = s => s.replace(/[\u064B-\u065F\u0670\u0640]/g, "").replace(/^\s*سورة\s+/, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").trim();
         const ORDER_BY_NAME = {};
         JUZ_AMMA.forEach((n, i) => { ORDER_BY_NAME[norm(n)] = i + 1; });
         Object.entries(ALIASES).forEach(([a, n]) => { ORDER_BY_NAME[norm(a)] = ORDER_BY_NAME[norm(n)]; });
 
-        const merged = {};
-        quranData.forEach(d => {
-            const key = norm(d.surah);
-            if (!merged[key]) {
-                merged[key] = { ...d, words: [...d.words], meanings: [...d.meanings], ayahs: [...(d.ayahs || [])], order: ORDER_BY_NAME[key] || d.order || 999 };
-            } else {
-                merged[key].words.push(...d.words);
-                merged[key].meanings.push(...d.meanings);
-                merged[key].ayahs.push(...(d.ayahs || []));
-            }
-        });
-        const sortedData = Object.values(merged).sort((a, b) => a.order - b.order);
         const orderLabel = d => (d.order < 999 ? d.order : "•");
-        let currentData = null;
-        let lastSurah = null; 
 
-        // التخزين المحلي
+        // Local storage setup
         const store = {
             get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
             set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
         };
         const seen = new Set(store.get("ghareeb_seen", []));   
-        let mode = store.get("ghareeb_mode", "word");           
+        let mode = store.get("ghareeb_mode", "word");            
         const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         let soundOn = store.get("ghareeb_sound", !reduceMotion);
         let lastKey = null, busy = false, spinTimer = null;
@@ -1133,19 +712,10 @@
         const wKey = (d, w) => d.surah + "|" + w;
         const isSeen = (d, w) => seen.has(wKey(d, w));
         const surahDone = d => d.words.every(w => isSeen(d, w));
-        const totalWords = sortedData.reduce((n, d) => n + d.words.length, 0);
         const seenCount = () => sortedData.reduce((n, d) => n + d.words.filter(w => isSeen(d, w)).length, 0);
         const rand = n => Math.floor(Math.random() * n);
-        const allWords = sortedData.flatMap(d => d.words);
 
-        // البحث
-        const searchIndex = [];
-        sortedData.forEach((d, di) => {
-            searchIndex.push({ type: "surah", label: d.surah, normLabel: norm(d.surah), di });
-            d.words.forEach((w, wi) => {
-                searchIndex.push({ type: "word", label: w, normLabel: norm(w), surah: d.surah, di, wi });
-            });
-        });
+        // Search functions
         function onSearchInput() {
             const q = norm(document.getElementById("searchInput").value);
             const box = document.getElementById("searchResults");
@@ -1159,12 +729,15 @@
                   ).join("");
             box.hidden = false;
         }
+        
         function closeSearch() {
             const box = document.getElementById("searchResults");
             box.hidden = true; box.innerHTML = "";
             document.getElementById("searchInput").value = "";
         }
+        
         function hideSearchResults() { document.getElementById("searchResults").hidden = true; }
+        
         function searchPickSurah(di) {
             if (busy) return;
             closeSearch();
@@ -1172,6 +745,7 @@
             showSurah(d, d.order < 999 ? `جزء عمّ • السورة رقم ${d.order}` : "جزء عمّ");
             document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
         }
+        
         function searchPickWord(di, wi) {
             if (busy) return;
             closeSearch();
@@ -1180,16 +754,15 @@
             showSurah(pick, "نتيجة البحث");
             document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
         }
+        
         document.addEventListener("click", e => {
             const wrap = e.target.closest(".search-wrap");
             if (!wrap) hideSearchResults();
         });
-
-        // واجهة اختيار السورة وحفظ التقدم
         function renderSheet() {
             document.getElementById("sheetList").innerHTML = sortedData.map((d, i) => {
                 const n = d.words.filter(w => isSeen(d, w)).length;
-                const mark = n === d.words.length ? '<span class="sheet-done" aria-label="تم كشف معانيها">✓</span>'
+                const mark = n === d.words.length ? '<span class="sheet-done" aria-label="Completed">✓</span>'
                            : n ? `<span class="sheet-part">${n}/${d.words.length}</span>` : "";
                 return `<button class="sheet-item" onclick="chooseSurah(${i})">
                     <span class="sheet-num">${orderLabel(d)}</span><span class="sheet-name">${d.surah}</span>${mark}</button>`;
@@ -1197,11 +770,10 @@
             document.querySelectorAll(".seg-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
             updateProgressBar();
         }
-       // Update the new progress bar dynamically
+        
         function updateProgressBar() {
             const currentSeen = seenCount();
             let percent = 0;
-            
             if (totalWords > 0) {
                 percent = Math.round((currentSeen / totalWords) * 100);
             }
@@ -1215,38 +787,31 @@
             if (pPercent) pPercent.innerText = `${percent}%`;
             if (pFill) pFill.style.width = `${percent}%`;
         }
+        
         function updateLabels() {
             document.getElementById("drawBtn").innerText = mode === "word" ? "اسحب كلمة" : "اسحب سورة";
             document.getElementById("nextBtn").innerText = mode === "word" ? "كلمة أخرى" : "سورة أخرى";
         }
+        
         function setMode(m) { mode = m; store.set("ghareeb_mode", m); updateLabels(); renderSheet(); }
+        
         function resetProgress() {
             if (!confirm("مسح سجل الكلمات التي كُشفت معانيها والبدء من جديد؟")) return;
             seen.clear(); 
             store.set("ghareeb_seen", []); 
-            localStorage.removeItem('completedChallengeDays'); // بيمسح التحدي كمان مع المسح الشامل
+            localStorage.removeItem('completedChallengeDays'); 
             renderSheet();
             renderChallengeDays();
         }
-
-        // دالة تصفير التحدي فقط
+        
         function resetChallenge() {
             if (!confirm("هل أنت متأكد من مسح تقدم التحدي والبدء من جديد؟")) return;
             localStorage.removeItem('completedChallengeDays');
-            document.getElementById("resultCard").style.display = "none"; // إخفاء الكارت لضمان بداية نظيفة
+            document.getElementById("resultCard").style.display = "none"; 
             renderChallengeDays();
             showToast("تم تصفير تحدي الـ 30 يوم");
         }
 
-        // ==========================================
-        // 1. منطق تحدي الـ 30 يوم
-        // ==========================================
-     
-       // ==========================================
-        // 1. Challenge 30-Days Logic
-        // ==========================================
-
-        // Toggle the collapsible challenge container
         function toggleChallenge(forceOpen = false) {
             const content = document.getElementById('challengeContent');
             const icon = document.getElementById('challengeIcon');
@@ -1257,7 +822,6 @@
                 icon.style.transform = 'rotate(180deg)';
                 container.style.borderColor = 'var(--accent-color)';
                 
-                // Smooth scroll to the active or available day after opening
                 setTimeout(() => {
                     const activeDay = document.querySelector('.day-circle.active') || document.querySelector('.day-circle.available');
                     if(activeDay) {
@@ -1271,35 +835,26 @@
             }
         }
 
-        // Calculate the current available day safely
-        // Calculate the current available day safely (Progress-based)
         function getTodayIndex() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const simDay = urlParams.get('day');
-                
-                // If ?day=X is provided, force the current day to be X - 1 and lock the rest
                 if (simDay !== null) return parseInt(simDay) - 1; 
-                
                 if (typeof campaignStartDate !== 'undefined' && campaignStartDate !== null) {
                     const start = new Date(campaignStartDate).setHours(0,0,0,0);
                     const now = new Date().setHours(0,0,0,0);
                     return Math.floor((now - start) / (1000 * 60 * 60 * 24));
                 }
-
-                // Progress-based logic: Unlock days sequentially based on completion
                 const completedChallengeDays = JSON.parse(localStorage.getItem('completedChallengeDays') || '[]');
-                if (completedChallengeDays.length === 0) return 0; // Start at Day 1
-                
+                if (completedChallengeDays.length === 0) return 0; 
                 const maxCompleted = Math.max(...completedChallengeDays);
-                return Math.min(maxCompleted + 1, 29); // Next day, cap at Day 30
+                return Math.min(maxCompleted + 1, 29); 
             } catch (e) {
                 console.error("Error calculating day index:", e);
             }
-            return 0; // Default fallback to Day 1
+            return 0; 
         }
 
-        // Render the day circles in the scrollable slider
         function renderChallengeDays() {
             const container = document.getElementById('daysScroll');
             if (!container) return;
@@ -1314,7 +869,6 @@
                 const dayData = challengePlan[i];
                 let stateClass = 'locked';
 
-                // Determine the state of each day
                 if (i > todayIndex) {
                     stateClass = 'locked'; 
                 } else if (i === todayIndex) {
@@ -1336,22 +890,16 @@
                 if (stateClass !== 'locked' && dayData) {
                     circle.onclick = () => playChallengeDay(i);
                 }
-                
                 container.appendChild(circle);
             }
-
-            // Smart auto-open and scroll if simulating a specific day via URL
             if (simDay !== null) {
-                setTimeout(() => {
-                    toggleChallenge(true); // Open the collapsible container
-                }, 300);
+                setTimeout(() => { toggleChallenge(true); }, 300);
             }
         }
 
-        // Play the selected challenge day
+        
         function playChallengeDay(index) {
             if (typeof busy !== 'undefined' && busy) return;
-            
             const todayIdx = getTodayIndex();
             if (index > todayIdx) return; 
 
@@ -1388,6 +936,23 @@
                 return;
             }
 
+            // ترتيب كلمات التحدي قبل العرض
+            let indices = dayWords.map((_, i) => i);
+            indices.sort((a, b) => {
+                let orderA = (typeof ORDER_BY_NAME !== 'undefined' && ORDER_BY_NAME[norm(daySurahs[a])]) ? ORDER_BY_NAME[norm(daySurahs[a])] : 999;
+                let orderB = (typeof ORDER_BY_NAME !== 'undefined' && ORDER_BY_NAME[norm(daySurahs[b])]) ? ORDER_BY_NAME[norm(daySurahs[b])] : 999;
+                if (orderA !== orderB) return orderA - orderB;
+                
+                let numA = dayAyahs[a] && dayAyahs[a].label ? parseInt(dayAyahs[a].label.toString().match(/\d+/) || 0) : 0;
+                let numB = dayAyahs[b] && dayAyahs[b].label ? parseInt(dayAyahs[b].label.toString().match(/\d+/) || 0) : 0;
+                return numA - numB;
+            });
+
+            dayWords = indices.map(i => dayWords[i]);
+            dayMeanings = indices.map(i => dayMeanings[i]);
+            dayAyahs = indices.map(i => dayAyahs[i]);
+            daySurahs = indices.map(i => daySurahs[i]);
+
             const pick = { 
                 surah: "تحدي غريب عمّ", 
                 isChallenge: true,
@@ -1409,9 +974,7 @@
                 document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
             }
         }
-        // ==========================================
-        // 2. زرار استكشاف المزيد في نفس السورة
-        // ==========================================
+
         function renderDiscoverMore(surahName) {
             const container = document.getElementById("discoverMoreContainer");
             container.innerHTML = '';
@@ -1427,10 +990,6 @@
                 container.innerHTML = `<button class="discover-more-btn" onclick="chooseSurah(${surahIndex})">استكشف كلمات أخرى في نفس السورة</button>`;
             }
         }
-
-        // ==========================================
-        // 3. باقي الدوال الأساسية (الروليت، الصوت، المشاركة)
-        // ==========================================
         function spinThen(done) {
             const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             if (reduce) { done(); return; }
@@ -1522,9 +1081,7 @@
             </div>`;
         }
 
-       // Render the surah and words card
-        // Render the surah and words card
-        function showSurah(data, badgeText) {
+       function showSurah(data, badgeText) {
             if (spinTimer) { clearInterval(spinTimer); spinTimer = null; busy = false; }
             currentData = data;
             lastSurah = data.surah;
@@ -1577,7 +1134,6 @@
                 const igLink = "https://www.instagram.com/yusuf.hamdy";
                 const ttLink = "https://www.tiktok.com/@yusuf.hamdy";
                 
-                // Reward section (hidden initially)
                 const rewardHTML = `
                     <div id="challengeReward" hidden style="width: 100%; margin-bottom: 20px; padding-top: 15px; border-top: 1px dashed rgba(148, 163, 184, 0.35); text-align: center;">
                         <p style="font-size: 14px; color: var(--text-main); font-weight: bold; margin: 0 0 12px 0;">🎥 شاهد شرح فيديو اليوم ${data.challengeIndex + 1}:</p>
@@ -1654,7 +1210,7 @@
             showSurah(d, d.order < 999 ? `جزء عمّ • السورة رقم ${d.order}` : "جزء عمّ");
         }
 
-      function revealWord(i) {
+        function revealWord(i) {
             const btn = document.getElementById("wordBtn" + i);
             if (!btn || btn.hidden) return;
             btn.hidden = true;
@@ -1691,7 +1247,6 @@
                 renderDiscoverMore(originalSurah);
             }
 
-            // Auto-scroll smoothly to the revealed meaning
             setTimeout(() => {
                 meaningEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
             }, 250);
@@ -1826,19 +1381,7 @@
         }
         
         document.addEventListener("keydown", e => { if (e.key === "Escape") { closeSheet(); hideSearchResults(); } });
-        
-        // التهيئة عند تحميل الصفحة
-        updateLabels();
-        updateProgressBar();
-        renderChallengeDays();
-        
-        (function initSoundToggle() {
-            const btn = document.getElementById("soundToggle");
-            btn.setAttribute("aria-pressed", String(soundOn));
-            btn.textContent = soundOn ? "🔊" : "🔇";
-        })();
 
-        // تشغيل كلمة بناءً على الرابط لو موجود
         function showWordFromHash(rawHash) {
             let hash = rawHash;
             try { if (/%[0-9A-Fa-f]{2}/.test(hash)) hash = decodeURIComponent(hash); } catch (e) {}
@@ -1852,8 +1395,71 @@
             if (busy) return;
             spinThen(() => showSurah(pick, badge));
         }
-        
-        if (location.hash.indexOf("#daily") === 0 || location.hash.indexOf("#w-") === 0) { showWordFromHash(location.hash); }
-    </script>
+
+        // App Initialization with Fetch
+        async function loadApp() {
+            try {
+                const res = await fetch('words.json');
+                if (!res.ok) throw new Error("Network response was not ok");
+                quranData = await res.json();
+                
+                quranData.forEach(d => {
+                    const key = norm(d.surah);
+                    if (!merged[key]) {
+                        merged[key] = { ...d, words: [...d.words], meanings: [...d.meanings], ayahs: [...(d.ayahs || [])], order: ORDER_BY_NAME[key] || d.order || 999 };
+                    } else {
+                        merged[key].words.push(...d.words);
+                        merged[key].meanings.push(...d.meanings);
+                        merged[key].ayahs.push(...(d.ayahs || []));
+                    }
+                });
+                sortedData = Object.values(merged).sort((a, b) => a.order - b.order);
+
+                // ترتيب الكلمات تصاعدياً داخل كل سورة بناءً على رقم الآية
+                sortedData.forEach(d => {
+                    let indices = d.words.map((_, i) => i);
+                    indices.sort((a, b) => {
+                        let numA = d.ayahs[a] && d.ayahs[a].label ? parseInt(d.ayahs[a].label.toString().match(/\d+/) || 0) : 0;
+                        let numB = d.ayahs[b] && d.ayahs[b].label ? parseInt(d.ayahs[b].label.toString().match(/\d+/) || 0) : 0;
+                        return numA - numB;
+                    });
+                    d.words = indices.map(i => d.words[i]);
+                    d.meanings = indices.map(i => d.meanings[i]);
+                    d.ayahs = indices.map(i => d.ayahs[i]);
+                });
+
+                totalWords = sortedData.reduce((n, d) => n + d.words.length, 0);
+                allWords = sortedData.flatMap(d => d.words);
+
+                sortedData.forEach((d, di) => {
+                    searchIndex.push({ type: "surah", label: d.surah, normLabel: norm(d.surah), di });
+                    d.words.forEach((w, wi) => {
+                        searchIndex.push({ type: "word", label: w, normLabel: norm(w), surah: d.surah, di, wi });
+                    });
+                });
+
+                updateLabels();
+                updateProgressBar();
+                renderChallengeDays();
+                
+                const btn = document.getElementById("soundToggle");
+                if (btn) {
+                    btn.setAttribute("aria-pressed", String(soundOn));
+                    btn.textContent = soundOn ? "🔊" : "🔇";
+                }
+
+                if (location.hash.indexOf("#daily") === 0 || location.hash.indexOf("#w-") === 0) { 
+                    showWordFromHash(location.hash); 
+                }
+
+            } catch(e) {
+                console.error("Failed to load words data:", e);
+                showToast("حدث خطأ في تحميل الكلمات.. تأكد من رفع ملف words.json");
+            }
+        }
+
+        // Start loading the Quran words data
+        loadApp();
+        </script>
 </body>
 </html>

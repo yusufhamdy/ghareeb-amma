@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghareeb Amma - Admin Panel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1, h2 { color: #38bdf8; text-align: center; }
+        
+        .card {
+            background-color: #1e293b;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #94a3b8; }
+        input, select, textarea {
+            width: 100%; padding: 10px; border-radius: 6px;
+            border: 1px solid #334155; background-color: #0f172a;
+            color: #f8fafc; box-sizing: border-box; font-family: inherit;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #38bdf8; }
+        
+        .ayah-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        
+        .btn {
+            padding: 12px 20px; border: none; border-radius: 6px;
+            font-weight: bold; cursor: pointer; transition: opacity 0.2s; font-size: 16px;
+        }
+        .btn:hover { opacity: 0.8; }
+        .btn-primary { background-color: #38bdf8; color: #0f172a; width: 100%; }
+        .btn-danger { background-color: #ef4444; color: white; padding: 6px 12px; font-size: 14px; }
+        .btn-success { background-color: #10b981; color: white; width: 100%; margin-top: 20px; font-size: 18px;}
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #334155; }
+        th { background-color: #0f172a; color: #38bdf8; }
+        tr:hover { background-color: #2a3a52; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>لوحة تحكم بيانات (غريب عمّ)</h1>
+    
+    <div class="card">
+        <h2>1. رفع الملف الحالي</h2>
+        <p style="color: #94a3b8; font-size: 14px; margin-top: 0;">اختر ملف words.json من جهازك لعرض وتعديل الكلمات</p>
+        <input type="file" id="fileInput" accept=".json">
+    </div>
+
+    <div class="card" id="addSection" style="display: none;">
+        <h2>2. إضافة كلمة جديدة</h2>
+        <form id="addForm">
+            <div class="form-group">
+                <label>اسم السورة (مثال: سورة الناس)</label>
+                <input type="text" id="surahName" required>
+            </div>
+            <div class="form-group">
+                <label>الكلمة (بدون تشكيل معقد إن أمكن)</label>
+                <input type="text" id="wordText" required>
+            </div>
+            <div class="form-group">
+                <label>المعنى والشرح</label>
+                <textarea id="wordMeaning" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>رقم الآية</label>
+                <input type="text" id="ayahLabel" required placeholder="مثال: 4 أو 15-16">
+            </div>
+            <label>نص الآية (مقسم إلى 3 أجزاء للتلوين)</label>
+            <div class="ayah-grid">
+                <div class="form-group"><input type="text" id="ayahBefore" placeholder="النص قبل الكلمة"></div>
+                <div class="form-group"><input type="text" id="ayahHl" placeholder="الكلمة الملونة" required></div>
+                <div class="form-group"><input type="text" id="ayahAfter" placeholder="النص بعد الكلمة"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">إضافة الكلمة للملف</button>
+        </form>
+    </div>
+
+    <div class="card" id="dataSection" style="display: none;">
+        <h2>3. الكلمات الحالية</h2>
+        <div style="overflow-x: auto;">
+            <table id="dataTable">
+                <thead>
+                    <tr><th>السورة</th><th>الكلمة</th><th>المعنى</th><th>إجراء</th></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <button id="downloadBtn" class="btn btn-success" onclick="downloadJSON()">تنزيل ملف words.json المحدث</button>
+    </div>
+</div>
+
+<script>
+    let adminData = [];
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                adminData = JSON.parse(e.target.result);
+                document.getElementById('addSection').style.display = 'block';
+                document.getElementById('dataSection').style.display = 'block';
+                renderTable();
+            } catch (err) {
+                alert("خطأ! الملف ليس بصيغة JSON سليمة.");
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        adminData.forEach((surahData, sIndex) => {
+            surahData.words.forEach((word, wIndex) => {
+                const tr = document.createElement('tr');
+                const tdSurah = document.createElement('td'); tdSurah.textContent = surahData.surah;
+                const tdWord = document.createElement('td'); tdWord.textContent = word;
+                const tdMeaning = document.createElement('td'); 
+                tdMeaning.textContent = surahData.meanings[wIndex].length > 45 ? surahData.meanings[wIndex].substring(0, 45) + "..." : surahData.meanings[wIndex];
+                
+                const tdAction = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-danger'; deleteBtn.textContent = 'مسح';
+                deleteBtn.onclick = () => deleteWord(sIndex, wIndex);
+                tdAction.appendChild(deleteBtn);
+                
+                tr.appendChild(tdSurah); tr.appendChild(tdWord); tr.appendChild(tdMeaning); tr.appendChild(tdAction);
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function deleteWord(sIndex, wIndex) {
+        if (!confirm("هل أنت متأكد من مسح هذه الكلمة نهائياً من القائمة؟")) return;
+        adminData[sIndex].words.splice(wIndex, 1);
+        adminData[sIndex].meanings.splice(wIndex, 1);
+        adminData[sIndex].ayahs.splice(wIndex, 1);
+        if (adminData[sIndex].words.length === 0) adminData.splice(sIndex, 1);
+        renderTable();
+    }
+
+    document.getElementById('addForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const surahName = document.getElementById('surahName').value.trim();
+        const wordText = document.getElementById('wordText').value.trim();
+        const wordMeaning = document.getElementById('wordMeaning').value.trim();
+        const ayahLabel = document.getElementById('ayahLabel').value.trim();
+        const newAyah = {
+            label: ayahLabel,
+            segments: [{
+                num: parseInt(ayahLabel.split('-')[0]) || 0,
+                before: document.getElementById('ayahBefore').value,
+                hl: document.getElementById('ayahHl').value.trim(),
+                after: document.getElementById('ayahAfter').value
+            }]
+        };
+
+        const surahIndex = adminData.findIndex(s => s.surah === surahName);
+        if (surahIndex !== -1) {
+            adminData[surahIndex].words.push(wordText);
+            adminData[surahIndex].meanings.push(wordMeaning);
+            adminData[surahIndex].ayahs.push(newAyah);
+        } else {
+            adminData.push({
+                surah: surahName, words: [wordText], meanings: [wordMeaning],
+                ayahs: [newAyah], source: "المصدر: التفسير الميسر وكتب التفاسير"
+            });
+        }
+        
+        this.reset();
+        renderTable();
+        alert("تمت الإضافة بنجاح! تذكر الضغط على زر التنزيل لحفظ التعديلات.");
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+    function downloadJSON() {
+        if (adminData.length === 0) { alert("لا توجد بيانات لتنزيلها!"); return; }
+        const blob = new Blob([JSON.stringify(adminData, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = "words.json";
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
