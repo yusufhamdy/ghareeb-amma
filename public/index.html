@@ -506,12 +506,39 @@
         if (window.FontFace || (document.fonts && document.fonts.load)) {
             try { document.fonts.load("400 16px 'Amiri Quran'"); } catch (e) {}
         }
-        // Register Service Worker for PWA setup
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('SW registered successfully!', reg))
-                    .catch(err => console.error('SW registration failed!', err));
+        // Register Service Worker and force new versions to activate without manual cache clearing.
+        if ('serviceWorker' in navigator && !window.__swRegistrationSetup) {
+            window.__swRegistrationSetup = true;
+            window.addEventListener('load', async () => {
+                try {
+                    const reg = await navigator.serviceWorker.register('sw.js');
+
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!window.__swReloaded) {
+                            window.__swReloaded = true;
+                            window.location.reload();
+                        }
+                    });
+
+                    if (reg.waiting) {
+                        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        if (!newWorker) return;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
+
+                    await reg.update();
+                    console.log('SW registered and update check completed.', reg);
+                } catch (err) {
+                    console.error('SW registration/update failed!', err);
+                }
             });
         }
     </script>
@@ -634,12 +661,39 @@
             try { document.fonts.load("400 16px 'Amiri Quran'"); } catch (e) {}
         }
         
-        // Register Service Worker for PWA setup
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('SW registered successfully!', reg))
-                    .catch(err => console.error('SW registration failed!', err));
+        // Register Service Worker and force new versions to activate without manual cache clearing.
+        if ('serviceWorker' in navigator && !window.__swRegistrationSetup) {
+            window.__swRegistrationSetup = true;
+            window.addEventListener('load', async () => {
+                try {
+                    const reg = await navigator.serviceWorker.register('sw.js');
+
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!window.__swReloaded) {
+                            window.__swReloaded = true;
+                            window.location.reload();
+                        }
+                    });
+
+                    if (reg.waiting) {
+                        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        if (!newWorker) return;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
+
+                    await reg.update();
+                    console.log('SW registered and update check completed.', reg);
+                } catch (err) {
+                    console.error('SW registration/update failed!', err);
+                }
             });
         }
 
@@ -1397,60 +1451,12 @@
         }
 
         // App Initialization with Fetch
-        // دمج السور مع منع تكرار نفس الكلمة، مع الحفاظ على ترابط الكلمة
-        // بالمعنى والآية المقابلة لها. إذا وُجدت نسخة مكررة، نحتفظ
-        // بالنسخة التي تحتوي على بيانات آية أكثر اكتمالاً.
-        function ayahDataScore(ayah) {
-            if (!ayah || !Array.isArray(ayah.segments)) return 0;
-            return ayah.segments.reduce((n, seg) =>
-                n + String(seg?.before || '').length + String(seg?.hl || '').length + String(seg?.after || '').length, 0);
-        }
-
-        function dedupeSurahWords(d) {
-            const seenWords = new Map();
-            const words = [];
-            const meanings = [];
-            const ayahs = [];
-
-            d.words.forEach((word, i) => {
-                const key = norm(String(word || ''));
-                if (!key) return;
-
-                const existingIndex = seenWords.get(key);
-                if (existingIndex === undefined) {
-                    seenWords.set(key, words.length);
-                    words.push(word);
-                    meanings.push(d.meanings?.[i] ?? '');
-                    ayahs.push(d.ayahs?.[i] ?? null);
-                    return;
-                }
-
-                // لا نُسقط نسخة أفضل من البيانات: لو النسخة الجديدة
-                // تحتوي على آية أطول/أكمل، نستبدل بيانات الآية والمعنى بها.
-                const oldScore = ayahDataScore(ayahs[existingIndex]);
-                const newScore = ayahDataScore(d.ayahs?.[i]);
-                if (newScore > oldScore) {
-                    meanings[existingIndex] = d.meanings?.[i] ?? meanings[existingIndex];
-                    ayahs[existingIndex] = d.ayahs?.[i] ?? ayahs[existingIndex];
-                    words[existingIndex] = word;
-                }
-            });
-
-            d.words = words;
-            d.meanings = meanings;
-            d.ayahs = ayahs;
-        }
-
         async function loadApp() {
             try {
                 const res = await fetch('words.json');
                 if (!res.ok) throw new Error("Network response was not ok");
                 quranData = await res.json();
-
-                // حماية إضافية من تكرار البيانات إذا أُعيد تشغيل التحميل.
-                merged = {};
-                searchIndex = [];
-
+                
                 quranData.forEach(d => {
                     const key = norm(d.surah);
                     if (!merged[key]) {
@@ -1461,14 +1467,10 @@
                         merged[key].ayahs.push(...(d.ayahs || []));
                     }
                 });
-
                 sortedData = Object.values(merged).sort((a, b) => a.order - b.order);
 
-                // إزالة أي تكرار داخل السورة قبل بناء البحث والعرض.
+                // ترتيب الكلمات تصاعدياً داخل كل سورة بناءً على رقم الآية
                 sortedData.forEach(d => {
-                    dedupeSurahWords(d);
-
-                    // ترتيب الكلمات تصاعدياً داخل كل سورة بناءً على رقم الآية.
                     let indices = d.words.map((_, i) => i);
                     indices.sort((a, b) => {
                         let numA = d.ayahs[a] && d.ayahs[a].label ? parseInt(d.ayahs[a].label.toString().match(/\d+/) || 0) : 0;
