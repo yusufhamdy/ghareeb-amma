@@ -664,7 +664,7 @@
             { day: 6, words: ["سِجِّيلٍ", "عَصْفٍ مَّأْكُولٍ"] },
             { day: 7, words: ["هُمَزَةٍ لُّمَزَةٍ", "الْحُطَمَةُ"] },
             { day: 8, words: ["كَالْعِهْنِ الْمَنفُوشِ", "هَاوِيَةٌ"] },
-            { day: 9, words: ["وَٱلۡعَٰدِيَٰتِ ضَبۡحٗا", "فَٱلۡمُورِيَٰتِ قَدۡحٗا", "فَٱلۡمُغِيرَٰتِ صُبۡحٗا", "فَأَثَرۡنَ بِهِۦ نَقْعٗا", "فَوَسَطۡنَ بِهِۦ جَمۡعًا", "لَكَنُودٌ"] },
+            { day: 9, words: ["وَٱلۡعَٰدِيَٰتِ ضَبۡحٗا", "فَٱلۡمُورِيَٰتِ قَدۡحٗا", "فَٱلۡمُغِيرَٰتِ صُبۡحٗا", "فَأَثَرۡنَ بِهِۦ نَقْعٗا", "فَوَسَطۡنَ بِهِۦ جَمۡعًا", "لَكَنُودٞ"] },
             { day: 10, words: ["أَثْقَالَهَا"] },
             { day: 11, words: ["مُنفَكِّينَ"] },
             { day: 12, words: ["لَنَسْفَعًا بِالنَّاصِيَةِ", "الزَّبَانِيَةَ"] },
@@ -1397,12 +1397,60 @@
         }
 
         // App Initialization with Fetch
+        // دمج السور مع منع تكرار نفس الكلمة، مع الحفاظ على ترابط الكلمة
+        // بالمعنى والآية المقابلة لها. إذا وُجدت نسخة مكررة، نحتفظ
+        // بالنسخة التي تحتوي على بيانات آية أكثر اكتمالاً.
+        function ayahDataScore(ayah) {
+            if (!ayah || !Array.isArray(ayah.segments)) return 0;
+            return ayah.segments.reduce((n, seg) =>
+                n + String(seg?.before || '').length + String(seg?.hl || '').length + String(seg?.after || '').length, 0);
+        }
+
+        function dedupeSurahWords(d) {
+            const seenWords = new Map();
+            const words = [];
+            const meanings = [];
+            const ayahs = [];
+
+            d.words.forEach((word, i) => {
+                const key = norm(String(word || ''));
+                if (!key) return;
+
+                const existingIndex = seenWords.get(key);
+                if (existingIndex === undefined) {
+                    seenWords.set(key, words.length);
+                    words.push(word);
+                    meanings.push(d.meanings?.[i] ?? '');
+                    ayahs.push(d.ayahs?.[i] ?? null);
+                    return;
+                }
+
+                // لا نُسقط نسخة أفضل من البيانات: لو النسخة الجديدة
+                // تحتوي على آية أطول/أكمل، نستبدل بيانات الآية والمعنى بها.
+                const oldScore = ayahDataScore(ayahs[existingIndex]);
+                const newScore = ayahDataScore(d.ayahs?.[i]);
+                if (newScore > oldScore) {
+                    meanings[existingIndex] = d.meanings?.[i] ?? meanings[existingIndex];
+                    ayahs[existingIndex] = d.ayahs?.[i] ?? ayahs[existingIndex];
+                    words[existingIndex] = word;
+                }
+            });
+
+            d.words = words;
+            d.meanings = meanings;
+            d.ayahs = ayahs;
+        }
+
         async function loadApp() {
             try {
                 const res = await fetch('words.json');
                 if (!res.ok) throw new Error("Network response was not ok");
                 quranData = await res.json();
-                
+
+                // حماية إضافية من تكرار البيانات إذا أُعيد تشغيل التحميل.
+                merged = {};
+                searchIndex = [];
+
                 quranData.forEach(d => {
                     const key = norm(d.surah);
                     if (!merged[key]) {
@@ -1413,10 +1461,14 @@
                         merged[key].ayahs.push(...(d.ayahs || []));
                     }
                 });
+
                 sortedData = Object.values(merged).sort((a, b) => a.order - b.order);
 
-                // ترتيب الكلمات تصاعدياً داخل كل سورة بناءً على رقم الآية
+                // إزالة أي تكرار داخل السورة قبل بناء البحث والعرض.
                 sortedData.forEach(d => {
+                    dedupeSurahWords(d);
+
+                    // ترتيب الكلمات تصاعدياً داخل كل سورة بناءً على رقم الآية.
                     let indices = d.words.map((_, i) => i);
                     indices.sort((a, b) => {
                         let numA = d.ayahs[a] && d.ayahs[a].label ? parseInt(d.ayahs[a].label.toString().match(/\d+/) || 0) : 0;
