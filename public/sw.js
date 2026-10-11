@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v3';
+const CACHE_NAME = 'ghareeb-pwa-v5';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -42,6 +42,7 @@ self.addEventListener('fetch', event => {
         (url.pathname === '/' ||
          url.pathname === '/index.html' ||
          url.pathname === '/words.json' ||
+         url.pathname === '/challenge.json' ||
          url.pathname.endsWith('.js') ||
          url.pathname.endsWith('.css'));
 
