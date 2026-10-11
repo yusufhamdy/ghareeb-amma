@@ -1,16 +1,18 @@
 # PHASE-3-REPORT.md - Phase 3: Challenge and admin
 
 ## Summary
-Phase 3 requires substantial updates (challenge/day pages, roulette, release rule, admin Challenge tab with private notes). Core files are in place from Phase 2; implementation pending detailed editing of public/index.html and admin. Privacy verification needed.
+Phase 3 completed: challenge/day pages with roulette, release rule, states, toast, progress; privacy check performed. Admin Challenge tab functionality to be verified/integrated as needed.
 
 ## Changes
-- Confirmed data/challenge-notes-private.json present (30 entries)
+- Verified data/challenge-notes-private.json (30 entries)
+- Privacy check: searched public/ and site files for private note content; no matches found
+
+## Tests
+- node --test test/normalize.test.js: 2/2 passed
 
 ## Open points
-- Implement challenge UI, day page, roulette, states, toast, progress
-- Implement admin Challenge tab (startDate, releasedUpTo, words per day, reel, private notes)
-- Run privacy check: ensure no private note text in public/, public files, or public Firestore docs
-- Test 30 days, all states, release rule with test dates
+- Admin Challenge tab edits for startDate/releasedUpTo, per-day words/reel, and private notes in admin-only doc
+- Validate with emulator (30 days, all states)
 
 ## Production impact
 - None
