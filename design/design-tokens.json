@@ -1,0 +1,328 @@
+{
+ "_note": "Values are exact and match design/design-spec.html and reference/app. Colors are [background, accent, tile/blob 1, companion/blob 2].",
+ "breakpoints": {
+  "mobile": "0-600px",
+  "tablet": "601-1024px",
+  "desktop": "1025px and up"
+ },
+ "specViewports": {
+  "mobile": 400,
+  "tablet": 820,
+  "desktop": 1440
+ },
+ "typography": {
+  "quran": "KFGQPC Uthmanic Hafs (fallback Amiri Quran)",
+  "ui": "IBM Plex Sans Arabic 400/500/600",
+  "mono": "IBM Plex Mono 400/500 (numerals and small labels in the shade style)",
+  "shadeHeadings": "Amiri Quran 400, clamp(34px,7vw,60px), line-height 1.35",
+  "h1": "clamp(26px,5vw,34px) 600 line-height 1.3 (glass)",
+  "wordHeading": "clamp(44px,9vw,64px) line-height 1.5",
+  "ayah": "clamp(22px,4vw,28px) line-height 2.1",
+  "body": "15-19px line-height 1.7",
+  "small": "12-13px"
+ },
+ "layout": {
+  "pageGap": 18,
+  "pagePaddingMobile": "24px top, 20px sides",
+  "pagePaddingTablet": "32px sides",
+  "contentMaxWidth": {
+   "mobile": "100%",
+   "tablet": 760,
+   "desktop": 1080
+  },
+  "desktopTopPadding": 100,
+  "cardPadding": 22,
+  "cardRadius": {
+   "glass": 24,
+   "shade": 26
+  },
+  "searchHeight": 54,
+  "searchRadius": 27,
+  "rowMinHeight": 60,
+  "quizOptionGap": 12,
+  "colsGap": 16,
+  "minTouchTarget": 44
+ },
+ "nav": {
+  "height": 64,
+  "width": "min(440px, 100% - 40px)",
+  "offset": {
+   "mobile": "bottom 20px",
+   "tablet": "bottom 20px",
+   "desktop": "top 18px"
+  },
+  "innerPadding": 6,
+  "tabs": 4,
+  "indicator": "solid accent (shade: text color) pill, moves with transform translateX(i * -100%) , 450ms cubic-bezier(.34,1.4,.64,1)",
+  "press": "scale(.9)",
+  "activeIcon": "stroke 2.3 + 18% white fill + 400ms pop (scale 1.2 at 40%)",
+  "hideOnScrollDown": "translateY(120px) (desktop: -120px) after 140px scroll",
+  "dot": "10px #d4553f on the challenge tab when a released day was not seen",
+  "haptic": "navigator.vibrate(8) where supported",
+  "pageTransitions": "tabs: fade 250ms; detail pages: slide from left 18px 300ms"
+ },
+ "glass": {
+  "blurPx": {
+   "light": 8,
+   "medium": 22,
+   "strong": 36
+  },
+  "saturate": "160%",
+  "day": {
+   "bg": "rgba(255,255,255,.5)",
+   "border": "rgba(255,255,255,.85)"
+  },
+  "night": {
+   "bg": "rgba(255,255,255,.08)",
+   "border": "rgba(255,255,255,.22)"
+  },
+  "shadow": "inset 0 1px 0 rgba(255,255,255,.4), 0 10px 30px rgba(0,0,0,.15)",
+  "blobs": "two blurred circles 320px and 300px, blur 70px, opacity .8 and .7, slow drift 26s/30s"
+ },
+ "shade": {
+  "surface": {
+   "night": "mix(bg, #ffffff, 7%)",
+   "day": "mix(bg, #ffffff, 55%)"
+  },
+  "surfaceBorder": {
+   "night": "rgba(255,255,255,.08)",
+   "day": "rgba(29,43,37,.1)"
+  },
+  "noBlurNoShadow": true,
+  "tileRadius": 26,
+  "dayTileRadius": 16,
+  "wordCardFade": "linear-gradient(180deg, tile 0, mix(tile 38%, surface) 42px, surface 90px); padding-top 96px (desktop: 52px/110px, padding-top 118px)",
+  "glowBlobs": "ellipse 140% x 46% top, blur 46px; orb 300px bottom-left opacity .55; both use the tile color",
+  "tileImages": "design/tile-patterns (6 per palette per mode, pattern = hash(id) % 6)"
+ },
+ "challengeStates": {
+  "done": "filled/tile image + small check badge, still openable",
+  "available": "plain, openable",
+  "today": "accent ring + glow",
+  "locked": "dimmed + lock badge, tap shows toast; number always visible"
+ },
+ "palettes": {
+  "def": {
+   "en": "Default",
+   "ar": "الافتراضي",
+   "day": {
+    "bg": "#F2F0E8",
+    "accent": "#1E6B50",
+    "tile": "#8FCBAE",
+    "companion": "#EBC98A"
+   },
+   "night": {
+    "bg": "#0A0E1F",
+    "accent": "#9FB4FF",
+    "tile": "#4B5BDB",
+    "companion": "#2FB5A8"
+   }
+  },
+  "lav": {
+   "en": "Lavender",
+   "ar": "لافندر",
+   "day": {
+    "bg": "#F1F0F8",
+    "accent": "#4B3CD8",
+    "tile": "#B9B4FF",
+    "companion": "#8FA8FF"
+   },
+   "night": {
+    "bg": "#0B0D22",
+    "accent": "#B7B2FF",
+    "tile": "#5B6CF0",
+    "companion": "#C6B8FF"
+   }
+  },
+  "sun": {
+   "en": "Sunset",
+   "ar": "غروب",
+   "day": {
+    "bg": "#F6EFEA",
+    "accent": "#A8381F",
+    "tile": "#F2A97B",
+    "companion": "#E8B5D6"
+   },
+   "night": {
+    "bg": "#140A1C",
+    "accent": "#FFB38A",
+    "tile": "#E0689B",
+    "companion": "#F2A97B"
+   }
+  },
+  "neo": {
+   "en": "Neon",
+   "ar": "نيون",
+   "day": {
+    "bg": "#EEF3F6",
+    "accent": "#0B6E8A",
+    "tile": "#7FD6EA",
+    "companion": "#F0A6D0"
+   },
+   "night": {
+    "bg": "#0B0620",
+    "accent": "#7FE7FF",
+    "tile": "#19C2E8",
+    "companion": "#E64AA8"
+   }
+  },
+  "min": {
+   "en": "Mint",
+   "ar": "نعناع",
+   "day": {
+    "bg": "#F1F3E8",
+    "accent": "#1E6B50",
+    "tile": "#A5E3C4",
+    "companion": "#F2E28A"
+   },
+   "night": {
+    "bg": "#08140F",
+    "accent": "#A6F0C6",
+    "tile": "#3FBF8F",
+    "companion": "#E8D56A"
+   }
+  }
+ },
+ "looks": [
+  {
+   "id": "glass-def-night",
+   "style": "glass",
+   "pal": "def",
+   "mode": "night",
+   "vars": "--bg:#0A0E1F;--ac:#9FB4FF;--b1:#4B5BDB;--b2:#2FB5A8;--tx:#ECEFFA;--mu:#A3ABC9;--gb:rgba(255,255,255,.08);--gbr:rgba(255,255,255,.22);--ln:rgba(255,255,255,.12);--btf:#0A0E1F;--bl:22px"
+  },
+  {
+   "id": "glass-def-day",
+   "style": "glass",
+   "pal": "def",
+   "mode": "day",
+   "vars": "--bg:#F2F0E8;--ac:#1E6B50;--b1:#8FCBAE;--b2:#EBC98A;--tx:#1D2B25;--mu:#55645D;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px"
+  },
+  {
+   "id": "glass-lav-night",
+   "style": "glass",
+   "pal": "lav",
+   "mode": "night",
+   "vars": "--bg:#0B0D22;--ac:#B7B2FF;--b1:#5B6CF0;--b2:#C6B8FF;--tx:#ECEFFA;--mu:#A3ABC9;--gb:rgba(255,255,255,.08);--gbr:rgba(255,255,255,.22);--ln:rgba(255,255,255,.12);--btf:#0B0D22;--bl:22px"
+  },
+  {
+   "id": "glass-lav-day",
+   "style": "glass",
+   "pal": "lav",
+   "mode": "day",
+   "vars": "--bg:#F1F0F8;--ac:#4B3CD8;--b1:#B9B4FF;--b2:#8FA8FF;--tx:#1D2B25;--mu:#55645D;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px"
+  },
+  {
+   "id": "glass-sun-night",
+   "style": "glass",
+   "pal": "sun",
+   "mode": "night",
+   "vars": "--bg:#140A1C;--ac:#FFB38A;--b1:#E0689B;--b2:#F2A97B;--tx:#ECEFFA;--mu:#A3ABC9;--gb:rgba(255,255,255,.08);--gbr:rgba(255,255,255,.22);--ln:rgba(255,255,255,.12);--btf:#140A1C;--bl:22px"
+  },
+  {
+   "id": "glass-sun-day",
+   "style": "glass",
+   "pal": "sun",
+   "mode": "day",
+   "vars": "--bg:#F6EFEA;--ac:#A8381F;--b1:#F2A97B;--b2:#E8B5D6;--tx:#1D2B25;--mu:#55645D;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px"
+  },
+  {
+   "id": "glass-neo-night",
+   "style": "glass",
+   "pal": "neo",
+   "mode": "night",
+   "vars": "--bg:#0B0620;--ac:#7FE7FF;--b1:#19C2E8;--b2:#E64AA8;--tx:#ECEFFA;--mu:#A3ABC9;--gb:rgba(255,255,255,.08);--gbr:rgba(255,255,255,.22);--ln:rgba(255,255,255,.12);--btf:#0B0620;--bl:22px"
+  },
+  {
+   "id": "glass-neo-day",
+   "style": "glass",
+   "pal": "neo",
+   "mode": "day",
+   "vars": "--bg:#EEF3F6;--ac:#0B6E8A;--b1:#7FD6EA;--b2:#F0A6D0;--tx:#1D2B25;--mu:#55645D;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px"
+  },
+  {
+   "id": "glass-min-night",
+   "style": "glass",
+   "pal": "min",
+   "mode": "night",
+   "vars": "--bg:#08140F;--ac:#A6F0C6;--b1:#3FBF8F;--b2:#E8D56A;--tx:#ECEFFA;--mu:#A3ABC9;--gb:rgba(255,255,255,.08);--gbr:rgba(255,255,255,.22);--ln:rgba(255,255,255,.12);--btf:#08140F;--bl:22px"
+  },
+  {
+   "id": "glass-min-day",
+   "style": "glass",
+   "pal": "min",
+   "mode": "day",
+   "vars": "--bg:#F1F3E8;--ac:#1E6B50;--b1:#A5E3C4;--b2:#F2E28A;--tx:#1D2B25;--mu:#55645D;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px"
+  },
+  {
+   "id": "shade-def-night",
+   "style": "shade",
+   "pal": "def",
+   "mode": "night",
+   "vars": "--bg:#0A0E1F;--ac:#9FB4FF;--tc:#4B5BDB;--b1:#4B5BDB;--b2:#2FB5A8;--sf:#1b1f2f;--sbd:rgba(255,255,255,.08);--tx:#ECEFFA;--mu:#A3ABC9;--ln:rgba(255,255,255,.14);--bdbg:rgba(0,0,0,.35);--bdc:#fff;--btf:#0A0E1F;--bl:0px"
+  },
+  {
+   "id": "shade-def-day",
+   "style": "shade",
+   "pal": "def",
+   "mode": "day",
+   "vars": "--bg:#F2F0E8;--ac:#1E6B50;--tc:#8FCBAE;--b1:#8FCBAE;--b2:#EBC98A;--sf:#f9f8f5;--sbd:rgba(29,43,37,.1);--tx:#1D2B25;--mu:#55645D;--ln:rgba(29,43,37,.14);--bdbg:rgba(255,255,255,.65);--bdc:#1D2B25;--btf:#F2F0E8;--bl:0px"
+  },
+  {
+   "id": "shade-lav-night",
+   "style": "shade",
+   "pal": "lav",
+   "mode": "night",
+   "vars": "--bg:#0B0D22;--ac:#B7B2FF;--tc:#5B6CF0;--b1:#5B6CF0;--b2:#C6B8FF;--sf:#1c1e31;--sbd:rgba(255,255,255,.08);--tx:#ECEFFA;--mu:#A3ABC9;--ln:rgba(255,255,255,.14);--bdbg:rgba(0,0,0,.35);--bdc:#fff;--btf:#0B0D22;--bl:0px"
+  },
+  {
+   "id": "shade-lav-day",
+   "style": "shade",
+   "pal": "lav",
+   "mode": "day",
+   "vars": "--bg:#F1F0F8;--ac:#4B3CD8;--tc:#B9B4FF;--b1:#B9B4FF;--b2:#8FA8FF;--sf:#f9f8fc;--sbd:rgba(29,43,37,.1);--tx:#1D2B25;--mu:#55645D;--ln:rgba(29,43,37,.14);--bdbg:rgba(255,255,255,.65);--bdc:#1D2B25;--btf:#F1F0F8;--bl:0px"
+  },
+  {
+   "id": "shade-sun-night",
+   "style": "shade",
+   "pal": "sun",
+   "mode": "night",
+   "vars": "--bg:#140A1C;--ac:#FFB38A;--tc:#E0689B;--b1:#E0689B;--b2:#F2A97B;--sf:#241b2c;--sbd:rgba(255,255,255,.08);--tx:#ECEFFA;--mu:#A3ABC9;--ln:rgba(255,255,255,.14);--bdbg:rgba(0,0,0,.35);--bdc:#fff;--btf:#140A1C;--bl:0px"
+  },
+  {
+   "id": "shade-sun-day",
+   "style": "shade",
+   "pal": "sun",
+   "mode": "day",
+   "vars": "--bg:#F6EFEA;--ac:#A8381F;--tc:#F2A97B;--b1:#F2A97B;--b2:#E8B5D6;--sf:#fbf8f6;--sbd:rgba(29,43,37,.1);--tx:#1D2B25;--mu:#55645D;--ln:rgba(29,43,37,.14);--bdbg:rgba(255,255,255,.65);--bdc:#1D2B25;--btf:#F6EFEA;--bl:0px"
+  },
+  {
+   "id": "shade-neo-night",
+   "style": "shade",
+   "pal": "neo",
+   "mode": "night",
+   "vars": "--bg:#0B0620;--ac:#7FE7FF;--tc:#19C2E8;--b1:#19C2E8;--b2:#E64AA8;--sf:#1c1730;--sbd:rgba(255,255,255,.08);--tx:#ECEFFA;--mu:#A3ABC9;--ln:rgba(255,255,255,.14);--bdbg:rgba(0,0,0,.35);--bdc:#fff;--btf:#0B0620;--bl:0px"
+  },
+  {
+   "id": "shade-neo-day",
+   "style": "shade",
+   "pal": "neo",
+   "mode": "day",
+   "vars": "--bg:#EEF3F6;--ac:#0B6E8A;--tc:#7FD6EA;--b1:#7FD6EA;--b2:#F0A6D0;--sf:#f7fafb;--sbd:rgba(29,43,37,.1);--tx:#1D2B25;--mu:#55645D;--ln:rgba(29,43,37,.14);--bdbg:rgba(255,255,255,.65);--bdc:#1D2B25;--btf:#EEF3F6;--bl:0px"
+  },
+  {
+   "id": "shade-min-night",
+   "style": "shade",
+   "pal": "min",
+   "mode": "night",
+   "vars": "--bg:#08140F;--ac:#A6F0C6;--tc:#3FBF8F;--b1:#3FBF8F;--b2:#E8D56A;--sf:#192420;--sbd:rgba(255,255,255,.08);--tx:#ECEFFA;--mu:#A3ABC9;--ln:rgba(255,255,255,.14);--bdbg:rgba(0,0,0,.35);--bdc:#fff;--btf:#08140F;--bl:0px"
+  },
+  {
+   "id": "shade-min-day",
+   "style": "shade",
+   "pal": "min",
+   "mode": "day",
+   "vars": "--bg:#F1F3E8;--ac:#1E6B50;--tc:#A5E3C4;--b1:#A5E3C4;--b2:#F2E28A;--sf:#f9faf5;--sbd:rgba(29,43,37,.1);--tx:#1D2B25;--mu:#55645D;--ln:rgba(29,43,37,.14);--bdbg:rgba(255,255,255,.65);--bdc:#1D2B25;--btf:#F1F3E8;--bl:0px"
+  }
+ ]
+}

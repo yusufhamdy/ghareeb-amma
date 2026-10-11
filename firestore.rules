@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function mail() {
+      return request.auth != null && request.auth.token.email_verified == true
+        ? request.auth.token.email : null;
+    }
+    function isOwner() {
+      return mail() == 'yusufhamdy20@gmail.com';
+    }
+    function isAdmin() {
+      return isOwner() || (mail() != null
+        && exists(/databases/$(database)/documents/config/admins)
+        && mail() in get(/databases/$(database)/documents/config/admins).data.emails);
+    }
+
+    match /public/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /config/admins {
+      allow read: if isAdmin();
+      allow write: if isOwner();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
