@@ -1,0 +1,15 @@
+{
+  "name": "ghareeb-design-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium",
+    "baseline": "node baseline.mjs",
+    "compare": "node compare.mjs"
+  },
+  "dependencies": {
+    "pixelmatch": "^6.0.0",
+    "playwright": "^1.49.0",
+    "pngjs": "^7.0.0"
+  }
+}

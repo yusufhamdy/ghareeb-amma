@@ -1,0 +1,226 @@
+{
+ "baseUrl": "http://localhost:5000",
+ "fixtureNow": "2026-10-10T11:00:00Z",
+ "fixtureNotes": "Seed Firestore public/challenge with startDate 2026-10-05 and releasedUpTo null; localStorage gq-prog done [1,2,3,4]; the clock is frozen at fixtureNow in Africa/Cairo.",
+ "looks": [
+  {
+   "id": "glass-def-night",
+   "style": "glass",
+   "pal": "def",
+   "mode": "night"
+  },
+  {
+   "id": "glass-def-day",
+   "style": "glass",
+   "pal": "def",
+   "mode": "day"
+  },
+  {
+   "id": "glass-lav-night",
+   "style": "glass",
+   "pal": "lav",
+   "mode": "night"
+  },
+  {
+   "id": "glass-lav-day",
+   "style": "glass",
+   "pal": "lav",
+   "mode": "day"
+  },
+  {
+   "id": "glass-sun-night",
+   "style": "glass",
+   "pal": "sun",
+   "mode": "night"
+  },
+  {
+   "id": "glass-sun-day",
+   "style": "glass",
+   "pal": "sun",
+   "mode": "day"
+  },
+  {
+   "id": "glass-neo-night",
+   "style": "glass",
+   "pal": "neo",
+   "mode": "night"
+  },
+  {
+   "id": "glass-neo-day",
+   "style": "glass",
+   "pal": "neo",
+   "mode": "day"
+  },
+  {
+   "id": "glass-min-night",
+   "style": "glass",
+   "pal": "min",
+   "mode": "night"
+  },
+  {
+   "id": "glass-min-day",
+   "style": "glass",
+   "pal": "min",
+   "mode": "day"
+  },
+  {
+   "id": "shade-def-night",
+   "style": "shade",
+   "pal": "def",
+   "mode": "night"
+  },
+  {
+   "id": "shade-def-day",
+   "style": "shade",
+   "pal": "def",
+   "mode": "day"
+  },
+  {
+   "id": "shade-lav-night",
+   "style": "shade",
+   "pal": "lav",
+   "mode": "night"
+  },
+  {
+   "id": "shade-lav-day",
+   "style": "shade",
+   "pal": "lav",
+   "mode": "day"
+  },
+  {
+   "id": "shade-sun-night",
+   "style": "shade",
+   "pal": "sun",
+   "mode": "night"
+  },
+  {
+   "id": "shade-sun-day",
+   "style": "shade",
+   "pal": "sun",
+   "mode": "day"
+  },
+  {
+   "id": "shade-neo-night",
+   "style": "shade",
+   "pal": "neo",
+   "mode": "night"
+  },
+  {
+   "id": "shade-neo-day",
+   "style": "shade",
+   "pal": "neo",
+   "mode": "day"
+  },
+  {
+   "id": "shade-min-night",
+   "style": "shade",
+   "pal": "min",
+   "mode": "night"
+  },
+  {
+   "id": "shade-min-day",
+   "style": "shade",
+   "pal": "min",
+   "mode": "day"
+  }
+ ],
+ "viewports": [
+  {
+   "id": "m",
+   "width": 400,
+   "height": 840
+  },
+  {
+   "id": "t",
+   "width": 820,
+   "height": 1180
+  },
+  {
+   "id": "d",
+   "width": 1440,
+   "height": 900
+  }
+ ],
+ "screens": [
+  {
+   "id": "home",
+   "route": "#/"
+  },
+  {
+   "id": "search",
+   "route": "#/",
+   "steps": [
+    {
+     "fill": [
+      "#q",
+      "خناس"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "word",
+   "route": "#/word/113-0"
+  },
+  {
+   "id": "surahs",
+   "route": "#/surahs"
+  },
+  {
+   "id": "surah",
+   "route": "#/surah/113"
+  },
+  {
+   "id": "challenge",
+   "route": "#/challenge"
+  },
+  {
+   "id": "day",
+   "route": "#/day/6"
+  },
+  {
+   "id": "quiz",
+   "route": "#/quiz",
+   "note": "questions are random; seed or mock Math.random for parity"
+  },
+  {
+   "id": "sheet",
+   "route": "#/",
+   "steps": [
+    {
+     "click": "[data-a='set']"
+    }
+   ]
+  },
+  {
+   "id": "about",
+   "route": "#/about"
+  },
+  {
+   "id": "privacy",
+   "route": "#/privacy"
+  },
+  {
+   "id": "terms",
+   "route": "#/terms"
+  },
+  {
+   "id": "rights",
+   "route": "#/rights"
+  },
+  {
+   "id": "ld",
+   "route": "#/",
+   "clearLoaderFlag": true,
+   "screenshotImmediately": true
+  },
+  {
+   "id": "nf",
+   "route": "#/zzz"
+  }
+ ],
+ "skippedScreens": [
+  "quiz2",
+  "quiz3"
+ ]
+}
