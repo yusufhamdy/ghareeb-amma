@@ -78,3 +78,6 @@ skills-lock.json
 
 # Ignore Firebase local cache
 .firebase/
+# Private handoff data
+data/challenge-notes-private.json
+ghareeb-handoff/data/challenge-notes-private.json
