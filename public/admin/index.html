@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة التحكم | غريب القرآن</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+#app{max-width:760px}
+.in{width:100%;min-height:46px;border-radius:14px;padding:10px 14px;border:1px solid var(--gbr);background:var(--gb);color:var(--tx);font:inherit;font-size:16px}
+textarea.in{min-height:84px;resize:vertical;line-height:1.7}
+select.in{appearance:auto}
+.tabs{display:flex;gap:8px;overflow:auto;margin:0 0 16px;padding-bottom:4px}
+.tabs button{flex:none;min-height:44px;padding:0 16px;border-radius:22px;font-size:14px}
+.tabs .on{background:var(--ac);color:var(--btf);font-weight:500}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.bar .in{flex:1;min-width:140px}
+.lb{display:block;font-size:13px;color:var(--mu);margin:12px 0 6px}
+.dg{color:#D14343}
+.sm2{min-height:40px;padding:0 14px;border-radius:20px;font-size:13px}
+#toast{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));max-width:90%;padding:12px 20px;border-radius:20px;display:none;font-size:14px}
+#toast.bad{color:#D14343}
+#md{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.mb{width:min(640px,100%);max-height:94vh;overflow:auto;border-radius:28px 28px 0 0;padding:20px 22px calc(24px + env(safe-area-inset-bottom,0px));background:var(--sh);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--gbr)}
+.sg{display:grid;grid-template-columns:70px 1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.demo{padding:10px 16px;border-radius:16px;margin-bottom:14px;font-size:13px}
+</style>
+</head>
+<body>
+<div id="bg"><i class="b1"></i><i class="b2"></i></div>
+<main id="app"></main>
+<div id="md"></div><div id="toast" class="g"></div>
+<script src="/theme.js"></script>
+<script src="/firebase-config.js"></script>
+<script>
+
+const OWNER="yusufhamdy20@gmail.com";
+const JUZ="النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
+const SRC="المصدر: التفسير الميسر وكتب التفاسير";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const N=s=>String(s).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,"").replace(/[إأآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").trim();
+const clone=x=>JSON.parse(JSON.stringify(x));
+const live=()=>{const c=window.FIREBASE_CONFIG;return!!(c&&c.apiKey&&!/PASTE/.test(c.apiKey))};
+const nm=e=>e.surah.replace(/^سورة\s*/,"");
+const meaning=(e,i)=>{let m=e.meanings[i]||"";const k=m.indexOf(":");return k>0&&N(m.slice(0,k))===N(e.words[i])?m.slice(k+1).trim():m};
+let FB={},U=null,ADM=false,OWN=false,D=null,AD=[],TAB="s",FS="all",FQ="",ED=null,BUSY=false,READY=false;
+let CH=null,CHN={},EDD=null;
+function fix(d){d.surahs.forEach(e=>{if(!e.no){const i=JUZ.indexOf(nm(e));e.no=i<0?999:78+i}});return d}
+function toast(t,bad){const x=$("#toast");x.textContent=t;x.className="g"+(bad?" bad":"");x.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display="none",4500)}
+const store={
+ async load(){
+  if(!live()){const x=localStorage.getItem("gqad");return fix(x?JSON.parse(x):{rev:1,surahs:clone(window.__D||[])})}
+  const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"public","data"));
+  return fix(s.exists()?{rev:s.data().rev||0,surahs:s.data().surahs||[]}:{rev:0,surahs:[]});
+ },
+ async save(n){
+  if(new Blob([JSON.stringify(n.surahs)]).size>950000)throw new Error("big");
+  if(!live()){const p=localStorage.getItem("gqad");if(p)localStorage.setItem("gqap",p);const r=D.rev+1;localStorage.setItem("gqad",JSON.stringify({rev:r,surahs:n.surahs}));return r}
+  const{doc,runTransaction,serverTimestamp}=FB.fs;let r=0;
+  await runTransaction(FB.db,async tx=>{
+   const ref=doc(FB.db,"public","data"),cur=await tx.get(ref),cr=cur.exists()?cur.data().rev||0:0;
+   if(cr!==D.rev)throw new Error("conflict");
+   if(cur.exists())tx.set(doc(FB.db,"public","prev"),{rev:cr,surahs:cur.data().surahs,savedAt:serverTimestamp()});
+   r=cr+1;tx.set(ref,{rev:r,surahs:n.surahs,updatedAt:serverTimestamp(),by:U.email});
+  });
+  return r;
+ },
+ async undo(){
+  if(!live()){const p=localStorage.getItem("gqap"),c=localStorage.getItem("gqad");if(!p)throw new Error("noprev");localStorage.setItem("gqad",JSON.stringify({rev:D.rev+1,surahs:JSON.parse(p).surahs}));localStorage.setItem("gqap",c);return fix(JSON.parse(localStorage.getItem("gqad")))}
+  const{doc,runTransaction,serverTimestamp}=FB.fs;let out;
+  await runTransaction(FB.db,async tx=>{
+   const rp=doc(FB.db,"public","prev"),rd=doc(FB.db,"public","data"),p=await tx.get(rp),c=await tx.get(rd);
+   if(!p.exists())throw new Error("noprev");
+   const r=(c.data().rev||0)+1;
+   tx.set(rp,{rev:c.data().rev||0,surahs:c.data().surahs,savedAt:serverTimestamp()});
+   tx.set(rd,{rev:r,surahs:p.data().surahs,updatedAt:serverTimestamp(),by:U.email});
+   out={rev:r,surahs:p.data().surahs};
+  });
+  return fix(out);
+ },
+ async admins(){
+  if(!live())return JSON.parse(localStorage.getItem("gqaa")||"[]");
+  const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"config","admins"));return s.exists()?s.data().emails||[]:[];
+ },
+ async setAdmins(l){
+  if(!live())return localStorage.setItem("gqaa",JSON.stringify(l));
+  await FB.fs.setDoc(FB.fs.doc(FB.db,"config","admins"),{emails:l});
+ },
+ async chLoad(){
+  if(!live()){const x=localStorage.getItem("gqch");if(x)return JSON.parse(x)}
+  else{const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"public","challenge"));if(s.exists())return {startDate:s.data().startDate==null?null:s.data().startDate,releasedUpTo:s.data().releasedUpTo==null?null:s.data().releasedUpTo,days:s.data().days||[]}}
+  try{const d=await(await fetch("/challenge.json")).json();return {startDate:d.startDate==null?null:d.startDate,releasedUpTo:d.releasedUpTo==null?null:d.releasedUpTo,days:d.days||[]}}catch(e){return {startDate:null,releasedUpTo:null,days:[]}}
+ },
+ async chSave(c){
+  if(!live()){localStorage.setItem("gqch",JSON.stringify(c));return}
+  await FB.fs.setDoc(FB.fs.doc(FB.db,"public","challenge"),{startDate:c.startDate==null?null:c.startDate,releasedUpTo:c.releasedUpTo==null?null:c.releasedUpTo,days:c.days});
+ },
+ async chNotes(){
+  if(!live())return JSON.parse(localStorage.getItem("gqchn")||"{}");
+  const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"admin","challengeNotes"));return s.exists()?s.data():{};
+ },
+ async chSetNote(day,note){
+  if(!live()){const n=JSON.parse(localStorage.getItem("gqchn")||"{}");n[String(day)]=note;localStorage.setItem("gqchn",JSON.stringify(n));return}
+  await FB.fs.setDoc(FB.fs.doc(FB.db,"admin","challengeNotes"),{[String(day)]:note},{merge:true});
+ }
+};
+async function commit(next,msg){
+ if(BUSY)return false;BUSY=true;
+ try{const r=await store.save(next);D={rev:r,surahs:next.surahs};toast(msg||"تم الحفظ، والتعديل ظاهر على الموقع.");return true}
+ catch(e){toast(e.message==="conflict"?"البيانات اتعدلت من مكان تاني. حدّث الصفحة وأعد المحاولة.":e.message==="big"?"حجم البيانات تجاوز الحد المسموح.":"تعذر الحفظ: "+(e.code||e.message),true);return false}
+ finally{BUSY=false}
+}
+const rows=()=>D.surahs.map((e,i)=>({e,i,name:nm(e),no:e.no})).sort((a,b)=>a.no-b.no);
+function render(){
+ const a=$("#app");
+ if(!READY){a.innerHTML='<div class="g card" style="padding:22px">جاري التحميل...</div>';return}
+ if(!U)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><div class="logo" style="font-size:34px">غريب القرآن</div><p class="sm">لوحة التحكم، للمشرفين فقط.</p><button class="pill btn" data-a="login">الدخول بحساب جوجل</button></div>`;
+ if(!ADM)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><p>الحساب <b dir="ltr">${esc(U.email)}</b> غير مصرح له بالدخول.</p><button class="g pill" data-a="out">تسجيل الخروج</button></div>`;
+ const T=[["s","السور"],["w","الكلمات"],["c","التحدي"],["a","المشرفون"],["t","أدوات"]];
+ a.innerHTML=`<div class="top"><span class="logo">لوحة التحكم</span><span class="sm" dir="ltr">${esc(U.email)} <button class="dg" data-a="out" style="min-height:44px;padding:0 8px">خروج</button></span></div>
+${live()?"":'<div class="g demo">وضع تجريبي: التعديلات محفوظة على جهازك فقط. اربط Firebase ليتعدل الموقع الحقيقي.</div>'}
+<div class="tabs">${T.map(([k,l])=>`<button class="g ${TAB===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>${tab()}`;
+}
+function tab(){
+ if(TAB==="s")return tabS();if(TAB==="w")return tabW();if(TAB==="c")return tabC();if(TAB==="a")return tabA();return tabT();
+}
+function tabS(){
+ const used=new Set(D.surahs.map(nm)),free=JUZ.filter(n=>!used.has(n));
+ return`<div class="g c2"><div class="sm">إضافة سورة</div><div class="bar" style="margin-top:8px"><select class="in" id="ns"><option value="">اختر من جزء عمّ</option>${free.map(n=>`<option>${esc(n)}</option>`).join("")}<option value="*">سورة أخرى...</option></select><button class="pill btn" data-a="addS">إضافة</button></div></div>
+<div class="sm" style="margin:6px 0 10px">${D.surahs.length} سورة، ${D.surahs.reduce((n,e)=>n+e.words.length,0)} كلمة</div>
+<div class="g card">${rows().map(r=>`<div class="row"><span class="nb">${r.no<999?r.no:"·"}</span><span class="q t" style="font-size:24px">${esc(r.name)}</span><span class="sm">${r.e.words.length} كلمة</span><button class="g sm2" data-a="editS" data-v="${r.i}">تعديل</button><button class="g sm2 dg" data-a="delS" data-v="${r.i}">حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد سور بعد. استورد البيانات من تبويب أدوات.</div>'}</div>`;
+}
+function tabW(){
+ const q=N(FQ),list=[];
+ D.surahs.forEach((e,si)=>{if(FS!=="all"&&String(si)!==FS)return;e.words.forEach((w,wi)=>{const m=meaning(e,wi);if(!q||N(w).includes(q)||N(m).includes(q))list.push({e,si,wi,w,m})})});
+ return`<div class="bar"><select class="in" data-f="fs"><option value="all">كل السور</option>${rows().map(r=>`<option value="${r.i}" ${FS===String(r.i)?"selected":""}>${esc(r.name)}</option>`).join("")}</select><input class="in" data-f="fq" placeholder="بحث" value="${esc(FQ)}"><button class="pill btn" data-a="addW">إضافة كلمة</button></div>
+<div class="sm" style="margin-bottom:8px">${list.length} كلمة</div>
+<div class="g card">${list.slice(0,80).map(o=>`<div class="row"><span class="q rw">${esc(o.w)}</span><span class="t"><div>${esc(o.m)}</div><div class="sm">${esc(nm(o.e))} · آية ${esc((o.e.ayahs[o.wi]||{}).label)}</div></span><button class="g sm2" data-a="editW" data-v="${o.si}.${o.wi}">تعديل</button><button class="g sm2 dg" data-a="delW" data-v="${o.si}.${o.wi}">حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد نتائج.</div>'}</div>${list.length>80?'<div class="sm" style="margin-top:8px">ظاهر أول 80 نتيجة، استخدم البحث.</div>':""}`;
+}
+/* Challenge tab: edit startDate, releasedUpTo, per-day words/reel and the
+   PRIVATE admin-only day notes. Release follows the sequential rule. */
+function existSet(){const s=new Set();D.surahs.forEach(e=>e.words.forEach(w=>s.add((e.no||0)+"::"+N(w))));return s}
+function wordOk(ref){return existSet().has(ref[0]+"::"+N(ref[1]))}
+function suraNameByNo(no){const e=D.surahs.find(x=>x.no===no);return e?nm(e):"سورة "+no}
+function populateWords(){
+ const ss=document.querySelector('[data-f="c.addS"]'),ws=document.querySelector('[data-f="c.addW"]');
+ if(!ss||!ws)return;
+ const e=D.surahs[+ss.value];
+ ws.innerHTML='<option value="">الكلمة</option>'+(ss.value!==""&&e?e.words.map((w,i)=>`<option value="${i}">${esc(w)}</option>`).join(""):"");
+}
+function tabC(){
+ if(!CH)return '<div class="g card" style="padding:16px">جاري تحميل التحدي...</div>';
+ const set=existSet(),bad=[];
+ CH.days.forEach(d=>(d.w||[]).forEach(r=>{if(!set.has(r[0]+"::"+N(r[1])))bad.push({d:d.d,ref:r})}));
+ return`<div class="g c2"><div class="sm">إعدادات التحدي</div>
+<label class="lb">تاريخ البداية (للخطة المستقبلية: إصدار كل يوم بتاريخه)</label>
+<input class="in" type="date" data-f="c.startDate" value="${CH.startDate?esc(CH.startDate):""}">
+<label class="lb">فتح أيام إضافية يدويًا (releasedUpTo، اتركه فارغًا للإصدار المتسلسل)</label>
+<input class="in" type="number" min="0" max="${CH.days.length}" data-f="c.releasedUpTo" value="${CH.releasedUpTo==null?"":CH.releasedUpTo}">
+<div class="acts"><button class="pill btn" data-a="chSaveMeta">حفظ الإعدادات</button><button class="g pill" data-a="chStatus">عرض حالة الإصدار</button><button class="g pill" data-a="chExport">تصدير challenge.json</button></div>
+<div class="sm" style="margin-top:8px">القاعدة الحالية: الإصدار متسلسل. اليوم 1 مفتوح، وكل يوم يفتح بعد إتمام اليوم السابق.</div>
+${bad.length?`<div class="sm dg" style="margin-top:8px">تحذير: ${bad.length} مرجع كلمة غير موجود في البيانات: ${bad.slice(0,6).map(b=>esc(b.ref[1])).join("، ")}</div>`:""}
+</div>
+<div class="sm" style="margin:6px 0 10px">${CH.days.length} يوم${CH.startDate?" · يبدأ "+esc(CH.startDate):""}</div>
+<div class="g card">${CH.days.map(d=>`<div class="row"><span class="nb">${d.d}</span><span class="t"><div>${(d.w||[]).map(r=>esc(r[1])).join(" · ")||'<span class="sm">لا كلمات</span>'}</div><div class="sm">${(d.w||[]).length} كلمة${d.reel?" · ريلز ✓":""}${CHN[String(d.d)]?" · ملاحظة خاصة ✓":""}</div></span><button class="g sm2" data-a="chDay" data-v="${d.d}">تعديل</button></div>`).join("")||'<div class="sm" style="padding:16px">لا أيام.</div>'}</div>`;
+}
+function chStatusHtml(){
+ const override=CH.releasedUpTo==null?0:+CH.releasedUpTo;
+ return`<b style="font-size:20px">حالة الإصدار</b>
+<div class="sm" style="margin:8px 0">الإصدار الحالي متسلسل: اليوم 1 مفتوح، وكل يوم يفتح بعد إتمام اليوم السابق.${CH.startDate?" الإصدار بالتواريخ مُخطط له انطلاقًا من "+esc(CH.startDate)+".":" (لم يُضبط تاريخ بداية.)"}</div>
+<div class="sm" style="margin:8px 0">${override?"فتح يدوي إضافي حتى اليوم "+override+".":"لا يوجد فتح يدوي إضافي."}</div>
+<div class="g card">${CH.days.map(d=>`<div class="row"><span class="nb">${d.d}</span><span class="t"><div>${(d.w||[]).map(r=>esc(r[1])).join(" · ")}</div><div class="sm">${d.d<=override?"مفتوح يدويًا":(d.d===1?"مفتوح":"يفتح بعد إتمام اليوم السابق")}</div></span></div>`).join("")}</div>
+<div class="acts"><button class="g pill" data-a="close">إغلاق</button></div>`;
+}
+function dayModal(){
+ const x=EDD;
+ modal(`<b style="font-size:20px">تعديل اليوم ${x.d}</b>
+<label class="lb">الكلمات (${x.w.length})</label>
+<div class="g card" style="padding:4px 12px">${x.w.length?x.w.map((r,i)=>`<div class="row"><span class="q rw">${esc(r[1])}</span><span class="t sm">${esc(suraNameByNo(r[0]))}</span><button class="g sm2 dg" data-a="chDelW" data-v="${i}">حذف</button></div>`).join(""):'<div class="sm" style="padding:12px">لا كلمات بعد.</div>'}</div>
+<div class="bar" style="margin-top:12px"><select class="in" data-f="c.addS"><option value="">السورة</option>${rows().map(r=>`<option value="${r.i}">${esc(r.name)}</option>`).join("")}</select><select class="in" data-f="c.addW"><option value="">الكلمة</option></select><button class="pill btn" data-a="chAddW">إضافة</button></div>
+<label class="lb">رابط الريلز</label>
+<input class="in" dir="ltr" data-f="c.reel" value="${esc(x.reel||"")}" placeholder="https://...">
+<label class="lb">ملاحظة اليوم (خاصة، لا تظهر للزوار إطلاقًا)</label>
+<textarea class="in" data-f="c.note">${esc(x.note||"")}</textarea>
+<div class="acts"><button class="pill btn" data-a="chSaveDay">حفظ اليوم</button><button class="g pill" data-a="close">إلغاء</button></div>`);
+ populateWords();
+}
+function tabA(){
+ return`<div class="g c2"><div class="sm">مالك الموقع</div><div dir="ltr" style="text-align:right">${OWNER}</div></div>
+<div class="g card">${AD.map(m=>`<div class="row"><span class="t" dir="ltr" style="text-align:right"><div>${esc(m)}</div></span>${OWN?`<button class="g sm2 dg" data-a="delA" data-v="${esc(m)}">إزالة</button>`:""}</div>`).join("")||'<div class="sm" style="padding:16px">لا يوجد مشرفون إضافيون.</div>'}</div>
+${OWN?`<div class="bar" style="margin-top:14px"><input class="in" id="ae" type="email" dir="ltr" placeholder="email@gmail.com"><button class="pill btn" data-a="addA">إضافة مشرف</button></div><div class="sm">لازم يكون حساب جوجل بإيميل مفعّل. الإضافة تتم بواسطة المالك فقط.</div>`:'<div class="sm" style="margin-top:12px">إضافة المشرفين للمالك فقط.</div>'}`;
+}
+function tabT(){
+ return`<div class="g c2"><div class="sm">رقم الإصدار الحالي: ${D.rev}</div>
+<div class="acts"><button class="g pill" data-a="exp">تصدير words.json</button><label class="g pill" style="cursor:pointer">استيراد من ملف<input type="file" accept=".json" data-f="imp" hidden></label><button class="g pill" data-a="pub">استيراد من words.json المنشور</button><button class="g pill dg" data-a="undo">تراجع عن آخر تعديل</button></div>
+<div class="sm">الاستيراد يستبدل كل البيانات الحالية، وبيتحفظ نسخة قبلها تقدر ترجع لها بزر التراجع.</div></div>`;
+}
+function ayHtml(s){return"﴿"+s.map(g=>`${esc(g.before)}<mark>${esc(g.hl)}</mark>${esc(g.after)}`).join(" … ")+"﴾"}
+function modal(h){const m=$("#md");m.innerHTML=h?`<div class="mb" role="dialog">${h}</div>`:"";m.style.display=h?"flex":"none"}
+function wordModal(){
+ const x=ED;
+ modal(`<b style="font-size:20px">${x.wi<0?"إضافة كلمة":"تعديل كلمة"}</b>
+<label class="lb">السورة</label><select class="in" data-f="e.si">${rows().map(r=>`<option value="${r.i}" ${r.i===x.si?"selected":""}>${esc(r.name)}</option>`).join("")}</select>
+<label class="lb">الكلمة</label><input class="in q" data-f="e.w" value="${esc(x.w)}">
+<label class="lb">المعنى</label><textarea class="in" data-f="e.m">${esc(x.m)}</textarea>
+<label class="lb">رقم الآية</label><input class="in" data-f="e.label" value="${esc(x.label)}">
+<label class="lb">نص الآية</label><textarea class="in" data-f="e.af">${esc(x.af)}</textarea>
+<label class="lb">الجزء المظلل</label><input class="in q" data-f="e.ah" value="${esc(x.ah)}">
+<button class="g sm2" data-a="split" style="margin-bottom:8px">تقسيم تلقائي</button>
+${x.segs.map((g,i)=>`<div class="sg"><input class="in" data-f="g.${i}.num" value="${esc(g.num)}"><input class="in q" data-f="g.${i}.before" value="${esc(g.before)}"><input class="in q" data-f="g.${i}.hl" value="${esc(g.hl)}"><input class="in q" data-f="g.${i}.after" value="${esc(g.after)}"></div>`).join("")}
+<div class="bar"><button class="g sm2" data-a="addG">إضافة جزء</button>${x.segs.length>1?'<button class="g sm2 dg" data-a="delG">حذف آخر جزء</button>':""}</div>
+<div class="g c2" style="margin-top:10px"><div class="sm">معاينة</div><div class="q ay" id="pv">${ayHtml(x.segs)}</div></div>
+<div class="acts"><button class="pill btn" data-a="saveW">حفظ</button><button class="g pill" data-a="close">إلغاء</button></div>`);
+}
+function openW(si,wi){
+ const e=D.surahs[si];let x;
+ if(wi<0)x={si,osi:si,wi,w:"",m:"",label:"",af:"",ah:"",segs:[{num:"",before:"",hl:"",after:""}]};
+ else{const a=e.ayahs[wi]||{label:"",segments:[]},s=clone(a.segments);x={si,osi:si,wi,w:e.words[wi],m:meaning(e,wi),label:a.label,af:s.map(g=>g.before+g.hl+g.after).join(" "),ah:(s[0]||{}).hl||"",segs:s.length?s:[{num:"",before:"",hl:"",after:""}]}}
+ ED=x;wordModal();
+}
+function saveW(){
+ const x=ED;
+ if(!x.w.trim()||!x.m.trim()||!String(x.label).trim())return toast("الكلمة والمعنى ورقم الآية مطلوبين.",true);
+ if(x.segs.some(g=>!g.hl.trim()))return toast("كل جزء لازم يكون فيه نص مظلل.",true);
+ const n=clone(D),e=n.surahs[x.si],a={label:String(x.label).trim(),segments:x.segs.map(g=>({num:+g.num||+x.label||0,before:g.before,hl:g.hl.trim(),after:g.after}))};
+ if(x.wi<0){e.words.push(x.w.trim());e.meanings.push(x.m.trim());e.ayahs.push(a)}
+ else if(x.si!==x.osi){const o=n.surahs[x.osi];o.words.splice(x.wi,1);o.meanings.splice(x.wi,1);o.ayahs.splice(x.wi,1);e.words.push(x.w.trim());e.meanings.push(x.m.trim());e.ayahs.push(a)}
+ else{e.words[x.wi]=x.w.trim();e.meanings[x.wi]=x.m.trim();e.ayahs[x.wi]=a}
+ commit(n).then(ok=>{if(ok){ED=null;modal("");render()}});
+}
+function surahModal(i){
+ const n=i<0?ED:D.surahs[i];
+ ED={i,name:i<0?ED.name:nm(n),no:n.no,source:n.source||SRC};
+ modal(`<b style="font-size:20px">${i<0?"إضافة سورة":"تعديل سورة"}</b><label class="lb">اسم السورة (بدون كلمة سورة)</label><input class="in q" style="font-size:22px" data-f="e.name" value="${esc(ED.name)}"><label class="lb">رقمها في المصحف</label><input class="in" data-f="e.no" inputmode="numeric" value="${esc(ED.no)}"><label class="lb">المصدر</label><input class="in" data-f="e.source" value="${esc(ED.source)}"><div class="acts"><button class="pill btn" data-a="saveS">حفظ</button><button class="g pill" data-a="close">إلغاء</button></div>`);
+}
+async function act(a,v){
+ if(a==="login"){const{GoogleAuthProvider,signInWithPopup,signInWithRedirect}=FB.au,p=new GoogleAuthProvider();try{await signInWithPopup(FB.auth,p)}catch(e){if(/popup/.test(e.code))signInWithRedirect(FB.auth,p);else toast("تعذر تسجيل الدخول: "+e.code,true)}}
+ else if(a==="out"){if(live())await FB.au.signOut(FB.auth);else toast("وضع تجريبي: لا يوجد تسجيل خروج.")}
+ else if(a==="tab"){TAB=v;render()}
+ else if(a==="close")modal("");
+ else if(a==="addS"){const s=$("#ns").value;if(!s)return toast("اختر سورة.",true);ED={name:s==="*"?"":s,no:s==="*"?"":78+JUZ.indexOf(s),source:SRC};surahModal(-1)}
+ else if(a==="editS")surahModal(+v);
+ else if(a==="saveS"){
+  const x=ED,name=x.name.trim(),no=+x.no;if(!name||!no)return toast("الاسم والرقم مطلوبين.",true);
+  const n=clone(D);if(n.surahs.some((e,k)=>k!==x.i&&nm(e)===name))return toast("السورة موجودة بالفعل.",true);
+  if(x.i<0)n.surahs.push({surah:"سورة "+name,no,words:[],meanings:[],ayahs:[],source:x.source});
+  else Object.assign(n.surahs[x.i],{surah:"سورة "+name,no,source:x.source});
+  if(await commit(n)){modal("");render()}}
+ else if(a==="delS"){const e=D.surahs[+v];if(!confirm(`حذف سورة ${nm(e)} نهائيًا مع ${e.words.length} كلمة؟`))return;const n=clone(D);n.surahs.splice(+v,1);if(await commit(n,"تم حذف السورة."))render()}
+ else if(a==="addW"){if(!D.surahs.length)return toast("أضف سورة أولًا.",true);openW(FS==="all"?rows()[0].i:+FS,-1)}
+ else if(a==="editW"){const[s,w]=v.split(".").map(Number);openW(s,w)}
+ else if(a==="delW"){const[s,w]=v.split(".").map(Number),e=D.surahs[s];if(!confirm(`حذف كلمة «${e.words[w]}»؟`))return;const n=clone(D),t=n.surahs[s];t.words.splice(w,1);t.meanings.splice(w,1);t.ayahs.splice(w,1);if(await commit(n,"تم حذف الكلمة."))render()}
+ else if(a==="split"){const x=ED,i=x.af.indexOf(x.ah);if(!x.ah||i<0)return toast("الجزء المظلل غير موجود داخل نص الآية. اكتب الأجزاء يدويًا.",true);x.segs=[{num:x.label,before:x.af.slice(0,i),hl:x.ah,after:x.af.slice(i+x.ah.length)}];wordModal()}
+ else if(a==="addG"){ED.segs.push({num:ED.label,before:"",hl:"",after:""});wordModal()}
+ else if(a==="delG"){ED.segs.pop();wordModal()}
+ else if(a==="saveW")saveW();
+ else if(a==="addA"){const m=$("#ae").value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(m))return toast("إيميل غير صحيح.",true);if(m===OWNER||AD.includes(m))return toast("الإيميل موجود بالفعل.",true);try{await store.setAdmins(AD.concat(m));AD.push(m);toast("تمت إضافة المشرف.");render()}catch(e){toast("تعذرت الإضافة: "+(e.code||e.message),true)}}
+ else if(a==="delA"){if(!confirm("إزالة هذا المشرف؟"))return;const l=AD.filter(m=>m!==v);try{await store.setAdmins(l);AD=l;toast("تمت الإزالة.");render()}catch(e){toast("تعذرت الإزالة: "+(e.code||e.message),true)}}
+ else if(a==="exp"){const b=new Blob([JSON.stringify(D.surahs,null,1)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="words.json";l.click()}
+ else if(a==="pub"){try{const d=await(await fetch("/words.json")).json();if(confirm("استبدال كل البيانات بمحتوى words.json المنشور؟")){const n={surahs:d};fix(n);if(await commit(n,"تم الاستيراد."))render()}}catch(e){toast("تعذر قراءة words.json.",true)}}
+ else if(a==="undo"){if(!confirm("الرجوع للنسخة السابقة؟"))return;try{D=await store.undo();toast("تم التراجع.");render()}catch(e){toast(e.message==="noprev"?"لا توجد نسخة سابقة.":"تعذر التراجع: "+(e.code||e.message),true)}}
+ else if(a==="chSaveMeta"){if(!CH)return;const raw=$('[data-f="c.releasedUpTo"]').value;const n=raw===""?null:+raw;if(n!=null&&(!Number.isInteger(n)||n<0||n>CH.days.length))return toast("قيمة الفتح الإضافي غير صحيحة.",true);CH.startDate=$('[data-f="c.startDate"]').value||null;CH.releasedUpTo=n;try{await store.chSave(CH);toast("تم حفظ إعدادات التحدي.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
+ else if(a==="chStatus"){if(!CH)return;modal(chStatusHtml())}
+ else if(a==="chExport"){if(!CH)return;const b=new Blob([JSON.stringify({startDate:CH.startDate,releasedUpTo:CH.releasedUpTo,days:CH.days},null,1)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="challenge.json";l.click()}
+ else if(a==="chDay"){if(!CH)return;const d=CH.days.find(z=>z.d===+v);if(!d)return;EDD={d:d.d,w:clone(d.w||[]),reel:d.reel||"",note:CHN[String(d.d)]||""};dayModal()}
+ else if(a==="chDelW"){if(!EDD)return;EDD.w.splice(+v,1);dayModal()}
+ else if(a==="chAddW"){if(!EDD)return;const ss=$('[data-f="c.addS"]'),ws=$('[data-f="c.addW"]');if(ss.value===""||ws.value==="")return toast("اختر السورة والكلمة.",true);const e=D.surahs[+ss.value],w=e.words[+ws.value],ref=[e.no||0,N(w)];if(!wordOk(ref))return toast("الكلمة غير موجودة في البيانات.",true);if(EDD.w.some(r=>r[0]===ref[0]&&r[1]===ref[1]))return toast("الكلمة مضافة بالفعل.",true);EDD.w.push(ref);dayModal()}
+ else if(a==="chSaveDay"){if(!EDD)return;if(EDD.reel&&EDD.reel.indexOf("https://")!==0)return toast("رابط الريلز لازم يبدأ بـ https://",true);const problems=EDD.w.filter(r=>!wordOk(r));if(problems.length)return toast("فيه كلمات غير موجودة في البيانات.",true);const ch=clone(CH),d=ch.days.find(z=>z.d===EDD.d);d.w=clone(EDD.w);d.reel=EDD.reel||"";try{await store.chSave(ch);if(EDD.note!=null){await store.chSetNote(EDD.d,EDD.note);CHN[String(EDD.d)]=EDD.note}CH=ch;EDD=null;modal("");toast("تم حفظ اليوم.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(t)act(t.dataset.a,t.dataset.v)});
+document.addEventListener("input",e=>{
+ const f=e.target.dataset.f;if(!f)return;
+ if(f==="fq"){FQ=e.target.value;const p=e.target.selectionStart;render();const i=document.querySelector('[data-f="fq"]');i.focus();i.setSelectionRange(p,p);return}
+ if(f==="fs"){FS=e.target.value;return render()}
+ if(f.indexOf("c.")===0){const k=f.slice(2);
+  if(k==="startDate"){if(CH)CH.startDate=e.target.value||null}
+  else if(k==="releasedUpTo"){if(CH)CH.releasedUpTo=e.target.value===""?null:+e.target.value}
+  else if(k==="addS")populateWords();
+  else if(k==="reel"&&EDD)EDD.reel=e.target.value;
+  else if(k==="note"&&EDD)EDD.note=e.target.value;
+  return}
+ const k=f.split(".");
+ if(k[0]==="e"){ED[k[1]]=k[1]==="si"?+e.target.value:e.target.value}
+ else if(k[0]==="g")ED.segs[+k[1]][k[2]]=e.target.value;
+ const pv=$("#pv");if(pv)pv.innerHTML=ayHtml(ED.segs);
+});
+document.addEventListener("change",async e=>{
+ if(e.target.dataset.f!=="imp"||!e.target.files[0])return;
+ try{const d=JSON.parse(await e.target.files[0].text());if(!Array.isArray(d)||!d.every(x=>x.surah&&Array.isArray(x.words)))throw 0;if(!confirm("استبدال كل البيانات بمحتوى الملف؟"))return;const n={surahs:d};fix(n);if(await commit(n,"تم الاستيراد."))render()}catch(x){toast("ملف غير صالح.",true)}
+});
+(async function(){
+ try{
+  if(!live()){U={email:OWNER};ADM=OWN=true;D=await store.load();AD=await store.admins();CH=await store.chLoad();CHN=await store.chNotes();READY=true;return render()}
+  const u="https://www.gstatic.com/firebasejs/10.14.1/";
+  const[a,au,fs]=await Promise.all([import(u+"firebase-app.js"),import(u+"firebase-auth.js"),import(u+"firebase-firestore.js")]);
+  const app=a.initializeApp(window.FIREBASE_CONFIG);FB={au,fs,auth:au.getAuth(app),db:fs.getFirestore(app)};
+  au.onAuthStateChanged(FB.auth,async x=>{
+   U=x;ADM=OWN=false;
+   if(x&&x.emailVerified){
+    OWN=x.email===OWNER;ADM=OWN;
+    if(!ADM){try{ADM=(await store.admins()).includes(x.email.toLowerCase())}catch(e){}}
+    if(ADM){try{D=await store.load();AD=await store.admins().catch(()=>[]);CH=await store.chLoad();CHN=await store.chNotes().catch(()=>({}))}catch(e){ADM=false;toast("تعذر تحميل البيانات: "+(e.code||e.message),true)}}
+   }
+   READY=true;render();
+  });
+ }catch(e){READY=true;$("#app").innerHTML='<div class="g card" style="padding:22px">تعذر تحميل Firebase. تأكد من ملف firebase-config.js.</div>'}
+})();
+</script>
+</body>
+</html>
