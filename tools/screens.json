@@ -176,7 +176,9 @@
   },
   {
    "id": "day",
-   "route": "#/day/6"
+   "route": "#/day/6",
+   "prog": [1, 2, 3, 4, 5],
+   "note": "The design frame depicts day 6 unlocked. Under the app's sequential release rule (Phase 3) day 6 is only reachable once days 1-5 are done, so this screen marks 1-5 done to reproduce the depicted state for layout comparison."
   },
   {
    "id": "quiz",

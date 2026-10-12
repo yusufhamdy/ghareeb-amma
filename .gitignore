@@ -81,3 +81,7 @@ skills-lock.json
 # Private handoff data
 data/challenge-notes-private.json
 ghareeb-handoff/data/challenge-notes-private.json
+
+# Phase 5 generated artifacts (regenerate with tools/baseline.mjs and tools/compare.mjs)
+design/baseline/
+tools/report/
