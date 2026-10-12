@@ -107,3 +107,113 @@ exports.seo = onRequest({ region: "europe-west1", memory: "256MiB", maxInstances
     res.status(500).set("Cache-Control", "no-store").send("خطأ مؤقت، حاول بعد قليل.");
   }
 });
+
+/* ------------------------------------------------------------------ *
+ * Admin Challenge API (server-side, admin-only).
+ * Authentication: Firebase ID token in the `Authorization: Bearer` header.
+ * Authorization: verified email must be the owner or listed in config/admins.
+ * Private day notes live in admin/challengeNotes and are only ever returned
+ * to a verified admin.
+ * ------------------------------------------------------------------ */
+const { handleChallengeAction } = require("./admin-challenge");
+const { normalizeArabic } = require("./normalize");
+
+const OWNER_EMAIL = "yusufhamdy20@gmail.com";
+
+async function isAdminRequest(req) {
+  const header = req.get("authorization") || "";
+  const m = /^Bearer (.+)$/i.exec(header);
+  if (!m) return { ok: false, status: 401, error: "missing-token" };
+  let decoded;
+  try {
+    decoded = await admin.auth().verifyIdToken(m[1]);
+  } catch (e) {
+    return { ok: false, status: 401, error: "invalid-token" };
+  }
+  const email = decoded.email || "";
+  if (!decoded.email_verified) return { ok: false, status: 403, error: "email-not-verified" };
+  if (email === OWNER_EMAIL) return { ok: true, email };
+  try {
+    const snap = await admin.firestore().doc("config/admins").get();
+    const emails = snap.exists ? snap.data().emails || [] : [];
+    if (emails.indexOf(email) !== -1) return { ok: true, email };
+  } catch (e) {
+    /* fall through */
+  }
+  return { ok: false, status: 403, error: "forbidden" };
+}
+
+async function loadChallengeDoc() {
+  const db = admin.firestore();
+  const [chSnap, notesSnap, dataSnap] = await Promise.all([
+    db.doc("public/challenge").get(),
+    db.doc("admin/challengeNotes").get(),
+    db.doc("public/data").get(),
+  ]);
+  const state = chSnap.exists ? chSnap.data() : { startDate: null, releasedUpTo: null, days: [] };
+  const notes = notesSnap.exists ? notesSnap.data() : {};
+  const surahs = dataSnap.exists ? dataSnap.data().surahs || [] : [];
+  return { state, notes, surahs };
+}
+
+function makeResolver(surahs) {
+  const keys = new Set();
+  (surahs || []).forEach((e) => {
+    (e.words || []).forEach((w) => keys.add(String(e.no) + "::" + normalizeArabic(w)));
+  });
+  return (ref) => {
+    if (!Array.isArray(ref)) return false;
+    return keys.has(String(ref[0]) + "::" + normalizeArabic(ref[1]));
+  };
+}
+
+exports.adminChallenge = onRequest(
+  { region: "europe-west1", memory: "256MiB", maxInstances: 5 },
+  async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const auth = await isAdminRequest(req);
+    if (!auth.ok) {
+      res.status(auth.status).json({ ok: false, error: auth.error });
+      return;
+    }
+    try {
+      const { state, notes, surahs } = await loadChallengeDoc();
+      const payload = req.method === "POST" ? req.body || {} : req.query || {};
+      const out = handleChallengeAction({
+        isAdmin: true,
+        action: payload.action || "get",
+        payload,
+        state,
+        notes,
+        resolveWord: makeResolver(surahs),
+        random: Math.random,
+      });
+      if (out.status === 200 && out.body && out.body.apply) {
+        const db = admin.firestore();
+        const apply = out.body.apply;
+        if (apply.day) {
+          const days = (state.days || []).map((d) =>
+            Number(d.d) === Number(apply.day.d) ? apply.day : d
+          );
+          await db.doc("public/challenge").set(
+            { ...state, days }, { merge: true }
+          );
+        }
+        if (apply.startDate !== undefined || apply.releasedUpTo !== undefined) {
+          const patch = {};
+          if (apply.startDate !== undefined) patch.startDate = apply.startDate;
+          if (apply.releasedUpTo !== undefined) patch.releasedUpTo = apply.releasedUpTo;
+          await db.doc("public/challenge").set(patch, { merge: true });
+        }
+        if (apply.notes) {
+          await db.doc("admin/challengeNotes").set(apply.notes, { merge: true });
+        }
+        delete out.body.apply;
+      }
+      res.status(out.status).json(out.body);
+    } catch (e) {
+      console.error("adminChallenge error", e && e.message);
+      res.status(500).json({ ok: false, error: "server-error" });
+    }
+  }
+);
