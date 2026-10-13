@@ -262,3 +262,19 @@ backed by a numeric % plus a DOM/box diff, not by eye.
 - Blocked: the CI run URL, the preview channel, and the "release job did not fire"
   evidence require Gate G2 (owner approval to commit and push to `rebuild`) plus the CI
   secrets/preview variable. Nothing was pushed.
+
+### T7 follow-up - root firebase-admin pinned for the Node 20 baseline
+- Cause: the first CI run failed the T4d step with `Cannot find module
+  '@google-cloud/firestore'`. `firebase-admin@14.5.0` lists `@google-cloud/firestore` as
+  an OPTIONAL dependency resolved to `9.x`, whose `engines.node` is `>=22`. The runner
+  uses Node 20, so npm skips that optional dependency on an engine mismatch; the local
+  machine runs Node 24, so it installed there and the failure only appeared in CI.
+- Decision: pin the root `firebase-admin` to `^12.6.0`, exactly matching the deployed
+  `functions/package.json` runtime (`firebase-admin ^12.6.0`, `engines.node` 20). Its
+  optional `@google-cloud/firestore` is `^7.7.0` (`engines.node` `>=14`), which installs
+  and runs on Node 20. The root tooling only uses the modular `firebase-admin/app` and
+  `firebase-admin/firestore` APIs, which are stable across v12-v14, so behaviour is
+  unchanged.
+- This keeps the declared Node 20 baseline (AGENTS §3) and makes `npm ci` reproducible on
+  the CI runner. Re-verified locally after the change: `npm test` 56/56,
+  `npm run rules:test` 9/9, `npm run client:verify` PASS, and `npm ci --dry-run` clean.
