@@ -1,12 +1,12 @@
 # Phase 5B Report — Firestore migration, pre-deployment hardening, release pipeline
 
-Branch: `rebuild` · HEAD `b5877c9` (nothing committed since) · working tree preserved
-(0 staged; 84 modified, 147 deleted, 32 untracked entries). No commit, push, merge,
-deploy, or production write was performed in this phase.
+Branch: `rebuild` · commits `dfc1007` (Phase 5B work) and `b063038` (CI fix), both
+pushed to `origin/rebuild`. Remote CI is green; the Hosting preview channel is
+configured but cannot deploy (missing repo secret); the release job did not fire.
 
-This report is written in English. (The two-line Egyptian-Arabic summary requested at
-the end of `ghareeb-handoff/prompts/PHASE-5B.md` is intentionally omitted because the
-owner's standing instruction is English-only reporting; it can be added on request.)
+This report is written in English, as are all project files. (The 3-line Egyptian-Arabic
+summary required by `AGENTS.md` §14 is given in the session reply, not in this file,
+because the report itself stays English.)
 
 ---
 
@@ -15,34 +15,66 @@ owner's standing instruction is English-only reporting; it can be added on reque
 | Task | Status | Evidence |
 | --- | --- | --- |
 | T0 — Safety baseline (Gate G1) | **BLOCKED** | Firestore API disabled on the project (see §3) |
-| T1 — Repository hygiene | DONE (earlier) | `.firebaserc.bak.phase1` removed |
-| T2 — Licensed self-hosted fonts | DONE / decided (earlier) | KFGQPC Uthmanic Hafs approved; not embedded yet |
-| T3 — Rules emulator lab | **DONE (this session)** | `npm run rules:test` → 9/9 pass |
-| T4a — Migration helpers | DONE (earlier) | `src/utils/migrate.js` |
-| T4b — Seed tooling | DONE (earlier) | `scripts/seed-emulator.js` (inert live tool separate) |
-| T4c — Client read path | DONE (this session fixes) | `public/migrate.js` |
-| T4d — Migrated-client verification | **DONE (this session)** | `npm run client:verify` → PASS |
+| T1 — Repository hygiene | DONE | `.firebaserc.bak.phase1` removed |
+| T2 — Licensed self-hosted fonts | DONE | `public/fonts/` + licenses; 0 Google Fonts refs |
+| T3 — Rules emulator lab | **DONE** | `npm run rules:test` → 9/9 pass |
+| T4a — Migration helpers | DONE | `src/utils/migrate.js` |
+| T4b — Seed tooling | DONE | `scripts/seed-emulator.js` (inert live tool separate) |
+| T4c — Client read path | DONE | `public/migrate.js` |
+| T4d — Migrated-client verification | **DONE** | `npm run client:verify` → PASS (local + CI) |
 | T4e — Live-data protection | BLOCKED | depends on T0; no production write attempted |
-| T5 — App/config/product fixes | DONE (earlier) | see `DECISIONS-LOG.md` |
-| T6 — GitHub Actions pipeline | **DONE (prepared, not pushed)** | `.github/workflows/*` |
-| T7 — Consolidated verification + preview | **PARTIAL** | local pre-flight PASS; remote part blocked by G2 |
-| Gate G1 | Pending owner | needs T0 evidence |
-| Gate G2 | Pending owner | needs approval to commit/push + open preview |
-| Gate G3 | Pending owner | closes the phase |
+| T5 — App/config/product fixes | DONE | see `DECISIONS-LOG.md` |
+| T6 — GitHub Actions pipeline | **DONE** | `.github/workflows/*`; CI run green on push |
+| T7 — Consolidated verification + preview | **PARTIAL** | local + CI done; preview blocked by G2 secret |
 
-Nothing required by Phase 5B is deferred to Phase 7; the remaining items are blocked
-on owner decisions or a production configuration change, not on unimplemented code.
+Gate status: G1 pending owner (needs the T0 export); G2 substantially met (work is now
+committed and pushed to `rebuild` and CI runs green); G3 pending owner.
+
+Nothing required by Phase 5B is deferred to Phase 7; the remaining items are blocked on
+owner-supplied credentials or a production configuration change, not on unimplemented
+code.
 
 ---
 
 ## 2. Work completed (with evidence)
 
-### T3 — Firestore rules emulator lab (unblocked)
+### Remote CI is green on a `rebuild` push
 
-`firebase-tools` 15.33.0 requires Java ≥ 21. No JDK was installed. A **portable**
-Temurin JDK `21.0.12.1+1` was extracted under `%TEMP%\jdk21` (official Adoptium
-binary) and used per-command via `JAVA_HOME`/`PATH`. **No system install and no
-configuration change**; removal is simply deleting the temp folder.
+- Run URL: https://github.com/yusufhamdy/ghareeb-amma/actions/runs/38480912900
+- Commit: `b063038` (push to `rebuild`).
+- Job `Verify` — all steps green: setup Node 20 + Temurin 21; `npm ci`; unit tests;
+  Playwright chromium; static checks (fonts, redirects, sitemap, secrets); privacy
+  check; Firestore emulator rules tests; migrated client read-path verification (T4d).
+
+### CI fix applied (root `firebase-admin` pinned for the Node 20 baseline)
+
+The first CI run (`38480084675`) failed the T4d step with
+`Cannot find module '@google-cloud/firestore'`. Cause: the root `firebase-admin@14.5.0`
+lists `@google-cloud/firestore` as an **optional** dependency resolved to `9.x`, whose
+`engines.node` is `>=22`; the runner uses Node 20, so npm skips that optional dependency
+on an engine mismatch (the local machine runs Node 24, so it installed there and the
+break only showed in CI).
+
+Fix: pin the root `firebase-admin` to `^12.6.0`, matching the deployed
+`functions/package.json` runtime (`^12.6.0`, `engines.node` 20). Its optional
+`@google-cloud/firestore` is `^7.7.0` (`engines.node` `>=14`), which installs and runs on
+Node 20. The root tooling only uses the modular `firebase-admin/app` +
+`firebase-admin/firestore` APIs, stable across v12–v14. No production code changed.
+Recorded in `DECISIONS-LOG.md` ("T7 follow-up").
+
+Re-verified locally after the change:
+```
+$ npm test            → tests 56  pass 56  fail 0
+$ npm run rules:test  → tests 9   pass 9   fail 0
+$ npm run client:verify → CLIENT-VERIFY PASS (source = firestore/emulator)
+$ npm ci --dry-run    → exit 0 (lockfile in sync)
+```
+
+### T3 — Firestore rules emulator lab
+
+`firebase-tools` 15.33.0 requires Java ≥ 21. A portable Temurin JDK `21.0.12.1+1` was
+extracted under `%TEMP%\jdk21` and used per-command via `JAVA_HOME`/`PATH`; no system
+install and no configuration change.
 
 ```
 $ npm run rules:test        (Java 21 from %TEMP%)
@@ -62,19 +94,14 @@ $ npm run rules:test        (Java 21 from %TEMP%)
 
 Three defects were found and fixed in the client verification path:
 
-1. **Emulator namespace** — the emulator namespaces data per project id; the seed
-   writes to the `demo-ghareeb` demo project, but the client connected with the
-   production project id, so reads returned nothing. In `?emul=1` mode `migrate.js`
-   now initializes with projectId `demo-ghareeb`; production still uses
-   `window.FIREBASE_CONFIG.projectId`.
-2. **Words shape** — the app's `build()` consumes the JSON words shape, a plain
-   **array** of 28 surahs (`public/words.json`). The Firestore `public/data` document
-   wraps it as `{ rev, surahs }`. `migrate.js` now unwraps `data.surahs` before
-   setting `window.__WORDS__`. The application code and every Arabic byte are
-   unchanged.
-3. **Verifier wait** — `scripts/verify-client-firestore.mjs` waited for
-   `__DATA_SRC__ !== undefined`, but `migrate.js` sets `'pending'` synchronously, so
-   it read the pre-resolve value. It now waits for the value to leave `'pending'`.
+1. **Emulator namespace** — in `?emul=1` mode `migrate.js` initializes with projectId
+   `demo-ghareeb`; production still uses `window.FIREBASE_CONFIG.projectId`.
+2. **Words shape** — the app consumes a plain **array** of 28 surahs; the Firestore
+   `public/data` document wraps it as `{ rev, surahs }`. `migrate.js` unwraps
+   `data.surahs` before setting `window.__WORDS__`. Application code and every Arabic
+   byte are unchanged.
+3. **Verifier wait** — the verifier now waits for `__DATA_SRC__` to leave `'pending'`
+   instead of `!== undefined`.
 
 ```
 $ npm run client:verify
@@ -94,21 +121,23 @@ The offline JSON fallback remains bounded (8000 ms) and reports the real source 
 `window.__DATA_SRC__`; the verifier asserts `'firestore'`, so the migration cannot pass
 by silently falling back.
 
-### T6 — GitHub Actions CI/CD (prepared only)
+### T6 — GitHub Actions CI/CD
 
 - `.github/workflows/ci.yml` — pushes to `rebuild` and all PRs (fork-safe, read-only
   token, no secrets). Node 20 + Temurin 21, `npm ci`, `npm test`, Playwright chromium,
   `node scripts/ci/checks.mjs`, `check-private.ps1`, `npm run rules:test`,
-  `npm run client:verify`. Never deploys.
+  `npm run client:verify`. Never deploys. **Green** on run `38480912900`.
 - `.github/workflows/preview.yml` — Hosting-only preview channel; same-repo PRs and
-  pushes to `rebuild`; gated behind repository variable `PREVIEW_ENABLED` (set at G2);
+  pushes to `rebuild`; gated behind repository variable `PREVIEW_ENABLED` (now `true`);
   fork PRs excluded; uses the `FIREBASE_SERVICE_ACCOUNT` secret.
-- `.github/workflows/release.yml` — `main` only; refuses to run unless the triggering
-  commit is the tip of `origin/main`; Workload Identity Federation auth (documented key
-  fallback); deploys rules → functions → hosting.
+- `.github/workflows/release.yml` — `main` only; job guard `github.ref ==
+  refs/heads/main`; refuses unless the triggering commit is the tip of `origin/main`;
+  Workload Identity Federation auth (documented key fallback); deploys rules →
+  functions → hosting. **Did not fire** (no release run exists; `rebuild` cannot reach
+  it).
 - All third-party actions are pinned to commit SHAs.
-- `.github/workflows/README.md` — records that GitHub Actions is the single deployment
-  path and that `firebase deploy` must not run locally in parallel with a workflow.
+- `.github/workflows/README.md` — GitHub Actions is the single deployment path;
+  `firebase deploy` must not run locally in parallel with a workflow.
 - `scripts/ci/checks.mjs` — static checks: no Google Fonts, 71 legacy redirects vs
   `firebase.json` + target files, sitemap↔word-file sync (73), and a secrets scan that
   allowlists the public web key in `public/firebase-config.js`.
@@ -123,11 +152,11 @@ OK   secrets: 577 tracked files scanned, no sensitive material
 checks.mjs: PASSED
 ```
 
-CI-safety: the Stage A guard (`test/arabic-guard.test.js`) skips in a fresh CI
-checkout because its baseline fixture and the untracked `ghareeb-handoff/` bundle are
-not committed; it always runs in the full local environment.
+CI-safety: the Stage A guard (`test/arabic-guard.test.js`) skips in a fresh CI checkout
+because its baseline fixture and the untracked `ghareeb-handoff/` bundle are not
+committed; it always runs in the full local environment.
 
-### T7 — local pre-flight (remote half blocked)
+### T7 — local pre-flight
 
 ```
 $ npm test                 → tests 56  pass 56  fail 0
@@ -140,9 +169,30 @@ $ node scripts/smoke-ui.mjs   (inside Firestore emulator, seed first)
 SMOKE-UI PASS: 3 viewports x home/search/surahs/surah/word/challenge/day/quiz/settings/legal/404
 ```
 
-`scripts/smoke-ui.mjs` (new) drives Chromium at 400/820/1440 through the required
-surfaces and requires the data source to be the Firestore emulator, failing on any
-page/console error.
+`scripts/smoke-ui.mjs` drives Chromium at 400/820/1440 through the required surfaces and
+requires the data source to be the Firestore emulator, failing on any page/console error.
+
+### Committed phase contents
+
+Commit `dfc1007` (264 files = 33 added, 84 modified, 147 deleted):
+- 33 added: workflows + README, `.npmrc`, `PHASE-5B-REPORT.md`, `data/redirects.json`,
+  `public/fonts/*` (woff2 + licenses + `fonts.css`), `public/migrate.js`,
+  `src/utils/migrate.js`, `scripts/arabic-baseline.js`, `scripts/ci/checks.mjs`,
+  `scripts/clean-word-pages.js`, `scripts/gen-redirects.js`, `scripts/seed-live.js`,
+  `scripts/smoke-ui.mjs`, `scripts/verify-client-firestore.mjs`,
+  `test/arabic-guard.test.js`, `test/data-migration.test.js`,
+  `test/rules-emulator.test.js`.
+- 147 deleted: `public/admin.html` (T5c), `public/fonts/placeholder.txt` (T2), and 145
+  legacy/stale word pages (73 Arabic-named + 72 garbled duplicates) (T5b). 0 canonical
+  sitemap pages deleted; `public/word/` now holds exactly 73 canonical ASCII pages.
+- 84 modified: all 73 word pages changed **only** the Google Fonts `<link>` →
+  `/fonts/fonts.css` (verified: 0 other changed lines), plus `firebase.json`,
+  `functions/index.js`, `public/index.html`, `public/admin/index.html`,
+  `public/firebase-config.js`, `public/sw.js`, `.gitignore`, `DECISIONS-LOG.md`,
+  `package.json`, `package-lock.json`, `scripts/seed-emulator.js`,
+  `test/data-migration.test.js`.
+
+Commit `b063038` (3 files): `package.json`, `package-lock.json`, `DECISIONS-LOG.md`.
 
 ---
 
@@ -157,14 +207,34 @@ page/console error.
   No empty/misleading backup directory was created. Therefore the live export,
   live-vs-migration diff, and T4e live-data protection remain blocked.
 
-### T7 remote half — CI run, preview channel, "release did not fire"
-- Requires Gate G2: owner approval to commit and push to `rebuild`, plus the CI
-  secrets and the `PREVIEW_ENABLED` variable. Nothing was pushed.
+### T7 — Hosting preview channel could not be deployed (missing credential)
+- `PREVIEW_ENABLED` is set to `true`, so the preview job now runs on every `rebuild`
+  push. It fails at the deploy step with the exact error
+  `Input required and not supplied: firebaseServiceAccount` (run
+  https://github.com/yusufhamdy/ghareeb-amma/actions/runs/38480912969).
+- Exact blocker: repository secret `FIREBASE_SERVICE_ACCOUNT` is not set
+  (`gh secret list` is empty; no service-account key file exists on this machine, and
+  `GOOGLE_APPLICATION_CREDENTIALS` is unset).
+- Owner action required (one command, run on a machine with a Firebase service-account
+  key — created via `firebase init hosting:github` or the Google Cloud console, with the
+  Firebase Hosting Admin role on `ghareebalquran-d9ae5`):
+  ```
+  gh secret set FIREBASE_SERVICE_ACCOUNT --repo yusufhamdy/ghareeb-amma < path/to/service-account.json
+  ```
+  Creating a new service account is a project IAM change and was **not** performed
+  without explicit approval for that exact change. Until the secret exists, previews
+  cannot be created and the preview HTTP checks in T7 cannot be run.
+
+### Release job — confirmed not fired
+- `release.yml` triggers only on `main` and the job guards `github.ref ==
+  refs/heads/main`; `rebuild` cannot reach it. No Release workflow run exists
+  (`gh run list --workflow=release.yml` → not found on the default branch; no run on
+  `rebuild`). This satisfies the "no accidental release" requirement.
 
 ### Non-blocking environment note
 - The emulator JVM intermittently fails with "insufficient memory … commit metaspace"
-  when the Windows commit charge spikes. It is transient and unrelated to the project;
-  a bounded heap via `JAVA_TOOL_OPTIONS` reduces the footprint and the run is retried.
+  when the Windows commit charge spikes. It is transient and unrelated to the project; a
+  bounded heap via `JAVA_TOOL_OPTIONS` reduces the footprint and the run is retried.
 
 ---
 
@@ -191,31 +261,37 @@ No sha256 manifest exists yet because no export exists.
 
 **None.** No production data write, seed, overwrite, deletion, index change, rules
 deploy, function deploy, or hosting deploy was performed. No live Firestore or Cloud
-configuration was modified.
+configuration was modified. The only remote Git action was pushing commits `dfc1007`
+and `b063038` to `rebuild`.
 
 ---
 
 ## 6. Outstanding issues and risks
 
 1. **Live data state is unverified** — the migration is proven only against the
-   emulator. Whether live Firestore matches the migration source cannot be checked
-   until the API is enabled and the T0 export is produced.
-2. **CI/preview/release are unexercised** — the workflows are correct-by-construction
-   and validated locally (`js-yaml` parse, `checks.mjs`), but no run URL, preview URL,
-   or "release did not fire" evidence exists yet.
-3. **JDK is temporary** — the local emulator lab depends on the extracted temp JDK;
-   CI uses `actions/setup-java` so it is self-sufficient. A lasting local JDK 21 is
+   emulator. Whether live Firestore matches the migration source cannot be checked until
+   the API is enabled and the T0 export is produced.
+2. **Preview channel is unverified** — the workflow is correct and the gate wiring is
+   proven (the job runs and fails only on the missing credential), but no preview URL or
+   preview HTTP evidence exists until `FIREBASE_SERVICE_ACCOUNT` is set. The preview job
+   currently shows a red run on each `rebuild` push for exactly that reason.
+3. **Release workflow is unexercised** — by design it fires only on `main`; it was
+   verified not to fire from `rebuild`.
+4. **JDK is temporary** — the local emulator lab depends on the extracted temp JDK; CI
+   uses `actions/setup-java` so it is self-sufficient. A lasting local JDK 21 is
    recommended for future local runs.
-4. **Transient JVM memory errors** on this machine (see §3).
-5. **Private data** — `data/challenge-notes-private.json` is gitignored and local-only;
+5. **Transient JVM memory errors** on this machine (see §3).
+6. **Private data** — `data/challenge-notes-private.json` is gitignored and local-only;
    `check-private.ps1` passes (no private text under `public/` or `functions/`).
 
 ---
 
 ## 7. Next-phase recommendation
 
-Proceed to **Phase 6 (consolidated QA + preview only)** once the owner approves Gate G2
-(commit + push to `rebuild`, run CI, open the preview channel) and, separately, the T0
-Firestore API enablement for the live baseline. Everything implemented by Phase 5B is
-complete and locally verified; the remaining items are authorization/configuration
-steps, not new development.
+Everything implemented by Phase 5B is complete and locally verified, and remote CI is
+green. Proceed to **Phase 6 (consolidated QA + preview only)** once the owner:
+1. sets the repository secret `FIREBASE_SERVICE_ACCOUNT` (so the preview channel can be
+   created and the T7 preview HTTP checks can run), and
+2. separately approves enabling the Cloud Firestore API for the T0 live baseline.
+
+Both are authorization/configuration steps, not new development.
