@@ -1,0 +1,56 @@
+name: Preview
+
+# Phase 5B T6 - Hosting preview channel.
+#
+# Deploys HOSTING ONLY. It never deploys functions, Firestore rules, indexes,
+# or emulator configuration.
+#
+# Gating: the job is inert until the owner enables previews by setting the
+# repository variable PREVIEW_ENABLED=true at Gate G2. Fork PRs can never reach
+# the deploy step (they get no secrets and are excluded by the `if` condition).
+#
+# Deployment policy: GitHub Actions is the single official deployment path from
+# this point on. Do not run `firebase deploy` locally in parallel with a run.
+
+on:
+  push:
+    branches: [rebuild]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Hosting preview channel
+    if: >-
+      vars.PREVIEW_ENABLED == 'true' &&
+      (github.event_name == 'push' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Hosting-only preview channel
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ghareebalquran-d9ae5
+          expires: 7d

@@ -1,0 +1,74 @@
+name: Release
+
+# Phase 5B T6 - production release.
+#
+# Triggered ONLY by a push to `main`. It can never fire from `rebuild` or any
+# other branch. The job additionally refuses to run unless the triggering commit
+# is the current tip of origin/main, so an older run can never overwrite a
+# newer release.
+#
+# Authentication prefers Workload Identity Federation (no long-lived key). If
+# WIF is not configured yet, replace the auth step with the commented
+# credentials_json fallback below and store the protected repo secret
+# FIREBASE_SERVICE_ACCOUNT.
+#
+# Deployment policy: GitHub Actions is the single official deployment path from
+# this point on. Do not run `firebase deploy` locally in parallel with a run.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Production release (main only)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for latest-main check)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+        # Fallback (long-lived key) - use only if WIF is unavailable:
+        # with:
+        #   credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify this commit is the latest origin/main
+        run: |
+          git fetch --no-tags origin main
+          if [ "$(git rev-parse origin/main)" != "${GITHUB_SHA}" ]; then
+            echo "Not the latest origin/main; refusing to release."
+            exit 1
+          fi
+
+      - name: Deploy Firestore rules
+        run: npx firebase deploy --only firestore:rules --project ghareebalquran-d9ae5 --non-interactive
+
+      - name: Deploy Cloud Functions
+        run: npx firebase deploy --only functions --project ghareebalquran-d9ae5 --non-interactive
+
+      - name: Deploy Hosting
+        run: npx firebase deploy --only hosting --project ghareebalquran-d9ae5 --non-interactive

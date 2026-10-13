@@ -1,19 +1,433 @@
 {
   "hosting": {
     "public": "public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "headers": [
-      { "source": "/admin/**", "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
-        { "key": "Cache-Control", "value": "no-store" } ] },
-      { "source": "/sw.js", "headers": [ { "key": "Cache-Control", "value": "no-cache" } ] },
-      { "source": "/firebase-config.js", "headers": [ { "key": "Cache-Control", "value": "no-cache" } ] }
+      {
+        "source": "/admin/**",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/firebase-config.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
     ],
     "rewrites": [
-      { "source": "/word/**", "function": { "functionId": "seo", "region": "europe-west1" } },
-      { "source": "/sitemap.xml", "function": { "functionId": "seo", "region": "europe-west1" } }
+      {
+        "source": "/word/**",
+        "function": {
+          "functionId": "seo",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/sitemap.xml",
+        "function": {
+          "functionId": "seo",
+          "region": "europe-west1"
+        }
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/word/الخناس.html",
+        "destination": "/word/an-nas-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/غاسق-اذا-وقب.html",
+        "destination": "/word/al-falaq-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/النفاثات-في-العقد.html",
+        "destination": "/word/al-falaq-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الصمد.html",
+        "destination": "/word/al-ikhlas-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/شانئك.html",
+        "destination": "/word/al-kawthar-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الابتر.html",
+        "destination": "/word/al-kawthar-3-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الماعون.html",
+        "destination": "/word/al-maun-7.html",
+        "type": 301
+      },
+      {
+        "source": "/word/ايلافهم.html",
+        "destination": "/word/quraysh-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/سجيل.html",
+        "destination": "/word/al-fil-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/عصف-ماكول.html",
+        "destination": "/word/al-fil-5.html",
+        "type": 301
+      },
+      {
+        "source": "/word/همزه-لمزه.html",
+        "destination": "/word/al-humazah-1.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الحطمه.html",
+        "destination": "/word/al-humazah-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/كالعهن-المنفوش.html",
+        "destination": "/word/al-qariah-5.html",
+        "type": 301
+      },
+      {
+        "source": "/word/هاويه.html",
+        "destination": "/word/al-qariah-9.html",
+        "type": 301
+      },
+      {
+        "source": "/word/وٱلۡعديت-ضبۡحا.html",
+        "destination": "/word/al-adiyat-1.html",
+        "type": 301
+      },
+      {
+        "source": "/word/فٱلۡموريت-قدۡحا.html",
+        "destination": "/word/al-adiyat-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/فٱلۡمغيرت-صبۡحا.html",
+        "destination": "/word/al-adiyat-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/فاثرۡن-بهۦ-نقعا.html",
+        "destination": "/word/al-adiyat-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/فوسطۡن-بهۦ-جمۡعا.html",
+        "destination": "/word/al-adiyat-5.html",
+        "type": 301
+      },
+      {
+        "source": "/word/لكنود.html",
+        "destination": "/word/al-adiyat-6.html",
+        "type": 301
+      },
+      {
+        "source": "/word/اثقالها.html",
+        "destination": "/word/az-zalzalah-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/منفكين.html",
+        "destination": "/word/al-bayyinah-1.html",
+        "type": 301
+      },
+      {
+        "source": "/word/لنسفعا-بالناصيه.html",
+        "destination": "/word/al-alaq-15.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الزبانيه.html",
+        "destination": "/word/al-alaq-18.html",
+        "type": 301
+      },
+      {
+        "source": "/word/انقض-ظهرك.html",
+        "destination": "/word/ash-sharh-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/سجي.html",
+        "destination": "/word/ad-duha-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/قلي.html",
+        "destination": "/word/ad-duha-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/تردي.html",
+        "destination": "/word/al-layl-11.html",
+        "type": 301
+      },
+      {
+        "source": "/word/تلظي.html",
+        "destination": "/word/al-layl-14.html",
+        "type": 301
+      },
+      {
+        "source": "/word/طحاها.html",
+        "destination": "/word/ash-shams-6.html",
+        "type": 301
+      },
+      {
+        "source": "/word/دساها.html",
+        "destination": "/word/ash-shams-10.html",
+        "type": 301
+      },
+      {
+        "source": "/word/حل.html",
+        "destination": "/word/al-balad-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/متربه.html",
+        "destination": "/word/al-balad-16.html",
+        "type": 301
+      },
+      {
+        "source": "/word/حجر.html",
+        "destination": "/word/al-fajr-5.html",
+        "type": 301
+      },
+      {
+        "source": "/word/تراث.html",
+        "destination": "/word/al-fajr-19.html",
+        "type": 301
+      },
+      {
+        "source": "/word/اكلا-لما.html",
+        "destination": "/word/al-fajr-19-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/ضريع.html",
+        "destination": "/word/al-ghashiyah-6.html",
+        "type": 301
+      },
+      {
+        "source": "/word/نمارق.html",
+        "destination": "/word/al-ghashiyah-15.html",
+        "type": 301
+      },
+      {
+        "source": "/word/زرابي.html",
+        "destination": "/word/al-ghashiyah-16.html",
+        "type": 301
+      },
+      {
+        "source": "/word/غثاء-احوي.html",
+        "destination": "/word/al-ala-5.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الثاقب.html",
+        "destination": "/word/at-tariq-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الترائب.html",
+        "destination": "/word/at-tariq-7.html",
+        "type": 301
+      },
+      {
+        "source": "/word/تبلي-السرائر.html",
+        "destination": "/word/at-tariq-9.html",
+        "type": 301
+      },
+      {
+        "source": "/word/ثبورا.html",
+        "destination": "/word/al-inshiqaq-11.html",
+        "type": 301
+      },
+      {
+        "source": "/word/يحور.html",
+        "destination": "/word/al-inshiqaq-14.html",
+        "type": 301
+      },
+      {
+        "source": "/word/وسق.html",
+        "destination": "/word/al-inshiqaq-17.html",
+        "type": 301
+      },
+      {
+        "source": "/word/سجين.html",
+        "destination": "/word/al-mutaffifin-7.html",
+        "type": 301
+      },
+      {
+        "source": "/word/ران.html",
+        "destination": "/word/al-mutaffifin-14.html",
+        "type": 301
+      },
+      {
+        "source": "/word/عليون.html",
+        "destination": "/word/al-mutaffifin-19.html",
+        "type": 301
+      },
+      {
+        "source": "/word/تسنيم.html",
+        "destination": "/word/al-mutaffifin-27.html",
+        "type": 301
+      },
+      {
+        "source": "/word/انكدرت.html",
+        "destination": "/word/at-takwir-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/العشار-عطلت.html",
+        "destination": "/word/at-takwir-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/البحار-سجرت.html",
+        "destination": "/word/at-takwir-6.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الخنس-الجوار-الكنس.html",
+        "destination": "/word/at-takwir-15.html",
+        "type": 301
+      },
+      {
+        "source": "/word/عسعس.html",
+        "destination": "/word/at-takwir-17.html",
+        "type": 301
+      },
+      {
+        "source": "/word/بضنين.html",
+        "destination": "/word/at-takwir-24.html",
+        "type": 301
+      },
+      {
+        "source": "/word/قضبا.html",
+        "destination": "/word/abasa-28.html",
+        "type": 301
+      },
+      {
+        "source": "/word/غلبا.html",
+        "destination": "/word/abasa-30.html",
+        "type": 301
+      },
+      {
+        "source": "/word/ابا.html",
+        "destination": "/word/abasa-31.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الصاخه.html",
+        "destination": "/word/abasa-33.html",
+        "type": 301
+      },
+      {
+        "source": "/word/والنازعات-غرقا.html",
+        "destination": "/word/an-naziat-1.html",
+        "type": 301
+      },
+      {
+        "source": "/word/والناشطات-نشطا.html",
+        "destination": "/word/an-naziat-2.html",
+        "type": 301
+      },
+      {
+        "source": "/word/والسابحات-سبحا.html",
+        "destination": "/word/an-naziat-3.html",
+        "type": 301
+      },
+      {
+        "source": "/word/فالسابقات-سبقا.html",
+        "destination": "/word/an-naziat-4.html",
+        "type": 301
+      },
+      {
+        "source": "/word/فالمدبرات-امرا.html",
+        "destination": "/word/an-naziat-5.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الحافره.html",
+        "destination": "/word/an-naziat-10.html",
+        "type": 301
+      },
+      {
+        "source": "/word/دحاها.html",
+        "destination": "/word/an-naziat-30.html",
+        "type": 301
+      },
+      {
+        "source": "/word/الطامه-الكبري.html",
+        "destination": "/word/an-naziat-34.html",
+        "type": 301
+      },
+      {
+        "source": "/word/ثجاجا.html",
+        "destination": "/word/an-naba-14.html",
+        "type": 301
+      },
+      {
+        "source": "/word/غساقا.html",
+        "destination": "/word/an-naba-25.html",
+        "type": 301
+      },
+      {
+        "source": "/word/دهاقا.html",
+        "destination": "/word/an-naba-34.html",
+        "type": 301
+      }
     ]
   },
-  "firestore": { "rules": "firestore.rules" },
-  "functions": [ { "source": "functions", "codebase": "default" } ]
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default"
+    }
+  ],
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
 }

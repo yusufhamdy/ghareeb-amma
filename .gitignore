@@ -85,3 +85,6 @@ ghareeb-handoff/data/challenge-notes-private.json
 # Phase 5 generated artifacts (regenerate with tools/baseline.mjs and tools/compare.mjs)
 design/baseline/
 tools/report/
+
+# Resume checkpoint (keep out of git)
+CHECKPOINT.md

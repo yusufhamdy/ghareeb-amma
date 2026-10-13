@@ -156,3 +156,109 @@ backed by a numeric % plus a DOM/box diff, not by eye.
 `tools/contrast.mjs` computes WCAG ratios from the palette tokens. Minimums across the
 20 looks: body text 12.9:1, muted text 5.5:1, accent marks 5.2:1, button text on accent
 5.8:1. All pass AA (4.5:1 body, 3:1 large/UI). No color adjustments were needed.
+
+## Phase 5B - 2026-10-13 (partial; T0/T3 blocked, T4c implemented)
+
+### T0 blocker (live Firestore safety baseline)
+- `firebase firestore:export` no longer exists in firebase-tools 15.33.0 (removed;
+  available commands are delete/bulkdelete/indexes/locations/operations/databases/backups).
+- The live export is impossible because the Cloud Firestore API is DISABLED on
+  project `ghareebalquran-d9ae5`: both the REST call
+  (`documents:listCollectionIds`) and `firebase firestore:databases:list` return
+  HTTP 403, `firestore.googleapis.com`, reason `SERVICE_DISABLED`. Enabling the API
+  is a production change and was NOT performed. If enabled later, re-run the export
+  and produce the manifest + counts.
+
+### T3 blocker (Firestore rules emulator lab)
+- firebase-tools 15.33.0 refuses to start the emulator on Java < 21:
+  "firebase-tools no longer supports Java version before 21".
+- The cached emulator jar `cloud-firestore-emulator-v1.22.0.jar` is compiled for
+  class file version 65.0 (Java 21); the only runtime on this machine is Java
+  1.8.0_503 (class 52.0), so `java -jar` also fails
+  (`UnsupportedClassVersionError`). No JDK 21 is installed.
+- The earlier npm peer-dependency blocker is already resolved: `.npmrc` sets
+  `legacy-peer-deps=true`, and `@firebase/rules-unit-testing@6.0.0` is installed
+  alongside the pinned `firebase@12.19.0`. The remaining blocker is purely the JDK.
+  Real emulator rules tests remain deferred until a JDK >= 21 is available.
+
+### T4c (client read path) - implemented, fallback verified
+- `public/index.html` now loads `/migrate.js` in the head (after `/firebase-config.js`).
+- `public/migrate.js` uses the modular Firebase JS SDK 10.14.1 (the exact version
+  `scripts/verify-client-firestore.mjs` serves), reads `public/data` and
+  `public/challenge`, supports `?emul=1` (emulator at 127.0.0.1:8080), and sets
+  `window.__WORDS__` / `window.__CH__` / `window.__DATA_SRC__`.
+- Offline JSON fallback justification: the read is bounded to 8000 ms; if Firestore
+  cannot answer (unreachable or unprovisioned), the module falls back to the original
+  `fetch('words.json'/'challenge.json')` so the app never hangs. A late Firestore reply
+  is ignored (superseded) so it cannot override already-rendered JSON. This is a
+  resilience fallback, not a silent substitute for the migration: `window.__DATA_SRC__`
+  reports the actual source and the verifier asserts `'firestore'`.
+- Local fallback smoke (Playwright, static server, no emulator): `data_src=json`,
+  28 surah rows, summary "73 كلمة في 28 سورة", 0 page errors. The Firestore read path
+  (T4d) still needs the emulator and is blocked by the T3 JDK blocker.
+
+### T3 unblocked - portable JDK 21 (no system install)
+- firebase-tools 15.33.0 requires Java >= 21 and none was installed. A portable
+  Temurin JDK `21.0.12.1+1` was extracted under `%TEMP%\jdk21` (downloaded from the
+  official Adoptium API) and used per-command via `JAVA_HOME`/`PATH`. No system
+  install, no PATH or registry change; the choice is reversible by deleting the temp
+  directory. This is the recommended way to run the emulator lab locally.
+- `npm run rules:test` -> 9/9 pass: public read allowed for unauthenticated; writes/
+  deletes denied; admin/config docs unreadable to the public; catch-all deny; owner
+  full control; granted admin manages public + notes but not config/admins; plain
+  verified user gets no admin access; `email_verified=false` is treated as
+  unauthenticated; admin is scoped to its own paths.
+- Environment note: the emulator JVM intermittently fails with "insufficient memory
+  ... commit metaspace" when the Windows commit charge spikes (e.g. during the smoke
+  run). It is transient and unrelated to the project; a bounded heap via
+  `JAVA_TOOL_OPTIONS` reduces the footprint and the run is simply retried. No system
+  setting was changed.
+
+### T4c/T4d fixes (client Firestore read path) - now verified
+- Emulator namespace: the Firestore emulator namespaces data per project id, and
+  `scripts/seed-emulator.js` seeds the `demo-ghareeb` demo project. In `?emul=1` mode
+  `public/migrate.js` now initializes Firebase with projectId `demo-ghareeb`; production
+  still uses `window.FIREBASE_CONFIG.projectId`.
+- Words shape: the app's `build()` consumes the JSON words shape, a plain ARRAY of
+  surahs (`public/words.json` is an array of 28). The Firestore `public/data` document
+  wraps it as `{ rev, surahs }`. `migrate.js` now unwraps to `data.surahs` before
+  setting `window.__WORDS__`, so the app code and every Arabic byte stay unchanged.
+- Verifier wait: `scripts/verify-client-firestore.mjs` waited for
+  `__DATA_SRC__ !== undefined`, but `migrate.js` sets `'pending'` synchronously, so it
+  read the pre-resolve value. It now waits for the value to leave `'pending'`.
+- Result: `npm run client:verify` PASS - data source = firestore (emulator), 28 surah
+  rows in Mushaf order (78..114), 73 words in 28 surahs, word deep link resolves,
+  30 challenge day tiles, day-1 word refs resolve, 0 page/console errors.
+
+### T6 - GitHub Actions CI/CD prepared (not pushed)
+- `.github/workflows/ci.yml`: pushes to `rebuild` + all PRs; Node 20, Temurin 21 (for
+  the emulator), `npm ci`, `npm test`, Playwright chromium, `node scripts/ci/checks.mjs`,
+  `check-private.ps1`, `npm run rules:test`, `npm run client:verify`. Never deploys.
+- `.github/workflows/preview.yml`: Hosting-only preview channel; same-repo PRs and
+  pushes to `rebuild`; gated by repository variable `PREVIEW_ENABLED` (set at Gate G2);
+  fork PRs excluded. Uses the `FIREBASE_SERVICE_ACCOUNT` secret.
+- `.github/workflows/release.yml`: `main` only; refuses unless the triggering commit is
+  the latest `origin/main`; auth prefers Workload Identity Federation (documented key
+  fallback); deploys rules -> functions -> hosting.
+- All actions are pinned to commit SHAs; `.github/workflows/README.md` records the
+  policy that GitHub Actions is the single deployment path (do not run `firebase deploy`
+  locally in parallel).
+- `scripts/ci/checks.mjs` (new): no-Google-Fonts, redirects (71 legacy 301s checked
+  against `firebase.json` and target files), sitemap<->word-file sync (73), and a secrets
+  scan that allowlists the public web API key in `public/firebase-config.js`. Locally
+  PASSED.
+- CI-safety: the Stage A guard (`test/arabic-guard.test.js`) skips in a fresh CI
+  checkout because its baseline fixture and the untracked `ghareeb-handoff/` bundle are
+  absent; it always runs in the full local environment.
+
+### T7 - local pre-flight done; remote verification blocked
+- `npm test` -> 56/56 pass (the changed guard file was re-run specifically for the skip
+  edit).
+- `powershell -File scripts/check-private.ps1` -> OK.
+- `node scripts/ci/checks.mjs` -> PASS.
+- `scripts/smoke-ui.mjs` (new) -> PASS at 400/820/1440 across home, search, surahs,
+  surah, word, challenge, day, quiz, the settings sheet, the four legal pages, and the
+  custom 404, reading data from the Firestore emulator, 0 page/console errors.
+- Blocked: the CI run URL, the preview channel, and the "release job did not fire"
+  evidence require Gate G2 (owner approval to commit and push to `rebuild`) plus the CI
+  secrets/preview variable. Nothing was pushed.

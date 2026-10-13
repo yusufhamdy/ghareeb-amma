@@ -58,7 +58,7 @@ function page(o) {
 <meta property="og:type" content="article"><meta property="og:title" content="معنى ${esc(o.w)} | غريب القرآن"><meta property="og:description" content="${desc}"><meta property="og:image" content="${SITE}/og-image.png">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/site.css">
 <script type="application/ld+json">${ld}</script>
 </head>
