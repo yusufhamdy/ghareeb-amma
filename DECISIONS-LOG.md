@@ -555,3 +555,115 @@ and `data/challenge.json` do not exist - the data lives in `public/`.)
   keeps `_shade-cards-proposal.html` out via the explicit ignore list; keep that
   entry if it is still needed.) This is documentation only in Phase 7A.
 
+###########################################################################################
+
+### Phase 7B - non-design production setup, FREE plan (2026-10-15)
+
+- **Firestore database created.** Command:
+  `firebase firestore:databases:create "(default)" --project ghareebalquran-d9ae5 --location europe-west1 --edition standard`
+  Result: `Successfully created projects/ghareebalquran-d9ae5/databases/(default)`.
+  Native (standard) mode, region **europe-west1**. Tel Aviv excluded by the owner.
+  No Blaze upgrade, no billing change. `firebase firestore:databases:list` before
+  creation returned "No databases found", so no pre-existing database and no
+  conflicting locked default location.
+- **Access tooling.** `gcloud` is NOT installed on this machine (only the Firebase
+  CLI 15.33.0 and `gh` 2.102.0). Any step that requires `gcloud` (e.g. creating a
+  Workload Identity Federation pool) is blocked and is written up as owner steps
+  instead.
+
+#### Owner step A - seed credentials (BLOCKED in this session)
+
+`node scripts/seed-live.js --allow-live --confirm` (with
+`GHAREEB_LIVE_SEED_AUTHORIZED=1`) failed with
+`Could not load the default credentials`. No Application Default Credentials
+exist, no `GOOGLE_APPLICATION_CREDENTIALS`, and no service-account key file is
+present. The backup was taken first
+(`%USERPROFILE%\ghareeb-backups\20261015-015426`).
+
+Owner action (pick one):
+
+1. Install the Google Cloud CLI, then run:
+   `gcloud auth application-default login`
+   and accept the browser prompt in an account that can write the project.
+2. Then re-run the seed exactly as before:
+   `$env:GHAREEB_LIVE_SEED_AUTHORIZED=1; node scripts/seed-live.js --allow-live --confirm`
+
+Do NOT create a long-lived JSON key; ADC (or WIF for CI) is preferred. This
+blocks STEP 3 (seed) and, transitively, STEP 5 (publisher dry run against live:
+it needs both ADC and seeded data - the live DB is still empty).
+
+#### Owner step B - Workload Identity Federation for publish.yml (BLOCKED)
+
+`WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` do not exist (no repo secrets at all).
+`gcloud` is not installed, so they cannot be created here. Least-privilege setup
+(Firestore read + Hosting deploy only), run with an owner account:
+
+```
+gcloud services enable iamcredentials.googleapis.com sts.googleapis.com \
+  firebasehosting.googleapis.com firestore.googleapis.com \
+  --project ghareebalquran-d9ae5
+
+gcloud iam service-accounts create ghareeb-publish \
+  --display-name="Ghareeb publish (CI)" --project ghareebalquran-d9ae5
+
+gcloud projects add-iam-policy-binding ghareebalquran-d9ae5 \
+  --member="serviceAccount:ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com" \
+  --role="roles/datastore.viewer" --condition=None
+
+gcloud projects add-iam-policy-binding ghareebalquran-d9ae5 \
+  --member="serviceAccount:ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com" \
+  --role="roles/firebasehosting.admin" --condition=None
+
+gcloud iam workload-identity-pools create github --location=global \
+  --display-name="GitHub Actions" --project ghareebalquran-d9ae5
+
+gcloud iam workload-identity-pools providers create-oidc github \
+  --location=global --workload-identity-pool=github \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+  --attribute-condition="assertion.repository=='yusufhamdy/ghareeb-amma'" \
+  --project ghareebalquran-d9ae5
+
+gcloud projects describe ghareebalquran-d9ae5 --format="value(projectNumber)"
+# use the number below as <PROJECT_NUMBER>
+gcloud iam service-accounts add-iam-policy-binding \
+  ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com \
+  --project ghareebalquran-d9ae5 --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github/attribute.repository/yusufhamdy/ghareeb-amma"
+```
+
+Then set the two secrets (values are not secret-but-are-not-echoed here):
+
+```
+gh secret set WIF_PROVIDER --repo yusufhamdy/ghareeb-amma \
+  --body "projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github/providers/github"
+gh secret set WIF_SERVICE_ACCOUNT --repo yusufhamdy/ghareeb-amma \
+  --body "ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com"
+```
+
+Roles are least privilege: `roles/datastore.viewer` is Firestore read-only and
+`roles/firebasehosting.admin` covers the Hosting deploy the workflow performs.
+No Blaze, no billing. `PUBLISH_ENABLED` is set to `false`; the owner flips it to
+`true` only after the first successful manual workflow run.
+
+#### Decision - 404 status on the static rewrite (owner to confirm)
+
+Applying the documented `**` -> `/index.html` catch-all means unknown paths now
+return HTTP **200** with the app shell, not **404**. There is no
+`public/404.html`, so previously those paths received Firebase's default 404.
+AGENTS.md section 7 wants a real 404 status for unknown `/word/*` URLs. The
+applied change is exactly the snippet recorded above (owner-documented), so it
+was kept. If a real 404 status is required, the owner should add a static
+`public/404.html` (and a narrower rewrite), or accept the client-rendered 404
+view with a 200 status. Preview-only; production Hosting was not changed.
+
+#### Preview channel (STEP 7)
+
+`firebase hosting:channel:deploy phase7b --expires 7d` ->
+https://ghareebalquran-d9ae5--phase7b-truizs9q.web.app (expires 2026-10-22,
+version d91a79606b214cb9). Deploy warned it could not add the channel domain to
+Firebase Auth; admin sign-in on the preview may need the domain added under
+Authentication -> Settings -> Authorized domains. Smoke: home 200, word page 200,
+legacy 301 -> /word/al-ikhlas-2.html, /admin/ noindex+no-store, unknown path 200,
+headless `window.__DATA_SRC__ = "json"` (live DB empty, app on JSON fallback).
+
