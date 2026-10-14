@@ -475,3 +475,15 @@ and `data/challenge.json` do not exist - the data lives in `public/`.)
   (`b5877c9`) and must not be quoted for the current build. The fix above is
   verified by spot checks only (home 0.45%, challenge 1.2% - both equal to their
   Phase 5 values) plus `npm run client:verify`.
+
+### Phase 6 QA decisions (2026-10-14)
+- Hosting preview: excluded `_shade-cards-proposal.html` via firebase.json hosting.ignore so the
+  unreviewed design draft is never published on any channel (preview or future production).
+- QA harness `scripts/qa-phase6.mjs` treats the Firebase SDK's own "Could not reach Cloud Firestore
+  backend" retry log as benign noise: it is produced only because the harness deliberately makes
+  Firestore unreachable, the rejection is handled, and it is not an uncaught app error. App
+  `pageerror` events are never filtered.
+- Legal pages are still in-app hash routes only (`#/about`, `#/privacy`, `#/terms`, `#/rights`).
+  Real static URLs `/about` etc. remain unimplemented; checks.mjs already reports this as a deferred
+  NOTE. Not fixed in Phase 6 (owner reviews legal texts before launch; SEO static URLs are a
+  Phase 7 concern).
