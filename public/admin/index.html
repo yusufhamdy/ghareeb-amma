@@ -48,7 +48,7 @@ const live=()=>{const c=window.FIREBASE_CONFIG;return!!(c&&c.apiKey&&!/PASTE/.te
 const nm=e=>e.surah.replace(/^سورة\s*/,"");
 const meaning=(e,i)=>{let m=e.meanings[i]||"";const k=m.indexOf(":");return k>0&&N(m.slice(0,k))===N(e.words[i])?m.slice(k+1).trim():m};
 let FB={},U=null,ADM=false,OWN=false,D=null,AD=[],TAB="s",FS="all",FQ="",ED=null,BUSY=false,READY=false;
-const CL=(typeof window!=="undefined"&&window.ChallengeLogic)||{NOTE:"",SPIN_LABEL:"",validateDayReferences:function(){return[]},rouletteSelect:function(){return null}};
+const CL=(typeof window!=="undefined"&&window.ChallengeLogic)||{NOTE:"",SPIN_LABEL:"",validateDayReferences:function(){return[]},rouletteSelect:function(){return null},toTuples:function(x){return Array.isArray(x)?x:[]},toObjects:function(x){return Array.isArray(x)?x:[]}};
 let CH=null,CHN={},EDD=null;
 function fix(d){d.surahs.forEach(e=>{if(!e.no){const i=JUZ.indexOf(nm(e));e.no=i<0?999:78+i}});return d}
 function toast(t,bad){const x=$("#toast");x.textContent=t;x.className="g"+(bad?" bad":"");x.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display="none",4500)}
@@ -92,13 +92,13 @@ const store={
   await FB.fs.setDoc(FB.fs.doc(FB.db,"config","admins"),{emails:l});
  },
  async chLoad(){
-  if(!live()){const x=localStorage.getItem("gqch");if(x)return JSON.parse(x)}
-  else{const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"public","challenge"));if(s.exists())return {startDate:s.data().startDate==null?null:s.data().startDate,releasedUpTo:s.data().releasedUpTo==null?null:s.data().releasedUpTo,days:s.data().days||[]}}
-  try{const d=await(await fetch("/challenge.json")).json();return {startDate:d.startDate==null?null:d.startDate,releasedUpTo:d.releasedUpTo==null?null:d.releasedUpTo,days:d.days||[]}}catch(e){return {startDate:null,releasedUpTo:null,days:[]}}
+  if(!live()){const x=localStorage.getItem("gqch");if(x){const y=JSON.parse(x);return {startDate:y.startDate==null?null:y.startDate,releasedUpTo:y.releasedUpTo==null?null:y.releasedUpTo,days:CL.toTuples(y.days)}}}
+  else{const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"public","challenge"));if(s.exists())return {startDate:s.data().startDate==null?null:s.data().startDate,releasedUpTo:s.data().releasedUpTo==null?null:s.data().releasedUpTo,days:CL.toTuples(s.data().days||[])}}
+  try{const d=await(await fetch("/challenge.json")).json();return {startDate:d.startDate==null?null:d.startDate,releasedUpTo:d.releasedUpTo==null?null:d.releasedUpTo,days:CL.toTuples(d.days||[])}}catch(e){return {startDate:null,releasedUpTo:null,days:[]}}
  },
  async chSave(c){
   if(!live()){localStorage.setItem("gqch",JSON.stringify(c));return}
-  await FB.fs.setDoc(FB.fs.doc(FB.db,"public","challenge"),{startDate:c.startDate==null?null:c.startDate,releasedUpTo:c.releasedUpTo==null?null:c.releasedUpTo,days:c.days});
+  await FB.fs.setDoc(FB.fs.doc(FB.db,"public","challenge"),{startDate:c.startDate==null?null:c.startDate,releasedUpTo:c.releasedUpTo==null?null:c.releasedUpTo,days:CL.toObjects(c.days)});
  },
  async chNotes(){
   if(!live())return JSON.parse(localStorage.getItem("gqchn")||"{}");

@@ -75,10 +75,52 @@
     return problems;
   }
 
+  /**
+   * Wire-shape helpers for the challenge `days` array.
+   *
+   * Firestore forbids nested arrays, so the day word references are stored as
+   * objects `{ no, word }` (see src/utils/migrate.js buildFirestoreChallenge).
+   * The admin UI works with tuples `[no, word]` (r[0] / r[1], rouletteSelect,
+   * validateDayReferences). toTuples() normalises the stored form for the UI
+   * (and passes tuples through unchanged, so demo/localStorage keeps working);
+   * toObjects() is the inverse used right before writing back to Firestore.
+   */
+  function refToTuple(r) {
+    if (Array.isArray(r)) return [r[0], r[1]];
+    return [r && r.no, r && r.word];
+  }
+
+  function refToObject(r) {
+    if (Array.isArray(r)) return { no: r[0], word: r[1] };
+    return { no: r && r.no, word: r && r.word };
+  }
+
+  function toTuples(days) {
+    return (Array.isArray(days) ? days : []).map(function (d) {
+      return {
+        d: d && d.d,
+        w: (d && Array.isArray(d.w) ? d.w : []).map(refToTuple),
+        reel: (d && d.reel) || "",
+      };
+    });
+  }
+
+  function toObjects(days) {
+    return (Array.isArray(days) ? days : []).map(function (d) {
+      return {
+        d: d && d.d,
+        w: (d && Array.isArray(d.w) ? d.w : []).map(refToObject),
+        reel: (d && d.reel) || "",
+      };
+    });
+  }
+
   return {
     normalizeState: normalizeState,
     rouletteSelect: rouletteSelect,
     validateDayReferences: validateDayReferences,
+    toTuples: toTuples,
+    toObjects: toObjects,
     // UI strings (escaped so this file stays ASCII-only).
     SPIN_LABEL: "\u0627\u0633\u062d\u0628 \u0643\u0644\u0645\u0629",
     NOTE:

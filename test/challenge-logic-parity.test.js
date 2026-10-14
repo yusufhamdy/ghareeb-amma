@@ -94,3 +94,22 @@ test("validateDayReferences parity handles missing state and no resolver", () =>
     fn.validateDayReferences({ days: [{ d: 1, w: [[1, "x"]] }] })
   );
 });
+
+test("challenge wire shape: toTuples/toObjects round trip", () => {
+  const objects = [
+    { d: 1, w: [{ no: 114, word: "a" }, { no: 113, word: "b" }], reel: "https://x" },
+    { d: 2, w: [], reel: "" },
+  ];
+  const tuples = [
+    { d: 1, w: [[114, "a"], [113, "b"]], reel: "https://x" },
+    { d: 2, w: [], reel: "" },
+  ];
+  // Firestore {no,word} objects -> UI tuples (normalising read).
+  assert.deepStrictEqual(client.toTuples(objects), tuples);
+  // UI tuples -> Firestore {no,word} objects (write back, never nested arrays).
+  assert.deepStrictEqual(client.toObjects(tuples), objects);
+  // Tuples pass through toTuples unchanged (demo/localStorage stays working).
+  assert.deepStrictEqual(client.toTuples(tuples), tuples);
+  // The write form must not contain nested arrays (Firestore forbids them).
+  assert.strictEqual(JSON.stringify(client.toObjects(tuples)).includes("[["), false);
+});
