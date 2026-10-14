@@ -132,3 +132,28 @@ its heatmap is confined to the question/options area — no layout move outside 
 | `tools/report/*.diff.png` | pixel diff images per screen (gitignored) |
 | `tools/app-frame-mode.mjs` | t/d fixed-element neutralizer used by compare/heat |
 | `DECISIONS-LOG.md` | phase notes + accepted deviations |
+## Follow-up 2026-10-14 (config change spot check)
+
+Scope: `/admin/` is not one of the 15 compared screens, so only `home` and
+`challenge` were re-compared, one look/viewport (`glass-def-day-m`, 400x860):
+
+| Screen | old (full matrix) | re-run now |
+|---|---|---|
+| `glass-def-day-m-home` | 0.01% | 4.49% |
+| `glass-def-day-m-challenge` | 0.78% | 6.7% |
+
+- **The spike predates this batch; `public/` was not changed by it.**
+  `git diff --stat 2c9972b..HEAD -- public/` is empty, and this batch only
+  touched `functions/`, `test/`, `scripts/`, docs and dependencies.
+- The delta is instead explained by commit `dfc1007` (Phase 5B: self-hosted
+  fonts + Firestore client migration), which landed *after* the 900-row matrix
+  in this report was produced; both `design/baseline/*.png` still date from
+  2026-10-12, so the baselines are the pre-Phase-5B reference. The font files
+  are the same families (Amiri Quran / IBM Plex) now served from `/fonts/`.
+- Consequence for this report: the "worst 20" table and totals above describe
+  the app as of `b5877c9`, not the current `public/index.html`. A full
+  900-comparison re-run against regenerated baselines is required before those
+  numbers can be quoted for the current build; it was **not** run in this batch.
+- Test counts as of this batch: `npm test` 65 tests / 64 pass / 1 fail (the
+  known `arabic-guard` `class2Added` for `public/_shade-cards-proposal.html`),
+  0 skipped; `npm run rules:test` 9 / 9 / 0 / 0 skipped.

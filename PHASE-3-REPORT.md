@@ -90,9 +90,11 @@ word validation; the release rule is centralised so it can move server-side in
 one place if accounts are ever added. Logged in DECISIONS-LOG.md.
 
 ## Open points / deferred
-- Firestore rules emulator suite: `@firebase/rules-unit-testing` requires
-  firebase ^13 but the repo pins ^12.19.0, so it is not installed. Rules are
-  covered by static assertions only (clearly labelled). Deferred.
+- Firestore rules emulator suite: **resolved on 2026-10-14.**
+  `@firebase/rules-unit-testing@5.0.2` accepts firebase ^12, so the suite
+  installs and runs: `npm run rules:test` executes 9 tests under the Firestore
+  emulator, 9 pass / 0 fail / 0 skipped (static assertions still present as
+  well).
 - Firestore -> static `challenge.json` publishing: same pattern as the existing
   words pipeline; the admin can export `challenge.json`. Deferred.
 - Date-based release and challenge end-date are designed for but intentionally
@@ -100,3 +102,17 @@ one place if accounts are ever added. Logged in DECISIONS-LOG.md.
 
 ## Production impact
 - None. No deploy was run; all work is on branch `rebuild`.
+
+## Follow-up 2026-10-14 (config + rules tests)
+
+- Cloud Firestore API on `ghareebalquran-d9ae5` was `SERVICE_DISABLED`; it is
+  now enabled, and the existing web app `GhareebAlQuran` /
+  `1:801334278891:web:d4628cfb54e40270a45cae` matches
+  `public/firebase-config.js` field for field.
+- `npm run rules:test`: 9 tests, 9 pass, 0 fail, **0 skipped** (emulator).
+  `npm test`: 65 tests, 64 pass, 1 fail, 0 skipped - the 1 fail is the known
+  `arabic-guard` `class2Added` entry for `public/_shade-cards-proposal.html`.
+- **Could not run:** a signed-in admin smoke test against real data. There is
+  **no Firestore database on the project** (`firestore:databases:list` ->
+  "No databases found"), and creating production data needs an owner decision.
+- Production impact: still none. No push, no deploy, no production writes.

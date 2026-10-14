@@ -394,3 +394,38 @@ and `data/challenge.json` do not exist - the data lives in `public/`.)
   Firestore database, which does not exist yet.
 
 ###########################################################################################
+
+###########################################################################################
+
+### 2026-10-14 - TASK 2: Firestore rules tests actually run (no SKIPs)
+
+- **Dependency.** `@firebase/rules-unit-testing` was `^6.0.0`, which peers on
+  `firebase ^13` and requires `node >=24`, while CI (`.github/workflows/ci.yml`)
+  runs node 20 against `firebase ^12.19.0`. That forced the `legacy-peer-deps`
+  flag in `.npmrc`. Installed `@firebase/rules-unit-testing@5.0.2` instead,
+  the newest release whose peer range accepts firebase `^12` (engines node
+  `>=20`). `npm install` now resolves cleanly, so **`.npmrc` was deleted** and
+  no `--legacy-peer-deps` is needed.
+- **Java.** Only Java 8 was installed; firebase-tools requires major >= 21
+  (`MIN_SUPPORTED_JAVA_MAJOR_VERSION = 21`). Downloaded a portable Temurin
+  21.0.12.1 to `%TEMP%\opencode\jdk21` and put it on PATH for the run. It is
+  outside the repo and untracked.
+- **Result.** `firebase emulators:exec --project demo-ghareeb --only firestore`
+  ran `node --test test/rules-emulator.test.js`: **tests 9, pass 9, fail 0,
+  skipped 0, exit 0.** Under plain `npm test` (no emulator) the file still
+  self-skips by design and the runner counts it as a passing file, so the suite
+  stays green on machines without an emulator.
+- **Proven by the 9 tests:** anonymous cannot read `admin/challengeNotes`;
+  a signed-out non-admin can neither create nor delete it; a second admin CAN
+  read and delete it (the owner+admins read rule); `public/challenge` is
+  world-readable but rejects writes; `config/admins` allows the owner to write
+  and rejects an authenticated stranger plus deletes; an unmatched path denies.
+- **`firestore.rules` unchanged**: no real bug was exposed, so nothing was
+  weakened or rewritten.
+- **Plain `npm test`:** tests 65, pass 64, fail 1, skipped 0. The single
+  failure is the known `test/arabic-guard.test.js` `class2Added` entry for
+  `public/_shade-cards-proposal.html`, which this batch is forbidden to touch.
+  `class1.missing/changed/added`, `class2Changed` and `class2Missing` are all
+  empty, so protected Arabic content is unchanged.
+
+###########################################################################################
