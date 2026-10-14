@@ -667,3 +667,42 @@ Authentication -> Settings -> Authorized domains. Smoke: home 200, word page 200
 legacy 301 -> /word/al-ikhlas-2.html, /admin/ noindex+no-store, unknown path 200,
 headless `window.__DATA_SRC__ = "json"` (live DB empty, app on JSON fallback).
 
+#### Resume after restart - real state check (2026-10-15)
+
+- **Billing NOT linked.** `billingEnabled: false`, no billing account
+  (Cloud Billing REST API via ADC). The Firestore database reports
+  `freeTier: true`. Spark plan confirmed; no Blaze.
+- **gcloud installed** at `%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk`
+  (not on PATH). Application Default Credentials now exist, so the live seed
+  was run: `node scripts/seed-live.js --allow-live --confirm` ->
+  `surahs=28`. Verified read-only: `public/data` rev=1, 28 surahs, **73 words**;
+  `public/challenge` present; `admin/challengeNotes` present with **30 day keys**
+  (count only; contents never read or printed for the report).
+- **STEP 5 finding - publisher output is NOT byte-identical to the committed
+  static files.** Generated 77 files into a temp dir from live Firestore:
+  - 73/73 word pages: byte-identical. OK.
+  - `words.json`: differs. Firestore `public/data` is the MIGRATED shape -
+    surahs carry an extra `no` and are sorted ascending (mushaf order, 78..114,
+    see `src/utils/migrate.js` `migrateSurahs`). The committed
+    `public/words.json` is the LEGACY shape: no `no`, descending (114..78).
+  - `sitemap.xml`: same 74 URLs, reordered to match the ascending surah order.
+  - `challenge.json`: differs in SHAPE. Committed day words are `[no, word]`
+    tuples; the Firestore doc (and thus the output) uses `{no, word}` objects.
+    `publish-build.mjs` line 274 writes Firestore `surahs` verbatim and line 275
+    serializes the Firestore challenge shape via
+    `sanitizePublicChallenge`, so it does not normalise back to the committed
+    legacy shape.
+  - Phase 7A claimed byte-for-byte reproduction; that holds only when
+    `buildSite()` is fed the committed `public/words.json`
+    (`test/seo.test.js`), NOT for the live Firestore shape. **Owner decision
+    needed before the publish workflow can deploy**: either migrate Firestore to
+    the legacy shape, or accept/update the committed static files to the mushaf
+    shape (and confirm the app reads it). No live deploy was performed.
+- **Private notes:** 30 private strings searched across all 77 generated files,
+  0 leaks.
+- **Preview re-check:** the existing `phase7b` channel now reports
+  `window.__DATA_SRC__ = "firestore"` with 0 page errors (data served from live
+  Firestore). No redeploy was needed.
+- **WIF still not configured** (owner step B): gcloud has no credentialed
+  account, so the pool/provider/service account cannot be created here.
+
