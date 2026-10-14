@@ -278,3 +278,86 @@ backed by a numeric % plus a DOM/box diff, not by eye.
 - This keeps the declared Node 20 baseline (AGENTS §3) and makes `npm ci` reproducible on
   the CI runner. Re-verified locally after the change: `npm test` 56/56,
   `npm run rules:test` 9/9, `npm run client:verify` PASS, and `npm ci --dry-run` clean.
+
+## SEO canonical-slug fix - 2026-10-14 (completed)
+
+### Finding: the deployed `seo` function produced Arabic slugs
+The `seo` Cloud Function's `slugOf(word)` returned the Arabic word itself, while the 73
+static word pages, `public/sitemap.xml` and `data/redirects.json` all use canonical
+ENGLISH slugs (`/word/<surah-slug>-<ayah>[-<n>].html`, e.g. `an-nas-4`). The function
+could therefore never resolve a canonical slug to a word (it would serve its 404 page for
+any real canonical URL). Firebase Hosting serves an exact-match static file before a
+rewrite, so the production impact of the bug is UNCONFIRMED (statically generated word
+pages may have masked it). This note is the record of the fix, not a claim of an outage.
+
+### Decision: align the function to the existing canonical scheme (no new scheme)
+- Source of truth is existing project data: the 73 filenames under `public/word/` plus
+  `data/redirects.json`. No slug scheme was invented.
+- Rule: `<surah-translit>-<ayah>`; a second/third word in the SAME ayah gets `-2`/`-3`;
+  an ayah label that is a range (e.g. `"15-16"` in At-Takwir) uses the FIRST number, which
+  matches the static file `at-takwir-15`.
+- Derivation 100% verified before coding: a throwaway probe reproduced exactly the 73
+  static filenames and all 71 redirect destinations from `public/words.json` +
+  `data/redirects.json` (0 missing, 0 extra).
+- Surah translit table (`SURAH_SLUG`, 28 entries) was generated programmatically from the
+  existing data and embedded in `functions/seo.js`; no Arabic was retyped by hand.
+
+### Constraint discovered: the Arabic guard protects any file containing Arabic runs
+`test/arabic-guard.test.js` snapshots every file whose content contains Arabic code points
+(class2) and flags added/changed/missing runs. A first attempt that MOVED the Arabic-bearing
+code (`ORDER`, `page`, `sitemap`, the 404/500 messages) out of `functions/index.js` into a
+new module was correctly flagged (the guard cannot tell a relocation from a deletion), so it
+was abandoned. Because even `slugOf`'s now-unused Arabic regex is protected, no Arabic-bearing
+line in `functions/index.js` was removed or moved.
+
+### Implementation (smallest safe change)
+- New `functions/seo.js` is deliberately ASCII-ONLY: it holds the `SURAH_SLUG` table (28
+  entries, keys written as `\uXXXX` escapes) plus `slugFor`, `buildSlugs` and `findBySlug`.
+  Because it contains zero Arabic code points, the guard sees no protected runs in it.
+- `functions/index.js` received ONLY ASCII edits: a `require("./seo")`, `seen{}` replaced by
+  a per-ayah `counts{}`, the slug assignment now `slugFor(e.surah, surahs[si].no, label,
+  counts[label])`, and the handler lookup now `findBySlug(d.words, slug)`. `ORDER`, `MARKS`,
+  `esc`, `norm`, `slugOf`, `page`, `sitemap` and every Arabic string are byte-for-byte
+  unchanged (the guard reports `class2.changed` empty for this file).
+- New `test/seo.test.js` (9 tests, ASCII-only): `buildSlugs` == the 73 static files; ASCII
+  slug form; ayah suffix cases (`al-kawthar-3`/`-3-2`, `al-fajr-19`/`-19-2`, `at-takwir-15`
+  from the `"15-16"` range); every redirect target resolves; `public/sitemap.xml` = home + 73
+  word URLs; every static page declares its own canonical URL; internal `/word/` links in
+  the static pages all point at canonical slugs; unknown/legacy Arabic slug 404s; 28 surah
+  slugs are ASCII.
+
+### Finding: legal pages are not real static URLs (deferred, not added to the sitemap)
+`public/about`, `public/privacy`, `public/terms`, `public/rights` are EMPTY directories;
+the legal pages exist only as in-app hash routes. Adding `/about` etc. to a sitemap would
+publish 404s, so they were NOT added. Logged as a non-failing CI note; implementing real
+static legal pages remains open (owner/design decision).
+
+### `scripts/ci/checks.mjs` additions (non-destructive)
+- PWA: `public/manifest.json` parses and declares name/short_name/start_url/display/icons;
+  every manifest icon file exists; `public/sw.js` `CACHE_NAME` matches `ghareeb-pwa-v<n>`;
+  every `assetsToCache` entry exists (`/` -> `index.html`); `words.json`/`challenge.json`
+  offline fallbacks exist.
+- Canonical: every `public/word/*.html` declares
+  `<link rel="canonical" href="https://ghareebalquran.com/word/<file>">`.
+- Notes (non-failing): legal pages deferred; canonical scheme verified by `test/seo.test.js`.
+
+### Protected-content guarantee (Arabic/Qur'anic data)
+Baseline captured before any change and re-verified after (SHA-256, byte length, zero
+U+FFFD replacement chars, no BOM) for `public/words.json`, `public/challenge.json`,
+`data/redirects.json`, `data/challenge-notes-private.json`: all UNCHANGED. The fix works
+around the content; nothing is regenerated, normalized or re-saved. (`data/words.json`
+and `data/challenge.json` do not exist - the data lives in `public/`.)
+
+### Verification (this batch)
+- `node --test test/seo.test.js` -> 9/9 pass.
+- `node --test test/data-migration.test.js` -> 8/8 pass (it reads `functions/index.js`
+  ORDER directly; unchanged).
+- `node scripts/ci/checks.mjs` -> PASSED (incl. new PWA + canonical checks).
+- `node --check functions/index.js` and `node --check functions/seo.js` -> OK.
+- `node --test test/arabic-guard.test.js` -> 5/6; the single failure is PRE-EXISTING and
+  UNRELATED: `class2.added = ["public/_shade-cards-proposal.html"]`, an untracked pending
+  Shade design file (mtime 2026-10-14 03:03, before this work) that post-dates the Phase 5B
+  baseline. `class1` and `class2.changed`/`missing` are ALL EMPTY, so this batch changed no
+  protected content. The proposal file was not touched (it is pending design work).
+- Not run (unchanged / out of scope): full `npm test`, `rules:test`, `client:verify`,
+  visual regression. No commit, push, deploy or data change was performed.
