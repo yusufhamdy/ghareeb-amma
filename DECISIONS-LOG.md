@@ -194,7 +194,7 @@ backed by a numeric % plus a DOM/box diff, not by eye.
   resilience fallback, not a silent substitute for the migration: `window.__DATA_SRC__`
   reports the actual source and the verifier asserts `'firestore'`.
 - Local fallback smoke (Playwright, static server, no emulator): `data_src=json`,
-  28 surah rows, summary "73 كلمة في 28 سورة", 0 page errors. The Firestore read path
+  28 surah rows, summary "73 ÙƒÙ„Ù…Ø© ÙÙŠ 28 Ø³ÙˆØ±Ø©", 0 page errors. The Firestore read path
   (T4d) still needs the emulator and is blocked by the T3 JDK blocker.
 
 ### T3 unblocked - portable JDK 21 (no system install)
@@ -275,7 +275,7 @@ backed by a numeric % plus a DOM/box diff, not by eye.
   and runs on Node 20. The root tooling only uses the modular `firebase-admin/app` and
   `firebase-admin/firestore` APIs, which are stable across v12-v14, so behaviour is
   unchanged.
-- This keeps the declared Node 20 baseline (AGENTS §3) and makes `npm ci` reproducible on
+- This keeps the declared Node 20 baseline (AGENTS Â§3) and makes `npm ci` reproducible on
   the CI runner. Re-verified locally after the change: `npm test` 56/56,
   `npm run rules:test` 9/9, `npm run client:verify` PASS, and `npm ci --dry-run` clean.
 
@@ -429,3 +429,49 @@ and `data/challenge.json` do not exist - the data lives in `public/`.)
   empty, so protected Arabic content is unchanged.
 
 ###########################################################################################
+
+###########################################################################################
+
+### 2026-10-14 - Fix: offline-first data load in public/migrate.js
+
+- **Investigation.** A spot re-run of the parity compare showed `home` and
+  `challenge` far above their Phase 5 values (e.g. `glass-def-night-m-home`
+  0.45% -> 5.68%, `glass-def-night-m-challenge` 1.2% -> 7.91%; `glass-def-day-m`
+  0.01% -> 4.49% / 0.78% -> 6.7%). `tools/heat.mjs` put the mismatch on every
+  row where the baseline has text, with an identical 800x1680 frame, and a
+  read-only page probe showed `window.__DATA_SRC__ === "pending"` and an EMPTY
+  body (only `nav`) at the harness's fixed t+900ms shot - i.e. a blank shell.
+- **Cause.** `dfc1007` added `public/migrate.js`, which intercepted
+  `window.fetch` for `words.json`/`challenge.json` and resolved them only after
+  a Firestore attempt bounded by an **8000 ms** fallback. With no Firestore
+  database on the project the attempt never failed fast, so nothing rendered
+  until the timer fired. Ruled out: fixture clock (fixed to 2026-10-10),
+  service worker (registration stubbed in the harness), Shade cards CSS and the
+  fonts (`public/index.html` changed only 2 head lines since Phase 5, `tools/`
+  was untouched).
+- **Fix.** `migrate.js` is now offline-first: the local JSON is served
+  immediately and `window.fetch` never awaits the Firestore promise; Firestore
+  is an optional background refresh with a **<= 800 ms** bound that may upgrade
+  `__DATA_SRC__`/`__WORDS__`/`__CH__` after first render. Unreachable Firestore
+  or a missing database silently keeps the JSON data - no visible error.
+  Harness wait times were NOT changed (that would only hide the real bug).
+- **Impact.** Real: before the fix any visitor to `/` saw a blank page for up
+  to ~8 s; now first render is immediate.
+- **Verification.** `glass-def-night-m-home` 5.68% -> 0.45% and
+  `glass-def-night-m-challenge` 7.91% -> 1.2% (Phase 5 values restored);
+  `npm run client:verify` still passes (data source = firestore under the
+  emulator, no page/console errors); `npm test` 65/64 with only the known
+  `arabic-guard` `class2Added`; `scripts/ci/checks.mjs` PASSED.
+
+###########################################################################################
+
+### Deferred full-matrix run
+
+- **Full matrix deliberately deferred.** The 900-comparison parity matrix was
+  NOT re-run for this fix and will instead be run once, at the very end, as the
+  final visual regression after the design changes (Shade cards etc.) and after
+  `design/baseline/` is regenerated. The earlier 900-row matrix in
+  `tools/report/report.json` therefore still describes the Phase 5 build
+  (`b5877c9`) and must not be quoted for the current build. The fix above is
+  verified by spot checks only (home 0.45%, challenge 1.2% - both equal to their
+  Phase 5 values) plus `npm run client:verify`.

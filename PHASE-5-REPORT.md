@@ -132,28 +132,47 @@ its heatmap is confined to the question/options area — no layout move outside 
 | `tools/report/*.diff.png` | pixel diff images per screen (gitignored) |
 | `tools/app-frame-mode.mjs` | t/d fixed-element neutralizer used by compare/heat |
 | `DECISIONS-LOG.md` | phase notes + accepted deviations |
-## Follow-up 2026-10-14 (config change spot check)
+## Follow-up 2026-10-14 (config verification + migrate.js fix)
 
 Scope: `/admin/` is not one of the 15 compared screens, so only `home` and
-`challenge` were re-compared, one look/viewport (`glass-def-day-m`, 400x860):
+`challenge` were spot-checked, at one look/viewport each
+(`glass-def-day-m` and `glass-def-night-m`, 400x860).
 
-| Screen | old (full matrix) | re-run now |
-|---|---|---|
-| `glass-def-day-m-home` | 0.01% | 4.49% |
-| `glass-def-day-m-challenge` | 0.78% | 6.7% |
+The first spot check (before the fix) showed a large jump over Phase 5:
 
-- **The spike predates this batch; `public/` was not changed by it.**
-  `git diff --stat 2c9972b..HEAD -- public/` is empty, and this batch only
-  touched `functions/`, `test/`, `scripts/`, docs and dependencies.
-- The delta is instead explained by commit `dfc1007` (Phase 5B: self-hosted
-  fonts + Firestore client migration), which landed *after* the 900-row matrix
-  in this report was produced; both `design/baseline/*.png` still date from
-  2026-10-12, so the baselines are the pre-Phase-5B reference. The font files
-  are the same families (Amiri Quran / IBM Plex) now served from `/fonts/`.
-- Consequence for this report: the "worst 20" table and totals above describe
-  the app as of `b5877c9`, not the current `public/index.html`. A full
-  900-comparison re-run against regenerated baselines is required before those
-  numbers can be quoted for the current build; it was **not** run in this batch.
+| Screen | Phase 5 | spot check (buggy) | after fix |
+|---|---|---|---|
+| `glass-def-day-m-home` | 0.01% | 4.49% | - |
+| `glass-def-day-m-challenge` | 0.78% | 6.7% | - |
+| `glass-def-night-m-home` | 0.45% | 5.68% | **0.45%** |
+| `glass-def-night-m-challenge` | 1.2% | 7.91% | **1.2%** |
+
+- **Cause** (found with a read-only page probe, not guessed): `dfc1007` added
+  `public/migrate.js`, which resolved the SPA's `words.json`/`challenge.json`
+  fetches only after a Firestore attempt bounded by an **8000 ms** fallback.
+  With no Firestore database the attempt never failed fast, so at the harness's
+  fixed t+900 ms shot `window.__DATA_SRC__` was still `pending` and the body was
+  empty apart from `nav` - a blank shell, not a design change. Ruled out: the
+  fixture clock (fixed to 2026-10-10), the service worker (registration is
+  stubbed by the harness), the Shade cards CSS and the fonts. (An earlier note in
+  this file blamed the Phase 5B self-hosted fonts; that was wrong and is
+  corrected here.)
+- **Fix** (`794f4b4`): `migrate.js` is now offline-first - the local JSON is
+  served immediately and `window.fetch` never awaits Firestore; Firestore is an
+  optional background refresh bounded by **<= 800 ms**, and an unreachable or
+  unprovisioned Firestore silently keeps the JSON with no visible error to
+  visitors. Harness wait times were deliberately not changed.
+- **Verified by spot checks only.** After the fix the two re-checked screens are
+  back at their Phase 5 values (`glass-def-night-m-home` 5.68% -> **0.45%**,
+  `glass-def-night-m-challenge` 7.91% -> **1.2%**). `npm run client:verify` also
+  passes (data source = firestore under the emulator, no page/console errors).
+- **The full 900-comparison matrix is deliberately deferred.** It will be run
+  once at the very end, as the final visual regression after the design changes
+  (Shade cards etc.) and after regenerating `design/baseline/`. The "worst 20"
+  table and the totals earlier in this report therefore describe the Phase 5
+  build (`b5877c9`) and must not be quoted for the current build;
+  `tools/report/report.json` still holds that 900-row Phase 5 matrix.
 - Test counts as of this batch: `npm test` 65 tests / 64 pass / 1 fail (the
   known `arabic-guard` `class2Added` for `public/_shade-cards-proposal.html`),
-  0 skipped; `npm run rules:test` 9 / 9 / 0 / 0 skipped.
+  0 skipped; `npm run rules:test` 9 / 9 / 0 / 0 skipped; `scripts/ci/checks.mjs`
+  PASSED.
