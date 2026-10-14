@@ -160,10 +160,85 @@ function checkSecrets() {
   else ok.push('secrets: ' + files.length + ' tracked files scanned, no sensitive material');
 }
 
+// ------------------------------------------------------------- 5) PWA/offline
+function checkPwa() {
+  const problems = [];
+
+  const mfPath = path.join(ROOT, 'public', 'manifest.json');
+  if (!fs.existsSync(mfPath)) {
+    failures.push('pwa: public/manifest.json missing');
+  } else {
+    let mf = null;
+    try { mf = JSON.parse(readText(mfPath)); } catch { failures.push('pwa: manifest.json is not valid JSON'); }
+    if (mf) {
+      for (const key of ['name', 'short_name', 'start_url', 'display', 'icons']) {
+        if (!mf[key] || (Array.isArray(mf[key]) && mf[key].length === 0)) problems.push('manifest missing ' + key);
+      }
+      for (const icon of mf.icons || []) {
+        if (!icon.src) { problems.push('manifest icon without src'); continue; }
+        if (!fs.existsSync(path.join(ROOT, 'public', icon.src.replace(/^\//, '')))) problems.push('manifest icon file missing: ' + icon.src);
+      }
+    }
+  }
+
+  const swPath = path.join(ROOT, 'public', 'sw.js');
+  if (!fs.existsSync(swPath)) {
+    failures.push('pwa: public/sw.js missing');
+  } else {
+    const sw = readText(swPath);
+    const name = sw.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+    if (!name) problems.push('sw.js: CACHE_NAME not found');
+    else if (!/^ghareeb-pwa-v\d+$/.test(name[1])) problems.push('sw.js: CACHE_NAME not versioned: ' + name[1]);
+    const arr = sw.match(/assetsToCache\s*=\s*\[([\s\S]*?)\]/);
+    if (!arr) problems.push('sw.js: assetsToCache not found');
+    else {
+      for (const p of [...arr[1].matchAll(/['"]([^'"]+)['"]/g)].map((x) => x[1])) {
+        const rel = p === '/' ? 'index.html' : p.replace(/^\//, '');
+        if (!fs.existsSync(path.join(ROOT, 'public', rel))) problems.push('sw.js precache asset missing: ' + p);
+      }
+    }
+  }
+
+  for (const f of ['words.json', 'challenge.json']) {
+    if (!fs.existsSync(path.join(ROOT, 'public', f))) problems.push('offline fallback missing: public/' + f);
+  }
+
+  if (problems.length) failures.push('pwa: ' + problems.join('; '));
+  else ok.push('pwa: manifest, service worker cache and offline fallback verified');
+}
+
+// ------------------------------------------------- 6) canonical word pages
+function checkCanonical() {
+  const wordDir = path.join(ROOT, 'public', 'word');
+  if (!fs.existsSync(wordDir)) { failures.push('canonical: public/word/ missing'); return; }
+  const files = fs.readdirSync(wordDir).filter((f) => f.toLowerCase().endsWith('.html'));
+  const problems = [];
+  for (const f of files) {
+    const m = readText(path.join(wordDir, f)).match(/<link\s+rel="canonical"\s+href="([^"]+)"/);
+    const expected = 'https://ghareebalquran.com/word/' + f;
+    if (!m) problems.push('missing canonical tag: ' + f);
+    else if (m[1] !== expected) problems.push('canonical mismatch: ' + f + ' -> ' + m[1]);
+  }
+  if (problems.length) failures.push('canonical: ' + problems.slice(0, 10).join('; '));
+  else ok.push('canonical: ' + files.length + ' word pages declare a matching canonical URL');
+}
+
+// ------------------------------------------------- 7) non-failing SEO notes
+function seoNotes() {
+  const missing = ['about', 'privacy', 'terms', 'rights'].filter(
+    (p) => !fs.existsSync(path.join(ROOT, 'public', p, 'index.html')) && !fs.existsSync(path.join(ROOT, 'public', p + '.html'))
+  );
+  if (missing.length) notes.push('seo: legal pages not yet real static URLs (implementation deferred): ' + missing.join(', '));
+  notes.push('seo: canonical slug scheme is verified by test/seo.test.js against the 73 static words + redirects');
+}
+
 checkNoGoogleFonts();
 checkRedirects();
 checkSitemap();
 checkSecrets();
+checkPwa();
+checkCanonical();
+seoNotes();
 
 for (const n of notes) console.log('NOTE ' + n);
 for (const o of ok) console.log('OK   ' + o);

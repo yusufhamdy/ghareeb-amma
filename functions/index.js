@@ -1,5 +1,6 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { slugFor, findBySlug } = require("./seo");
 admin.initializeApp();
 
 const SITE = "https://ghareebalquran.com";
@@ -9,6 +10,10 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": 
 const norm = (s) => s.replace(MARKS, "").replace(/[إأآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").trim();
 const slugOf = (w) => w.replace(MARKS, "").replace(/[إأآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
   .replace(/[^\u0621-\u064A0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+// NOTE: the slugOf helper above is retained but no longer used. Canonical English
+// slugs now come from ./seo (see DECISIONS-LOG.md). slugOf is kept only because
+// its source line contains protected Arabic literals that the content guard
+// (test/arabic-guard.test.js) forbids removing.
 
 let cache = { t: 0, words: [] };
 
@@ -17,21 +22,21 @@ async function load() {
   const snap = await admin.firestore().doc("public/data").get();
   const list = snap.exists ? snap.data().surahs || [] : [];
   const words = [];
-  const seen = {};
   const surahs = list.map((e) => {
     const name = e.surah.replace(/^سورة\s*/, "");
     const i = ORDER.indexOf(name);
     return { name, no: e.no || (i < 0 ? 999 : 78 + i), words: [] };
   });
   list.forEach((e, si) => {
+    const counts = {};
     (e.words || []).forEach((w, wi) => {
       let m = (e.meanings || [])[wi] || "";
       const k = m.indexOf(":");
       if (k > 0 && norm(m.slice(0, k)) === norm(w)) m = m.slice(k + 1).trim();
       const a = (e.ayahs || [])[wi] || (e.ayahs || [])[0] || { label: "", segments: [] };
-      let slug = slugOf(w) || "word";
-      seen[slug] = (seen[slug] || 0) + 1;
-      if (seen[slug] > 1) slug += "-" + seen[slug];
+      const label = String(a.label == null ? "" : a.label).split("-")[0].trim() || String(wi + 1);
+      counts[label] = (counts[label] || 0) + 1;
+      const slug = slugFor(e.surah, surahs[si].no, label, counts[label]);
       const o = { id: words.length, w, m, a, src: (e.source || "").replace(/^المصدر:\s*/, ""), slug, s: surahs[si] };
       words.push(o);
       surahs[si].words.push(o);
@@ -95,7 +100,7 @@ exports.seo = onRequest({ region: "europe-west1", memory: "256MiB", maxInstances
     }
     const m = /^\/word\/(.+?)(?:\.html)?$/.exec(req.path);
     const slug = m && decodeURIComponent(m[1]);
-    const o = slug && d.words.find((x) => x.slug === slug);
+    const o = slug && findBySlug(d.words, slug);
     if (!o) {
       res.status(404).set("Cache-Control", "public, max-age=60").type("html")
         .send('<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>غير موجود</title><p dir="rtl" style="font-family:sans-serif;padding:40px">الصفحة غير موجودة. <a href="/">الرئيسية</a></p>');
