@@ -1,0 +1,96 @@
+name: Publish (free plan)
+
+# Phase 7A - free-plan Firestore -> static Hosting publish.
+#
+# Runs every 15 minutes (and on manual dispatch) but is INERT until the owner
+# sets the repository variable PUBLISH_ENABLED to the string "true". No Cloud
+# Functions, no Blaze, no billing: the only thing it can do is read Firestore
+# and, when the content hash changed, deploy static Hosting.
+#
+# Required configuration (owner, one time):
+#   - Repository variable: PUBLISH_ENABLED = true
+#   - Secrets: WIF_PROVIDER + WIF_SERVICE_ACCOUNT (preferred), or the commented
+#     FIREBASE_SERVICE_ACCOUNT fallback below.
+#
+# The generator writes to build/site and never touches the committed public/
+# tree; the deploy step assembles a throwaway hosting root under build/hosting.
+#
+# Deployment policy: GitHub Actions is the single official deployment path.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-free-plan
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish static site from Firestore
+    if: vars.PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+        # Fallback (long-lived key) - use only if WIF is unavailable:
+        # with:
+        #   credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate static site from Firestore
+        id: gen
+        run: |
+          set -euo pipefail
+          node scripts/publish-build.mjs \
+            --project ghareebalquran-d9ae5 \
+            --out build/site \
+            --current-url https://ghareebalquran.com/rev.json | tee build/result.txt
+          if grep -q "no-change" build/result.txt; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assemble hosting root
+        if: steps.gen.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          rm -rf build/hosting
+          mkdir -p build/hosting
+          cp -R public/. build/hosting/
+          cp -R build/site/. build/hosting/
+          # Hosting-only config for the throwaway root. Phase 7B removes the
+          # /word/** and /sitemap.xml rewrites from the tracked firebase.json;
+          # this build root already has no functions.
+          cat > build/hosting/firebase.json <<'JSON'
+          {
+            "hosting": {
+              "public": ".",
+              "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "_shade-cards-proposal.html"]
+            }
+          }
+          JSON
+
+      - name: Deploy Hosting
+        if: steps.gen.outputs.changed == 'true'
+        run: npx firebase deploy --only hosting --project ghareebalquran-d9ae5 --config build/hosting/firebase.json --non-interactive

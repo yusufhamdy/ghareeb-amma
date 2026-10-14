@@ -487,3 +487,71 @@ and `data/challenge.json` do not exist - the data lives in `public/`.)
   Real static URLs `/about` etc. remain unimplemented; checks.mjs already reports this as a deferred
   NOTE. Not fixed in Phase 6 (owner reviews legal texts before launch; SEO static URLs are a
   Phase 7 concern).
+
+###########################################################################################
+
+### Phase 7A - free-plan Firestore -> static publish (2026-10-15)
+
+- **Scope.** Owner edits in `/admin/` write Firestore; a scheduled GitHub Action
+  (`.github/workflows/publish.yml`) reads `public/data` + `public/challenge`,
+  regenerates the static Hosting artefacts and deploys **only if the content
+  hash changed**. No Cloud Functions, no Blaze, no billing - Spark plan only.
+- **Generator.** `scripts/publish-build.mjs` (ASCII-only) builds the whole site
+  in memory, validates it, then writes to `--out` (e.g. `build/site`). It never
+  writes over the committed `public/` tree. Output: `words.json`,
+  `challenge.json`, `sitemap.xml`, `word/<slug>.html` and `rev.json`
+  (`{rev, hash, words, generatedAtUtc}`). Safety: aborts non-zero with no output
+  on empty data, fewer than 73 words, or any invalid word.
+- **Format decision (deviation):** the pages/sitemap are rendered to reproduce
+  the **committed static files byte-for-byte** (the format Google actually
+  indexed), NOT the `page()`/`sitemap()` templates in `functions/index.js`, which
+  emit a different (SPA-linked) shape. Verified: all 76 generated files are
+  byte-identical to the committed ones (`test/seo.test.js`). The canonical slug
+  scheme is reused from `functions/seo.js` (single source of truth) and the
+  public challenge payload from `functions/challenge.js`'s
+  `sanitizePublicChallenge` (private `notes` are stripped).
+- **Live-page format facts pinned by tests:** the meta description is always
+  prefixed `"<word>: "` (the body keeps only the meaning/has the prefix
+  stripped); a surah's words are listed in ascending ayah order (the app deep
+  link `/#/word/<no>-<idx>` and the "other words" list both use that order);
+  the sitemap lists each surah's words in the same ascending ayah order.
+- **Change detection.** `rev.json` carries a SHA-256 over all output files; the
+  workflow passes `--current-url https://ghareebalquran.com/rev.json` and the
+  generator prints `no-change` (exit 0) when the live hash matches, so Hosting
+  is not redeployed for nothing.
+- **Admin Challenge tab (Task 4).** Reality differs from the phase brief: the
+  admin page already writes `public/challenge` and `admin/challengeNotes`
+  **directly** to Firestore and validates words client-side (there is no
+  `adminChallenge` callable and no server roulette). Chosen approach: a browser
+  mirror `public/admin/challenge-logic.js` (rouletteSelect + validateDayReferences
+  + UI strings, ASCII-only) is now loaded by the page, the tab uses
+  `validateDayReferences`, and the day modal has a client-side roulette preview.
+  `test/challenge-logic-parity.test.js` asserts the mirror never drifts from
+  `functions/challenge.js` (same pattern as `src/utils/normalize.js`).
+- **Rules (Task 5).** No change. `public/{doc}` is already read:true/write:isAdmin
+  and `admin/challengeNotes` is admin-only, which is exactly what the direct-write
+  admin flow needs.
+- **Arabic guard.** All new files (`scripts/publish-build.mjs`,
+  `public/admin/challenge-logic.js`, `test/challenge-logic-parity.test.js`,
+  `publish.yml`) are ASCII-only (`\u` escapes). The `/admin/` UI note and the
+  spin label are injected from the mirror module's escaped strings, so no new
+  Arabic run is added to the class2 baseline file `public/admin/index.html`.
+- **Phase 7B (NOT applied here) - planned `firebase.json` snippet.** Once the
+  static tree is the only SEO source, remove the Function rewrites so
+  `/word/**` and `/sitemap.xml` are served straight from static files:
+
+  ```json
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+  ```
+
+  (Delete the current `{ "source": "/word/**", "function": "seo" }` and
+  `{ "source": "/sitemap.xml", "function": "seo" }` entries. `**/.*` already
+  keeps `_shade-cards-proposal.html` out via the explicit ignore list; keep that
+  entry if it is still needed.) This is documentation only in Phase 7A.
+

@@ -34,6 +34,7 @@ select.in{appearance:auto}
 <div id="md"></div><div id="toast" class="g"></div>
 <script src="/theme.js"></script>
 <script src="/firebase-config.js"></script>
+<script src="/admin/challenge-logic.js"></script>
 <script>
 
 const OWNER="yusufhamdy20@gmail.com";
@@ -47,6 +48,7 @@ const live=()=>{const c=window.FIREBASE_CONFIG;return!!(c&&c.apiKey&&!/PASTE/.te
 const nm=e=>e.surah.replace(/^سورة\s*/,"");
 const meaning=(e,i)=>{let m=e.meanings[i]||"";const k=m.indexOf(":");return k>0&&N(m.slice(0,k))===N(e.words[i])?m.slice(k+1).trim():m};
 let FB={},U=null,ADM=false,OWN=false,D=null,AD=[],TAB="s",FS="all",FQ="",ED=null,BUSY=false,READY=false;
+const CL=(typeof window!=="undefined"&&window.ChallengeLogic)||{NOTE:"",SPIN_LABEL:"",validateDayReferences:function(){return[]},rouletteSelect:function(){return null}};
 let CH=null,CHN={},EDD=null;
 function fix(d){d.surahs.forEach(e=>{if(!e.no){const i=JUZ.indexOf(nm(e));e.no=i<0?999:78+i}});return d}
 function toast(t,bad){const x=$("#toast");x.textContent=t;x.className="g"+(bad?" bad":"");x.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display="none",4500)}
@@ -153,9 +155,8 @@ function populateWords(){
 }
 function tabC(){
  if(!CH)return '<div class="g card" style="padding:16px">جاري تحميل التحدي...</div>';
- const set=existSet(),bad=[];
- CH.days.forEach(d=>(d.w||[]).forEach(r=>{if(!set.has(r[0]+"::"+N(r[1])))bad.push({d:d.d,ref:r})}));
- return`<div class="g c2"><div class="sm">إعدادات التحدي</div>
+ const bad=CL.validateDayReferences(CH,r=>wordOk(r)).map(p=>({d:p.day,ref:p.ref}));
+ return`<div class="g demo">${CL.NOTE}</div><div class="g c2"><div class="sm">إعدادات التحدي</div>
 <label class="lb">تاريخ البداية (للخطة المستقبلية: إصدار كل يوم بتاريخه)</label>
 <input class="in" type="date" data-f="c.startDate" value="${CH.startDate?esc(CH.startDate):""}">
 <label class="lb">فتح أيام إضافية يدويًا (releasedUpTo، اتركه فارغًا للإصدار المتسلسل)</label>
@@ -185,7 +186,7 @@ function dayModal(){
 <input class="in" dir="ltr" data-f="c.reel" value="${esc(x.reel||"")}" placeholder="https://...">
 <label class="lb">ملاحظة اليوم (خاصة، لا تظهر للزوار إطلاقًا)</label>
 <textarea class="in" data-f="c.note">${esc(x.note||"")}</textarea>
-<div class="acts"><button class="pill btn" data-a="chSaveDay">حفظ اليوم</button><button class="g pill" data-a="close">إلغاء</button></div>`);
+<div class="acts"><button class="g pill" data-a="chSpin">${CL.SPIN_LABEL}</button><span class="sm" id="spinRes"></span><button class="pill btn" data-a="chSaveDay">حفظ اليوم</button><button class="g pill" data-a="close">إلغاء</button></div>`);
  populateWords();
 }
 function tabA(){
@@ -268,6 +269,7 @@ async function act(a,v){
  else if(a==="chDay"){if(!CH)return;const d=CH.days.find(z=>z.d===+v);if(!d)return;EDD={d:d.d,w:clone(d.w||[]),reel:d.reel||"",note:CHN[String(d.d)]||""};dayModal()}
  else if(a==="chDelW"){if(!EDD)return;EDD.w.splice(+v,1);dayModal()}
  else if(a==="chAddW"){if(!EDD)return;const ss=$('[data-f="c.addS"]'),ws=$('[data-f="c.addW"]');if(ss.value===""||ws.value==="")return toast("اختر السورة والكلمة.",true);const e=D.surahs[+ss.value],w=e.words[+ws.value],ref=[e.no||0,N(w)];if(!wordOk(ref))return toast("الكلمة غير موجودة في البيانات.",true);if(EDD.w.some(r=>r[0]===ref[0]&&r[1]===ref[1]))return toast("الكلمة مضافة بالفعل.",true);EDD.w.push(ref);dayModal()}
+ else if(a==="chSpin"){if(!EDD)return;const r=CL.rouletteSelect(EDD.w,{});if(!r)return;const el=$("#spinRes");if(el)el.textContent=String(r.value[1]);}
  else if(a==="chSaveDay"){if(!EDD)return;if(EDD.reel&&EDD.reel.indexOf("https://")!==0)return toast("رابط الريلز لازم يبدأ بـ https://",true);const problems=EDD.w.filter(r=>!wordOk(r));if(problems.length)return toast("فيه كلمات غير موجودة في البيانات.",true);const ch=clone(CH),d=ch.days.find(z=>z.d===EDD.d);d.w=clone(EDD.w);d.reel=EDD.reel||"";try{await store.chSave(ch);if(EDD.note!=null){await store.chSetNote(EDD.d,EDD.note);CHN[String(EDD.d)]=EDD.note}CH=ch;EDD=null;modal("");toast("تم حفظ اليوم.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(t)act(t.dataset.a,t.dataset.v)});

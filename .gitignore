@@ -86,5 +86,8 @@ ghareeb-handoff/data/challenge-notes-private.json
 design/baseline/
 tools/report/
 
+# Phase 7A publish generator output (scripts/publish-build.mjs --out build/site)
+build/
+
 # Resume checkpoint (keep out of git)
 CHECKPOINT.md

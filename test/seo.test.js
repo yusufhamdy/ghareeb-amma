@@ -102,3 +102,89 @@ test("SURAH_SLUG maps all 28 surahs to ASCII transliteration slugs", () => {
   assert.strictEqual(values.length, 28);
   for (const v of values) assert.match(v, /^[a-z0-9-]+$/, "non-ASCII surah slug: " + v);
 });
+
+// --- Phase 7A: free-plan publish generator (scripts/publish-build.mjs) ------
+// The generator turns the Firestore source of truth into the committed static
+// site. These tests prove it reproduces the committed artefacts byte-for-byte,
+// is deterministic, never leaks private challenge notes, and refuses to publish
+// an empty/shrunken site.
+const { pathToFileURL } = require("node:url");
+const os = require("node:os");
+const publishPath = path.join(ROOT, "scripts", "publish-build.mjs");
+const challengeData = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "challenge.json"), "utf8"));
+const loadPublish = () => import(pathToFileURL(publishPath).href);
+
+test("publish generator reproduces the committed static site byte-for-byte", async () => {
+  const mod = await loadPublish();
+  const { files, wordCount } = mod.buildSite(wordsData, challengeData);
+  assert.strictEqual(wordCount, 73);
+  assert.strictEqual(files["words.json"], fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8"));
+  assert.strictEqual(files["challenge.json"], fs.readFileSync(path.join(ROOT, "public", "challenge.json"), "utf8"));
+  assert.strictEqual(files["sitemap.xml"], fs.readFileSync(path.join(ROOT, "public", "sitemap.xml"), "utf8"));
+  for (const f of fileSlugs) {
+    assert.strictEqual(
+      files["word/" + f + ".html"],
+      fs.readFileSync(path.join(wordDir, f + ".html"), "utf8"),
+      "page mismatch: " + f
+    );
+  }
+  const expected = ["words.json", "challenge.json", "sitemap.xml"]
+    .concat(fileSlugs.map((f) => "word/" + f + ".html"))
+    .sort();
+  assert.deepStrictEqual(Object.keys(files).sort(), expected);
+});
+
+test("publish generator is deterministic and its hash tracks content", async () => {
+  const mod = await loadPublish();
+  const a = mod.buildSite(wordsData, challengeData);
+  const b = mod.buildSite(wordsData, challengeData);
+  assert.strictEqual(a.hash, b.hash);
+  const changed = mod.buildSite(wordsData, Object.assign({}, challengeData, { releasedUpTo: 7 }));
+  assert.notStrictEqual(a.hash, changed.hash);
+});
+
+test("publish generator never emits private challenge notes", async () => {
+  const mod = await loadPublish();
+  const withNotes = Object.assign({}, challengeData, { notes: { "1": "LEAK_SENTINEL_9F2A" } });
+  const { files } = mod.buildSite(wordsData, withNotes);
+  for (const [name, content] of Object.entries(files)) {
+    assert.ok(!content.includes("LEAK_SENTINEL_9F2A"), "note leaked into " + name);
+    assert.ok(!content.includes('"notes"'), "notes key leaked into " + name);
+  }
+});
+
+test("publish generator refuses to publish an empty or shrunken site", async () => {
+  const mod = await loadPublish();
+  assert.throws(() => mod.buildSite([], challengeData), /empty input/);
+  const tiny = [
+    {
+      surah: wordsData[0].surah,
+      words: ["x"],
+      meanings: ["y"],
+      ayahs: [{ label: "4", segments: [{ before: "a", hl: "x", after: "" }] }],
+      source: wordsData[0].source,
+    },
+  ];
+  assert.throws(() => mod.buildSite(tiny, challengeData), /refusing to publish/);
+});
+
+test("publish generator writes into an output directory (never over public/)", async () => {
+  const mod = await loadPublish();
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), "ghareeb-publish-"));
+  try {
+    const { files, hash, wordCount } = mod.buildSite(wordsData, challengeData);
+    mod.writeSite(out, files, { rev: 5, hash, wordCount });
+    assert.ok(fs.existsSync(path.join(out, "rev.json")), "rev.json missing");
+    assert.ok(fs.existsSync(path.join(out, "word", "an-nas-4.html")), "word page missing");
+    const rev = JSON.parse(fs.readFileSync(path.join(out, "rev.json"), "utf8"));
+    assert.strictEqual(rev.hash, hash);
+    assert.strictEqual(rev.rev, 5);
+    assert.strictEqual(rev.words, 73);
+    assert.strictEqual(
+      fs.readFileSync(path.join(out, "words.json"), "utf8"),
+      fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8")
+    );
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true });
+  }
+});
