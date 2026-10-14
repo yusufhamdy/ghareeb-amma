@@ -706,3 +706,35 @@ headless `window.__DATA_SRC__ = "json"` (live DB empty, app on JSON fallback).
 - **WIF still not configured** (owner step B): gcloud has no credentialed
   account, so the pool/provider/service account cannot be created here.
 
+#### Decision (a) - canonical Firestore shape (2026-10-15)
+
+Owner decision: the Firestore migrated shape is canonical - surahs in
+mushaf-ascending order (78..114) with an added `no`, and challenge day words as
+`{no, word}` objects (Firestore forbids nested arrays). The publisher is NOT
+changed; replacing the committed legacy static files in `public/` is deferred
+until explicitly approved (they stay protected).
+
+Read-only verification of consumers:
+- Client app OK: `build()` (public/index.html:137) derives the number from the
+  surah name, ignores `no`, sorts surahs ascending and words by ayah ascending;
+  `public/migrate.js` `buildChallenge()` (34-50) normalizes `{no,word}` ->
+  `[no,word]` for `dayWords()` (index.html:173).
+- Admin challenge tab is NOT compatible with this shape: `chLoad()`
+  (public/admin/index.html:94-98) returns day words raw; the UI and `wordOk`
+  (148, 169, 176, 183) index `r[0]` / `r[1]`; `chSave()` (99-102) writes tuple
+  arrays that Firestore rejects. Pre-existing limitation; verification only.
+- `functions/challenge.js` `wordKey()` (74-80) accepts both forms;
+  `sanitizePublicChallenge()` (254-265) passes objects through.
+- Publisher output (live Firestore -> temp dir, no overwrites): 73/73 word
+  pages byte-identical; `words.json` and `sitemap.xml` differ only by mushaf
+  ascending order; `challenge.json` uses `{no,word}` objects. Within-surah word
+  and ayah order identical in all 28 surahs (0 diffs).
+
+#### 404 status (applied 2026-10-15)
+
+Removed the `**` -> `/index.html` catch-all rewrite and added `public/404.html`
+(ASCII-only, lang/dir set, noindex, link home). Unknown paths now return a real
+404; the SPA is hash-routed so the root and static word pages are unaffected.
+Verified locally with the hosting emulator: `/` 200 (app), word page 200,
+`/does-not-exist-12345` 404 with the 404 body.
+
