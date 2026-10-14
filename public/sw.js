@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v6';
+const CACHE_NAME = 'ghareeb-pwa-v7';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -38,6 +38,14 @@ self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
 
     const url = new URL(event.request.url);
+
+    // Never intercept the admin area: always pass through to the network,
+    // no caching (avoids serving a stale/unauthenticated admin shell).
+    if (url.origin === self.location.origin &&
+        (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
+        return;
+    }
+
     const isAppFile = url.origin === self.location.origin &&
         (url.pathname === '/' ||
          url.pathname === '/index.html' ||
