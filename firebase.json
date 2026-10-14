@@ -42,18 +42,8 @@
     ],
     "rewrites": [
       {
-        "source": "/word/**",
-        "function": {
-          "functionId": "seo",
-          "region": "europe-west1"
-        }
-      },
-      {
-        "source": "/sitemap.xml",
-        "function": {
-          "functionId": "seo",
-          "region": "europe-west1"
-        }
+        "source": "**",
+        "destination": "/index.html"
       }
     ],
     "redirects": [
