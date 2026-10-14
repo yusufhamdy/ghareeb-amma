@@ -361,3 +361,36 @@ and `data/challenge.json` do not exist - the data lives in `public/`.)
   protected content. The proposal file was not touched (it is pending design work).
 - Not run (unchanged / out of scope): full `npm test`, `rules:test`, `client:verify`,
   visual regression. No commit, push, deploy or data change was performed.
+
+###########################################################################################
+
+### 2026-10-14 - TASK 1: real Firebase web config verified (no writes)
+
+- **Login.** `firebase login:list` -> logged in as yusufhamdy20@gmail.com.
+- **Firestore API enabled.** It was `SERVICE_DISABLED`; `firebase firestore:locations`
+  returned HTTP 403. Enabled `firestore.googleapis.com` on `ghareebalquran-d9ae5`
+  via the Service Usage REST API using the CLI's already-stored access token
+  (gcloud is not installed here; no token was printed). After propagation
+  `firebase firestore:locations` returned the location list. Re-verified with
+  `firebase firestore:databases:list` -> **"No databases found."** No database
+  was created (per instruction: report, do not create production data).
+- **Web app.** `firebase apps:list` -> 1 app, `GhareebAlQuran`,
+  `1:801334278891:web:d4628cfb54e40270a45cae` (matches the header comment of
+  `public/firebase-config.js`), so no new app was created.
+- **Config check.** `firebase apps:sdkconfig WEB <appId>` output matches
+  `public/firebase-config.js` on every field (apiKey, authDomain, projectId,
+  storageBucket, messagingSenderId, appId, measurementId). No `PASTE`
+  placeholder remains, so nothing needed to be filled in. Web config values are
+  public and safe to commit.
+- **Admin verification (static server + emulator, not production).** 10/10
+  checks passed: config is live, `READY=true`, `.demo` banner absent (no demo
+  fallback), zero page errors, zero console errors, unauthenticated visitor
+  gets `OWN=false`/`ADM=false`/`U=null` (the real owner/config/admins path,
+  not demo mode which forces `OWN=ADM=true`), owner constant unchanged. Run
+  under `firebase emulators:exec --project demo-ghareeb`; the admin page makes
+  no Firestore call while unauthenticated, so **nothing was written anywhere**.
+- **Note.** `public/admin/index.html` has no emulator hook (only `migrate.js`
+  handles `?emul=1`), so a signed-in admin smoke test still needs a real
+  Firestore database, which does not exist yet.
+
+###########################################################################################
