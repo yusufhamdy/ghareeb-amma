@@ -12,10 +12,13 @@
  *     when they are unavailable / the request errors. It is the single source
  *     of truth for the data source, checked by
  *     scripts/verify-client-firestore.mjs.
- *   - words.json / challenge.json fetches are answered from the Firestore
- *     payloads once available, so the SPA renders migrated data unchanged.
- *   - If Firestore is unreachable, the module falls back to the original fetch
- *     (documented offline JSON fallback) - see DECISIONS-LOG.md.
+ *   - words.json / challenge.json are answered from the local files FIRST: the
+ *     offline JSON path is always taken unless Firestore has already replied,
+ *     so first render never waits on the network (offline-first).
+ *   - Firestore is an optional background refresh: if the migrated documents
+ *     (public/data, public/challenge) load, the globals are upgraded. If it is
+ *     unreachable or the database does not exist, the module silently keeps the
+ *     JSON data - no visible error to visitors (see DECISIONS-LOG.md).
  *   - ?emul=1 routes to the Firestore emulator at 127.0.0.1:8080 (isolated
  *     verification environment).
  *
@@ -46,13 +49,15 @@
     };
   }
 
-  // Set once the Firestore attempt has lost the race with the fallback timeout,
-  // so a late Firestore reply can never flip the source back or overwrite the
-  // JSON payload the app has already rendered.
-  var superseded = false;
+  // Flip-flop guard for the optional background refresh: first render never
+  // waits on Firestore, so a reply that arrives late may still upgrade the
+  // globals, but only once, and it can never put a payload the app did not ask
+  // for in front of the JSON it already rendered.
+  var firestoreOk = false;
 
   function finish(data, challenge) {
-    if (superseded) return false;
+    if (firestoreOk) return false;
+    firestoreOk = true;
     // The app's build() consumes the JSON words shape, which is a plain ARRAY of
     // surahs (public/words.json). The Firestore document wraps that array as
     // { rev, surahs }, so unwrap it here to keep the app (and every Arabic byte)
@@ -101,17 +106,20 @@
       return false;
     });
 
-    // Bounded wait: if Firestore cannot answer, fall back to the offline JSON so
-    // the app never hangs on an unreachable/unprovisioned database.
+    // Bounded wait: Firestore is an OPTIONAL background refresh. If it cannot
+    // answer within 800ms (unreachable or no database exists), declare JSON the
+    // source silently and keep the local data - no visible error to visitors.
+    // This promise is never awaited by window.fetch below, so the page can not
+    // block on Firestore; a reply arriving after the deadline still upgrades
+    // the globals via finish() without delaying first render.
     return new Promise(function (resolve) {
       var done = false;
       var timer = setTimeout(function () {
         if (done) return;
         done = true;
-        superseded = true;
         window.__DATA_SRC__ = 'json';
         resolve(false);
-      }, 8000);
+      }, 800);
       attempt.then(function (ok) {
         if (done) return;
         done = true;
@@ -125,26 +133,30 @@
     });
   }
 
-  var firestoreReady = loadFromFirestore().catch(function () {
-    window.__DATA_SRC__ = 'json';
+  // Offline-first: started in the background and NEVER awaited by the fetch
+  // hook below, so the SPA renders from the local words.json/challenge.json
+  // immediately even when Firestore is unreachable or unprovisioned.
+  loadFromFirestore().catch(function () {
+    if (window.__DATA_SRC__ === 'pending') window.__DATA_SRC__ = 'json';
     return false;
   });
 
   window.fetch = function (input, init) {
     var url = typeof input === 'string' ? input : (input && input.url);
     if (typeof url === 'string' && (url.indexOf('words.json') !== -1 || url.indexOf('challenge.json') !== -1)) {
-      return firestoreReady.then(function (ok) {
-        if (!ok) return realFetch(input, init);
+      if (firestoreOk) {
         var isWords = url.indexOf('words.json') !== -1;
         var payload = isWords ? window.__WORDS__ : window.__CH__;
-        return {
+        return Promise.resolve({
           ok: true,
           status: 200,
           url: url,
           json: function () { return Promise.resolve(payload); },
           text: function () { return Promise.resolve(JSON.stringify(payload)); },
-        };
-      });
+        });
+      }
+      // Firestore has not answered yet: serve the local file now, never wait.
+      return realFetch(input, init);
     }
     return realFetch(input, init);
   };
