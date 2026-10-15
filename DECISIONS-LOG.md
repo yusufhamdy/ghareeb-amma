@@ -592,11 +592,11 @@ Do NOT create a long-lived JSON key; ADC (or WIF for CI) is preferred. This
 blocks STEP 3 (seed) and, transitively, STEP 5 (publisher dry run against live:
 it needs both ADC and seeded data - the live DB is still empty).
 
-#### Owner step B - Workload Identity Federation for publish.yml (BLOCKED)
+#### Owner step B - Workload Identity Federation for publish.yml (DONE 2026-10-15)
 
-`WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` do not exist (no repo secrets at all).
-`gcloud` is not installed, so they cannot be created here. Least-privilege setup
-(Firestore read + Hosting deploy only), run with an owner account:
+Originally: `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` did not exist and `gcloud`
+was not installed. Both are now created (see Status after the runbook). The
+least-privilege setup (Firestore read + Hosting deploy only) that was used:
 
 ```
 gcloud services enable iamcredentials.googleapis.com sts.googleapis.com \
@@ -645,6 +645,27 @@ Roles are least privilege: `roles/datastore.viewer` is Firestore read-only and
 `roles/firebasehosting.admin` covers the Hosting deploy the workflow performs.
 No Blaze, no billing. `PUBLISH_ENABLED` is set to `false`; the owner flips it to
 `true` only after the first successful manual workflow run.
+
+Status (2026-10-15): **DONE**, executed with owner account
+`yusufhamdy20@gmail.com` on project `ghareebalquran-d9ae5` (number
+`801334278891`):
+
+- APIs enabled: `iamcredentials`, `sts`, `firebasehosting`, `firestore`.
+- Service account `ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com`
+  created and bound to `roles/datastore.viewer` + `roles/firebasehosting.admin`.
+- WIF pool `github` + OIDC provider `github` created; provider is `ACTIVE` with
+  condition `assertion.repository=='yusufhamdy/ghareeb-amma'`.
+- `roles/iam.workloadIdentityUser` granted to the principalSet
+  `principalSet://iam.googleapis.com/projects/801334278891/locations/global/workloadIdentityPools/github/attribute.repository/yusufhamdy/ghareeb-amma`.
+- Repository secrets set with `gh`: `WIF_PROVIDER`
+  = `projects/801334278891/locations/global/workloadIdentityPools/github/providers/github`,
+  and `WIF_SERVICE_ACCOUNT`
+  = `ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com`.
+
+`PUBLISH_ENABLED` remains `false`; the owner flips it to `true` for the first
+run. Note: the job is gated by `if: vars.PUBLISH_ENABLED == 'true'`, so the very
+first run requires setting the variable to `true` (a dispatch with it `false`
+is skipped by design).
 
 #### Decision - 404 status on the static rewrite (owner to confirm)
 
