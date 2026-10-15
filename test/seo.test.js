@@ -20,10 +20,14 @@ const path = require("node:path");
 
 const ROOT = path.join(__dirname, "..");
 const seo = require("../functions/seo");
+const legal = require("../functions/legal");
 
 const wordsData = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8"));
 const redirects = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "redirects.json"), "utf8"));
 const SITE = "https://ghareebalquran.com";
+
+// HTML-escape, matching scripts/publish-build.mjs (see its `esc`).
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 const slugs = seo.buildSlugs(wordsData);
 const wordDir = path.join(ROOT, "public", "word");
@@ -62,12 +66,13 @@ test("every redirect destination resolves to a canonical word slug", () => {
   }
 });
 
-test("public/sitemap.xml lists the home URL and exactly the canonical word slugs", () => {
+test("public/sitemap.xml lists the home URL, the canonical word slugs and the legal pages", () => {
   const xml = fs.readFileSync(path.join(ROOT, "public", "sitemap.xml"), "utf8");
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   assert.strictEqual(locs[0], SITE + "/");
-  assert.strictEqual(locs.length, 1 + slugs.length);
+  assert.strictEqual(locs.length, 1 + slugs.length + legal.LEGAL.length);
   for (const s of slugs) assert.ok(locs.includes(SITE + "/word/" + s + ".html"), "sitemap missing " + s);
+  for (const entry of legal.LEGAL) assert.ok(locs.includes(SITE + "/" + entry.slug + "/"), "sitemap missing legal " + entry.slug);
 });
 
 test("each static word page declares its own canonical URL", () => {
@@ -130,8 +135,29 @@ test("publish generator reproduces the committed static site byte-for-byte", asy
   }
   const expected = ["words.json", "challenge.json", "sitemap.xml"]
     .concat(fileSlugs.map((f) => "word/" + f + ".html"))
+    .concat(legal.LEGAL.map((e) => e.slug + "/index.html"))
     .sort();
   assert.deepStrictEqual(Object.keys(files).sort(), expected);
+  for (const entry of legal.LEGAL) {
+    assert.strictEqual(
+      files[entry.slug + "/index.html"],
+      fs.readFileSync(path.join(ROOT, "public", entry.slug, "index.html"), "utf8"),
+      "legal page mismatch: " + entry.slug
+    );
+  }
+});
+
+test("legal pages contain their paragraphs verbatim", () => {
+  const nodec = (s) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+  for (const entry of legal.LEGAL) {
+    const html = fs.readFileSync(path.join(ROOT, "public", entry.slug, "index.html"), "utf8");
+    assert.match(html, /<link rel="canonical" href="https:\/\/ghareebalquran\.com\/[a-z]+\/">/);
+    for (const p of entry.paras) {
+      const escaped = esc(p);
+      assert.ok(html.includes(escaped), "missing paragraph in " + entry.slug);
+      assert.ok(nodec(escaped).includes(p), "paragraph not verbatim in " + entry.slug);
+    }
+  }
 });
 
 test("publish generator is deterministic and its hash tracks content", async () => {

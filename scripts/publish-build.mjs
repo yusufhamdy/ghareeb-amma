@@ -21,6 +21,8 @@
  *
  * Output (written only under --out; never over the committed public/ tree):
  *   words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
+ *   plus the static legal pages about/index.html, privacy/index.html,
+ *   terms/index.html, rights/index.html (copy verbatim from functions/legal.js).
  *
  * Safety: the whole site is built in memory, validated, and only then written.
  * It aborts with a non-zero exit and no output on empty data, fewer than 73
@@ -42,6 +44,7 @@ import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const seo = require("../functions/seo.js");
 const challenge = require("../functions/challenge.js");
+const { LEGAL } = require("../functions/legal.js");
 
 const SITE = "https://ghareebalquran.com";
 const MIN_WORDS = 73;
@@ -56,6 +59,7 @@ const A = {
   COMMA: "\u060c ", // U+060C ARABIC COMMA, then a space
   OTHER: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0633\u0648\u0631\u0629 ", // "other words from surah "
   APP: "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642", // "open in the app"
+  HOME: "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629", // "home"
   OL: "\ufd3f", // ornate left parenthesis
   OR: "\ufd3e", // ornate right parenthesis
 };
@@ -211,6 +215,29 @@ export function renderWordPage(r) {
   );
 }
 
+// Static legal pages: /about, /privacy, /terms, /rights. Text is verbatim from
+// functions/legal.js (never retyped here). Same bare sheet as the word pages.
+export function renderLegalPage(entry) {
+  const title = esc(entry.title) + " | " + A.LOGO;
+  const paras = entry.paras.map((p) => '<p class="para">' + esc(p) + "</p>").join("\n");
+  return (
+    "<!doctype html>\n" +
+    '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+    "<title>" + title + "</title>\n" +
+    '<meta name="description" content="' + esc(entry.title) + '">\n' +
+    '<link rel="canonical" href="' + SITE + "/" + entry.slug + '/">\n' +
+    '<meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:locale" content="ar_AR">\n' +
+    '<link rel="icon" href="/icon-192.png">\n' +
+    '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
+    "<style>" + CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style></head>\n" +
+    '<body><main><a href="/" class="q" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
+    '<h1 class="q" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
+    paras + "\n" +
+    '<a class="b" href="/">' + A.HOME + "</a>\n" +
+    "</main></body></html>"
+  );
+}
+
 function buildSitemap(records) {
   // The committed sitemap lists each surah's words in ascending ayah order
   // (the static pages keep the raw data order). Stable tie-break on data index.
@@ -224,6 +251,9 @@ function buildSitemap(records) {
     "<url><loc>" + SITE + "/</loc><priority>1.0</priority></url>\n";
   for (const r of ordered) {
     xml += "<url><loc>" + SITE + "/word/" + r.slug + ".html</loc><priority>0.6</priority></url>\n";
+  }
+  for (const entry of LEGAL) {
+    xml += "<url><loc>" + SITE + "/" + entry.slug + "/</loc><priority>0.4</priority></url>\n";
   }
   return xml + "</urlset>\n";
 }
@@ -275,6 +305,7 @@ export function buildSite(surahs, challengeState) {
   files["challenge.json"] = JSON.stringify(challenge.sanitizePublicChallenge(challengeState), null, 1);
   files["sitemap.xml"] = buildSitemap(records);
   for (const r of records) files["word/" + r.slug + ".html"] = renderWordPage(r);
+  for (const entry of LEGAL) files[entry.slug + "/index.html"] = renderLegalPage(entry);
   return { files, hash: hashFiles(files), wordCount: records.length };
 }
 
