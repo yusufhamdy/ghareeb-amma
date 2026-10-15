@@ -120,7 +120,7 @@ function render(){
  const a=$("#app");
  if(!READY){a.innerHTML='<div class="g card" style="padding:22px">جاري التحميل...</div>';return}
  if(!U)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><div class="logo" style="font-size:34px">غريب القرآن</div><p class="sm">لوحة التحكم، للمشرفين فقط.</p><button class="pill btn" data-a="login">الدخول بحساب جوجل</button></div>`;
- if(!ADM)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><p>الحساب <b dir="ltr">${esc(U.email)}</b> غير مصرح له بالدخول.</p><button class="g pill" data-a="out">تسجيل الخروج</button></div>`;
+ if(!ADM)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font-size:44px;line-height:1.2" aria-hidden="true">&#128274;</div><h1 style="font-size:24px">غير مصرح لك بالدخول</h1><p class="sm">هذا الحساب (<b dir="ltr">${esc(U.email)}</b>) ليس ضمن المشرفين.</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="g pill" href="/">افتح في الموقع</a><button class="g pill" data-a="out">تسجيل الخروج</button></div></div>`;
  const T=[["s","السور"],["w","الكلمات"],["c","التحدي"],["a","المشرفون"],["t","أدوات"]];
  a.innerHTML=`<div class="top"><span class="logo">لوحة التحكم</span><span class="sm" dir="ltr">${esc(U.email)} <button class="dg" data-a="out" style="min-height:44px;padding:0 8px">خروج</button></span></div>
 ${live()?"":'<div class="g demo">وضع تجريبي: التعديلات محفوظة على جهازك فقط. اربط Firebase ليتعدل الموقع الحقيقي.</div>'}
