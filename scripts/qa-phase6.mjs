@@ -286,7 +286,11 @@ async function main() {
     const numbers = await page.$$eval('#app .list.sl .row .bd', (a) => a.map((x) => +x.textContent.trim())).catch(() => []);
     const ascending = numbers.length > 0 && numbers.every((n, i) => i === 0 || n > numbers[i - 1]);
     check('surahs: mushaf order ascending', ascending, numbers.join(','));
-    const counts = rows.map((t) => { const m = t.match(/(\d+)\s*\u0643\u0644\u0645\u0629/); return m ? +m[1] : -1; });
+    const counts = rows.map((t) => {
+      if (t.includes('\u0643\u0644\u0645\u0629 \u0648\u0627\u062d\u062f\u0629')) return 1;
+      if (t.includes('\u0643\u0644\u0645\u062a\u0627\u0646')) return 2;
+      const m = t.match(/(\d+)\s*\u0643\u0644\u0645/); return m ? +m[1] : -1;
+    });
     const total = counts.reduce((a, b) => a + (b > 0 ? b : 0), 0);
     check('surahs: word counts sum to 73', total === 73, 'sum=' + total);
     await go(page, '#/surah/114');
@@ -605,13 +609,15 @@ async function main() {
       return { ok: !!r, scope: r ? r.scope : '' };
     }).catch(() => ({ ok: false }));
     check('pwa: service worker registers and activates', reg.ok, JSON.stringify(reg));
+    const swText = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+    const SW_CACHE = (swText.match(/CACHE_NAME\s*=\s*'([^']+)'/) || [])[1] || '';
     const cache = await page.evaluate(async (name) => {
       const keys = await caches.keys();
       const c = await caches.open(name).catch(() => null);
       const hit = c ? await c.match('/') : null;
       return { keys, hasIndex: !!hit };
-    }, 'ghareeb-pwa-v6').catch(() => ({ keys: [], hasIndex: false }));
-    check('pwa: cache ghareeb-pwa-v6 holds the app shell', cache.keys.includes('ghareeb-pwa-v6') && cache.hasIndex, JSON.stringify(cache.keys));
+    }, SW_CACHE).catch(() => ({ keys: [], hasIndex: false }));
+    check('pwa: cache ' + SW_CACHE + ' holds the app shell', cache.keys.includes(SW_CACHE) && cache.hasIndex, JSON.stringify(cache.keys));
     const mf = await page.evaluate(async () => (await fetch('/manifest.json')).json()).catch(() => ({}));
     check('pwa: manifest has name, start_url, standalone, icons', !!mf.name && !!mf.start_url && mf.display === 'standalone' && (mf.icons || []).length >= 2);
     await page.reload({ waitUntil: 'domcontentloaded' });
