@@ -219,6 +219,21 @@
   {
    "id": "nf",
    "route": "#/zzz"
+  },
+  {
+   "id": "fail",
+   "route": "#/fail",
+   "note": "Data-load failure state (design-spec-final `fail`); retry + home, with the two data-source rows."
+  },
+  {
+   "id": "savecard",
+   "route": "#/word/113-0",
+   "steps": [
+    {
+     "click": "[data-a='card']"
+    }
+   ],
+   "note": "Save-as-image sheet (design-spec-final `savecard`), opened from the word page."
   }
  ],
  "skippedScreens": [

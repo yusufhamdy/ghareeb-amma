@@ -781,4 +781,34 @@ when class1 is unchanged, and only with owner approval.
 
 SW cache bumped `ghareeb-pwa-v7` -> `ghareeb-pwa-v8`.
 
+#### Phase 8 implementation (2026-10-15)
+
+Applied the final design to the app and publisher:
+
+- Static legal pages `/about /privacy /terms /rights` are rendered by
+  `scripts/publish-build.mjs` from the verbatim copy in `functions/legal.js`
+  (ASCII-only, `\u` escapes) and added to `public/sitemap.xml`. The SPA keeps
+  its `#/about` etc. routes and footer (the design footer uses hash links), so
+  the static pages serve SEO and the app serves offline navigation.
+- The word-page template was re-authored to the `dlword` layout and all 73
+  `public/word/*.html` were regenerated. `public/word/*.html` are class1 in
+  arabic-guard, so this is an intended class1 change; Quranic runs were proven
+  byte-identical before/after (`contentMissingBefore=0`, `records=73`).
+- The SPA gained: a data-load failure view (`#/fail`: two data-source rows +
+  retry/home), and a save-image sheet (`حفظ كصورة`) with sizes 1080x1350 and
+  1080x1920. `public/admin/index.html` gained the "غير مصرح لك بالدخول" screen.
+  `public/404.html` was restyled as a standalone RTL Arabic page.
+- Surah word counts use correct Arabic phrasing (`كلمة واحدة` / `كلمتان` /
+  `N كلمات` / `N كلمة`), matching the final spec exactly.
+- `scripts/qa-phase6.mjs` now derives the SW cache name from `public/sw.js` and
+  parses the new count phrasing (no hardcoded `ghareeb-pwa-v6`).
+- Visual parity found the final spec changed the settings sheet glass control
+  to a range slider (`خفيف`/`قوي`, class `gs`) and reordered `المظهر` to
+  `تلقائي/نهار/ليل`; the app still uses a 3-button segmented control. Left
+  unfixed this phase (settings sheet was not a Phase 8 deliverable) and flagged
+  in `PHASE-8-REPORT.md` for a decision.
+- Verification: `npm test` 78/77/1 (the one fail is the arabic-guard baseline,
+  awaiting the class1-change decision); `checks.mjs` PASSED; `qa-phase6.mjs`
+  PASSED (100); `tools/contrast.mjs` ALL PASS.
+
 
