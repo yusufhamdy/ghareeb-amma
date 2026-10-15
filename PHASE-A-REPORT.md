@@ -61,9 +61,9 @@ exists but deviates from the spec · **NOT DONE** = absent.
 
 ### STEP 1 tally
 
-- DONE: 8 (10, 22, 23, 24, 26, 27 + …). Full set: **10, 22, 23, 24, 26, 27** = 6 items.
-- PARTIAL: **1, 5, 14, 19, 25** = 5 items.
-- NOT DONE: **2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 15, 16, 17, 18, 20, 21** = 16 items.
+- DONE (6): **10, 22, 23, 24, 26, 27**
+- PARTIAL (5): **1, 5, 14, 19, 25**
+- NOT DONE (16): **2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 15, 16, 17, 18, 20, 21**
 
 In-scope for this phase (from the brief): STEP 3 → item 11 (+ item 5 order);
 STEP 4 → items 6, 7, 8, 9, 14; STEP 5 → item 10 (finish to spec). All other
@@ -72,11 +72,59 @@ otherwise.
 
 ---
 
-## STEP 2 — arabic-guard classification
+## STEP 2 — arabic-guard classification → regenerate
 
-_(pending — see rule: if every changed run is a UI string, regenerate the
-baseline; if any run touches verse/meaning/word/surah-name/data text, STOP and
-show it.)_
+**Artifact:** `reference/arabic-guard-class2-diff.md` (untracked) holds the full
+before → after list for every changed run.
+
+**Method.** The test's positional `diffRuns` compares run *i* to run *i*, so a
+single insertion cascades and inflates the counts (hence "432"/"517"). I
+recomputed an **LCS-based** diff (insert/delete/edit) so unchanged runs — most
+importantly the 28-surah name list at `public/index.html:134` — are *not*
+flagged. True change set:
+
+| file | baseline runs | actual runs | hunks | removed | added |
+| --- | --- | --- | --- | --- | --- |
+| `public/index.html` | 569 | 600 | 6 | 11 | 42 |
+| `public/admin/index.html` | 522 | 529 | 3 | 2 | 9 |
+
+**Classification — every changed run is a UI string.**
+
+`public/index.html`
+1. word-count phrasing: `… كلمة` (surahs list `:145`, surah header `:146`) replaced by `wc()` → `كلمة واحدة` / `كلمتان` / `كلمات` / `كلمة` (`:154`).
+2. save-as-image sheet (`:185`): `حفظ كصورة`, `إلغاء`, `اختر المقاس ثم احفظ الصورة على جهازك`, `عادية`, `ستوري`, `حفظ على جهازي`.
+3. word-page action: `تنزيل بطاقة الآية` → `حفظ كصورة` (`:199` → `:203`).
+4. data-load failure view (`:230`): `تعذّر تحميل البيانات`, `تأكد من اتصالك بالإنترنت ثم أعد المحاولة`, `قاعدة البيانات`, `النسخة الاحتياطية`, `تعذّر الوصول`, `إعادة المحاولة`, `الرئيسية`.
+5. removed old catch text `تعذر تحميل الكلمات. جرّب تحديث الصفحة.` (`:240`).
+
+`public/admin/index.html`
+1. unauthorized message `الحساب … غير مصرح له بالدخول.` → `… هذا الحساب ليس ضمن المشرفين. افتح في الموقع.` (`:121` → `:123`).
+
+**Added class2 files** (all UI/legal, no data): `public/404.html`,
+`public/about/index.html`, `public/privacy/index.html`, `public/rights/index.html`,
+`public/terms/index.html`.
+
+**False positives.** Six runs were auto-flagged `DATA?` — `في`, `ثم`, `على`,
+`من`, `م`+`ن`, `على` — they are single common words that also occur inside
+meanings. None is a verse, a full meaning, a diacritic Quranic word, or a surah
+name. Same for the added-file flags (`لا`, `ولا`, `أو`, `إلى`, `هذه`, `أن`, `كل`,
+`عند`, `إذا`, `دون`, `جميع`, `فيما`, `الله`, `التفسير`, `الميسر`, `وكتب`, `المصدر`).
+
+**class1 (whole-file) result:** the four protected data hashes are UNCHANGED
+(`public/words.json` `c96d158b…`, `public/challenge.json` `50108095…`,
+`data/redirects.json` `bc958d7f…`, `data/challenge-notes-private.json`
+`808a272b…`). The 73 `public/word/*.html` hashes refresh, which is the
+already-proven markup-only change.
+
+**Action taken:** regenerated `test/fixtures/arabic-baseline.json`
+(class1 = 82 files, class2 = 146 files) and committed it. `npm test` → **78/78
+pass**.
+
+> Note: `reference/` is a class2 scan root, so this new report file is itself
+> captured by the baseline. The committed fixture already references other
+> untracked local files (`reference/firebase-admin/*`, `ghareeb-handoff/*`), and
+> the guard self-skips in a partial checkout, so this is consistent with the
+> existing design.
 
 ## STEP 3 — glass intensity slider
 
