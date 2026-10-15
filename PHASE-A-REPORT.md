@@ -126,9 +126,34 @@ pass**.
 > the guard self-skips in a partial checkout, so this is consistent with the
 > existing design.
 
-## STEP 3 — glass intensity slider
+## STEP 3 — glass-intensity slider → DONE
 
-_(pending)_
+**Files**
+- `tools/glass-levels.js` (new) — single source of truth for the 5 levels.
+- `public/index.html` — `saturate(var(--sat,160%))`; `.gs` range styles; `GLLV` table + `rgba()`; `applySet` now writes `--bl/--sat/--gb/--gbr` from the level; settings-sheet slider replacing the 3-button seg; theme order `تلقائي/نهار/ليل`; an `input` listener; legacy-value migration via a `gv` flag.
+- `public/sw.js` — cache `ghareeb-pwa-v8` → `v9`.
+- `tools/contrast.mjs` — added a composited-surface audit at levels 1 & 5.
+- `test/glass-slider.test.js` (new) — unit migration test + Chromium DOM test.
+- `test/fixtures/arabic-baseline.json` — regenerated (new runs are UI only).
+
+**Levels** — `blur px | saturate % | fill α day/night | rim α day/night`
+
+| lvl | blur | sat | fill | rim |
+| --- | --- | --- | --- | --- |
+| 1 (خفيف) | 4px | 140% | .88 / .26 | .55 / .10 |
+| 2 | 12px | 160% | .80 / .22 | .63 / .13 |
+| 3 (default) | 22px | 180% | .72 / .18 | .71 / .16 |
+| 4 | 34px | 200% | .64 / .15 | .79 / .19 |
+| 5 (قوي) | 48px | 220% | .56 / .12 | .87 / .22 |
+
+**Behaviour** — applies instantly (`setProperty` on `<html>`, no reload); persists in the existing `gq-set` key (now with `gv:2`); restores on load; legacy `0/1/2` map to `1/3/5`. Default level 3 preserves the old "medium" blur (22px). `prefers-reduced-transparency` still falls back to solid (unchanged `.g` rule). The control is rendered only for the glass style.
+
+**Acceptance**
+- `node --test test/glass-slider.test.js` → **2/2 pass**: the live page writes `--bl` = 4/12/22/34/48 px, `--sat` = 140–220 %, and the exact fill/rim alphas; the five blurs are distinct; the slider is `input[type=range] min=1 max=5 step=1` with `aria-label="شدة الزجاج"`; level 5 survives a reload; the control disappears for shade.
+- `node tools/contrast.mjs` → **ALL PASS**, now including the surface audit (level 1 & 5 for glass, both levels for shade). Lowest readings: body 7.15 (glass-min-night L1), muted 3.60.
+- arabic-guard → class1 (protected content) clean; `index.html` class2 change = mode reorder + `متوسط` → `شدة` `الزجاج` (UI only).
+
+> The glass fill is always white composited over `--bg`; over the dark background it still reads dark, which is what keeps `--tx` AA at every level. Decorative `#bg` blobs are excluded from the contrast surface (pointer-events:none corner decoration).
 
 ## STEP 4 — word page navigation
 
