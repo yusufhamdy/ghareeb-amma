@@ -60,6 +60,15 @@ const A = {
   OTHER: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0633\u0648\u0631\u0629 ", // "other words from surah "
   APP: "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642", // "open in the app"
   HOME: "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629", // "home"
+  MEANING: "\u0627\u0644\u0645\u0639\u0646\u0649", // "the meaning"
+  OTHER_SAME: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0646\u0641\u0633 \u0627\u0644\u0633\u0648\u0631\u0629", // "other words from the same surah"
+  NEXT: "\u0627\u0644\u062a\u0627\u0644\u064a", // "next"
+  ALL_SURAH: "\u0639\u0631\u0636 \u0643\u0644 \u0643\u0644\u0645\u0627\u062a \u0627\u0644\u0633\u0648\u0631\u0629", // "show all words of the surah"
+  COPY: "\u00a9", // copyright sign
+  F_ABOUT: "\u0639\u0646 \u0627\u0644\u0645\u0648\u0642\u0639", // "about"
+  F_PRIVACY: "\u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629", // "privacy"
+  F_TERMS: "\u0627\u0644\u0634\u0631\u0648\u0637", // "terms"
+  F_RIGHTS: "\u0627\u0644\u062d\u0642\u0648\u0642 \u0648\u0627\u0644\u0645\u0635\u0627\u062f\u0631", // "rights and sources"
   OL: "\ufd3f", // ornate left parenthesis
   OR: "\ufd3e", // ornate right parenthesis
 };
@@ -99,10 +108,25 @@ const SURAH_NO = {
   "\u0627\u0644\u0646\u0628\u0623": 78,
 };
 
-// Fixed inline stylesheet shared by every static word page (ASCII).
+// Fixed inline stylesheet shared by every static word page (ASCII). Mirrors the
+// design-spec-final `dlword` screen (cards, chips, RTL logical spacing).
 const CSS =
-  ":root{--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50}@media(prefers-color-scheme:dark){:root{--bg:#0A0E1F;--tx:#ECEFFA;--mu:#A3ABC9;--ac:#9FB4FF}}\n" +
-  "body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.8}main{max-width:680px;margin:0 auto;padding:28px 20px 60px}a{color:var(--ac)}.q{font-family:'Amiri Quran',serif}.m{color:var(--mu);font-size:14px}mark{background:none;color:var(--ac);border-bottom:2px solid var(--ac)}h1{font-size:56px;margin:8px 0;color:var(--ac);line-height:1.5}.ay{font-size:26px;line-height:2.1}.b{display:inline-block;margin-top:20px;padding:12px 24px;border-radius:24px;background:var(--ac);color:var(--bg);text-decoration:none}li{margin:6px 0}";
+  ":root{--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
+  "@media(prefers-color-scheme:dark){:root{--bg:#0A0E1F;--tx:#ECEFFA;--mu:#A3ABC9;--ac:#9FB4FF;--ln:rgba(255,255,255,.13);--gb:rgba(255,255,255,.07)}}\n" +
+  "*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.8}\n" +
+  "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'Amiri Quran',serif}\n" +
+  ".m{color:var(--mu);font-size:14px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}\n" +
+  ".logo{font-size:27px}h1{font-size:44px;margin:8px 0;color:var(--ac);line-height:1.5}\n" +
+  ".card{background:var(--gb);border:1px solid var(--ln);border-radius:18px;padding:16px;margin:12px 0}\n" +
+  ".pill{display:inline-flex;align-items:center;gap:8px;background:var(--gb);border:1px solid var(--ln);border-radius:999px;padding:9px 16px;font-size:15px}\n" +
+  ".cols{display:grid;gap:12px}@media(min-width:800px){.cols{grid-template-columns:1fr 1fr;align-items:start}}\n" +
+  ".wd{font-size:40px;line-height:1.7;color:var(--ac);text-align:center;margin:2px 0 6px;padding:0 4px}\n" +
+  ".ay{font-size:24px;line-height:2.15;text-align:center;padding:0 4px}mark{background:none;color:var(--ac);border-bottom:2px solid var(--ac)}\n" +
+  ".mn{font-size:19px;line-height:1.9}.acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0}\n" +
+  ".btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:12px 22px;border-radius:24px;background:var(--ac);color:var(--bg);font-weight:600;font-size:16px}\n" +
+  ".btn.o{background:transparent;color:var(--ac);border:1px solid var(--ac)}h2{font-size:20px;margin:6px 0 12px;text-align:center}\n" +
+  ".chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.chip{display:inline-block;background:var(--gb);border:1px solid var(--ln);border-radius:999px;padding:10px 16px;font-size:20px}\n" +
+  "footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}.fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:8px;font-size:14px}";
 
 const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -174,6 +198,7 @@ export function buildRecords(surahs) {
           .map((o, j) => ({ word: o.word, slug: o.slug, j }))
           .filter((o) => o.j !== idx)
           .map((o) => ({ word: o.word, slug: o.slug })),
+        next: sorted[idx + 1] ? { word: sorted[idx + 1].word, slug: sorted[idx + 1].slug } : null,
       });
     });
   });
@@ -189,13 +214,23 @@ export function renderWordPage(r) {
       : String(r.word) + ": " + r.rawMeaning;
   const desc = esc(descMeaning) + " (" + esc(r.surahFull) + A.COMMA + A.AYAH + esc(r.label) + ")";
   const ayah = renderAyah(r.ayah);
-  const others = r.others.length
-    ? "<h2>" + A.OTHER + esc(r.surahShort) + "</h2><ul>" +
-      r.others
-        .map((o) => '<li><a class="q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a></li>")
-        .join("") +
-      "</ul>"
-    : "";
+  const ext =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
+  const book =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+  const chev =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  const chips = r.others
+    .map((o) => '<a class="chip q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a>")
+    .join("");
+  const nextBtn = r.next ? '<a class="btn o" href="/word/' + r.next.slug + '.html">' + A.NEXT + "</a>" : "";
+  const others =
+    '<div class="card"><h2>' + A.OTHER_SAME + "</h2>" +
+    (chips ? '<div class="chips">' + chips + "</div>" : "") +
+    '<div class="acts">' + nextBtn +
+    '<a class="btn o" href="/#/surah/' + r.no + '">' + book + A.ALL_SURAH + "</a>" +
+    "</div></div>";
+  const year = new Date().getFullYear();
   return (
     "<!doctype html>\n" +
     '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n' +
@@ -206,11 +241,16 @@ export function renderWordPage(r) {
     '<link rel="icon" href="/icon-192.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
     "<style>" + CSS + "</style></head>\n" +
-    '<body><main><a href="/" class="q" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
-    '<p class="m">' + esc(r.surahFull) + A.DOT_AYAH + esc(r.label) + '</p><h1 class="q">' + esc(r.word) + '</h1><p style="font-size:19px">' + esc(r.meaning) + "</p>\n" +
-    '<p class="ay q">' + ayah + '</p><p class="m">' + esc(r.source) + "</p>\n" +
-    '<a class="b" href="/#/word/' + r.no + "-" + r.idx + '">' + A.APP + "</a>\n" +
+    '<body><main><header><a class="logo q" href="/">' + A.LOGO + "</a>" +
+    '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + ext + A.APP + "</a></header>\n" +
+    '<a class="pill" href="/#/surah/' + r.no + '">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + chev + "</a>\n" +
+    '<div class="cols">' +
+    '<div class="card"><div class="wd q">' + esc(r.word) + '</div><div class="ay q">' + ayah + "</div></div>" +
+    '<div class="card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + "</div></div>" +
+    "</div>\n" +
+    '<p class="m">' + esc(r.source) + "</p>\n" +
     others +
+    '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</main></body></html>"
   );
 }
