@@ -1,4 +1,6 @@
-// Renders every frame of design/design-spec.html to design/baseline/<data-id>.png (2x).
+// Renders every frame of the design spec to design/baseline/<data-id>.png (2x).
+// The spec file defaults to design-spec-final.html (the Phase 8 design source);
+// override with the SPEC env var, e.g. SPEC=design/design-spec.html.
 // Usage: node baseline.mjs [filter]   e.g. node baseline.mjs shade-lav-night
 //
 // Each frame is rendered at ITS OWN reference viewport (400 / 820 / 1440 wide) so that
@@ -12,7 +14,7 @@ import { fileURLToPath } from 'url';
 import { SPEC_FIX } from './spec-fix.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const spec = path.resolve(here, '../design/design-spec.html');
+const spec = path.resolve(here, '..', process.env.SPEC || 'design-spec-final.html');
 const out = path.resolve(here, '../design/baseline');
 const filter = process.argv[2] || '';
 fs.mkdirSync(out, { recursive: true });

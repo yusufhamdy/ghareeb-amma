@@ -759,3 +759,26 @@ Removed the `**` -> `/index.html` catch-all rewrite and added `public/404.html`
 Verified locally with the hosting emulator: `/` 200 (app), word page 200,
 `/does-not-exist-12345` 404 with the 404 body.
 
+#### Phase 8 design source (2026-10-15)
+
+Owner decision: `design-spec-final.html` (repo root) is the design source of
+truth from Phase 8 onward; it supersedes `design/design-spec.html` for visuals.
+AGENTS.md still governs behaviour. `tools/baseline.mjs` now reads
+`design-spec-final.html` by default (override with the `SPEC` env var); the
+final spec is committed so baselines are reproducible.
+
+Spec delta: 0 `data-id` frames removed; 86 added, all in the Default palette
+(`def`) looks only - new screens `roulette`, `daymulti`, `unauth`, `fail`,
+`dlword`, `admin`, `savecard` (12 frames each) and `brand` (2 desktop frames).
+Only one new CSS custom property (`--n`); tokens effectively unchanged.
+
+Owner decisions also recorded here: (1) the save-image sheet uses the new
+sizes 1080x1350 (normal) and 1080x1920 (story), replacing the AGENTS.md
+section 7 note of a single 2160x3840 card; (2) gated operations (push, preview
+deploy, live deploy) are NOT pre-approved this phase - each is requested in
+chat before it runs; (3) the arabic-guard baseline may be regenerated only
+when class1 is unchanged, and only with owner approval.
+
+SW cache bumped `ghareeb-pwa-v7` -> `ghareeb-pwa-v8`.
+
+
