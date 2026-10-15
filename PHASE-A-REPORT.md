@@ -66,7 +66,7 @@ exists but deviates from the spec · **NOT DONE** = absent.
 - NOT DONE (16): **2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 15, 16, 17, 18, 20, 21**
 
 In-scope for this phase (from the brief): STEP 3 → item 11 (+ item 5 order);
-STEP 4 → items 6, 7, 8, 9, 14; STEP 5 → item 10 (finish to spec). All other
+STEP 4 → items 6, 8, 9, 14; STEP 5 → item 10 (finish to spec). All other
 NOT DONE/PARTIAL items are reported but **out of Phase A scope** unless you say
 otherwise.
 
@@ -155,9 +155,70 @@ pass**.
 
 > The glass fill is always white composited over `--bg`; over the dark background it still reads dark, which is what keeps `--tx` AA at every level. Decorative `#bg` blobs are excluded from the contrast surface (pointer-events:none corner decoration).
 
-## STEP 4 — word page navigation
+## STEP 4 — word page navigation → DONE
 
-_(pending)_
+**Brief scope:** items **6, 8, 9, 14** (the in-scope line above is corrected to match).
+
+**Disclosure — item 7 (card split) was also implemented here.** The STEP 4 target
+frames (`glass-def-night-d-word` / `-m-word`) nest the two cards and both nav
+buttons inside one `.cw` grid, so the split is part of the same markup the nav
+lives in; leaving the old cards would have made the page visibly deviate from the
+frame being matched. It is covered by the same acceptance test and the word page
+now matches the frame (item 7's STEP 1 status is therefore met). If you want it
+kept strictly out of Phase A, say so and it reverts independently of items 6/8/9/14.
+
+**Files**
+
+- `public/index.html`
+  - `CIc` / `CIcL` chevrons (18px, 2px stroke): previous = right-pointing at the
+    control start, next = left-pointing at the control end → item 14 in RTL.
+  - `wordNav(w)` walks the global `W` order (`W.indexOf`): inside a surah →
+    `الكلمة السابقة` / `الكلمة التالية` linking `#/word/<id>`; at a surah boundary →
+    `السورة السابقة` / `السورة التالية` linking the neighbour **in data order**
+    (`#/surah/<num>`); at the very first/last word of the dataset → a `<span>` with
+    `aria-disabled="true"` and `opacity:.5` — still rendered, **never hidden**.
+  - Word view rework (items 7, 8, 9): `<a class="pill" href="#/surah/<n>">سورة ·
+    آية <label><left-chevron></a>` replaces the plain `.m` line; `.cw` grid = card 1
+    (word + highlighted verse) and card 2 (meaning at `≥20px` + source line) with a
+    nav control on either side; actions in the spec order `.acts.v3` = other-words
+    link → `اسحب كلمة أخرى` → `حفظ كصورة` (the old wrapper that injected the save
+    button at the head of the list is gone).
+  - CSS: `.pill` (48px, `color-mix` accent tint), `.cw` + `grid-template-areas`
+    (`"c c" "p n"` mobile / `"p c n"` ≥801px), `.pnb` (14px, ≥48px tall, accent),
+    `.cw .vr` (dashed top rule), `.cw .mn` (20px/1.9), `.acts.v3`, stacked buttons
+    `@media(max-width:600px)`, vertical 104×112px side controls `@media(min-width:801px)`.
+    All padding is symmetric (no L/R physical asymmetry) and placement uses logical
+    `justify-self:start/end`, so RTL keeps previous-on-the-right / next-on-the-left.
+- `public/sw.js` — cache `ghareeb-pwa-v9` → `v10` (`/index.html` is precached).
+- `test/word-nav.test.js` (new) — acceptance below.
+- `test/fixtures/arabic-baseline.json` — regenerated after a clean guard diff.
+
+**Acceptance**
+
+- `node --test test/word-nav.test.js` → **1/1 pass**. It walks **every** word page
+  in the data — **73 pages across 28 surahs**, a superset of the required "all words
+  of two surahs" — asserting on each page: pill href + text matches the surah row;
+  card 1 = word + `mark`-highlighted verse, card 2 = meaning ≥20px with no verse
+  and the source kept; prev/next label + target for all three cases (in-surah word
+  link / boundary surah link / dataset edge disabled); `aria-disabled` + `opacity:.5`
+  + still visible (≥44px) at both edges; chevron directions; the three actions in
+  order (link `#/surah/<n>` → `data-a="rnd"` → `data-a="card"` with the right id);
+  mobile grid `"c c" "p n"` with the nav row below the cards; and after a viewport
+  switch, desktop grid `"p c n"` with previous on the right of the cards and next
+  on their left, both ≥44px.
+- Walk report (UTF-8 JSON, Arabic never printed to the console): **28 surahs**,
+  ascending data order **78 → 114** (النبأ … الناس), 73 words, 73 walked; first
+  word `78-0` has a disabled *previous*, last word `114-0` a disabled *next*.
+- arabic-guard → **0 DATA-flagged runs**, 4 LCS hunks, all `[UI]` (nav labels in;
+  old card labels `الآية` + the removed wrapper strings out); class1 protected
+  hashes UNCHANGED (`public/words.json` `c96d158b…`, `public/challenge.json`
+  `50108095…`); baseline regenerated → class1 = 82, class2 = 149 (+1: the new test).
+- `npm test` → **81/81 pass**; `node scripts/ci/checks.mjs` → **PASSED**.
+
+**Item status after STEP 4:** 6 → DONE, 8 → DONE, 9 → DONE, and 7 → DONE (see
+disclosure). Item 14 stays **PARTIAL**: its forward chevron is now correct on the
+word page too, but the skip/exit/open icon variants it mentions still do not exist
+in the app to mirror.
 
 ## STEP 5 — save as image
 
