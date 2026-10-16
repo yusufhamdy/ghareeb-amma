@@ -153,3 +153,41 @@ test("B2: results are one centered card column and the whole row is the hover ta
     assert.notEqual(before, after, "hovering the row transforms the whole card");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// B3: shade surah picker rectangles + 44px day tiles (items 17, 18)
+// ---------------------------------------------------------------------------
+test("B3: shade surah cards are rectangles and day tiles are 44px with even gaps", { timeout: 120000 }, async (t) => {
+  const env = await setup(t, { set: { style: "shade" } });
+  if (!env) return;
+  try {
+    const page = await env.page(390, 844);
+    await page.evaluate(() => { location.hash = "#/surahs"; });
+    await page.waitForSelector("#app .list.sl .row", { timeout: 20000 });
+    const card = await page.evaluate(() => {
+      const r = document.querySelector("#app .list.sl .row");
+      const rb = r.getBoundingClientRect(), cr = getComputedStyle(r);
+      return {
+        w: rb.width, h: rb.height,
+        shade: document.body.classList.contains("shade"),
+        disp: cr.display,
+        bg: cr.backgroundImage,
+      };
+    });
+    assert.ok(card.shade, "shade style applied");
+    assert.equal(card.disp, "grid", "surah card is a grid rectangle, not a square tile");
+    assert.ok(card.w > card.h, "surah card width (" + card.w.toFixed(0) + ") > height (" + card.h.toFixed(0) + ")");
+    assert.ok(card.bg.includes("gradient"), "surah card uses the light --tc gradient");
+
+    await page.evaluate(() => { location.hash = "#/challenge"; });
+    await page.waitForSelector("#app .cg .dy", { timeout: 20000 });
+    const tiles = await page.evaluate(() => {
+      const cg = document.querySelector("#app .cg");
+      const dy = cg.querySelector(".dy");
+      const db = dy.getBoundingClientRect(), cs = getComputedStyle(cg);
+      return { w: db.width, h: db.height, col: cs.columnGap, row: cs.rowGap };
+    });
+    assert.ok(Math.abs(tiles.w - 44) < 0.5 && Math.abs(tiles.h - 44) < 0.5, "day tile is 44x44 (got " + tiles.w + "x" + tiles.h + ")");
+    assert.equal(tiles.col, tiles.row, "horizontal gap equals vertical gap (" + tiles.col + " vs " + tiles.row + ")");
+  } finally { await env.close(); }
+});

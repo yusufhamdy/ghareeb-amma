@@ -135,15 +135,15 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .wd{color:var(--ac)}.shade .row .w{color:var(--ac)}
 .shade .cols .card:first-child{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--tc) 0,color-mix(in srgb,var(--tc) 38%,var(--sf)) 42px,var(--sf) 90px) no-repeat border-box var(--sf);padding:96px 22px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
 .shade .list.sl{background:none;border:0;padding:0;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.shade .sl .row{position:relative;flex-direction:column;align-items:stretch;justify-content:flex-end;aspect-ratio:1/1.05;min-height:0;border:0;border-radius:26px;padding:14px;gap:0;background:var(--sf) var(--p0) center/cover}
+.shade .sl .row{position:relative;display:grid;grid-template-columns:34px 1fr;column-gap:10px;row-gap:0;align-content:center;align-items:center;aspect-ratio:auto;min-height:84px;border:0;border-radius:26px;padding:12px 14px;gap:0;background:linear-gradient(155deg,color-mix(in srgb,var(--tc) 24%,var(--sf)),var(--sf) 62%)!important}
 .shade .sl .row+.row{border-top:0}
 .shade .sl .row:nth-child(6n+2),.shade .dy:nth-child(6n+2){background-image:var(--p1)}.shade .sl .row:nth-child(6n+3),.shade .dy:nth-child(6n+3){background-image:var(--p2)}.shade .sl .row:nth-child(6n+4),.shade .dy:nth-child(6n+4){background-image:var(--p3)}.shade .sl .row:nth-child(6n+5),.shade .dy:nth-child(6n+5){background-image:var(--p4)}.shade .sl .row:nth-child(6n),.shade .dy:nth-child(6n){background-image:var(--p5)}
-.shade .sl .bd{position:absolute;top:12px;inset-inline-start:12px;width:30px;height:30px;border:0;background:var(--bdbg);color:var(--bdc);font-size:12px}
-.shade .sl .q{text-align:center;font-size:28px;flex:none}.shade .sl .m{text-align:center}.shade .sl svg{display:none}
-.shade .dy{width:100%!important;height:auto!important;aspect-ratio:1;border-radius:16px!important;border:0;color:var(--tx);align-items:flex-end;padding-bottom:8px;background:var(--sf) var(--p0) center/cover}
-.shade .dy.cur{border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf);filter:none;color:var(--mu)}
+.shade .sl .bd{position:static;grid-row:1/3;width:34px;height:34px;border:0;background:var(--bdbg);color:var(--bdc);font-size:12px}
+.shade .sl .q{grid-column:2;text-align:start;font-size:25px;flex:none;line-height:1.5}.shade .sl .m{grid-column:2;text-align:start;font-size:12px}.shade .sl svg{display:none}
+.shade .dy{width:44px!important;height:44px!important;aspect-ratio:auto;border-radius:12px!important;border:0;color:var(--tx);align-items:center;padding:0;background:var(--sf)!important}
+.shade .dy.ok{background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 40%,var(--sf)))!important}.shade .dy.cur{background:var(--sf)!important;border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf)!important;filter:none;color:var(--mu)}
 .shade .dy .bg{background:var(--bg);color:var(--ac);border-color:var(--ac)}
-.shade .cg{gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--mu);color:var(--mu);opacity:.7}
+.shade .cg{grid-template-columns:repeat(auto-fill,44px)!important;justify-content:center;gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--mu);color:var(--mu);opacity:.7}
 .shade #sh .p{background:var(--bg)}
 @media(min-width:601px){.shade .list.sl{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1025px){.shade .list.sl{grid-template-columns:repeat(4,1fr)}.shade .cols .card:first-child{background:linear-gradient(180deg,var(--tc) 0,color-mix(in srgb,var(--tc) 38%,var(--sf)) 52px,var(--sf) 110px) no-repeat border-box var(--sf);padding-top:118px}}
@@ -157,6 +157,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(hover:hover){.list.rs a.row:hover{background-color:transparent;transform:translateY(-1.5px)}.shade .list.rs a.row:hover{border-color:var(--tc);box-shadow:0 4px 12px rgba(0,0,0,.14)}}
 .list:not(.sl):not(.rs) .row{padding-inline:12px;margin-inline:-12px;border-radius:16px;transition:background .25s}
 @media(hover:hover){.list:not(.sl):not(.rs) a.row:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);transform:none;box-shadow:none;border-color:var(--ln)}}
+/* B3: shade surah picker very light hover */
+@media(hover:hover){.shade .list.sl a.row:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.12)}}
 </style>
 </head>
 <body>
