@@ -457,17 +457,15 @@ const AUDIO_STUB =
   "window.AudioContext=C;window.webkitAudioContext=C;})();";
 
 async function clickCorrect(page) {
-  for (let pick = 0; pick < 4; pick++) {
-    await nav(page, "#/");
-    await nav(page, "#/quiz");
-    await page.waitForSelector("#app .opt", { timeout: 5000 });
-    await page.evaluate(() => { window.__AU.length = 0; window.__AUC = 0; window.__AUR = 0; });
-    await page.click('#app .opt[data-o="' + pick + '"]');
-    await page.waitForSelector("#app .opt.ok", { timeout: 3000 });
-    const hit = await page.$eval('#app .opt[data-o="' + pick + '"]', (e) => e.classList.contains("ok"));
-    if (hit) return true;
-  }
-  return false;
+  await nav(page, "#/");
+  await nav(page, "#/quiz");
+  await page.waitForSelector("#app .opt", { timeout: 5000 });
+  await page.evaluate(() => { window.__AU.length = 0; window.__AUC = 0; window.__AUR = 0; });
+  const ci = await page.evaluate(() => { try { const q = Q.qs[Q.i]; return q.o.indexOf(q.w); } catch (e) { return -1; } });
+  assert.ok(ci >= 0, "resolved the correct option index");
+  await page.click('#app .opt[data-o="' + ci + '"]');
+  await page.waitForSelector("#app .opt.ok", { timeout: 3000 });
+  return page.$eval('#app .opt[data-o="' + ci + '"]', (e) => e.classList.contains("ok"));
 }
 const OSCS = "window.__AU.map(function(o){return {type:o.type,f:o.frequency.value,len:o.stopAt-o.startAt}})";
 
