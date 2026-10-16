@@ -107,3 +107,60 @@ test("F1: desktop gear is inset outside the content column and unchanged on mobi
     assert.ok(Math.abs(m.left - 16) < 1.5, "mobile gear keeps its 16px edge offset (got " + m.left.toFixed(1) + ")");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// F2: word-page previous/next share one structure (icon above text on desktop)
+// ---------------------------------------------------------------------------
+test("F2: prev/next stack icon above text on desktop and share a height", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(1440, 900);
+    await nav(page, "#/word/78-0");
+    await page.waitForSelector("#app .cw .pnb.pv", { timeout: 20000 });
+    const r = await page.evaluate(() => {
+      const rect = (b) => ({ top: b.top, bottom: b.bottom, left: b.left, right: b.right, h: b.height });
+      const el = (s) => document.querySelector(s);
+      const svgR = (e) => { const s = e.querySelector("svg"); return s ? rect(s.getBoundingClientRect()) : null; };
+      const textR = (e) => {
+        const tn = [...e.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+        if (!tn) return null;
+        const s = tn.textContent, a = s.search(/\S/), b = s.replace(/\s+$/, "").length;
+        const rng = document.createRange(); rng.setStart(tn, a); rng.setEnd(tn, b);
+        return rect(rng.getBoundingClientRect());
+      };
+      const d = (e) => { const p = e.querySelector("path"); return p ? (p.getAttribute("d") || "") : ""; };
+      const out = {};
+      for (const k of ["pv", "nx"]) {
+        const e = el("#app .cw .pnb." + k);
+        const s = svgR(e), tx = textR(e);
+        out[k] = {
+          h: e.getBoundingClientRect().height,
+          flex: getComputedStyle(e).flexDirection,
+          svg: s, text: tx,
+          iconAbove: !!(s && tx) && s.bottom <= tx.top + 2,
+          d: d(e),
+        };
+      }
+      return out;
+    });
+    assert.ok(r.pv.iconAbove, "previous icon sits above its text");
+    assert.ok(r.nx.iconAbove, "next icon sits above its text");
+    assert.equal(r.pv.flex, "column", "previous stacks in a column");
+    assert.equal(r.nx.flex, "column-reverse", "next stacks in a reversed column (same look)");
+    assert.ok(Math.abs(r.pv.h - r.nx.h) < 0.5, "both controls share a height (" + r.pv.h + " vs " + r.nx.h + ")");
+    assert.ok(r.pv.h >= 44 && r.nx.h >= 44, "controls keep a >=44px touch target");
+    assert.ok(r.pv.d.indexOf("M9 5l7 7") >= 0, "previous chevron points right");
+    assert.ok(r.nx.d.indexOf("M15 5l-7 7") >= 0, "next chevron points left");
+
+    const mob = await env.page(400, 800);
+    await nav(mob, "#/word/78-0");
+    await mob.waitForSelector("#app .cw .pnb.pv", { timeout: 20000 });
+    const mf = await mob.evaluate(() => ({
+      pv: getComputedStyle(document.querySelector("#app .cw .pnb.pv")).flexDirection,
+      nx: getComputedStyle(document.querySelector("#app .cw .pnb.nx")).flexDirection,
+    }));
+    assert.equal(mf.pv, "row", "mobile previous stays a row");
+    assert.equal(mf.nx, "row", "mobile next stays a row");
+  } finally { await env.close(); }
+});

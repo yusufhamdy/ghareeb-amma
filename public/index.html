@@ -181,6 +181,8 @@ header .ib[data-a="set"]:hover,header .ib[data-a="set"]:active,header .ib[data-a
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){header .ib[data-a="set"]{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
+/* F2: prev/next identical structure - icon above text on desktop, same height */
+@media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
 </style>
 </head>
 <body>
