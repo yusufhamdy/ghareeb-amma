@@ -440,3 +440,81 @@ test("C2: multi-word day reveals one card at a time; one-word day stays single",
     assert.ok(a.some((x) => parseFloat(x.delay) > 0), "later cards are staggered");
   } finally { await anim.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// C3: theme-aware audio cues, silent (and no AudioContext) when sound is off
+// ---------------------------------------------------------------------------
+const AUDIO_STUB =
+  "(function(){window.__AU=[];window.__AUC=0;window.__AUR=0;" +
+  "function G(){this.gain={value:0,setValueAtTime:function(){},linearRampToValueAtTime:function(){},exponentialRampToValueAtTime:function(){},setTargetAtTime:function(){}};}" +
+  "function O(){this.type='sine';this.frequency={value:0};this.startAt=0;this.stopAt=0;window.__AU.push(this);}" +
+  "O.prototype.connect=function(){};O.prototype.start=function(t){this.startAt=t||0;};O.prototype.stop=function(t){this.stopAt=t||0;};" +
+  "G.prototype.connect=function(){};" +
+  "function C(){window.__AUC++;this.currentTime=0;this.state='running';this.destination={};}" +
+  "C.prototype.createOscillator=function(){return new O();};" +
+  "C.prototype.createGain=function(){return new G();};" +
+  "C.prototype.resume=function(){window.__AUR++;this.state='running';return Promise.resolve();};" +
+  "window.AudioContext=C;window.webkitAudioContext=C;})();";
+
+async function clickCorrect(page) {
+  for (let pick = 0; pick < 4; pick++) {
+    await nav(page, "#/");
+    await nav(page, "#/quiz");
+    await page.waitForSelector("#app .opt", { timeout: 5000 });
+    await page.evaluate(() => { window.__AU.length = 0; window.__AUC = 0; window.__AUR = 0; });
+    await page.click('#app .opt[data-o="' + pick + '"]');
+    await page.waitForSelector("#app .opt.ok", { timeout: 3000 });
+    const hit = await page.$eval('#app .opt[data-o="' + pick + '"]', (e) => e.classList.contains("ok"));
+    if (hit) return true;
+  }
+  return false;
+}
+const OSCS = "window.__AU.map(function(o){return {type:o.type,f:o.frequency.value,len:o.stopAt-o.startAt}})";
+
+test("C3: correct answer plays a theme-aware cue; sound off stays silent", { timeout: 120000 }, async (t) => {
+  const on = await setup(t, { set: { snd: true }, init: AUDIO_STUB });
+  if (!on) return;
+  try {
+    const page = await on.page(390, 844);
+    assert.ok(await clickCorrect(page), "found a correct quiz answer");
+    const g = await page.evaluate(OSCS);
+    assert.ok(g.some((o) => o.type === "sine" && o.f === 660) && g.some((o) => o.type === "sine" && o.f === 880),
+      "glass correct cue uses two soft sine notes (got " + JSON.stringify(g) + ")");
+    assert.ok(g.every((o) => o.len <= 0.3), "each note stays short");
+
+    await nav(page, "#/");
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 10000 });
+    await page.evaluate(() => { window.__AU.length = 0; });
+    await page.click('#app [data-a="rnd"]');
+    await page.waitForTimeout(220);
+    const reel = await page.evaluate(OSCS);
+    assert.ok(reel.some((o) => o.f === 1400), "the roulette ticks while it spins");
+  } finally { await on.close(); }
+
+  const onS = await setup(t, { set: { snd: true, style: "shade" }, init: AUDIO_STUB });
+  if (!onS) return;
+  try {
+    const page = await onS.page(390, 844);
+    assert.ok(await clickCorrect(page), "found a correct quiz answer (shade)");
+    const s = await page.evaluate(OSCS);
+    assert.ok(s.some((o) => o.type === "triangle" && o.f === 440) && s.some((o) => o.type === "triangle" && o.f === 587),
+      "shade correct cue is a different (triangle) pair (got " + JSON.stringify(s) + ")");
+  } finally { await onS.close(); }
+
+  const off = await setup(t, { set: { snd: false }, init: AUDIO_STUB });
+  if (!off) return;
+  try {
+    const page = await off.page(390, 844);
+    for (let pick = 0; pick < 4; pick++) {
+      await nav(page, "#/");
+      await nav(page, "#/quiz");
+      await page.waitForSelector("#app .opt", { timeout: 5000 });
+      await page.click('#app .opt[data-o="' + pick + '"]');
+      await page.waitForSelector("#app .opt.ok", { timeout: 3000 });
+    }
+    const r = await page.evaluate(() => ({ c: window.__AUC, r: window.__AUR, n: window.__AU.length }));
+    assert.equal(r.c, 0, "sound off: no AudioContext is ever created");
+    assert.equal(r.r, 0, "sound off: nothing is resumed");
+    assert.equal(r.n, 0, "sound off: no tone is scheduled");
+  } finally { await off.close(); }
+});
