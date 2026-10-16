@@ -357,3 +357,86 @@ test("C1: draw opens a reel overlay; skip lands on a word route; reduced-motion 
     assert.equal(await page.$("#rou"), null, "no lingering overlay under reduced motion");
   } finally { await rm.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// C2: multi-word day reveals one card at a time; a one-word day shows one card
+// ---------------------------------------------------------------------------
+const DAYSNAP = `(() => {
+  const dw = document.querySelector('#dw');
+  const cards = [...document.querySelectorAll('#dw .dcard')];
+  const cnt = document.querySelector('#dw .dcount') || document.querySelector('.dcount');
+  return {
+    dwVisible: !!dw && getComputedStyle(dw).display !== 'none',
+    cards: cards.length,
+    open: cards.filter((c) => c.classList.contains('open')).length,
+    done: cards.filter((c) => c.classList.contains('done')).length,
+    lk: cards.filter((c) => c.classList.contains('lk')).length,
+    openIdx: cards.findIndex((c) => c.classList.contains('open')),
+    k: cnt ? cnt.dataset.k : null,
+    m: cnt ? cnt.dataset.m : null,
+    dnext: !!document.querySelector('#dw [data-a="dnext"]'),
+    doneBtn: !!document.querySelector('#dw [data-a="done"]'),
+  };
+})()`;
+
+test("C2: multi-word day reveals one card at a time; one-word day stays single", { timeout: 120000 }, async (t) => {
+  const env = await setup(t, { reducedMotion: "reduce" });
+  if (!env) return;
+  try {
+    const page = await env.page(390, 844);
+    await nav(page, "#/day/1");
+    await page.waitForSelector("#dw.show", { timeout: 10000 });
+    const s0 = await page.evaluate(DAYSNAP);
+    assert.ok(s0.dwVisible, "the day content is shown after the roulette");
+    assert.equal(s0.cards, 3, "a 3-word day renders 3 cards");
+    assert.equal(s0.open, 1, "exactly one card is open");
+    assert.equal(s0.openIdx, 0, "the first card is the open one");
+    assert.equal(s0.done, 0, "no card is collapsed yet");
+    assert.equal(s0.lk, 2, "the following cards show the locked hint");
+    assert.equal(s0.k, "1", "the counter starts at 1");
+    assert.equal(s0.m, "3", "the counter knows the total");
+    assert.ok(s0.dnext, "the next button is present");
+
+    await page.click('#dw [data-a="dnext"]');
+    await page.waitForFunction(() => { const c = document.querySelector('.dcount'); return c && c.dataset.k === '2'; }, null, { timeout: 3000 });
+    const s1 = await page.evaluate(DAYSNAP);
+    assert.equal(s1.open, 1, "still exactly one open card");
+    assert.equal(s1.openIdx, 1, "the next card is now the open one");
+    assert.equal(s1.done, 1, "the finished card collapsed");
+    assert.equal(s1.lk, 1, "one locked hint remains");
+    assert.equal(s1.k, "2", "the counter advanced");
+
+    await page.click('#dw [data-a="dnext"]');
+    await page.waitForFunction(() => { const c = document.querySelector('.dcount'); return c && c.dataset.k === '3'; }, null, { timeout: 3000 });
+    const s2 = await page.evaluate(DAYSNAP);
+    assert.equal(s2.openIdx, 2, "the last card is the open one");
+    assert.ok(!s2.dnext, "the next button disappears on the last card");
+    assert.ok(s2.doneBtn, "the done button is present");
+
+    await nav(page, "#/day/2");
+    await page.waitForSelector("#dw.show", { timeout: 10000 });
+    const s3 = await page.evaluate(DAYSNAP);
+    assert.equal(s3.cards, 1, "a one-word day renders a single card");
+    assert.equal(s3.open, 1, "that card is open");
+    assert.equal(s3.m, "1", "the counter total is 1");
+    assert.ok(!s3.dnext, "a single card day has no next button");
+  } finally { await env.close(); }
+
+  // rise animation present (and delay staggered) when motion is allowed
+  const anim = await setup(t, {});
+  if (!anim) return;
+  try {
+    const page = await anim.page(390, 844);
+    await nav(page, "#/day/1");
+    await page.waitForSelector("#dw.show", { timeout: 12000 });
+    const a = await page.evaluate(() => {
+      const cs = [...document.querySelectorAll("#dw .dcard")].map((c) => ({
+        name: getComputedStyle(c).animationName,
+        delay: getComputedStyle(c).animationDelay,
+      }));
+      return cs;
+    });
+    assert.ok(a.length >= 2 && a.every((x) => x.name === "rise"), "cards rise into view");
+    assert.ok(a.some((x) => parseFloat(x.delay) > 0), "later cards are staggered");
+  } finally { await anim.close(); }
+});
