@@ -190,6 +190,9 @@ header .ib[data-a="set"]:hover,header .ib[data-a="set"]:active,header .ib[data-a
 .shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible{background:transparent;color:var(--tx);border:1px solid var(--ln);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 }
+/* F4: social strip gets a very light hover shadow, never a movement */
+.strip{transition:box-shadow .35s}
+@media(hover:hover){.strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 </style>
 </head>
 <body>

@@ -232,3 +232,40 @@ test("F3: draw button and its outlined siblings invert on hover (AA in both them
     assert.notEqual(r.bg, b0, "reduced motion still swaps the colour");
   } finally { await rmv.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// F4: social card gets a shadow on hover without moving
+// ---------------------------------------------------------------------------
+test("F4: social strip hover adds a shadow and never moves; icon hover intact", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(1440, 900);
+    await page.waitForSelector("#app .strip", { timeout: 20000 });
+    const sh0 = await page.$eval("#app .strip", (e) => getComputedStyle(e).boxShadow);
+    await page.hover("#app .strip");
+    await page.waitForTimeout(420);
+    const s = await page.$eval("#app .strip", (e) => ({ sh: getComputedStyle(e).boxShadow, tr: getComputedStyle(e).transform }));
+    assert.notEqual(s.sh, sh0, "hovering the social card changes its box-shadow");
+    assert.equal(s.tr, "none", "the social card never moves on hover");
+
+    // the icon hover (unchanged) still reveals its disc
+    await page.hover("#app .so");
+    await page.waitForTimeout(150);
+    const op = await page.$eval("#app .so", (e) => getComputedStyle(e, "::before").opacity);
+    assert.ok(parseFloat(op) > 0.9, "social icon hover disc is still intact");
+  } finally { await env.close(); }
+
+  const shade = await setup(t, { set: { style: "shade" } });
+  if (!shade) return;
+  try {
+    const page = await shade.page(1440, 900);
+    await page.waitForSelector("#app .strip", { timeout: 20000 });
+    const b0 = await page.$eval("#app .strip", (e) => getComputedStyle(e).boxShadow);
+    await page.hover("#app .strip");
+    await page.waitForTimeout(420);
+    const s = await page.$eval("#app .strip", (e) => ({ sh: getComputedStyle(e).boxShadow, tr: getComputedStyle(e).transform }));
+    assert.notEqual(s.sh, b0, "shade: hover still adds a shadow");
+    assert.equal(s.tr, "none", "shade: the card never moves");
+  } finally { await shade.close(); }
+});
