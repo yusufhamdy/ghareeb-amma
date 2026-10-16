@@ -62,7 +62,7 @@ async function setup(t, opts = {}) {
       if (opts.init) content += opts.init;
       await page.addInitScript({ content });
       if (opts.route) await opts.route(page);
-      await page.goto(base + "/index.html", { waitUntil: "load" });
+      await page.goto(base + "/" + (opts.html || "index.html"), { waitUntil: "load" });
       return page;
     },
     async close() { await browser.close(); await new Promise((r) => server.close(r)); },
@@ -278,4 +278,127 @@ test("D4: navigating between routes never fades the new page (all themes)", { ti
       }
     } finally { await env.close(); }
   }
+});
+
+// ---------------------------------------------------------------------------
+// D5: admin polish - custom delete dialog, icons, no native confirm
+// ---------------------------------------------------------------------------
+const FB_STUB = [
+  "export function initializeApp(cfg){return {cfg}}",
+  "export function getAuth(app){return {app}}",
+  "export function onAuthStateChanged(auth,cb){setTimeout(function(){cb(window.__TEST_USER__||null)},0)}",
+  "export class GoogleAuthProvider{constructor(){this.kind='google'}}",
+  "export function signInWithPopup(){return Promise.resolve()}",
+  "export function signInWithRedirect(){return Promise.resolve()}",
+  "export function signOut(){return Promise.resolve()}",
+  "export function getFirestore(app){return {app}}",
+  "export function serverTimestamp(){return 0}",
+  "export function setDoc(){return Promise.resolve()}",
+  "export function doc(db){var p=[];for(var i=1;i<arguments.length;i++)p.push(arguments[i]);return {path:p.join('/')}}",
+  "export function getDoc(ref){var p=(ref&&ref.path)||'';if(p==='public/data')return Promise.resolve({exists:function(){return true},data:function(){return {rev:(window.__REV__||1),surahs:window.__TEST_SURAHS__||[]}}});return Promise.resolve({exists:function(){return false},data:function(){return {}}})}",
+  "export function runTransaction(db,fn){var tx={get:function(){return Promise.resolve({exists:function(){return true},data:function(){return {rev:(window.__REV__||1),surahs:window.__TEST_SURAHS__||[]}}})},set:function(ref,val){window.__REV__=(val&&val.rev)||((window.__REV__||1)+1)}};return Promise.resolve(fn(tx)).then(function(){return 1})}",
+].join("\n");
+const stubRoute = async (page) => {
+  await page.route("https://www.gstatic.com/firebasejs/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript", headers: { "access-control-allow-origin": "*" }, body: FB_STUB }));
+};
+const SR = "[{surah:'Surah',no:78,words:['w0','w1'],meanings:['w0: m','w1: m'],ayahs:[{label:'1',segments:[]},{label:'2',segments:[]}],source:'s'}]";
+const T_WORD = "\u062d\u0630\u0641 \u0647\u0630\u0647 \u0627\u0644\u0643\u0644\u0645\u0629\u061f";
+const T_OTHER = "\u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0639\u0646\u0635\u0631\u061f";
+const T_BODY = "\u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0639\u0646 \u0627\u0644\u062d\u0630\u0641 \u0628\u0639\u062f \u0627\u0644\u062a\u0623\u0643\u064a\u062f.";
+const mirrored = (tf) => /^matrix\(-1[, ]/.test(tf.replace(/\s+/g, " ").replace(/\(\s*/g, "("));
+
+test("D5: admin uses a custom delete dialog and mirrored icons, never a native confirm", { timeout: 180000 }, async (t) => {
+  const ownerInit = "window.__TEST_USER__={email:'yusufhamdy20@gmail.com',emailVerified:true};window.__TEST_SURAHS__=" + SR + ";";
+  const env = await setup(t, { html: "admin/index.html", route: stubRoute, init: ownerInit });
+  if (!env) return;
+  try {
+    const page = await env.page(1200, 900);
+    let dialogs = 0;
+    page.on("dialog", async (d) => { dialogs++; try { await d.dismiss(); } catch (e) {} });
+    await page.waitForSelector("#app .top", { timeout: 25000 });
+
+    // Logout icon: mirrored, first child of the header logout button.
+    const outTag = await page.locator('[data-a="out"]').first().evaluate((el) => el.firstElementChild && el.firstElementChild.tagName);
+    assert.equal(outTag, "svg", "logout icon sits at the start of the button");
+    const outTf = await page.locator('[data-a="out"]').first().locator("svg").evaluate((el) => getComputedStyle(el).transform);
+    assert.ok(mirrored(outTf), "logout icon carries scaleX(-1): " + outTf);
+
+    // Row action buttons have icons and are at least 44px tall.
+    await page.locator('[data-a="tab"][data-v="w"]').click();
+    await page.waitForSelector('[data-a="delW"]', { timeout: 20000 });
+    const h = await page.locator('[data-a="delW"]').first().evaluate((el) => el.getBoundingClientRect().height);
+    assert.ok(h >= 44, "delete button is at least 44px tall: " + h);
+    assert.equal(await page.locator('[data-a="delW"]').first().locator("svg").count(), 1, "delete button has an icon");
+    assert.equal(await page.locator('[data-a="editW"]').first().locator("svg").count(), 1, "edit button has an icon");
+    const rowsBefore = await page.locator("#app .card .row").count();
+
+    // Open the custom dialog for a WORD delete.
+    await page.locator('[data-a="delW"]').first().click();
+    await page.waitForSelector("#cd.open", { timeout: 5000 });
+    assert.equal(dialogs, 0, "no native dialog fired");
+    assert.equal(await page.locator("#cd .cdt").innerText(), T_WORD, "word delete title");
+    assert.equal(await page.locator("#cd .cdb").innerText(), T_BODY, "dialog body");
+    await page.waitForTimeout(30);
+    assert.equal(await page.evaluate(() => { const a = document.activeElement; return a && a.closest("[data-cd]") ? a.getAttribute("data-cd") : null; }), "no", "cancel is focused first");
+    // Tab trap keeps focus inside.
+    await page.keyboard.press("Tab");
+    assert.equal(await page.evaluate(() => { const a = document.activeElement; return a && a.closest("[data-cd]") ? a.getAttribute("data-cd") : null; }), "yes", "Tab moves to the destructive button");
+    await page.keyboard.press("Tab");
+    assert.equal(await page.evaluate(() => { const a = document.activeElement; return a && a.closest("[data-cd]") ? a.getAttribute("data-cd") : null; }), "no", "Tab wraps inside the dialog");
+    // Cancel keeps the item and returns focus to the delete button.
+    await page.locator('[data-cd="no"]').click();
+    assert.equal(await page.locator("#cd").evaluate((el) => el.classList.contains("open")), false, "cancel closes the dialog");
+    assert.equal(await page.locator("#app .card .row").count(), rowsBefore, "cancel keeps the word");
+    assert.equal(await page.evaluate(() => { const a = document.activeElement; return a && a.getAttribute ? a.getAttribute("data-a") : null; }), "delW", "focus returns to the delete button");
+    // Esc cancels too.
+    await page.locator('[data-a="delW"]').first().click();
+    await page.waitForSelector("#cd.open", { timeout: 5000 });
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#cd").evaluate((el) => el.classList.contains("open")), false, "Esc closes the dialog");
+    assert.equal(await page.locator("#app .card .row").count(), rowsBefore, "Esc keeps the word");
+    // Confirm runs the existing handler exactly once.
+    await page.locator('[data-a="delW"]').first().click();
+    await page.waitForSelector("#cd.open", { timeout: 5000 });
+    await page.locator('[data-cd="yes"]').click();
+    await page.waitForTimeout(150);
+    assert.equal(await page.locator("#app .card .row").count(), rowsBefore - 1, "confirm deletes the word");
+    assert.equal(await page.locator("#cd").evaluate((el) => el.classList.contains("open")), false, "confirm closes the dialog");
+    assert.equal(dialogs, 0, "still no native dialog");
+
+    // Other item type title (surah delete), then confirm.
+    await page.locator('[data-a="tab"][data-v="s"]').click();
+    await page.waitForSelector('[data-a="delS"]', { timeout: 20000 });
+    const sRows = await page.locator("#app .card .row").count();
+    await page.locator('[data-a="delS"]').first().click();
+    await page.waitForSelector("#cd.open", { timeout: 5000 });
+    assert.equal(await page.locator("#cd .cdt").innerText(), T_OTHER, "other item delete title");
+    await page.locator('[data-cd="yes"]').click();
+    await page.waitForTimeout(150);
+    assert.equal(await page.locator("#app .card .row").count(), sRows - 1, "confirm deletes the surah");
+    assert.equal(dialogs, 0, "still no native dialog");
+
+    // Wrapping layouts: no horizontal overflow at 400/820/1440.
+    for (const w of [400, 820, 1440]) {
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.waitForTimeout(50);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.ok(over <= 1, "no horizontal overflow at " + w + "px (overflow " + over + ")");
+    }
+  } finally { await env.close(); }
+
+  // Unauthorized screen: "open in site" link icon mirrored, at the END.
+  const otherInit = "window.__TEST_USER__={email:'other@example.com',emailVerified:true};window.__TEST_SURAHS__=" + SR + ";";
+  const envU = await setup(t, { html: "admin/index.html", route: stubRoute, init: otherInit });
+  if (!envU) return;
+  try {
+    const page = await envU.page(390, 844);
+    await page.waitForSelector('#app a[href="/"]', { timeout: 25000 });
+    const link = page.locator('#app a[href="/"]');
+    const lastTag = await link.evaluate((el) => el.lastElementChild && el.lastElementChild.tagName);
+    assert.equal(lastTag, "svg", "open icon sits at the end of the link");
+    const tf = await link.locator("svg").evaluate((el) => getComputedStyle(el).transform);
+    assert.ok(mirrored(tf), "open icon carries scaleX(-1): " + tf);
+    const outTag = await page.locator('[data-a="out"]').evaluate((el) => el.firstElementChild && el.firstElementChild.tagName);
+    assert.equal(outTag, "svg", "unauthorized logout icon at start");
+  } finally { await envU.close(); }
 });

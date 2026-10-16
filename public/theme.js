@@ -11,7 +11,7 @@ function theme(){
  const v={"--bg":c[0],"--ac":c[1],"--b1":c[2],"--b2":c[3],"--tx":n?"#ECEFFA":"#1D2B25","--mu":n?"#A3ABC9":"#55645D",
   "--gb":n?`rgba(255,255,255,${a})`:`rgba(255,255,255,${b})`,"--gbr":n?"rgba(255,255,255,.22)":"rgba(255,255,255,.85)",
   "--btf":n?c[0]:"#FFFFFF","--ln":n?"rgba(255,255,255,.12)":"rgba(29,43,37,.12)","--ring":n?"rgba(255,255,255,.16)":"rgba(29,43,37,.14)",
-  "--sh":n?"rgba(18,24,44,.88)":"rgba(250,248,242,.9)","--bl":[10,22,34][ST.gl]+"px"};
+  "--sh":n?"rgba(18,24,44,.88)":"rgba(250,248,242,.9)","--dg":n?"#ff9a86":"#b8402c","--bl":[10,22,34][ST.gl]+"px"};
  for(const k in v)r.setProperty(k,v[k]);
  document.body.classList.toggle("rm",ST.rm||matchMedia("(prefers-reduced-motion:reduce)").matches);
  const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=c[0];

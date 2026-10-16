@@ -18,20 +18,31 @@ select.in{appearance:auto}
 .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .bar .in{flex:1;min-width:140px}
 .lb{display:block;font-size:13px;color:var(--mu);margin:12px 0 6px}
-.dg{color:#D14343}
-.sm2{min-height:40px;padding:0 14px;border-radius:20px;font-size:13px}
+.dg{color:var(--dg,#b8402c)}
+.sm2{min-height:44px;padding:0 14px;border-radius:22px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.sm2 svg{flex:none}
 #toast{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));max-width:90%;padding:12px 20px;border-radius:20px;display:none;font-size:14px}
-#toast.bad{color:#D14343}
+#toast.bad{color:var(--dg,#b8402c)}
 #md{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center}
 .mb{width:min(640px,100%);max-height:94vh;overflow:auto;border-radius:28px 28px 0 0;padding:20px 22px calc(24px + env(safe-area-inset-bottom,0px));background:var(--sh);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--gbr)}
 .sg{display:grid;grid-template-columns:70px 1fr 1fr 1fr;gap:8px;margin-bottom:8px}
 .demo{padding:10px 16px;border-radius:16px;margin-bottom:14px;font-size:13px}
+.cd{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:20px}
+.cd.open{display:flex}
+.cdc{width:min(420px,100%);border-radius:24px;padding:22px;background:var(--sh);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--gbr);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.cdt{font-size:19px}
+.cdb{font-size:14px;color:var(--mu);line-height:1.7}
+.cdact{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.cd-yes{background:#b8402c;color:#fff;font-weight:500;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:22px;font-size:14px}
+.cd-yes svg{flex:none}
+@media(max-width:600px){.cd{align-items:flex-end;padding:0}.cdc{width:100%;border-radius:26px 26px 0 0;padding:22px 22px calc(24px + env(safe-area-inset-bottom,0px))}}
 </style>
 </head>
 <body>
 <div id="bg"><i class="b1"></i><i class="b2"></i></div>
 <main id="app"></main>
 <div id="md"></div><div id="toast" class="g"></div>
+<div id="cd" class="cd"><div class="cdc" role="alertdialog" aria-modal="true" aria-labelledby="cdt" aria-describedby="cdb"><b id="cdt" class="cdt"></b><div id="cdb" class="cdb"></div><div class="cdact"><button class="g pill" data-cd="no"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>إلغاء</button><button class="cd-yes" data-cd="yes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>نعم، احذف</button></div></div></div>
 <script src="/theme.js"></script>
 <script src="/firebase-config.js"></script>
 <script src="/admin/challenge-logic.js"></script>
@@ -44,6 +55,12 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const N=s=>String(s).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,"").replace(/[إأآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").trim();
 const clone=x=>JSON.parse(JSON.stringify(x));
+const SVG=p=>'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+const IC_PEN=SVG('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>');
+const IC_TRASH=SVG('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>');
+const IC_X=SVG('<path d="M6 6l12 12M18 6 6 18"/>');
+const IC_OUT=SVG('<path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/>').replace('<svg ','<svg style="transform:scaleX(-1)" ');
+const IC_OPEN=SVG('<path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/>').replace('<svg ','<svg style="transform:scaleX(-1)" ');
 const live=()=>{const c=window.FIREBASE_CONFIG;return!!(c&&c.apiKey&&!/PASTE/.test(c.apiKey))};
 const nm=e=>e.surah.replace(/^سورة\s*/,"");
 const meaning=(e,i)=>{let m=e.meanings[i]||"";const k=m.indexOf(":");return k>0&&N(m.slice(0,k))===N(e.words[i])?m.slice(k+1).trim():m};
@@ -52,6 +69,13 @@ const CL=(typeof window!=="undefined"&&window.ChallengeLogic)||{NOTE:"",SPIN_LAB
 let CH=null,CHN={},EDD=null;
 function fix(d){d.surahs.forEach(e=>{if(!e.no){const i=JUZ.indexOf(nm(e));e.no=i<0?999:78+i}});return d}
 function toast(t,bad){const x=$("#toast");x.textContent=t;x.className="g"+(bad?" bad":"");x.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>x.style.display="none",4500)}
+let CDYES=null,CDTRIG=null;
+const CDBODY="لا يمكن التراجع عن الحذف بعد التأكيد.";
+function confirmDlg(title,onYes,trig){CDYES=onYes;CDTRIG=trig||null;const d=$("#cd");$("#cdt").textContent=title;$("#cdb").textContent=CDBODY;d.classList.add("open");const no=d.querySelector('[data-cd="no"]');if(no)setTimeout(()=>{try{no.focus()}catch(e){}},0)}
+function closeDlg(restore){const d=$("#cd");if(d)d.classList.remove("open");const tr=CDTRIG;CDYES=null;CDTRIG=null;if(restore&&tr&&document.contains(tr)){try{tr.focus()}catch(e){}}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-cd]");if(!b)return;const yes=b.dataset.cd==="yes",fn=CDYES;if(yes){closeDlg(false);if(fn)fn()}else closeDlg(true)});
+document.addEventListener("keydown",e=>{const d=$("#cd");if(!d||!d.classList.contains("open"))return;if(e.key==="Escape"){e.preventDefault();closeDlg(true);return}if(e.key==="Tab"){const f=[].slice.call(d.querySelectorAll("[data-cd]"));if(!f.length)return;const i=f.indexOf(document.activeElement);e.preventDefault();const n=e.shiftKey?(i<=0?f.length-1:i-1):(i>=f.length-1?0:i+1);f[n].focus()}});
+$("#cd").addEventListener("click",e=>{if(e.target.id==="cd")closeDlg(true)});
 const store={
  async load(){
   if(!live()){const x=localStorage.getItem("gqad");return fix(x?JSON.parse(x):{rev:1,surahs:clone(window.__D||[])})}
@@ -120,9 +144,9 @@ function render(){
  const a=$("#app");
  if(!READY){a.innerHTML='<div class="g card" style="padding:22px">جاري التحميل...</div>';return}
  if(!U)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><div class="logo" style="font-size:34px">غريب القرآن</div><p class="sm">لوحة التحكم، للمشرفين فقط.</p><button class="pill btn" data-a="login">الدخول بحساب جوجل</button></div>`;
- if(!ADM)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font-size:44px;line-height:1.2" aria-hidden="true">&#128274;</div><h1 style="font-size:24px">غير مصرح لك بالدخول</h1><p class="sm">هذا الحساب (<b dir="ltr">${esc(U.email)}</b>) ليس ضمن المشرفين.</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="g pill" href="/">افتح في الموقع</a><button class="g pill" data-a="out">تسجيل الخروج</button></div></div>`;
+ if(!ADM)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font-size:44px;line-height:1.2" aria-hidden="true">&#128274;</div><h1 style="font-size:24px">غير مصرح لك بالدخول</h1><p class="sm">هذا الحساب (<b dir="ltr">${esc(U.email)}</b>) ليس ضمن المشرفين.</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="g pill" href="/">افتح في الموقع ${IC_OPEN}</a><button class="g pill" data-a="out">${IC_OUT}تسجيل الخروج</button></div></div>`;
  const T=[["s","السور"],["w","الكلمات"],["c","التحدي"],["a","المشرفون"],["t","أدوات"]];
- a.innerHTML=`<div class="top"><span class="logo">لوحة التحكم</span><span class="sm" dir="ltr">${esc(U.email)} <button class="dg" data-a="out" style="min-height:44px;padding:0 8px">خروج</button></span></div>
+ a.innerHTML=`<div class="top"><span class="logo">لوحة التحكم</span><span class="sm" dir="ltr">${esc(U.email)} <button class="dg" data-a="out" style="min-height:44px;padding:0 8px;display:inline-flex;align-items:center;gap:6px">${IC_OUT}خروج</button></span></div>
 ${live()?"":'<div class="g demo">وضع تجريبي: التعديلات محفوظة على جهازك فقط. اربط Firebase ليتعدل الموقع الحقيقي.</div>'}
 <div class="tabs">${T.map(([k,l])=>`<button class="g ${TAB===k?"on":""}" data-a="tab" data-v="${k}">${l}</button>`).join("")}</div>${tab()}`;
 }
@@ -133,14 +157,14 @@ function tabS(){
  const used=new Set(D.surahs.map(nm)),free=JUZ.filter(n=>!used.has(n));
  return`<div class="g c2"><div class="sm">إضافة سورة</div><div class="bar" style="margin-top:8px"><select class="in" id="ns"><option value="">اختر من جزء عمّ</option>${free.map(n=>`<option>${esc(n)}</option>`).join("")}<option value="*">سورة أخرى...</option></select><button class="pill btn" data-a="addS">إضافة</button></div></div>
 <div class="sm" style="margin:6px 0 10px">${D.surahs.length} سورة، ${D.surahs.reduce((n,e)=>n+e.words.length,0)} كلمة</div>
-<div class="g card">${rows().map(r=>`<div class="row"><span class="nb">${r.no<999?r.no:"·"}</span><span class="q t" style="font-size:24px">${esc(r.name)}</span><span class="sm">${r.e.words.length} كلمة</span><button class="g sm2" data-a="editS" data-v="${r.i}">تعديل</button><button class="g sm2 dg" data-a="delS" data-v="${r.i}">حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد سور بعد. استورد البيانات من تبويب أدوات.</div>'}</div>`;
+<div class="g card">${rows().map(r=>`<div class="row"><span class="nb">${r.no<999?r.no:"·"}</span><span class="q t" style="font-size:24px">${esc(r.name)}</span><span class="sm">${r.e.words.length} كلمة</span><button class="g sm2" data-a="editS" data-v="${r.i}">${IC_PEN}تعديل</button><button class="g sm2 dg" data-a="delS" data-v="${r.i}">${IC_TRASH}حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد سور بعد. استورد البيانات من تبويب أدوات.</div>'}</div>`;
 }
 function tabW(){
  const q=N(FQ),list=[];
  D.surahs.forEach((e,si)=>{if(FS!=="all"&&String(si)!==FS)return;e.words.forEach((w,wi)=>{const m=meaning(e,wi);if(!q||N(w).includes(q)||N(m).includes(q))list.push({e,si,wi,w,m})})});
  return`<div class="bar"><select class="in" data-f="fs"><option value="all">كل السور</option>${rows().map(r=>`<option value="${r.i}" ${FS===String(r.i)?"selected":""}>${esc(r.name)}</option>`).join("")}</select><input class="in" data-f="fq" placeholder="بحث" value="${esc(FQ)}"><button class="pill btn" data-a="addW">إضافة كلمة</button></div>
 <div class="sm" style="margin-bottom:8px">${list.length} كلمة</div>
-<div class="g card">${list.slice(0,80).map(o=>`<div class="row"><span class="q rw">${esc(o.w)}</span><span class="t"><div>${esc(o.m)}</div><div class="sm">${esc(nm(o.e))} · آية ${esc((o.e.ayahs[o.wi]||{}).label)}</div></span><button class="g sm2" data-a="editW" data-v="${o.si}.${o.wi}">تعديل</button><button class="g sm2 dg" data-a="delW" data-v="${o.si}.${o.wi}">حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد نتائج.</div>'}</div>${list.length>80?'<div class="sm" style="margin-top:8px">ظاهر أول 80 نتيجة، استخدم البحث.</div>':""}`;
+<div class="g card">${list.slice(0,80).map(o=>`<div class="row"><span class="q rw">${esc(o.w)}</span><span class="t"><div>${esc(o.m)}</div><div class="sm">${esc(nm(o.e))} · آية ${esc((o.e.ayahs[o.wi]||{}).label)}</div></span><button class="g sm2" data-a="editW" data-v="${o.si}.${o.wi}">${IC_PEN}تعديل</button><button class="g sm2 dg" data-a="delW" data-v="${o.si}.${o.wi}">${IC_TRASH}حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد نتائج.</div>'}</div>${list.length>80?'<div class="sm" style="margin-top:8px">ظاهر أول 80 نتيجة، استخدم البحث.</div>':""}`;
 }
 /* Challenge tab: edit startDate, releasedUpTo, per-day words/reel and the
    PRIVATE admin-only day notes. Release follows the sequential rule. */
@@ -166,7 +190,7 @@ function tabC(){
 ${bad.length?`<div class="sm dg" style="margin-top:8px">تحذير: ${bad.length} مرجع كلمة غير موجود في البيانات: ${bad.slice(0,6).map(b=>esc(b.ref[1])).join("، ")}</div>`:""}
 </div>
 <div class="sm" style="margin:6px 0 10px">${CH.days.length} يوم${CH.startDate?" · يبدأ "+esc(CH.startDate):""}</div>
-<div class="g card">${CH.days.map(d=>`<div class="row"><span class="nb">${d.d}</span><span class="t"><div>${(d.w||[]).map(r=>esc(r[1])).join(" · ")||'<span class="sm">لا كلمات</span>'}</div><div class="sm">${(d.w||[]).length} كلمة${d.reel?" · ريلز ✓":""}${CHN[String(d.d)]?" · ملاحظة خاصة ✓":""}</div></span><button class="g sm2" data-a="chDay" data-v="${d.d}">تعديل</button></div>`).join("")||'<div class="sm" style="padding:16px">لا أيام.</div>'}</div>`;
+<div class="g card">${CH.days.map(d=>`<div class="row"><span class="nb">${d.d}</span><span class="t"><div>${(d.w||[]).map(r=>esc(r[1])).join(" · ")||'<span class="sm">لا كلمات</span>'}</div><div class="sm">${(d.w||[]).length} كلمة${d.reel?" · ريلز ✓":""}${CHN[String(d.d)]?" · ملاحظة خاصة ✓":""}</div></span><button class="g sm2" data-a="chDay" data-v="${d.d}">${IC_PEN}تعديل</button></div>`).join("")||'<div class="sm" style="padding:16px">لا أيام.</div>'}</div>`;
 }
 function chStatusHtml(){
  const override=CH.releasedUpTo==null?0:+CH.releasedUpTo;
@@ -180,7 +204,7 @@ function dayModal(){
  const x=EDD;
  modal(`<b style="font-size:20px">تعديل اليوم ${x.d}</b>
 <label class="lb">الكلمات (${x.w.length})</label>
-<div class="g card" style="padding:4px 12px">${x.w.length?x.w.map((r,i)=>`<div class="row"><span class="q rw">${esc(r[1])}</span><span class="t sm">${esc(suraNameByNo(r[0]))}</span><button class="g sm2 dg" data-a="chDelW" data-v="${i}">حذف</button></div>`).join(""):'<div class="sm" style="padding:12px">لا كلمات بعد.</div>'}</div>
+<div class="g card" style="padding:4px 12px">${x.w.length?x.w.map((r,i)=>`<div class="row"><span class="q rw">${esc(r[1])}</span><span class="t sm">${esc(suraNameByNo(r[0]))}</span><button class="g sm2 dg" data-a="chDelW" data-v="${i}">${IC_TRASH}حذف</button></div>`).join(""):'<div class="sm" style="padding:12px">لا كلمات بعد.</div>'}</div>
 <div class="bar" style="margin-top:12px"><select class="in" data-f="c.addS"><option value="">السورة</option>${rows().map(r=>`<option value="${r.i}">${esc(r.name)}</option>`).join("")}</select><select class="in" data-f="c.addW"><option value="">الكلمة</option></select><button class="pill btn" data-a="chAddW">إضافة</button></div>
 <label class="lb">رابط الريلز</label>
 <input class="in" dir="ltr" data-f="c.reel" value="${esc(x.reel||"")}" placeholder="https://...">
@@ -191,7 +215,7 @@ function dayModal(){
 }
 function tabA(){
  return`<div class="g c2"><div class="sm">مالك الموقع</div><div dir="ltr" style="text-align:right">${OWNER}</div></div>
-<div class="g card">${AD.map(m=>`<div class="row"><span class="t" dir="ltr" style="text-align:right"><div>${esc(m)}</div></span>${OWN?`<button class="g sm2 dg" data-a="delA" data-v="${esc(m)}">إزالة</button>`:""}</div>`).join("")||'<div class="sm" style="padding:16px">لا يوجد مشرفون إضافيون.</div>'}</div>
+<div class="g card">${AD.map(m=>`<div class="row"><span class="t" dir="ltr" style="text-align:right"><div>${esc(m)}</div></span>${OWN?`<button class="g sm2 dg" data-a="delA" data-v="${esc(m)}">${IC_TRASH}إزالة</button>`:""}</div>`).join("")||'<div class="sm" style="padding:16px">لا يوجد مشرفون إضافيون.</div>'}</div>
 ${OWN?`<div class="bar" style="margin-top:14px"><input class="in" id="ae" type="email" dir="ltr" placeholder="email@gmail.com"><button class="pill btn" data-a="addA">إضافة مشرف</button></div><div class="sm">لازم يكون حساب جوجل بإيميل مفعّل. الإضافة تتم بواسطة المالك فقط.</div>`:'<div class="sm" style="margin-top:12px">إضافة المشرفين للمالك فقط.</div>'}`;
 }
 function tabT(){
@@ -237,7 +261,7 @@ function surahModal(i){
  ED={i,name:i<0?ED.name:nm(n),no:n.no,source:n.source||SRC};
  modal(`<b style="font-size:20px">${i<0?"إضافة سورة":"تعديل سورة"}</b><label class="lb">اسم السورة (بدون كلمة سورة)</label><input class="in q" style="font-size:22px" data-f="e.name" value="${esc(ED.name)}"><label class="lb">رقمها في المصحف</label><input class="in" data-f="e.no" inputmode="numeric" value="${esc(ED.no)}"><label class="lb">المصدر</label><input class="in" data-f="e.source" value="${esc(ED.source)}"><div class="acts"><button class="pill btn" data-a="saveS">حفظ</button><button class="g pill" data-a="close">إلغاء</button></div>`);
 }
-async function act(a,v){
+async function act(a,v,btn){
  if(a==="login"){const{GoogleAuthProvider,signInWithPopup,signInWithRedirect}=FB.au,p=new GoogleAuthProvider();try{await signInWithPopup(FB.auth,p)}catch(e){if(/popup/.test(e.code))signInWithRedirect(FB.auth,p);else toast("تعذر تسجيل الدخول: "+e.code,true)}}
  else if(a==="out"){if(live())await FB.au.signOut(FB.auth);else toast("وضع تجريبي: لا يوجد تسجيل خروج.")}
  else if(a==="tab"){TAB=v;render()}
@@ -250,16 +274,16 @@ async function act(a,v){
   if(x.i<0)n.surahs.push({surah:"سورة "+name,no,words:[],meanings:[],ayahs:[],source:x.source});
   else Object.assign(n.surahs[x.i],{surah:"سورة "+name,no,source:x.source});
   if(await commit(n)){modal("");render()}}
- else if(a==="delS"){const e=D.surahs[+v];if(!confirm(`حذف سورة ${nm(e)} نهائيًا مع ${e.words.length} كلمة؟`))return;const n=clone(D);n.surahs.splice(+v,1);if(await commit(n,"تم حذف السورة."))render()}
+ else if(a==="delS"){const i=+v;confirmDlg("حذف هذا العنصر؟",async()=>{const n=clone(D);n.surahs.splice(i,1);if(await commit(n,"تم حذف السورة."))render()},btn)}
  else if(a==="addW"){if(!D.surahs.length)return toast("أضف سورة أولًا.",true);openW(FS==="all"?rows()[0].i:+FS,-1)}
  else if(a==="editW"){const[s,w]=v.split(".").map(Number);openW(s,w)}
- else if(a==="delW"){const[s,w]=v.split(".").map(Number),e=D.surahs[s];if(!confirm(`حذف كلمة «${e.words[w]}»؟`))return;const n=clone(D),t=n.surahs[s];t.words.splice(w,1);t.meanings.splice(w,1);t.ayahs.splice(w,1);if(await commit(n,"تم حذف الكلمة."))render()}
+ else if(a==="delW"){const[s,w]=v.split(".").map(Number);confirmDlg("حذف هذه الكلمة؟",async()=>{const n=clone(D),t=n.surahs[s];t.words.splice(w,1);t.meanings.splice(w,1);t.ayahs.splice(w,1);if(await commit(n,"تم حذف الكلمة."))render()},btn)}
  else if(a==="split"){const x=ED,i=x.af.indexOf(x.ah);if(!x.ah||i<0)return toast("الجزء المظلل غير موجود داخل نص الآية. اكتب الأجزاء يدويًا.",true);x.segs=[{num:x.label,before:x.af.slice(0,i),hl:x.ah,after:x.af.slice(i+x.ah.length)}];wordModal()}
  else if(a==="addG"){ED.segs.push({num:ED.label,before:"",hl:"",after:""});wordModal()}
- else if(a==="delG"){ED.segs.pop();wordModal()}
+ else if(a==="delG"){confirmDlg("حذف هذا العنصر؟",()=>{ED.segs.pop();wordModal()},btn)}
  else if(a==="saveW")saveW();
  else if(a==="addA"){const m=$("#ae").value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(m))return toast("إيميل غير صحيح.",true);if(m===OWNER||AD.includes(m))return toast("الإيميل موجود بالفعل.",true);try{await store.setAdmins(AD.concat(m));AD.push(m);toast("تمت إضافة المشرف.");render()}catch(e){toast("تعذرت الإضافة: "+(e.code||e.message),true)}}
- else if(a==="delA"){if(!confirm("إزالة هذا المشرف؟"))return;const l=AD.filter(m=>m!==v);try{await store.setAdmins(l);AD=l;toast("تمت الإزالة.");render()}catch(e){toast("تعذرت الإزالة: "+(e.code||e.message),true)}}
+ else if(a==="delA"){confirmDlg("حذف هذا العنصر؟",async()=>{const l=AD.filter(m=>m!==v);try{await store.setAdmins(l);AD=l;toast("تمت الإزالة.");render()}catch(e){toast("تعذرت الإزالة: "+(e.code||e.message),true)}},btn)}
  else if(a==="exp"){const b=new Blob([JSON.stringify(D.surahs,null,1)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="words.json";l.click()}
  else if(a==="pub"){try{const d=await(await fetch("/words.json")).json();if(confirm("استبدال كل البيانات بمحتوى words.json المنشور؟")){const n={surahs:d};fix(n);if(await commit(n,"تم الاستيراد."))render()}}catch(e){toast("تعذر قراءة words.json.",true)}}
  else if(a==="undo"){if(!confirm("الرجوع للنسخة السابقة؟"))return;try{D=await store.undo();toast("تم التراجع.");render()}catch(e){toast(e.message==="noprev"?"لا توجد نسخة سابقة.":"تعذر التراجع: "+(e.code||e.message),true)}}
@@ -267,12 +291,12 @@ async function act(a,v){
  else if(a==="chStatus"){if(!CH)return;modal(chStatusHtml())}
  else if(a==="chExport"){if(!CH)return;const b=new Blob([JSON.stringify({startDate:CH.startDate,releasedUpTo:CH.releasedUpTo,days:CH.days},null,1)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="challenge.json";l.click()}
  else if(a==="chDay"){if(!CH)return;const d=CH.days.find(z=>z.d===+v);if(!d)return;EDD={d:d.d,w:clone(d.w||[]),reel:d.reel||"",note:CHN[String(d.d)]||""};dayModal()}
- else if(a==="chDelW"){if(!EDD)return;EDD.w.splice(+v,1);dayModal()}
+ else if(a==="chDelW"){if(!EDD)return;const idx=+v;confirmDlg("حذف هذه الكلمة؟",()=>{EDD.w.splice(idx,1);dayModal()},btn)}
  else if(a==="chAddW"){if(!EDD)return;const ss=$('[data-f="c.addS"]'),ws=$('[data-f="c.addW"]');if(ss.value===""||ws.value==="")return toast("اختر السورة والكلمة.",true);const e=D.surahs[+ss.value],w=e.words[+ws.value],ref=[e.no||0,N(w)];if(!wordOk(ref))return toast("الكلمة غير موجودة في البيانات.",true);if(EDD.w.some(r=>r[0]===ref[0]&&r[1]===ref[1]))return toast("الكلمة مضافة بالفعل.",true);EDD.w.push(ref);dayModal()}
  else if(a==="chSpin"){if(!EDD)return;const r=CL.rouletteSelect(EDD.w,{});if(!r)return;const el=$("#spinRes");if(el)el.textContent=String(r.value[1]);}
  else if(a==="chSaveDay"){if(!EDD)return;if(EDD.reel&&EDD.reel.indexOf("https://")!==0)return toast("رابط الريلز لازم يبدأ بـ https://",true);const problems=EDD.w.filter(r=>!wordOk(r));if(problems.length)return toast("فيه كلمات غير موجودة في البيانات.",true);const ch=clone(CH),d=ch.days.find(z=>z.d===EDD.d);d.w=clone(EDD.w);d.reel=EDD.reel||"";try{await store.chSave(ch);if(EDD.note!=null){await store.chSetNote(EDD.d,EDD.note);CHN[String(EDD.d)]=EDD.note}CH=ch;EDD=null;modal("");toast("تم حفظ اليوم.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
 }
-document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(t)act(t.dataset.a,t.dataset.v)});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(t)act(t.dataset.a,t.dataset.v,t)});
 document.addEventListener("input",e=>{
  const f=e.target.dataset.f;if(!f)return;
  if(f==="fq"){FQ=e.target.value;const p=e.target.selectionStart;render();const i=document.querySelector('[data-f="fq"]');i.focus();i.setSelectionRange(p,p);return}
