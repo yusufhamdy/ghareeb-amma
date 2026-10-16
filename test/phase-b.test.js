@@ -301,3 +301,36 @@ test("B6: action buttons carry icons and forward arrows sit last", { timeout: 12
     assert.ok((fwd.d || "").includes("M19 12H5"), "forward arrow points left");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// B7: quiz answer glyphs (decorative, aria-hidden)
+// ---------------------------------------------------------------------------
+test("B7: ok/bad options show a decorative aria-hidden check/cross glyph", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(900, 900);
+    let sawBad = false, sawOk = false;
+    for (let pick = 0; pick < 4 && !sawBad; pick++) {
+      await page.evaluate(() => { location.hash = "#/"; });
+      await page.evaluate(() => { location.hash = "#/quiz"; });
+      await page.waitForSelector("#app .opts .opt", { timeout: 20000 });
+      await page.click('#app .opt[data-o="' + pick + '"]');
+      await page.waitForSelector("#app .opt.ok", { timeout: 20000 });
+      const r = await page.evaluate(() => {
+        const ok = document.querySelector("#app .opt.ok");
+        const bad = document.querySelector("#app .opt.bad");
+        const g = (el) => {
+          const s = el && el.querySelector("svg");
+          return s ? s.getAttribute("aria-hidden") === "true" && !!s.querySelector("path") : false;
+        };
+        return { ok: g(ok), bad: bad ? g(bad) : null };
+      });
+      assert.ok(r.ok, "the correct option carries an aria-hidden check glyph");
+      sawOk = true;
+      if (r.bad) { assert.ok(r.bad, "the wrong option carries an aria-hidden cross glyph"); sawBad = true; }
+    }
+    assert.ok(sawOk, "quiz produced an ok option");
+    assert.ok(sawBad, "quiz produced a wrong (bad) option across picks");
+  } finally { await env.close(); }
+});

@@ -120,6 +120,41 @@ for (const r of surfRows) {
   console.log(r.look.padEnd(22), String(r.lvl).padStart(4), f(body).padStart(6), f(muted).padStart(6), f(accent).padStart(7), ' ' + (bad.length ? 'FAIL ' + bad.join(', ') : 'pass'));
 }
 
-console.log('\nthresholds: body >= 4.5, muted >= 3.0, accent marks >= 3.0, button text >= 4.5');
+// ---- audit 3: selected / completed state surfaces (.opt.ok, .dy.ok) ----
+// Glass uses the plain accent fill. Shade paints a vertical --tc gradient; the
+// label sits on the middle of that gradient, so the surface behind the text is
+// sampled at the gradient midpoint. The .opt.ok meaning is body copy (>= 4.5);
+// the .dy.ok numeral is a state tile and carries the 3:1 UI floor (WCAG 1.4.11).
+const stateRows = [];
+for (const { style, pal, mode } of looks) {
+  const [bg, ac, tc] = PAL[pal][mode === 'day' ? 'light' : 'dark'];
+  const tx = TX[mode], btf = mode === 'day' ? '#ffffff' : bg;
+  const sf = mix(bg, '#ffffff', mode === 'day' ? 0.55 : 0.07);
+  let opt, dy;
+  if (style === 'glass') {
+    opt = ratio(btf, ac);
+    dy = ratio(btf, ac);
+  } else {
+    opt = ratio(tx, mix(tc, sf, 0.5));
+    dy = ratio(tx, mix(tc, mix(tc, sf, 0.6), 0.5));
+  }
+  const values = [opt, dy];
+  const floors = [4.5, 3.0];
+  values.forEach((v, i) => { if (v < floors[i]) failures++; });
+  stateRows.push({ look: `${style}-${pal}-${mode}`, values });
+}
+
+console.log('\nWCAG contrast audit - ' + stateRows.length + ' selected/completed state surfaces (.opt.ok, .dy.ok)');
+console.log('look'.padEnd(22), 'opt.ok'.padStart(7), 'dy.ok'.padStart(6), ' result');
+for (const r of stateRows) {
+  const [opt, dy] = r.values;
+  const bad = [];
+  if (opt < 4.5) bad.push('opt<' + f(opt));
+  if (dy < 3.0) bad.push('dy<' + f(dy));
+  console.log(r.look.padEnd(22), f(opt).padStart(7), f(dy).padStart(6), ' ' + (bad.length ? 'FAIL ' + bad.join(', ') : 'pass'));
+}
+
+console.log('\nthresholds: body >= 4.5, muted >= 3.0, accent marks >= 3.0, button text >= 4.5, opt.ok >= 4.5, dy.ok >= 3.0');
 console.log(failures === 0 ? 'ALL PASS' : failures + ' check(s) below threshold');
+process.exit(failures === 0 ? 0 : 1);
 process.exit(failures === 0 ? 0 : 1);
