@@ -235,3 +235,31 @@ test("B4: hovering a card transforms it, social tile is centered, reduced-motion
     assert.equal(tr, "none", "prefers-reduced-motion disables hover transform (colour only)");
   } finally { await rmv.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// B5: floating settings gear (item 4)
+// ---------------------------------------------------------------------------
+test("B5: the settings gear is fixed and stays in view while scrolling", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(390, 700);
+    await page.waitForSelector('#app .ib[data-a="set"]', { timeout: 20000 });
+    const g = '#app .ib[data-a="set"]';
+    const a = await page.$eval(g, (e) => {
+      const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+      return { top: r.top, w: r.width, h: r.height, pos: cs.position, z: cs.zIndex, hasGearPath: e.querySelectorAll("svg path").length > 0 };
+    });
+    assert.equal(a.pos, "fixed", "gear is position:fixed");
+    assert.ok(Math.abs(a.w - 44) < 0.5 && Math.abs(a.h - 44) < 0.5, "gear is a 44px touch target");
+    assert.ok(a.hasGearPath, "gear button renders the gear glyph");
+
+    await page.evaluate(() => scrollTo(0, 800));
+    const b = await page.$eval(g, (e) => {
+      const r = e.getBoundingClientRect();
+      return { top: r.top, inView: r.top >= 0 && r.bottom <= window.innerHeight };
+    });
+    assert.equal(Math.round(b.top), Math.round(a.top), "gear top is unchanged after scrolling 800px");
+    assert.ok(b.inView, "gear remains inside the viewport while scrolling");
+  } finally { await env.close(); }
+});
