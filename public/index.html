@@ -147,6 +147,16 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade #sh .p{background:var(--bg)}
 @media(min-width:601px){.shade .list.sl{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1025px){.shade .list.sl{grid-template-columns:repeat(4,1fr)}.shade .cols .card:first-child{background:linear-gradient(180deg,var(--tc) 0,color-mix(in srgb,var(--tc) 38%,var(--sf)) 52px,var(--sf) 110px) no-repeat border-box var(--sf);padding-top:118px}}
+/* ===== Phase B ===== */
+/* B2: search results and surah word rows are individual cards */
+.list.rs{background:none;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;border-radius:0;gap:12px;overflow:visible}
+.list.rs:after{display:none}
+.list.rs .row{margin:0;padding:14px 18px;border-radius:22px;min-height:76px;position:relative;transition:transform .3s,box-shadow .3s,border-color .3s;border:1px solid color-mix(in srgb,var(--gbr) 60%,transparent);background:linear-gradient(145deg,var(--gb),color-mix(in srgb,var(--gb) 40%,transparent) 50%,var(--gb));backdrop-filter:blur(var(--bl)) saturate(200%) brightness(1.08);-webkit-backdrop-filter:blur(var(--bl)) saturate(200%) brightness(1.08);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),inset 0 -1px 1px rgba(255,255,255,.2),0 14px 34px rgba(0,0,0,.22)}
+.shade .list.rs .row{background:linear-gradient(155deg,color-mix(in srgb,var(--tc) 16%,var(--sf)),var(--sf) 62%);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--sbd);box-shadow:none}
+#res .list.rs{grid-template-columns:1fr;max-width:720px;width:100%;margin-inline:auto}
+@media(hover:hover){.list.rs a.row:hover{background-color:transparent;transform:translateY(-1.5px)}.shade .list.rs a.row:hover{border-color:var(--tc);box-shadow:0 4px 12px rgba(0,0,0,.14)}}
+.list:not(.sl):not(.rs) .row{padding-inline:12px;margin-inline:-12px;border-radius:16px;transition:background .25s}
+@media(hover:hover){.list:not(.sl):not(.rs) a.row:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);transform:none;box-shadow:none;border-color:var(--ln)}}
 </style>
 </head>
 <body>
@@ -198,7 +208,7 @@ function wordNav(w){
 }
 function view(r){const [p,a]=r;
 if(p==='surahs')return `${head()}<div><h1>السور</h1><div class="sub">${S.length} سورة فيها كلمات حاليًا.</div></div><div class="list g sl">${S.map(s=>`<a class="row" href="#/surah/${s.num}"><span class="bd">${s.num}</span><span class="q" style="flex:1;font-size:25px">${esc(s.name)}</span><span class="m">${wc(s.w.length)}</span>${ICO.c}</a>`).join('')}</div>`;
-if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();return `${head()}<div><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div></div><div class="list g">${s.w.map(wrow).join('')}</div><a class="btn o g" href="#/surahs">كل السور</a>`;}
+if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();return `${head()}<div><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div></div><div class="list g rs">${s.w.map(wrow).join('')}</div><a class="btn o g" href="#/surahs">كل السور</a>`;}
 if(p==='word'){const w=byId(a);if(!w)return nf();return `${head()}<a class="pill" href="#/surah/${w.s.num}">${esc(w.s.name)} · آية ${esc(w.ay.label)}${CIcL}</a>${wordNav(w)}<div class="acts v3"><a class="btn o g" href="#/surah/${w.s.num}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>كلمات أخرى من نفس السورة</a><button class="btn" data-a="rnd">اسحب كلمة أخرى</button><button class="btn o" data-a="card" data-id="${w.id}">حفظ كصورة</button></div>`;}
 if(p==='challenge'||p==='quiz')return `${head()}<div class="g card"><h1>${p==='quiz'?'اختبر نفسك':'تحدي غريب عمّ'}</h1><div class="sub" style="margin-top:8px">قيد الإعداد.</div></div>`;
 return `${head()}<div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts"><button class="btn" data-a="rnd">اسحب كلمة</button><a class="btn o g" href="#/surahs">تصفح بالسورة</a></div><div id="res"></div>`;

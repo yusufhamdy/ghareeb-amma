@@ -104,3 +104,52 @@ test("B1: mark is a bounded inline-block box, no underline, no overlap", { timeo
     assert.ok(m.mH < m.lineH, "highlight height (" + m.mH.toFixed(1) + ") stays under verse line-height (" + m.lineH.toFixed(1) + ")");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// B2: search results / surah word rows as cards (item 16)
+// ---------------------------------------------------------------------------
+function firstWord() {
+  const entries = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
+  return entries[0].words[0];
+}
+
+test("B2: results are one centered card column and the whole row is the hover target", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(1440, 900);
+    await page.fill("#q", firstWord());
+    await page.waitForSelector("#res .list.rs .row", { timeout: 20000 });
+
+    const info = await page.evaluate(() => {
+      const box = document.querySelector("#res .list.rs");
+      const row = box.querySelector(".row");
+      const cb = getComputedStyle(box), cr = getComputedStyle(row);
+      const rb = row.getBoundingClientRect(), bb = box.getBoundingClientRect();
+      return {
+        cols: cb.gridTemplateColumns.trim().split(/\s+/).length,
+        maxW: parseFloat(cb.maxWidth),
+        boxW: bb.width,
+        centered: Math.abs((bb.left + bb.width / 2) - (window.innerWidth / 2)) < 2,
+        border: cr.borderTopWidth,
+        radius: parseFloat(cr.borderTopLeftRadius),
+        bg: cr.backgroundImage,
+        // the row is both the hover target and the painted card: one element
+        rowIsCard: cr.borderTopWidth === "1px" && parseFloat(cr.borderTopLeftRadius) >= 22 && rb.height >= 76,
+      };
+    });
+    assert.equal(info.cols, 1, "search results use one column at 1440px");
+    assert.ok(info.maxW <= 720, "results column is capped at 720px");
+    assert.ok(info.centered, "results column is centered");
+    assert.equal(info.border, "1px", "each result is its own bordered card");
+    assert.ok(info.radius >= 22, "result card has the card radius");
+    assert.ok(info.bg.includes("gradient"), "result card paints a card surface, not a shared list");
+    assert.ok(info.rowIsCard, "the hover target is the whole card (bounding box == card)");
+
+    // hovering applies to the whole card row
+    const before = await page.$eval("#res .list.rs .row", (e) => getComputedStyle(e).transform);
+    await page.hover("#res .list.rs .row");
+    const after = await page.$eval("#res .list.rs .row", (e) => getComputedStyle(e).transform);
+    assert.notEqual(before, after, "hovering the row transforms the whole card");
+  } finally { await env.close(); }
+});
