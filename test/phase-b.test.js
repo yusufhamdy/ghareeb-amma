@@ -263,3 +263,41 @@ test("B5: the settings gear is fixed and stays in view while scrolling", { timeo
     assert.ok(b.inView, "gear remains inside the viewport while scrolling");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// B6: button icons + forward arrows (item 14)
+// ---------------------------------------------------------------------------
+test("B6: action buttons carry icons and forward arrows sit last", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(900, 900);
+    const btn = (sel) => page.$eval(sel, (e) => ({
+      svg: !!e.querySelector("svg"),
+      first: e.firstElementChild ? e.firstElementChild.tagName.toLowerCase() : null,
+      last: e.lastElementChild ? e.lastElementChild.tagName.toLowerCase() : null,
+      d: e.lastElementChild && e.lastElementChild.tagName.toLowerCase() === "svg"
+        ? (e.lastElementChild.querySelector("path") || {}).getAttribute("d") : null,
+    }));
+
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
+    const rnd = await btn('#app [data-a="rnd"]');
+    assert.ok(rnd.svg, "draw-a-word button has an icon");
+    assert.equal(rnd.first, "svg", "the icon is at the start of the button");
+
+    const br = await btn('#app a.btn[href="#/surahs"]');
+    assert.ok(br.svg, "browse-by-surah button has the book icon");
+
+    await page.evaluate(() => { location.hash = "#/word/" + "78-0"; });
+    await page.waitForSelector('#app [data-a="card"]', { timeout: 20000 });
+    assert.ok((await btn('#app [data-a="card"]')).svg, "save-as-image button has the download icon");
+    assert.ok((await btn('#app [data-a="rnd"]')).svg, "word-page draw button has the shuffle icon");
+    assert.ok((await btn('#app a.btn[href^="#/surah/"]')).svg, "other-words button has the book icon");
+
+    await page.evaluate(() => { location.hash = "#/day/1"; });
+    await page.waitForSelector('#app a[href="#/day/2"]', { timeout: 20000 });
+    const fwd = await btn('#app a[href="#/day/2"]');
+    assert.equal(fwd.last, "svg", "forward arrow is the last child of the button");
+    assert.ok((fwd.d || "").includes("M19 12H5"), "forward arrow points left");
+  } finally { await env.close(); }
+});
