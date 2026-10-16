@@ -105,7 +105,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .dt{position:absolute;top:7px;right:calc(50% - 18px);width:10px;height:10px;border-radius:50%;background:#d4553f;border:2px solid var(--bg)}
 .pg{animation:pgin .25s ease-out}.pgs{animation:pgs .3s cubic-bezier(.3,.8,.3,1)}@keyframes pgin{from{opacity:0}}@keyframes pgs{from{opacity:0;transform:translateX(-18px)}}
 @media(prefers-reduced-motion:reduce){.pg,.pgs,nav.g .ind,.lb i,nav.g .t.on svg{animation:none;transition:none}}.cm .pg,.cm .pgs{animation:none}
-.lg2 p{margin:0 0 12px;line-height:2}.strip{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:20px;font-size:14px}.strip>span:first-child{flex:1;line-height:1.6}.so{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:22px;font-size:13px;color:var(--ac)}.strip .so{padding:0;width:40px;justify-content:center}.strip .so span{display:none}.strip button{width:36px;height:36px;border:0;background:none;font-size:22px;color:var(--mu);cursor:pointer}
+.lg2 p{margin:0 0 12px;line-height:2}.strip{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:20px;font-size:14px}.strip>span:first-child{flex:1;line-height:1.6}.so{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:22px;font-size:13px;color:var(--ac)}.strip .so{padding:0;width:44px;height:44px;justify-content:center}.strip .so span{display:none}.strip button{width:36px;height:36px;border:0;background:none;font-size:22px;color:var(--mu);cursor:pointer}
 .ft{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}.fs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.fs .so{border:1px solid var(--ln)}.fl{display:flex;flex-wrap:wrap;gap:4px 18px;justify-content:center;font-size:13px}.fl a{padding:8px 0}
 .opts{display:flex;flex-direction:column;gap:12px}
 @media(min-width:601px){.wrap{max-width:760px;padding-left:32px;padding-right:32px}.cg{grid-template-columns:repeat(10,1fr)!important}.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sl,.rs{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}.sl .row,.rs .row{border-top:0;border-bottom:1px solid var(--ln)}}
@@ -159,6 +159,22 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(hover:hover){.list:not(.sl):not(.rs) a.row:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);transform:none;box-shadow:none;border-color:var(--ln)}}
 /* B3: shade surah picker very light hover */
 @media(hover:hover){.shade .list.sl a.row:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.12)}}
+/* B4: per-theme interaction (hover / press / focus) */
+.btn{gap:8px}.btn svg{flex:none}
+.btn,.opt,.pnb,.chip,a.g,button.g{transition:transform .35s cubic-bezier(.3,1.4,.5,1),box-shadow .3s}
+@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{transform:translateY(-1.5px);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:scale(.96)}
+.so{position:relative;isolation:isolate}
+.so:before{content:"";position:absolute;inset:-2px;border-radius:50%;z-index:-1;opacity:0;transform:scale(.55);transition:.4s cubic-bezier(.3,1.4,.5,1);background:radial-gradient(circle,color-mix(in srgb,var(--ac) 55%,transparent),color-mix(in srgb,var(--ac) 18%,transparent) 65%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--ac) 45%,transparent)}
+.so:hover:before,.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
+@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip,a.row):hover{transform:translateY(-2px);border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}}
+.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
+.shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
+.shade .so:hover:before,.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
+.cols .card{transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease}
+@media(hover:hover){.cols .card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .cols .card:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--sbd))}}
+@media(prefers-reduced-motion:reduce){:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}}
 </style>
 </head>
 <body>

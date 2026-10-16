@@ -191,3 +191,47 @@ test("B3: shade surah cards are rectangles and day tiles are 44px with even gaps
     assert.equal(tiles.col, tiles.row, "horizontal gap equals vertical gap (" + tiles.col + " vs " + tiles.row + ")");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// B4: per-theme hover / press / focus + centered social tile (items 12, 13)
+// ---------------------------------------------------------------------------
+test("B4: hovering a card transforms it, social tile is centered, reduced-motion keeps transform none", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(900, 900);
+    await page.waitForSelector("#app a.g.card", { timeout: 20000 });
+    const cardSel = "#app a.g.card";
+
+    const t0 = await page.$eval(cardSel, (e) => getComputedStyle(e).transform);
+    await page.hover(cardSel);
+    const t1 = await page.$eval(cardSel, (e) => ({ tr: getComputedStyle(e).transform, sh: getComputedStyle(e).boxShadow }));
+    assert.notEqual(t1.tr, t0, "hovering a card changes its transform");
+    assert.ok(t1.sh !== "none", "hovering a card applies a soft shadow/glow");
+
+    // social icon: the ::before disc shares the icon box centre
+    await page.waitForSelector("#app .so", { timeout: 20000 });
+    const so = await page.evaluate(() => {
+      const el = document.querySelector("#app .so");
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el, "::before");
+      const px = (v) => parseFloat(v) || 0;
+      const l = px(cs.left), rt = px(cs.right), tp = px(cs.top), bt = px(cs.bottom);
+      // pseudo centre = element centre shifted by the asymmetric insets
+      const dx = (rt - l) / 2, dy = (bt - tp) / 2;
+      return { dx, dy, w: px(cs.width), h: px(cs.height), ew: r.width, eh: r.height };
+    });
+    assert.ok(Math.abs(so.dx) < 1 && Math.abs(so.dy) < 1, "social ::before is centred on the icon box");
+  } finally { await env.close(); }
+
+  const rmv = await setup(t, { reducedMotion: "reduce" });
+  if (!rmv) return;
+  try {
+    const page = await rmv.page(900, 900);
+    await page.waitForSelector("#app a.g.card", { timeout: 20000 });
+    const cardSel = "#app a.g.card";
+    await page.hover(cardSel);
+    const tr = await page.$eval(cardSel, (e) => getComputedStyle(e).transform);
+    assert.equal(tr, "none", "prefers-reduced-motion disables hover transform (colour only)");
+  } finally { await rmv.close(); }
+});
