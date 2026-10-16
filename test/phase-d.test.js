@@ -147,3 +147,75 @@ test("D2: buttons keep transform none on hover in both themes; a result card sti
     } finally { await env.close(); }
   }
 });
+
+// ---------------------------------------------------------------------------
+// D3: challenge day cards - stacked, collapsible, progress by opened cards
+// ---------------------------------------------------------------------------
+const cnt = (page) => page.locator("#dw .dcard").count();
+const kOf = (page) => page.getAttribute(".dcount", "data-k");
+const isOpen = (page, i) => page.locator("#dw .dcard").nth(i).evaluate((el) => el.classList.contains("open"));
+
+test("D3: day cards - one-word open, three collapsed, tap opens, counter, completion, persistence", { timeout: 120000 }, async (t) => {
+  const env = await setup(t, {});
+  if (!env) return;
+  try {
+    const page = await env.page(390, 844);
+
+    // 3-word day (day 1): three collapsed cards, no overlay, no next button.
+    await nav(page, "#/day/1");
+    await page.waitForSelector("#dw .dcard", { timeout: 20000 });
+    assert.equal(await cnt(page), 3, "3-word day shows 3 cards");
+    for (let i = 0; i < 3; i++) {
+      assert.equal(await isOpen(page, i), false, "card " + i + " is collapsed by default");
+      assert.equal(await page.locator("#dw .dcard").nth(i).getAttribute("aria-expanded"), "false", "card " + i + " aria-expanded false");
+    }
+    await page.waitForTimeout(700);
+    assert.equal(await page.locator("#rou").count(), 0, "no roulette overlay on the day screen");
+    assert.equal(await page.locator('[data-a="dnext"]').count(), 0, "no next button on the day screen");
+    assert.equal(await kOf(page), "0", "counter starts at 0");
+
+    // Tap opens the verse + meaning; two can be open together.
+    await page.locator("#dw .dcard").nth(0).click();
+    assert.equal(await isOpen(page, 0), true, "first tap opens the card");
+    assert.equal(await page.locator("#dw .dcard").nth(0).getAttribute("aria-expanded"), "true", "aria-expanded true when open");
+    assert.equal(await page.locator("#dw .dcard").nth(0).locator(".dbody").isVisible(), true, "the meaning body is visible when open");
+    assert.ok((await page.locator("#dw .dcard").nth(0).locator(".dbody").innerText()).trim().length > 0, "the open card shows content");
+    assert.equal(await kOf(page), "1", "counter counts the opened card");
+
+    await page.locator("#dw .dcard").nth(1).click();
+    assert.equal(await isOpen(page, 0), true, "card 0 still open");
+    assert.equal(await isOpen(page, 1), true, "card 1 open too (two open together)");
+    assert.equal(await kOf(page), "2", "counter counts distinct opened cards");
+
+    // Closing keeps the count (a word counts once opened).
+    await page.locator("#dw .dcard").nth(0).click();
+    assert.equal(await isOpen(page, 0), false, "tapping again closes the card");
+    assert.equal(await kOf(page), "2", "counter keeps the once-opened count after closing");
+
+    // Completion only after all are opened.
+    assert.equal(await page.locator('[data-a="done"]').isDisabled(), true, "day cannot be completed before all cards are opened");
+    await page.locator("#dw .dcard").nth(2).click();
+    assert.equal(await kOf(page), "3", "all three counted once opened");
+    assert.equal(await page.locator('[data-a="done"]').isDisabled(), false, "day can be completed once all cards are opened");
+    await page.locator('[data-a="done"]').click();
+    const doneList = await page.evaluate(() => (JSON.parse(localStorage.getItem("gq-prog")) || {}).done || []);
+    assert.ok(doneList.includes(1), "day 1 is recorded as done");
+
+    // State survives a reload: progress persists, cards are collapsed again.
+    await page.reload({ waitUntil: "load" });
+    await nav(page, "#/day/1");
+    await page.waitForSelector("#dw .dcard", { timeout: 20000 });
+    assert.equal(await kOf(page), "3", "opened count survives reload");
+    assert.equal(await isOpen(page, 0), false, "cards are collapsed again after reload");
+
+    // One-word day (day 2): one card already open, no overlay, no next.
+    await nav(page, "#/day/2");
+    await page.waitForSelector("#dw .dcard", { timeout: 20000 });
+    assert.equal(await cnt(page), 1, "one-word day shows a single card");
+    assert.equal(await isOpen(page, 0), true, "the single card is already open");
+    assert.equal(await kOf(page), "1", "a one-word day counts as opened on view");
+    await page.waitForTimeout(400);
+    assert.equal(await page.locator("#rou").count(), 0, "no roulette overlay on a one-word day");
+    assert.equal(await page.locator('[data-a="dnext"]').count(), 0, "no next button on a one-word day");
+  } finally { await env.close(); }
+});
