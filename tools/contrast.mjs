@@ -154,7 +154,33 @@ for (const r of stateRows) {
   console.log(r.look.padEnd(22), f(opt).padStart(7), f(dy).padStart(6), ' ' + (bad.length ? 'FAIL ' + bad.join(', ') : 'pass'));
 }
 
-console.log('\nthresholds: body >= 4.5, muted >= 3.0, accent marks >= 3.0, button text >= 4.5, opt.ok >= 4.5, dy.ok >= 3.0');
+// ---- audit 4: button hover inversion (.btn <-> .btn.o) ----
+// F3: the filled draw button inverts to the outlined look on hover (accent text
+// on the transparent/base surface) and its outlined siblings invert to filled
+// (button text on the accent fill). Glass: accent-on-bg / btf-on-accent.
+// Shade: tx-on-bg / bg-on-tx (both match the base body pair). Floor 4.5.
+const hovRows = [];
+for (const { style, pal, mode } of looks) {
+  const [bg, ac] = PAL[pal][mode === 'day' ? 'light' : 'dark'];
+  const tx = TX[mode], btf = mode === 'day' ? '#ffffff' : bg;
+  const filled = style === 'glass' ? ratio(ac, bg) : ratio(tx, bg);
+  const outlined = style === 'glass' ? ratio(btf, ac) : ratio(bg, tx);
+  const values = [filled, outlined];
+  values.forEach((v) => { if (v < 4.5) failures++; });
+  hovRows.push({ look: `${style}-${pal}-${mode}`, values });
+}
+
+console.log('\nWCAG contrast audit - button hover inversion (.btn <-> .btn.o, floor 4.5)');
+console.log('look'.padEnd(22), 'filled'.padStart(7), 'outlnd'.padStart(7), ' result');
+for (const r of hovRows) {
+  const [filled, outlined] = r.values;
+  const bad = [];
+  if (filled < 4.5) bad.push('filled<' + f(filled));
+  if (outlined < 4.5) bad.push('outlined<' + f(outlined));
+  console.log(r.look.padEnd(22), f(filled).padStart(7), f(outlined).padStart(7), ' ' + (bad.length ? 'FAIL ' + bad.join(', ') : 'pass'));
+}
+
+console.log('\nthresholds: body >= 4.5, muted >= 3.0, accent marks >= 3.0, button text >= 4.5, opt.ok >= 4.5, dy.ok >= 3.0, hover >= 4.5');
 console.log(failures === 0 ? 'ALL PASS' : failures + ' check(s) below threshold');
 process.exit(failures === 0 ? 0 : 1);
 process.exit(failures === 0 ? 0 : 1);

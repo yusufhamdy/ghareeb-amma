@@ -164,3 +164,71 @@ test("F2: prev/next stack icon above text on desktop and share a height", { time
     assert.equal(mf.nx, "row", "mobile next stays a row");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// F3: filled draw button inverts with its outlined siblings on hover
+// ---------------------------------------------------------------------------
+const probeBg = (page, name) => page.evaluate((v) => {
+  const d = document.createElement("div");
+  d.style.position = "absolute"; d.style.left = "-9999px"; d.style.background = "var(" + v + ")";
+  document.body.appendChild(d);
+  const c = getComputedStyle(d).backgroundColor; d.remove(); return c;
+}, name);
+
+test("F3: draw button and its outlined siblings invert on hover (AA in both themes)", { timeout: 120000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(1440, 900);
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
+    const accent = await probeBg(page, "--ac");
+    const filled0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
+    const tr0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).transform);
+    await page.hover('#app [data-a="rnd"]');
+    await page.waitForTimeout(340);
+    const filled1 = await page.$eval('#app [data-a="rnd"]', (e) => ({ bg: getComputedStyle(e).backgroundColor, tr: getComputedStyle(e).transform }));
+    assert.notEqual(filled1.bg, filled0, "hovering the filled button changes its background");
+    assert.notEqual(filled1.tr, tr0, "hovering the filled button animates it (light motion)");
+
+    const olSel = '#app .acts .btn.o';
+    const ol0 = await page.$eval(olSel, (e) => getComputedStyle(e).backgroundColor);
+    await page.hover(olSel);
+    await page.waitForTimeout(340);
+    const ol1 = await page.$eval(olSel, (e) => getComputedStyle(e).backgroundColor);
+    assert.notEqual(ol1, ol0, "hovering the outlined sibling changes its background");
+    assert.equal(ol1, accent, "the outlined button inverts to the accent fill");
+  } finally { await env.close(); }
+
+  const shade = await setup(t, { set: { style: "shade" } });
+  if (!shade) return;
+  try {
+    const page = await shade.page(1440, 900);
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
+    const tx = await probeBg(page, "--tx");
+    const f0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
+    await page.hover('#app [data-a="rnd"]');
+    await page.waitForTimeout(340);
+    const f1 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
+    assert.notEqual(f1, f0, "shade: filled button inverts on hover");
+    const oSel = '#app .acts .btn.o';
+    const o0 = await page.$eval(oSel, (e) => getComputedStyle(e).backgroundColor);
+    await page.hover(oSel);
+    await page.waitForTimeout(340);
+    const o1 = await page.$eval(oSel, (e) => getComputedStyle(e).backgroundColor);
+    assert.notEqual(o1, o0, "shade: outlined button changes on hover");
+    assert.equal(o1, tx, "shade: outlined sibling inverts to the filled surface");
+  } finally { await shade.close(); }
+
+  const rmv = await setup(t, { reducedMotion: "reduce" });
+  if (!rmv) return;
+  try {
+    const page = await rmv.page(1440, 900);
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
+    const b0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
+    await page.hover('#app [data-a="rnd"]');
+    await page.waitForTimeout(340);
+    const r = await page.$eval('#app [data-a="rnd"]', (e) => ({ bg: getComputedStyle(e).backgroundColor, tr: getComputedStyle(e).transform }));
+    assert.equal(r.tr, "none", "reduced motion keeps colour, drops the transform");
+    assert.notEqual(r.bg, b0, "reduced motion still swaps the colour");
+  } finally { await rmv.close(); }
+});
