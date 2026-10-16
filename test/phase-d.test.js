@@ -219,3 +219,63 @@ test("D3: day cards - one-word open, three collapsed, tap opens, counter, comple
     assert.equal(await page.locator('[data-a="dnext"]').count(), 0, "no next button on a one-word day");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// D4: no washed-out flash on navigation (page entrance must not fade)
+// ---------------------------------------------------------------------------
+async function sampleNav(page, hash, sel) {
+  await page.evaluate(({ hash, sel }) => {
+    const eff = (el) => { let o = 1; for (let n = el; n && n.nodeType === 1; n = n.parentElement) { o *= parseFloat(getComputedStyle(n).opacity) || 0; } return o; };
+    window.__s = []; const t0 = performance.now();
+    const raf = () => {
+      const el = document.querySelector(sel); const c = el ? getComputedStyle(el) : null;
+      const ac = getComputedStyle(document.querySelector("#app")); const bc = getComputedStyle(document.body);
+      window.__s.push({ t: performance.now() - t0, eo: el ? eff(el) : null, ao: +ac.opacity, bo: +bc.opacity, cb: c ? c.backgroundColor : null, cbd: c ? c.backdropFilter : null });
+      if (performance.now() - t0 < 520) requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf); location.hash = hash;
+  }, { hash, sel });
+  await page.waitForTimeout(570);
+  return page.evaluate(() => window.__s);
+}
+function near(samples, tt) { return samples.reduce((a, b) => (Math.abs(b.t - tt) < Math.abs(a.t - tt) ? b : a), samples[0]); }
+
+test("D4: navigating between routes never fades the new page (all themes)", { timeout: 180000 }, async (t) => {
+  const combos = [["glass", "light", 390], ["glass", "dark", 390], ["shade", "light", 1440], ["shade", "dark", 1440]];
+  for (const [style, mode, w] of combos) {
+    const env = await setup(t, { set: { style, mode } });
+    if (!env) return;
+    try {
+      const page = await env.page(w, 900);
+      const routes = [
+        { hash: "#/surah/78", sel: "#app .list.rs a.row" },
+        { hash: "#/word/78-0", sel: "#app .acts.v3" },
+        { hash: "#/challenge", sel: "#app .cg .dy" },
+      ];
+      // First load on home: the first card must already be at final look.
+      const load = await cs(page, "#app .sb", ["opacity"]);
+      assert.ok(load && parseFloat(load.opacity) >= 0.98, style + "/" + mode + ": first load is not faded");
+
+      for (const r of routes) {
+        const samples = await sampleNav(page, r.hash, r.sel);
+        const last = samples[samples.length - 1];
+        const seen = samples.filter((s) => s.eo != null);
+        assert.ok(seen.length > 0, style + "/" + mode + " " + r.hash + ": the new view was measured");
+        for (const s of samples) {
+          assert.ok(s.ao >= 0.98, style + "/" + mode + " " + r.hash + " t=" + Math.round(s.t) + ": #app opacity " + s.ao);
+          assert.ok(s.bo >= 0.98, style + "/" + mode + " " + r.hash + " t=" + Math.round(s.t) + ": body opacity " + s.bo);
+        }
+        for (const s of seen) {
+          assert.ok(s.eo >= 0.98, style + "/" + mode + " " + r.hash + " t=" + Math.round(s.t) + ": effective card opacity " + s.eo);
+          assert.equal(s.cb, last.cb, style + "/" + mode + " " + r.hash + " t=" + Math.round(s.t) + ": card background is final");
+          assert.equal(s.cbd, last.cbd, style + "/" + mode + " " + r.hash + " t=" + Math.round(s.t) + ": card backdrop-filter is final");
+        }
+        // spot-check the requested offsets
+        for (const tt of [0, 50, 100, 200, 400]) {
+          const s = near(seen, tt);
+          assert.ok(s.eo >= 0.98, style + "/" + mode + " " + r.hash + " t~" + tt + ": effective card opacity " + s.eo);
+        }
+      }
+    } finally { await env.close(); }
+  }
+});
