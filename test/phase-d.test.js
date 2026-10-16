@@ -116,3 +116,34 @@ test("D1: glass filled draw button keeps its background and changes its shadow; 
     assert.notEqual(after["background-color"], before["background-color"], "shade filled button still inverts (background changes) on hover");
   } finally { await envS.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// D2: buttons never move on hover; cards keep their very light lift
+// ---------------------------------------------------------------------------
+test("D2: buttons keep transform none on hover in both themes; a result card still lifts", { timeout: 120000 }, async (t) => {
+  for (const style of ["glass", "shade"]) {
+    const env = await setup(t, { set: { style, mode: "light" } });
+    if (!env) return;
+    try {
+      const page = await env.page(390, 844);
+      await nav(page, "#/");
+      await page.waitForSelector('#app .acts .btn[data-a="rnd"]', { timeout: 20000 });
+      await page.hover('.acts .btn[data-a="rnd"]');
+      await page.waitForTimeout(400);
+      const filled = await cs(page, '.acts .btn[data-a="rnd"]', ["transform"]);
+      assert.equal(filled.transform, "none", style + ": filled .btn does not move on hover");
+      await page.hover(".acts .btn.o");
+      await page.waitForTimeout(400);
+      const outlined = await cs(page, ".acts .btn.o", ["transform"]);
+      assert.equal(outlined.transform, "none", style + ": .btn.o does not move on hover");
+
+      await nav(page, "#/surah/78");
+      await page.waitForSelector("#app .list.rs a.row", { timeout: 20000 });
+      const c1 = await cs(page, "#app .list.rs a.row", ["transform"]);
+      await page.hover("#app .list.rs a.row");
+      await page.waitForTimeout(400);
+      const c2 = await cs(page, "#app .list.rs a.row", ["transform"]);
+      assert.notEqual(c2.transform, c1.transform, style + ": a result card still changes transform on hover");
+    } finally { await env.close(); }
+  }
+});

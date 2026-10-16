@@ -162,13 +162,13 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* B4: per-theme interaction (hover / press / focus) */
 .btn{gap:8px}.btn svg{flex:none}
 .btn,.opt,.pnb,.chip,a.g,button.g{transition:transform .35s cubic-bezier(.3,1.4,.5,1),box-shadow .3s}
-@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{transform:translateY(-1.5px);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
+@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:scale(.96)}
 .so{position:relative;isolation:isolate}
 .so:before{content:"";position:absolute;inset:-2px;border-radius:50%;z-index:-1;opacity:0;transform:scale(.55);transition:.4s cubic-bezier(.3,1.4,.5,1);background:radial-gradient(circle,color-mix(in srgb,var(--ac) 55%,transparent),color-mix(in srgb,var(--ac) 18%,transparent) 65%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--ac) 45%,transparent)}
 .so:hover:before,.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
-@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip,a.row):hover{transform:translateY(-2px);border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}}
+@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
 .shade .so:hover:before,.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
@@ -186,9 +186,9 @@ header .ib[data-a="set"]:hover,header .ib[data-a="set"]:active,header .ib[data-a
 /* F3: the filled draw button inverts with its outlined siblings on hover/focus */
 @media(hover:hover){
 .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.acts:has([data-a="rnd"]) .btn.o:hover,.acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--ac);color:var(--btf);border-color:var(--ac);transform:translateY(-1.5px);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}
-.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible{background:transparent;color:var(--tx);border:1px solid var(--ln);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.acts:has([data-a="rnd"]) .btn.o:hover,.acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--ac);color:var(--btf);border-color:var(--ac);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}
+.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 }
 /* F4: social strip gets a very light hover shadow, never a movement */
 .strip{transition:box-shadow .35s}
