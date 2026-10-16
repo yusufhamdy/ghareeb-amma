@@ -58,6 +58,20 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 .seg{display:flex;border-radius:22px;padding:4px;gap:4px}
 .seg button{flex:1;height:38px;border:0;border-radius:18px;background:none;cursor:pointer;font-size:14px}
 .seg button.on{background:var(--ac);color:var(--btf);font-weight:500}
+.arts{display:flex;gap:12px;align-items:flex-start}
+.opt2{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;border-radius:18px;border:1.5px solid var(--ln);background:transparent;color:var(--tx);cursor:pointer;font-size:13px;min-height:44px}
+.opt2:nth-child(1){flex:1.25}
+.opt2:nth-child(2){flex:1}
+.opt2.on{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}
+.artw{container-type:inline-size;width:100%}
+.art{width:100%;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4cqw;padding:8%;background:linear-gradient(160deg,color-mix(in srgb,var(--b1) 50%,var(--bg)),var(--bg) 72%);color:var(--tx)}
+.art.st{aspect-ratio:9/16}
+.art.rg{aspect-ratio:4/5}
+.art .lg3{font-size:7cqw;color:var(--ac)}
+.art .pl{font-size:5cqw;padding:1cqw 4cqw;border-radius:99px;border:1px solid color-mix(in srgb,var(--ac) 55%,transparent);background:color-mix(in srgb,var(--ac) 18%,transparent)}
+.art .aw{font-size:13cqw;line-height:1.9;color:var(--ac)}
+.art .av{font-size:6cqw;line-height:2.1}
+.art .am{font-size:5.4cqw;line-height:1.8;opacity:.92;border-top:1px dashed var(--ln);padding-top:3cqw}
 .gs{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 14px;border-radius:22px}
 .gs input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:44px;background:none;cursor:pointer;margin:0}
 .gs input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--ln)}
@@ -224,9 +238,9 @@ function spin(){const r=$('rl'),dw=$('dw');if(!r||!dw)return;const c=CH.find(x=>
 function qStart(){const sh=a=>a.slice().sort(()=>Math.random()-.5);Q={i:0,s:0,a:null,qs:sh(W).slice(0,Math.min(10,W.length)).map(w=>({w,o:sh(sh(W.filter(x=>x.km!==w.km)).slice(0,3).concat(w))}))}}
 function qView(){if(!Q)qStart();const n=Q.qs.length;if(Q.i>=n)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px"><h1>نتيجتك</h1>${ring(Q.s,n,96)}<div class="sub">${Q.s} من ${n}</div><div class="acts"><button class="btn" data-a="qre">اختبار جديد</button><a class="btn o" href="#/">الرئيسية</a></div></div>`;const q=Q.qs[Q.i],a=Q.a;return `${head()}<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="font-size:24px">اختبر نفسك</h1><span class="m">${Q.i+1} من ${n}</span></div><div class="bar"><i style="width:${Q.i/n*100}%"></i></div><div class="g card"><div class="m">ما معنى الكلمة المظللة؟</div><div class="ay q">${AY(q.w.ay)}</div></div><div class="opts">${q.o.map((x,i)=>`<button class="g opt${a!==null?(x===q.w?' ok':i===a?' bad':''):''}" data-o="${i}"${a!==null?' disabled':''}>${esc(x.mean)}</button>`).join('')}</div>${a!==null?`<div class="acts"><button class="btn" data-a="qn">${Q.i+1<n?'التالي':'النتيجة'}</button><a class="btn o" href="#/word/${q.w.id}">افتح الكلمة</a></div>`:''}`}
 function wrap(x,t,cx,y,mw,lh){let l='';for(const w of t.split(' ')){const n=l?l+' '+w:w;if(x.measureText(n).width>mw&&l){x.fillText(l,cx,y);y+=lh;l=w}else l=n}x.fillText(l,cx,y);return y+lh}
-function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:40px;color:var(--ac)">إلغاء</button></div><div class="m" style="margin:10px 0">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="g card" style="text-align:center;display:flex;flex-direction:column;gap:6px;padding:14px"><div class="q" style="font-size:34px;color:var(--ac);line-height:1.6">${esc(w.word)}</div><div class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div style="font-size:15px;line-height:1.7">${esc(w.mean)}</div></div><div class="seg g" style="margin:12px 0"><button data-sc="n" class="on">عادية · 1080×1350</button><button data-sc="s">ستوري · 1080×1920</button></div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="n" style="width:100%">حفظ على جهازي</button>`;$('sh').classList.add('open')}
+function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');const art=(sc,cls,lbl,on)=>`<button class="opt2${on?' on':''}" data-sc="${sc}" aria-pressed="${on?'true':'false'}"><div class="artw"><div class="art ${cls}"><div class="lg3 q">غريب القرآن</div><div class="pl">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div class="aw q">${esc(w.word)}</div><div class="av q">${AY(w.ay)}</div><div class="am">${esc(w.mean)}</div></div></div><span>${lbl}</span></button>`;p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:44px">إلغاء</button></div><div class="m">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="arts">${art('n','rg','عادية · 1080×1350',false)}${art('s','st','ستوري · 1080×1920',true)}</div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="s" style="align-self:stretch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>حفظ على جهازي</button>`;$('sh').classList.add('open')}
 async function card(w,size){size=size==='s'?'s':'n';
-try{await document.fonts.load('100px "Amiri Quran"');await document.fonts.load('40px "IBM Plex Sans Arabic"')}catch(e){}
+try{await Promise.all([document.fonts.load('100px "Amiri Quran"'),document.fonts.load('40px "IBM Plex Sans Arabic"'),document.fonts.load('40px "IBM Plex Mono"')]);await document.fonts.ready}catch(e){}
 const CW=1080,CH=size==='s'?1920:1350,c=document.createElement('canvas');c.width=CW;c.height=CH;const x=c.getContext('2d'),cs=getComputedStyle(document.documentElement),v=k=>cs.getPropertyValue(k).trim();
 x.fillStyle=v('--bg');x.fillRect(0,0,CW,CH);
 const bl=(cx,cy,r,col)=>{const g=x.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,col+'cc');g.addColorStop(1,col+'00');x.fillStyle=g;x.fillRect(0,0,CW,CH)};
@@ -257,7 +271,7 @@ if(d.a==='lock'){toast(lockMsg(+d.d));return}
 if(d.a==='card'){saveSheet(d.id);return}
 if(d.a==='savepng'){const w=byId(d.id);$('sh').classList.remove('open');card(w,d.size);return}
 if(d.a==='reload'){location.reload();return}
-if(d.sc){const p=$('sh');p.querySelectorAll('[data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc===d.sc));const sb=p.querySelector('[data-a="savepng"]');if(sb)sb.dataset.size=d.sc;return}
+if(d.sc){const p=$('sh');p.querySelectorAll('[data-sc]').forEach(b=>{const on=b.dataset.sc===d.sc;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false')});const sb=p.querySelector('[data-a="savepng"]');if(sb)sb.dataset.size=d.sc;return}
 if(d.s){set.snd=!set.snd;LS.set(set);sheet()}});
 addEventListener('hashchange',()=>{if(route()[0]!=='quiz')Q=null});
 const MAIL='yusufhamdy20@gmail.com';

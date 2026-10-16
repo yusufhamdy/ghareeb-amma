@@ -220,14 +220,82 @@ disclosure). Item 14 stays **PARTIAL**: its forward chevron is now correct on th
 word page too, but the skip/exit/open icon variants it mentions still do not exist
 in the app to mirror.
 
-## STEP 5 — save as image
+## STEP 5 — save as image → DONE
 
-_(pending)_
+**Brief scope:** item **10** (finish to spec). The Phase 8 sheet already produced the
+two sizes; STEP 5 replaces the plain segmented control with the spec's live-preview
+chooser, makes **story the default**, and hardens font loading before the PNG is drawn.
 
-## STEP 6 — verification
+**Files**
 
-_(pending)_
+- `public/index.html`
+  - CSS `.arts` / `.opt2` / `.opt2.on` / `.artw` / `.art` / `.art.rg` (4/5) /
+    `.art.st` (9/16) and the `.art` inner type scale (`.lg3`, `.pl`, `.aw`, `.av`,
+    `.am`) — the live mini-previews, matched to the `savecard` frame of
+    `design-spec-final.html`.
+  - `saveSheet(id)` rewritten: the two size options are `.opt2` buttons, each holding
+    a real `.art` preview (logo · pill line · the word · the highlighted verse · the
+    meaning) plus a caption (`عادية · 1080×1350`, `ستوري · 1080×1920`); the **story**
+    option carries `.on` + `aria-pressed="true"` by default and the save button starts
+    at `data-size="s"`; the save button is the spec `.btn` with the download-arrow icon
+    and `style="align-self:stretch"`.
+  - the `[data-sc]` option handler now also writes `aria-pressed` (selection is exposed
+    to assistive tech) and retargets the save button's `data-size`.
+  - `card(w,size)` font loading: `await Promise.all([document.fonts.load(...)])` for
+    `Amiri Quran`, `IBM Plex Sans Arabic` and `IBM Plex Mono`, then
+    `await document.fonts.ready`, before any `fillText` — so the PNG never falls back
+    to a default face.
+- `public/sw.js` — cache `ghareeb-pwa-v10` → `v11` (`/index.html` is precached).
+- `test/save-card.test.js` (new) — acceptance below.
+- `test/fixtures/arabic-baseline.json` — regenerated after a clean guard diff.
 
-## STEP 7 — publish
+**Also fixed (STEP 4 follow-up).** `scripts/qa-phase6.mjs` read the word-page ayah line
+with `#app > .m`; STEP 4 replaced that plain `.m` line with the `<a class="pill">` link,
+so the selector started matching the pre-existing report-error link and the check went
+red. The selector is corrected to `#app > .pill` (`scripts/qa-phase6.mjs:318`) and the
+word section is green again.
 
-_(pending — push `origin rebuild` + preview only, if STEP 6 is fully green.)_
+**Acceptance**
+
+- `node --test test/save-card.test.js` → **1/1 pass**. On a real word page it asserts:
+  two `.opt2` options (`n`, `s`) each with the right preview (`.art.rg` 4/5 vs
+  `.art.st` 9/16); captions `1080×1350` / `1080×1920`; **story is the default** (`on`,
+  `aria-pressed="true"`, save target `s`); switching to regular moves `on`, flips
+  `aria-pressed` and retargets the save button; and the two downloads are real PNGs
+  whose IHDR is exactly **1080×1350** (regular) and **1080×1920** (story), named
+  `ghareeb-78-0-card.png` / `ghareeb-78-0-story.png`.
+- arabic-guard → class1 protected hashes UNCHANGED; the LCS diff for
+  `public/index.html` is a single line swap: removed `آية` (old save-sheet line), added
+  `غريب` / `القرآن` / `آية` (new save-sheet preview) → net **+2 runs, all UI**. Baseline
+  regenerated → class1 = 82, class2 = 149.
+- `npm test` → **82/82 pass** (was 81; +1 new test).
+
+**Item status after STEP 5: 10 → DONE** (both sizes, story default, spec preview
+chooser). This closes the last in-scope Phase A item.
+
+## STEP 6 — verification → GREEN
+
+Run on the STEP 5 tree; nothing below touched protected data:
+
+| gate | command | result |
+| --- | --- | --- |
+| unit / integration | `npm test` | **82/82 pass**, 0 fail, 0 skipped |
+| CI checks | `node scripts/ci/checks.mjs` | **PASSED** |
+| contrast | `node tools/contrast.mjs` | **ALL PASS** — lowest: glass-min-night L1 body 7.15 / muted 3.60 |
+| end-to-end QA | `node scripts/qa-phase6.mjs` | **PASSED (100)** |
+
+**Protected-data hashes** re-computed and still identical to `PHASE-8-REPORT.md`:
+`public/words.json` `c96d158b…`, `public/challenge.json` `50108095…`,
+`data/redirects.json` `bc958d7f…`, `data/challenge-notes-private.json` `808a272b…`
+(arabic-guard class1 reports 0 missing / 0 changed / 0 added).
+
+`qa-phase6` now reports `cache ghareeb-pwa-v11 holds the app shell` (matches the bumped
+`public/sw.js`), and the previously red word check
+(`word: word text, highlighted ayah word and ayah number map correctly`) passes after
+the selector fix above.
+
+## STEP 7 — publish → pushed (no deploy)
+
+- Pushed `rebuild` to `origin/rebuild` **only**. No live/preview deploy; `main` untouched.
+- The pushed head is the STEP 5 work commit (save-as-image + qa selector fix + regenerated
+  baseline); this verification/publish record rides in the same branch.

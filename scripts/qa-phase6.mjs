@@ -315,7 +315,7 @@ async function main() {
         word: (document.querySelector('#app .wd.q') || {}).textContent || '',
         mark: (document.querySelector('#app .ay mark') || {}).textContent || '',
         marks: document.querySelectorAll('#app .ay mark').length,
-        header: (document.querySelector('#app > .m') || {}).textContent || '',
+        header: (document.querySelector('#app > .pill') || {}).textContent || '',
       })).catch(() => ({ word: '', mark: '', marks: 0, header: '' }));
       const expectedLabel = String(w.ay.label || '').trim();
       const good = got.word.trim() === w.word
