@@ -178,6 +178,9 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* B5: floating settings gear (above content, below open sheets) */
 header .ib[data-a="set"]{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
 header .ib[data-a="set"]:hover,header .ib[data-a="set"]:active,header .ib[data-a="set"]:focus-visible{transform:rotate(60deg)}
+/* ===== Phase C ===== */
+/* F1: desktop-only gear inset just outside the content column (never over nav/content) */
+@media(min-width:1025px){header .ib[data-a="set"]{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
 </style>
 </head>
 <body>
