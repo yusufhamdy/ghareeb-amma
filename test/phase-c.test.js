@@ -269,3 +269,36 @@ test("F4: social strip hover adds a shadow and never moves; icon hover intact", 
     assert.equal(s.tr, "none", "shade: the card never moves");
   } finally { await shade.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// F5: shade header tagline and counts line do not overlap
+// ---------------------------------------------------------------------------
+test("F5: shade header lines get line-height >=1.5 and an 8px gap at 3 widths", { timeout: 120000 }, async (t) => {
+  const env = await setup(t, { set: { style: "shade" } });
+  if (!env) return;
+  try {
+    const page = await env.page(390, 844);
+    await page.waitForSelector("#app h1", { timeout: 20000 });
+    for (const w of [400, 820, 1440]) {
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.waitForTimeout(80);
+      const r = await page.evaluate(() => {
+        const h1 = document.querySelector("#app h1");
+        const sub = h1.nextElementSibling;
+        const ch = getComputedStyle(h1), cs = getComputedStyle(sub);
+        const hb = h1.getBoundingClientRect(), sb = sub.getBoundingClientRect();
+        return {
+          h1Bottom: hb.bottom, subTop: sb.top,
+          hLine: parseFloat(ch.lineHeight), hFont: parseFloat(ch.fontSize),
+          sLine: parseFloat(cs.lineHeight), sFont: parseFloat(cs.fontSize),
+          subIsSub: sub.classList.contains("sub"),
+        };
+      });
+      assert.ok(r.subIsSub, "@" + w + ": the tagline is followed by the counts line");
+      assert.ok(r.hLine >= 1.5 * r.hFont - 0.5, "@" + w + ": tagline line-height >=1.5");
+      assert.ok(r.sLine >= 1.5 * r.sFont - 0.5, "@" + w + ": counts line-height >=1.5");
+      assert.ok(r.subTop - r.h1Bottom >= 6, "@" + w + ": lines are separated by ~8px (got " + (r.subTop - r.h1Bottom).toFixed(1) + ")");
+      assert.ok(!(r.h1Bottom > r.subTop), "@" + w + ": the two header lines do not intersect");
+    }
+  } finally { await env.close(); }
+});
