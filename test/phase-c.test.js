@@ -302,3 +302,58 @@ test("F5: shade header lines get line-height >=1.5 and an 8px gap at 3 widths", 
     }
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// C1: roulette overlay for the draw buttons
+// ---------------------------------------------------------------------------
+test("C1: draw opens a reel overlay; skip lands on a word route; reduced-motion is quick", { timeout: 120000 }, async (t) => {
+  const env = await setup(t, { set: { snd: true } });
+  if (!env) return;
+  try {
+    const page = await env.page(1440, 900);
+    await nav(page, "#/word/78-0");
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
+    const prev = await page.evaluate(() => location.hash);
+    await page.click('#app [data-a="rnd"]');
+    await page.waitForSelector("#rou", { timeout: 5000 });
+    const ov = await page.evaluate(() => {
+      const rows = document.querySelectorAll("#rou .reel .reelrow");
+      const skip = document.querySelector("#rou [data-a=\"rskip\"]");
+      return {
+        rows: rows.length,
+        card: !!document.querySelector("#rou .roucard"),
+        soundLine: !!document.querySelector("#rou .rousnd"),
+        skipLast: skip && skip.lastElementChild ? skip.lastElementChild.tagName.toLowerCase() : null,
+        skipMoved: skip ? (skip.lastElementChild.getAttribute("style") || "").indexOf("scaleX(-1)") >= 0 : false,
+      };
+    });
+    assert.ok(ov.card, "roulette shows a card");
+    assert.ok(ov.rows >= 8, "the reel has a vertical run of words (" + ov.rows + ")");
+    assert.ok(ov.soundLine, "the sound hint shows while sound is on");
+    assert.equal(ov.skipLast, "svg", "the skip icon is at the end of the button");
+    assert.ok(ov.skipMoved, "the skip icon is mirrored (scaleX(-1))");
+
+    await page.click('#rou [data-a="rskip"]');
+    await page.waitForFunction((p) => location.hash !== p && /^#\/word\/.+/.test(location.hash), prev, { timeout: 5000 });
+    await page.waitForSelector("#app .wd.q", { timeout: 5000 });
+    const hash = await page.evaluate(() => location.hash);
+    assert.ok(/^#\/word\/[\w-]+$/.test(hash), "skip lands on a word route (" + hash + ")");
+    assert.notEqual(hash, prev, "the chosen word differs from the one we came from");
+    assert.equal(await page.$("#rou"), null, "the overlay is dismissed after the pick");
+  } finally { await env.close(); }
+
+  const rm = await setup(t, { reducedMotion: "reduce" });
+  if (!rm) return;
+  try {
+    const page = await rm.page(1440, 900);
+    await nav(page, "#/word/78-0");
+    await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
+    const prev2 = await page.evaluate(() => location.hash);
+    const t0 = Date.now();
+    await page.click('#app [data-a="rnd"]');
+    await page.waitForFunction((p) => location.hash !== p && /^#\/word\/.+/.test(location.hash), prev2, { timeout: 3000 });
+    const ms = Date.now() - t0;
+    assert.ok(ms <= 500, "reduced motion resolves to the result in <=500ms (got " + ms + "ms)");
+    assert.equal(await page.$("#rou"), null, "no lingering overlay under reduced motion");
+  } finally { await rm.close(); }
+});
