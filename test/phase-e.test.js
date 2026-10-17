@@ -248,3 +248,74 @@ test("E2: answering a quiz option never moves the screen or replays the entrance
     } finally { await env.close(); }
   }
 });
+
+// ---------------------------------------------------------------------------
+// E3: the settings gear is one persistent fixed element outside #app
+// ---------------------------------------------------------------------------
+test("E3: settings gear is persistent, outside #app, and never moves", { timeout: 300000 }, async (t) => {
+  for (const [w, h] of [[400, 900], [1440, 900]]) {
+    const env = await setup(t, {});
+    if (!env) return;
+    try {
+      const page = await env.page(w, h);
+      await page.waitForSelector("#gear", { timeout: 20000 });
+      const tag = w + "px";
+
+      const start = await page.evaluate(() => {
+        window.__g0 = document.querySelector("#gear");
+        const g = window.__g0;
+        const r = g.getBoundingClientRect();
+        const cs = getComputedStyle(g);
+        const anc = []; let n = g.parentElement;
+        while (n) { const s = getComputedStyle(n); anc.push({ tag: n.tagName, tf: s.transform, an: s.animationName }); n = n.parentElement; }
+        return {
+          parentIsBody: g.parentElement === document.body,
+          count: document.querySelectorAll('[data-a="set"]').length,
+          inHeader: !!document.querySelector("#app header [data-a='set']"),
+          rect: { x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2) },
+          pos: cs.position, top: cs.top, ie: cs.insetInlineEnd, z: cs.zIndex,
+          ancestors: anc,
+        };
+      });
+      assert.ok(start.parentIsBody, tag + ": the gear is a direct child of body");
+      assert.equal(start.count, 1, tag + ": exactly one settings control in the document");
+      assert.ok(!start.inHeader, tag + ": the gear is gone from the per-view header");
+      assert.equal(start.pos, "fixed", tag + ": the gear is position fixed");
+      assert.ok(start.ancestors.every((a) => a.tf === "none"), tag + ": no ancestor is transformed (" + JSON.stringify(start.ancestors) + ")");
+      assert.ok(start.ancestors.every((a) => !a.an || a.an === "none"), tag + ": no ancestor is animated");
+      const wantIE = w >= 1025 ? Math.max(16, (w - 1080) / 2 - 56) : 16;
+      assert.ok(Math.abs(parseFloat(start.ie) - wantIE) <= 1, tag + ": inline-end inset matches the release rule (" + start.ie + " vs " + wantIE + ")");
+      assert.ok(Math.abs(parseFloat(start.top) - 14) <= 1, tag + ": top inset 14 (" + start.top + ")");
+
+      const samples = [];
+      const routes = ["#/surahs", "#/surah/78", "#/word/78-0", "#/challenge", "#/day/1", "#/quiz", "#/about", "#/rights", "#/privacy", "#/"];
+      for (const r of routes) {
+        await nav(page, r);
+        for (const ms of [0, 16, 50, 100, 200, 400]) {
+          const s = await page.evaluate(() => { const q = document.querySelector("#gear").getBoundingClientRect(); return { x: +q.x.toFixed(2), y: +q.y.toFixed(2), w: +q.width.toFixed(2), h: +q.height.toFixed(2) }; });
+          samples.push({ r, ms, s });
+          await page.waitForTimeout(ms === 0 ? 0 : 16);
+        }
+      }
+      for (const { r, ms, s } of samples) {
+        assert.ok(Math.abs(s.x - start.rect.x) <= 0.5 && Math.abs(s.y - start.rect.y) <= 0.5 && Math.abs(s.w - start.rect.w) <= 0.5 && Math.abs(s.h - start.rect.h) <= 0.5,
+          tag + ": gear unchanged after " + r + " at " + ms + "ms (was " + JSON.stringify(start.rect) + " now " + JSON.stringify(s) + ")");
+      }
+      const identity = await page.evaluate(() => window.__g0 === document.querySelector("#gear"));
+      assert.ok(identity, tag + ": the gear element is never recreated");
+
+      await nav(page, "#/quiz");
+      await page.waitForSelector("#app .opts .opt", { timeout: 20000 });
+      const o = await page.$eval("#app .opts .opt", (e) => e.dataset.o);
+      await page.click('#app .opt[data-o="' + o + '"]');
+      await page.waitForTimeout(60);
+      const afterAns = await page.evaluate(() => { const q = document.querySelector("#gear").getBoundingClientRect(); return { x: +q.x.toFixed(2), y: +q.y.toFixed(2), w: +q.width.toFixed(2), h: +q.height.toFixed(2) }; });
+      assert.ok(Math.abs(afterAns.x - start.rect.x) <= 0.5 && Math.abs(afterAns.y - start.rect.y) <= 0.5, tag + ": gear unchanged after answering a quiz option");
+
+      await page.click("#gear");
+      await page.waitForSelector("#sh.open", { timeout: 6000 });
+      assert.ok(await page.$("#sh.open"), tag + ": clicking the gear opens the settings sheet");
+      await page.close();
+    } finally { await env.close(); }
+  }
+});

@@ -79,9 +79,9 @@ test("F1: desktop gear is inset outside the content column and unchanged on mobi
   if (!env) return;
   try {
     const page = await env.page(1440, 900);
-    await page.waitForSelector('#app .ib[data-a="set"]', { timeout: 20000 });
+    await page.waitForSelector('#gear', { timeout: 20000 });
     const desk = await page.evaluate(() => {
-      const g = document.querySelector('#app .ib[data-a="set"]');
+      const g = document.querySelector('#gear');
       const wrap = document.querySelector('#app');
       const gb = g.getBoundingClientRect(), wb = wrap.getBoundingClientRect();
       const overlap = !(gb.right <= wb.left || gb.left >= wb.right || gb.bottom <= wb.top || gb.top >= wb.bottom);
@@ -97,9 +97,9 @@ test("F1: desktop gear is inset outside the content column and unchanged on mobi
     assert.ok(desk.gapEnd >= 0 && desk.gapEnd <= 72, "inline-end gap to the column is 0..72px (got " + desk.gapEnd.toFixed(1) + ")");
 
     const mob = await env.page(400, 800);
-    await mob.waitForSelector('#app .ib[data-a="set"]', { timeout: 20000 });
+    await mob.waitForSelector('#gear', { timeout: 20000 });
     const m = await mob.evaluate(() => {
-      const g = document.querySelector('#app .ib[data-a="set"]');
+      const g = document.querySelector('#gear');
       const r = g.getBoundingClientRect();
       return { left: r.left, pos: getComputedStyle(g).position };
     });

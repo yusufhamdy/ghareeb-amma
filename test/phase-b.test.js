@@ -245,8 +245,8 @@ test("B5: the settings gear is fixed and stays in view while scrolling", { timeo
   if (!env) return;
   try {
     const page = await env.page(390, 700);
-    await page.waitForSelector('#app .ib[data-a="set"]', { timeout: 20000 });
-    const g = '#app .ib[data-a="set"]';
+    await page.waitForSelector('#gear', { timeout: 20000 });
+    const g = '#gear';
     const a = await page.$eval(g, (e) => {
       const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
       return { top: r.top, w: r.width, h: r.height, pos: cs.position, z: cs.zIndex, hasGearPath: e.querySelectorAll("svg path").length > 0 };
