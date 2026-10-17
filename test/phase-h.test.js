@@ -271,3 +271,148 @@ test("H2: pressing the day-complete button moves nothing but the button", { time
     await new Promise((r) => server.close(r));
   }
 });
+
+// ---------------------------------------------------------------------------
+// H3 day-tile legend: one swatch + label per state, 24px swatch, 16px between
+// items and 8px between a swatch and its label, wrapping instead of squeezing.
+// The swatches reuse the real tile classes (g dy + state) so both themes agree
+// with the grid, and the labels are the four strings that were already there.
+// ---------------------------------------------------------------------------
+test("H3: the day-tile legend is a 24px swatch + label row", { timeout: 400000 }, async (t) => {
+  let chromium;
+  try { ({ chromium } = require("playwright")); } catch (e) { t.skip("playwright not installed"); return; }
+  let browser;
+  try { browser = await chromium.launch(); } catch (e) { t.skip("chromium unavailable: " + e.message); return; }
+
+  // static half: the rule set and the markup
+  const css = read("public/index.html");
+  assert.ok(/\.lg\{[^}]*flex-wrap:wrap[^}]*\}/.test(css), ".lg wraps");
+  assert.ok(/\.lg\{[^}]*gap:16px[^}]*\}/.test(css), ".lg keeps a 16px gap between items");
+  assert.ok(!/\.lg\{[^}]*space-between/.test(css), ".lg is a plain gapped row, not space-between");
+  assert.ok(/\.lg \.li\{[^}]*gap:8px[^}]*\}/.test(css), ".li keeps an 8px swatch-label gap");
+  assert.ok(
+    /\.lg \.li \.sw\{[^}]*width:24px!important[^}]*height:24px!important/.test(css),
+    "the swatch is 24px in both themes (beats the shade 44px tile rule)"
+  );
+  assert.equal((css.match(/class="li"/g) || []).length, 4, "four legend items");
+
+  const words = read("public/words.json");
+  const ch = Object.assign(JSON.parse(read("public/challenge.json")), { releasedUpTo: 30 });
+  const server = staticServer();
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = "http://127.0.0.1:" + server.address().port;
+  let combos = 0;
+
+  try {
+    for (const style of ["glass", "shade"]) {
+      for (const mode of ["light", "dark"]) {
+        for (const width of [400, 1440]) {
+          combos++;
+          const id = style + "/" + mode + "@" + width;
+          const page = await browser.newPage({ viewport: { width, height: 900 } });
+          await page.emulateMedia({ colorScheme: mode });
+          await page.addInitScript({
+            content: "window.__WORDS__=" + words + ";window.__CH__=" + JSON.stringify(ch) +
+              ";try{localStorage.setItem('gq-set',JSON.stringify({mode:'" + mode + "',pal:'def',gl:3,style:'" + style + "'}))}catch(e){}",
+          });
+          await page.goto(base + "/index.html", { waitUntil: "load" });
+          await page.evaluate(() => { location.hash = "#/challenge"; });
+          await page.waitForSelector("#app .lg .li .sw", { timeout: 20000 });
+
+          const m = await page.evaluate(() => {
+            const lg = document.querySelector("#app .lg");
+            const cs = getComputedStyle(lg);
+            const gv = (el, p) => getComputedStyle(el)[p];
+            const items = Array.from(lg.querySelectorAll(".li"));
+            return {
+              wrap: cs.flexWrap, rowGap: cs.rowGap, colGap: cs.columnGap,
+              liGap: items.length ? getComputedStyle(items[0]).gap : "",
+              interactive: lg.querySelectorAll("button,a,[data-a]").length,
+              overflow: lg.scrollWidth - lg.clientWidth,
+              items: items.map((li) => {
+                const sw = li.querySelector(".sw");
+                const r = sw.getBoundingClientRect();
+                const lr = li.getBoundingClientRect();
+                const tn = Array.from(li.childNodes).find((n) => n.nodeType === 3 && n.textContent.trim());
+                let lab = null;
+                if (tn) {
+                  const rg = document.createRange();
+                  rg.selectNodeContents(tn);
+                  const b = rg.getBoundingClientRect();
+                  lab = { left: Math.round(b.left * 10) / 10, right: Math.round(b.right * 10) / 10 };
+                }
+                return {
+                  cls: sw.className, tag: sw.tagName,
+                  w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10,
+                  swLeft: Math.round(r.left * 10) / 10,
+                  liLeft: Math.round(lr.left * 10) / 10, liRight: Math.round(lr.right * 10) / 10,
+                  liTop: Math.round(lr.top * 10) / 10,
+                  text: (tn ? tn.textContent : "").trim().length, label: lab,
+                  // what the swatch actually looks like (theme-aware)
+                  sig: [gv(sw, "backgroundImage"), gv(sw, "backgroundColor"), gv(sw, "borderTopWidth"), gv(sw, "color"), gv(sw, "boxShadow"), gv(sw, "opacity"), gv(sw, "filter")].join("|"),
+                  badge: !!sw.querySelector(".bg svg"),
+                  badgeW: sw.querySelector(".bg") ? Math.round(sw.querySelector(".bg").getBoundingClientRect().width * 10) / 10 : 0,
+                };
+              }),
+            };
+          });
+          await page.close();
+
+          assert.equal(m.items.length, 4, id + ": four legend items");
+          assert.equal(m.interactive, 0, id + ": the legend row is not interactive");
+          assert.equal(m.wrap, "wrap", id + ": the legend wraps");
+          assert.ok(m.overflow <= 1, id + ": the legend never overflows its row");
+          assert.equal(m.rowGap, "16px", id + ": 16px between items");
+          assert.equal(m.liGap, "8px", id + ": 8px between a swatch and its label");
+
+          m.items.forEach((it, i) => {
+            assert.equal(it.tag, "SPAN", id + ": swatch " + i + " is not a control");
+            assert.ok(
+              Math.abs(it.w - 24) <= 0.5 && Math.abs(it.h - 24) <= 0.5,
+              id + ": swatch " + i + " is 24px (got " + it.w + "x" + it.h + ")"
+            );
+            assert.ok(it.cls.includes("g") && it.cls.includes("dy"), id + ": swatch " + i + " reuses the tile classes");
+            if (i === 0) assert.ok(it.cls.includes("ok"), id + ": swatch 0 is the completed state");
+            else if (i === 1) assert.ok(!/ok|cur|lk/.test(it.cls), id + ": swatch 1 is the plain available state");
+            else if (i === 2) assert.ok(it.cls.includes("cur"), id + ": swatch 2 is the current-day state");
+            else assert.ok(it.cls.includes("lk"), id + ": swatch 3 is the locked state");
+            assert.ok(it.text > 1, id + ": item " + i + " still has its label");
+            assert.ok(it.label, id + ": item " + i + "'s label was measured");
+            // RTL: the swatch leads (sits to the right of) its label, 8px away
+            assert.ok(it.swLeft >= it.label.left - 0.5, id + ": swatch " + i + " leads its label");
+            assert.ok(
+              Math.abs((it.swLeft - it.label.right) - 8) <= 1.5,
+              id + ": swatch " + i + " is 8px from its label (got " + (it.swLeft - it.label.right).toFixed(1) + ")"
+            );
+          });
+          // the four states must really look different in this theme, and the
+          // check/lock badges must appear exactly where the tiles show them
+          assert.equal(new Set(m.items.map((it) => it.sig)).size, 4,
+            id + ": the four swatches are visually distinct from each other");
+          assert.deepEqual(m.items.map((it) => it.badge), [true, false, false, true],
+            id + ": only the completed and locked swatches carry a badge");
+          m.items.forEach((it, i) => {
+            if (it.badge) {
+              assert.ok(Math.abs(it.badgeW - 13) <= 0.5, id + ": badge " + i + " is 13px (got " + it.badgeW + ")");
+            }
+          });
+
+          // 16px to the next item, for whichever pairs share a row
+          for (let i = 1; i < m.items.length; i++) {
+            const a = m.items[i - 1], b = m.items[i];
+            if (a.liTop === b.liTop) {
+              assert.ok(
+                Math.abs((a.liLeft - b.liRight) - 16) <= 1.5,
+                id + ": 16px between items " + (i - 1) + " and " + i + " (got " + (a.liLeft - b.liRight).toFixed(1) + ")"
+              );
+            }
+          }
+        }
+      }
+    }
+    t.diagnostic("H3 checked " + combos + " combos (24px swatches, 8px swatch-label, 16px item gaps)");
+  } finally {
+    await browser.close();
+    await new Promise((r) => server.close(r));
+  }
+});
