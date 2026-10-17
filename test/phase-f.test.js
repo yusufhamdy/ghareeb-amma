@@ -185,8 +185,135 @@ test("F1: at 400px the arrows sit above the list; at 1440px they flank it at the
 });
 
 // ---------------------------------------------------------------------------
-// F2: the day page previous arrow mirroring the next control
+// F3: the wrong-answer cue
 // ---------------------------------------------------------------------------
+const CUE_ANALYSE = { sr: 44100, N: 32768 };
+
+test("F3: the wrong cue is a short descending pair, A-weighted loudness matched per theme", { timeout: 180000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(400, 900);
+    await page.waitForFunction(() => typeof SND !== "undefined" && typeof SND.cue === "function");
+    const d = await page.evaluate(async (cfg) => {
+      const sr = cfg.sr, N = cfg.N;
+      const aw = (f) => {
+        const f2 = f * f;
+        const num = 148693636 * f2 * f2;
+        const den = (f2 + 424.36) * Math.sqrt((f2 + 11599.29) * (f2 + 544496.41)) * (f2 + 148693636);
+        return (num / den) * 1.2589;
+      };
+      const fft = (re, im) => {
+        const n = re.length;
+        for (let i = 1, j = 0; i < n; i++) {
+          let bit = n >> 1;
+          for (; j & bit; bit >>= 1) j ^= bit;
+          j ^= bit;
+          if (i < j) { let a = re[i]; re[i] = re[j]; re[j] = a; a = im[i]; im[i] = im[j]; im[j] = a; }
+        }
+        for (let len = 2; len <= n; len <<= 1) {
+          const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+          for (let i = 0; i < n; i += len) {
+            let cr = 1, ci = 0;
+            for (let k = 0; k < len / 2; k++) {
+              const ur = re[i + k], ui = im[i + k];
+              const vr = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci;
+              const vi = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr;
+              re[i + k] = ur + vr; im[i + k] = ui + vi;
+              re[i + k + len / 2] = ur - vr; im[i + k + len / 2] = ui - vi;
+              const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+            }
+          }
+        }
+      };
+      const render = async (name, theme) => {
+        const oc = new OfflineAudioContext(1, Math.round(sr * 0.5), sr);
+        SND.cue(name, theme, oc);
+        const b = await oc.startRendering();
+        return b.getChannelData(0);
+      };
+      const analyse = (d) => {
+        const re = new Float64Array(N), im = new Float64Array(N);
+        const n = Math.min(d.length, N);
+        for (let i = 0; i < n; i++) re[i] = d[i];
+        fft(re, im);
+        const half = N / 2;
+        const mag = new Float64Array(half + 1);
+        let pk = 0, pkBin = 0;
+        for (let k = 0; k <= half; k++) { const m = re[k] * re[k] + im[k] * im[k]; mag[k] = m; if (m > pk) { pk = m; pkBin = k; } }
+        let sum = 0;
+        for (let k = 0; k <= half; k++) { const f = k * sr / N; const a = aw(f); sum += (k === 0 || k === half ? 1 : 2) * mag[k] * a * a; }
+        const rmsA = Math.sqrt(sum / (N * N));
+        // lowest strong partial: the first spectral peak (local maximum) carrying at
+        // least half of the loudest partial's amplitude.
+        const thr = pk * 0.25;
+        let low = 0;
+        for (let k = 2; k <= half - 1; k++) if (mag[k] > mag[k - 1] && mag[k] >= mag[k + 1] && mag[k] >= thr) { low = k * sr / N; break; }
+        let peak = 0, last = 0;
+        for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); if (v > peak) peak = v; if (v > 0.0005) last = i / sr; }
+        return { db: 20 * Math.log10(rmsA), peak, low, last, peakHz: pkBin * sr / N };
+      };
+      return {
+        okG: analyse(await render("ok", "glass")), badG: analyse(await render("bad", "glass")),
+        okS: analyse(await render("ok", "shade")), badS: analyse(await render("bad", "shade")),
+        tickG: analyse(await render("tick", "glass")), tickS: analyse(await render("tick", "shade")),
+      };
+    }, CUE_ANALYSE);
+
+    const near = (a, b, tol) => Math.abs(a - b) <= tol;
+    const isNote = (hz, list) => list.some((f) => near(hz, f, 4));
+    const gDb = Math.abs(d.okG.db - d.badG.db), sDb = Math.abs(d.okS.db - d.badS.db);
+    const dbMsg = " [glass " + d.okG.db.toFixed(2) + "/" + d.badG.db.toFixed(2) + " = " + (d.badG.db - d.okG.db).toFixed(2) + " dB, shade " + d.okS.db.toFixed(2) + "/" + d.badS.db.toFixed(2) + " = " + (d.badS.db - d.okS.db).toFixed(2) + " dB]";
+    assert.ok(gDb <= 1.5, "glass wrong cue within 1.5 dB of correct (" + gDb.toFixed(2) + " dB)" + dbMsg);
+    assert.ok(sDb <= 1.5, "shade wrong cue within 1.5 dB of correct (" + sDb.toFixed(2) + " dB)" + dbMsg);
+    for (const [name, v] of [["glass", d.badG], ["shade", d.badS]]) {
+      assert.ok(v.peak <= 0.14, name + " wrong cue peak stays <= 0.14 (" + v.peak.toFixed(4) + ")");
+      assert.ok(v.last > 0 && v.last < 0.25, name + " wrong cue is shorter than 250 ms (" + v.last.toFixed(3) + " s)");
+      assert.ok(v.low >= 300, name + " wrong cue fundamental is >= 300 Hz (" + v.low.toFixed(1) + " Hz)");
+      assert.ok(isNote(v.peakHz, [392, 311]), name + " wrong cue is built from 392/311 Hz (" + v.peakHz.toFixed(1) + " Hz)");
+    }
+    // the correct and tick cues are untouched
+    assert.ok(isNote(d.okG.peakHz, [660, 880]), "glass correct cue still uses 660/880 Hz (" + d.okG.peakHz.toFixed(1) + ")");
+    assert.ok(isNote(d.okS.peakHz, [440, 587]), "shade correct cue still uses 440/587 Hz (" + d.okS.peakHz.toFixed(1) + ")");
+    assert.ok(isNote(d.tickG.peakHz, [1400]), "glass tick cue is untouched (" + d.tickG.peakHz.toFixed(1) + ")");
+    assert.ok(isNote(d.tickS.peakHz, [900]), "shade tick cue is untouched (" + d.tickS.peakHz.toFixed(1) + ")");
+  } finally { await env.close(); }
+});
+
+test("F3: with sound off no AudioContext is created, with sound on a cue is played", { timeout: 180000 }, async (t) => {
+  const off = await setup(t, { set: { snd: false } });
+  if (!off) return;
+  try {
+    const page = await off.page(400, 900);
+    await page.waitForFunction(() => typeof SND !== "undefined");
+    const created = await page.evaluate(() => {
+      let n = 0;
+      const O = window.AudioContext || window.webkitAudioContext;
+      window.AudioContext = function () { n++; return new O(); };
+      window.webkitAudioContext = window.AudioContext;
+      SND.bad(); SND.ok(); SND.tick(); SND.land();
+      return n;
+    });
+    assert.equal(created, 0, "sound off keeps the wrong cue silent (no AudioContext)");
+  } finally { await off.close(); }
+
+  const on = await setup(t, { set: { snd: true } });
+  if (!on) return;
+  try {
+    const page = await on.page(400, 900);
+    await page.waitForFunction(() => typeof SND !== "undefined");
+    const created = await page.evaluate(() => {
+      let n = 0;
+      const O = window.AudioContext || window.webkitAudioContext;
+      window.AudioContext = function () { n++; return new O(); };
+      window.webkitAudioContext = window.AudioContext;
+      SND.bad();
+      return n;
+    });
+    assert.ok(created >= 1, "sound on creates an AudioContext and plays the wrong cue");
+  } finally { await on.close(); }
+});
+
 const DAYREAD = () => ({
   ctl: (s) => {
     const e = document.querySelector(s);
