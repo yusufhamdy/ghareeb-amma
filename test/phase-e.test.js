@@ -184,3 +184,67 @@ test("E1: day card badge/word/chevron layout and even vertical gaps (pixel test)
     assert.equal(await page.locator("#dw .dcard").count(), 3, "#dw .dcard still renders three cards");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// E2: answering a quiz option must not move the screen
+// ---------------------------------------------------------------------------
+test("E2: answering a quiz option never moves the screen or replays the entrance", { timeout: 300000 }, async (t) => {
+  const combos = [["glass", "light"], ["glass", "dark"], ["shade", "light"], ["shade", "dark"]];
+  for (const [style, mode] of combos) {
+    const env = await setup(t, { set: { style, mode } });
+    if (!env) return;
+    try {
+      const page = await env.page(390, 844);
+      await nav(page, "#/quiz");
+      await page.waitForSelector("#app .opts .opt", { timeout: 20000 });
+      await page.waitForTimeout(700);
+      const first = await page.$eval("#app .opts .opt", (e) => e.dataset.o);
+
+      await page.evaluate(() => {
+        window.__ls = 0;
+        try { new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__ls += e.value; }).observe({ type: "layout-shift", buffered: false }); } catch (e) {}
+        const rects = () => {
+          const a = document.querySelector("#app");
+          return [...a.children].map((el) => {
+            const r = el.getBoundingClientRect();
+            return { tag: el.tagName + (el.className ? "." + String(el.className).split(" ")[0] : ""), x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2) };
+          });
+        };
+        const anims = () => {
+          const a = document.querySelector("#app");
+          return [...a.getAnimations({ subtree: true })].map((an) => an.animationName || "").filter(Boolean);
+        };
+        const snap = () => ({ scroll: window.scrollY, kids: rects(), an: anims() });
+        window.__before = snap();
+        document.addEventListener("click", function once(ev) {
+          if (!ev.target.closest || !ev.target.closest(".opt")) return;
+          document.removeEventListener("click", once, true);
+          const out = [];
+          [0, 16, 50, 100, 200, 300, 400].forEach((ms) => setTimeout(() => out.push(snap()), ms));
+          setTimeout(() => { window.__samp = out; }, 470);
+        }, true);
+      });
+      await page.click('#app .opt[data-o="' + first + '"]');
+      await page.waitForFunction(() => Array.isArray(window.__samp), null, { timeout: 6000 });
+      const res = await page.evaluate(() => ({ before: window.__before, samples: window.__samp, ls: window.__ls }));
+      const tag = style + "/" + mode;
+      assert.ok(res.samples.length === 7, tag + ": collected seven samples");
+      assert.equal(res.before.scroll, 0, tag + ": the quiz starts at the top");
+      assert.ok(res.before.kids.some((k) => /FOOTER/.test(k.tag)), tag + ": the footer is one of the sampled #app children");
+      for (const [i, s] of res.samples.entries()) {
+        assert.equal(s.scroll, res.before.scroll, tag + ": sample " + i + " keeps scrollY");
+        assert.equal(s.kids.length, res.before.kids.length, tag + ": sample " + i + " keeps the same #app children (no row is inserted)");
+        for (let k = 0; k < Math.min(res.before.kids.length, s.kids.length); k++) {
+          const a = res.before.kids[k], b = s.kids[k];
+          assert.ok(Math.abs(a.x - b.x) <= 0.5 && Math.abs(a.y - b.y) <= 0.5 && Math.abs(a.w - b.w) <= 0.5 && Math.abs(a.h - b.h) <= 0.5,
+            tag + ": sample " + i + " box of #app child " + a.tag + " is unchanged (was " + JSON.stringify(a) + " now " + JSON.stringify(b) + ")");
+        }
+        assert.equal(s.an.filter((x) => /pgin|pgs|rise/.test(x)).length, 0, tag + ": sample " + i + " runs no entrance animation (" + s.an.join(",") + ")");
+      }
+      assert.ok(res.ls <= 0.001, tag + ": layout-shift total is 0 (got " + res.ls + ")");
+      assert.ok(await page.$("#app .opt.ok"), tag + ": the correct option is marked ok");
+      assert.ok(await page.$("#app .opt.ok svg"), tag + ": the ok glyph is present");
+      await page.close();
+    } finally { await env.close(); }
+  }
+});
