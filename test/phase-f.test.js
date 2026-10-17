@@ -442,6 +442,28 @@ test("F4: the quiz drives the core - four real, distinct options per question", 
   } finally { await env.close(); }
 });
 
+// ---------------------------------------------------------------------------
+// F5: weak-question audit tool
+// ---------------------------------------------------------------------------
+test("F5: the audit tool reports weak questions to a file outside the repo", { timeout: 180000 }, () => {
+  const r = spawnSync(process.execPath, [path.join(ROOT, "tools", "quiz-audit.mjs")], { encoding: "utf8" });
+  assert.equal(r.status, 0, "the audit exits cleanly: " + (r.stderr || ""));
+  const lines = String(r.stdout).trim().split(/\r?\n/);
+  assert.equal(lines.length, 2, "the tool prints only the count and the path: " + JSON.stringify(r.stdout));
+  const w = lines[0].match(/^WEAK=(\d+)$/);
+  const p = lines[1].match(/^REPORT=(.+)$/);
+  assert.ok(w, "first line is the weak count (" + lines[0] + ")");
+  assert.ok(p, "second line is the report path (" + lines[1] + ")");
+  assert.ok(+w[1] > 0 && +w[1] < 73, "the weak count is sensible (" + w[1] + ")");
+  const out = p[1];
+  assert.ok(!path.resolve(out).startsWith(ROOT + path.sep), "the report is written outside the repo (" + out + ")");
+  assert.ok(fs.existsSync(out), "the report exists at " + out);
+  const txt = fs.readFileSync(out, "utf8");
+  assert.ok(txt.indexOf("# Quiz weak questions") === 0, "the report has the expected heading");
+  assert.ok(txt.indexOf("weak words: " + w[1]) >= 0, "the report states the same count");
+  assert.ok(txt.split("\n").filter((l) => l.indexOf("## ") === 0).length === +w[1], "the report lists every weak word");
+});
+
 test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are disabled", { timeout: 180000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
