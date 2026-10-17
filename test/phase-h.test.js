@@ -416,3 +416,110 @@ test("H3: the day-tile legend is a 24px swatch + label row", { timeout: 400000 }
     await new Promise((r) => server.close(r));
   }
 });
+
+// ---------------------------------------------------------------------------
+// H4 surah heading. The heading must be the surah name on its own line (Amiri
+// Quran, line-height >= 1.7) over the word count (15px, muted, line-height
+// >= 1.5), 8px apart, and 16px above the words row. The text is unchanged: the
+// name matches the surahs list and the count is that list's count plus the
+// existing suffix, with no joining dash. Checked for every data surah in
+// glass/shade at 400/1440.
+// ---------------------------------------------------------------------------
+test("H4: the surah heading is a name line over a 15px count line, then the words row", { timeout: 600000 }, async (t) => {
+  const html = read("public/index.html");
+  assert.ok(/<div class="shd"><h1 class="q">/.test(html), "the surah heading uses the .shd wrapper");
+  assert.ok(/\.shd\{[^}]*display:flex[^}]*flex-direction:column/.test(html), ".shd stacks the heading and the words row");
+  assert.ok(/\.shd>h1\{[^}]*line-height:1\.7/.test(html), "the surah name has line-height 1.7");
+  assert.ok(/\.shd>\.sub\{[^}]*margin-top:8px/.test(html), "8px between the name and the count");
+  assert.ok(/\.shd>\.cw\.snav\{[^}]*margin-top:16px/.test(html), "16px before the words row");
+
+  let chromium;
+  try { ({ chromium } = require("playwright")); } catch (e) { t.skip("playwright not installed"); return; }
+  let browser;
+  try { browser = await chromium.launch(); } catch (e) { t.skip("chromium unavailable: " + e.message); return; }
+
+  const words = read("public/words.json");
+  const ch = Object.assign(JSON.parse(read("public/challenge.json")), { releasedUpTo: 30 });
+  const server = staticServer();
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = "http://127.0.0.1:" + server.address().port;
+  // " in this surah." (the text after the count) - ASCII only
+  const SUFFIX = " \u0641\u064a \u0647\u0630\u0647 \u0627\u0644\u0633\u0648\u0631\u0629.";
+  let combos = 0, checked = 0;
+
+  try {
+    for (const style of ["glass", "shade"]) {
+      for (const width of [400, 1440]) {
+        combos++;
+        const id = style + "@" + width;
+        const page = await browser.newPage({ viewport: { width, height: 900 } });
+        await page.addInitScript({
+          content: "window.__WORDS__=" + words + ";window.__CH__=" + JSON.stringify(ch) +
+            ";try{localStorage.setItem('gq-set',JSON.stringify({mode:'light',pal:'def',gl:3,style:'" + style + "'}))}catch(e){}",
+        });
+        await page.goto(base + "/index.html", { waitUntil: "load" });
+        await page.evaluate(() => { location.hash = "#/surahs"; });
+        await page.waitForSelector("#app .list.sl .row", { timeout: 20000 });
+        // the list already renders each surah's name and word count
+        const list = await page.$$eval("#app .list.sl .row", (rows) => rows.map((r) => ({
+          href: r.getAttribute("href"),
+          name: (r.querySelector(".q") || {}).textContent || "",
+          count: (r.querySelector(".m") || {}).textContent || "",
+        })));
+        assert.equal(list.length, 28, id + ": the surah list has 28 rows");
+
+        for (const row of list) {
+          const num = (row.href || "").split("/").pop();
+          await page.evaluate((n) => { location.hash = "#/surah/" + n; }, num);
+          await page.waitForFunction(
+            (nm) => { const h = document.querySelector("#app .shd h1"); return !!h && h.textContent === nm; },
+            row.name, { timeout: 20000 });
+          const m = await page.evaluate(() => {
+            const host = document.querySelector("#app .shd");
+            const h1 = host.querySelector("h1");
+            const sub = host.querySelector(".sub");
+            const snav = host.querySelector(".cw.snav");
+            const cs = (el) => getComputedStyle(el);
+            const rr = (el) => el.getBoundingClientRect();
+            const probe = document.createElement("span");
+            probe.style.color = "var(--mu)";
+            host.appendChild(probe);
+            const mu = cs(probe).color;
+            probe.remove();
+            return {
+              nameText: h1.textContent,
+              font: cs(h1).fontFamily,
+              nameFont: parseFloat(cs(h1).fontSize),
+              lh: parseFloat(cs(h1).lineHeight) / parseFloat(cs(h1).fontSize),
+              subText: sub.textContent,
+              subFont: parseFloat(cs(sub).fontSize),
+              subLh: parseFloat(cs(sub).lineHeight) / parseFloat(cs(sub).fontSize),
+              subColor: cs(sub).color,
+              mu,
+              gap1: Math.round((rr(sub).top - rr(h1).bottom) * 10) / 10,
+              gap2: Math.round((rr(snav).top - rr(sub).bottom) * 10) / 10,
+              dash: /[\u2013\u2014]/.test(h1.textContent + sub.textContent) || / - /.test(h1.textContent + sub.textContent),
+            };
+          });
+          checked++;
+          assert.equal(m.nameText, row.name, id + " surah " + num + ": the name text is unchanged");
+          assert.equal(m.subText, row.count + SUFFIX, id + " surah " + num + ": the count text is unchanged");
+          assert.ok(/Amiri Quran/.test(m.font), id + " surah " + num + ": the name uses Amiri Quran (" + m.font + ")");
+          assert.ok(m.lh >= 1.699, id + " surah " + num + ": the name line-height is >= 1.7 (got " + m.lh.toFixed(2) + ")");
+          assert.ok(m.nameFont >= 26 && m.nameFont <= 60, id + " surah " + num + ": the name keeps the h1 size (" + m.nameFont + "px)");
+          assert.ok(Math.abs(m.subFont - 15) <= 0.5, id + " surah " + num + ": the count is 15px (got " + m.subFont + ")");
+          assert.ok(m.subLh >= 1.499, id + " surah " + num + ": the count line-height is >= 1.5 (got " + m.subLh.toFixed(2) + ")");
+          assert.equal(m.subColor, m.mu, id + " surah " + num + ": the count uses the muted color");
+          assert.ok(Math.abs(m.gap1 - 8) <= 1, id + " surah " + num + ": 8px between the name and the count (got " + m.gap1 + ")");
+          assert.ok(Math.abs(m.gap2 - 16) <= 1, id + " surah " + num + ": 16px before the words row (got " + m.gap2 + ")");
+          assert.ok(!m.dash, id + " surah " + num + ": the heading has no joining dash");
+        }
+        await page.close();
+      }
+    }
+    t.diagnostic("H4 checked " + checked + " surah headings over " + combos + " combos");
+  } finally {
+    await browser.close();
+    await new Promise((r) => server.close(r));
+  }
+});
