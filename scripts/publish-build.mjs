@@ -237,7 +237,8 @@ export function renderWordPage(r) {
     "<title>" + title + "</title>\n" +
     '<meta name="description" content="' + desc + '">\n' +
     '<link rel="canonical" href="' + SITE + "/word/" + r.slug + '.html">\n' +
-    '<meta property="og:title" content="' + ogTitle + '"><meta property="og:description" content="' + desc + '"><meta property="og:image" content="' + SITE + '/og-image.png"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta property="og:type" content="article"><meta property="og:title" content="' + ogTitle + '"><meta property="og:description" content="' + desc + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + ogTitle + '"><meta name="twitter:description" content="' + desc + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
     "<style>" + CSS + "</style></head>\n" +
@@ -266,7 +267,8 @@ export function renderLegalPage(entry) {
     "<title>" + title + "</title>\n" +
     '<meta name="description" content="' + esc(entry.title) + '">\n' +
     '<link rel="canonical" href="' + SITE + "/" + entry.slug + '/">\n' +
-    '<meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
     "<style>" + CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style></head>\n" +

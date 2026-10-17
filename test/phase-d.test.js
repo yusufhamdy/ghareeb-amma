@@ -466,3 +466,55 @@ test("D6: favicon and icons exist and every head links the svg, 32px png and app
     assert.ok(px.glyph >= 15, "the glyph stays legible at 16px (glyph px " + px.glyph + ")");
   } finally { await env.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// D7: social share image + Open Graph / Twitter metadata
+// ---------------------------------------------------------------------------
+const OG_TAGS = [
+  '<meta property="og:title"',
+  '<meta property="og:description"',
+  '<meta property="og:image" content="https://ghareebalquran.com/og.png">',
+  '<meta property="og:image:width" content="1200">',
+  '<meta property="og:image:height" content="630">',
+  '<meta property="og:locale" content="ar_AR">',
+  '<meta name="twitter:card" content="summary_large_image">',
+  '<meta name="twitter:title"',
+  '<meta name="twitter:description"',
+  '<meta name="twitter:image" content="https://ghareebalquran.com/og.png">',
+];
+
+test("D7: og.png is a 1200x630 share image and every public head carries og/twitter tags", { timeout: 120000 }, async (t) => {
+  // The share image itself.
+  const og = path.join(PUBLIC, "og.png");
+  const b = fs.readFileSync(og);
+  assert.equal(b.readUInt32BE(16), 1200, "og.png is 1200px wide");
+  assert.equal(b.readUInt32BE(20), 630, "og.png is 630px high");
+  assert.ok(b.length < 300 * 1024, "og.png is under 300 KB (" + b.length + " bytes)");
+
+  // Static heads (home + 404).
+  for (const f of ["index.html", "404.html"]) {
+    const html = fs.readFileSync(path.join(PUBLIC, f), "utf8");
+    assert.ok(html.includes('<meta property="og:type" content="website">'), f + " declares og:type website");
+    for (const tag of OG_TAGS) assert.ok(html.includes(tag), f + " carries " + tag);
+  }
+
+  // Publisher output for generated word + legal pages.
+  const { pathToFileURL } = require("url");
+  const mod = await import(pathToFileURL(path.join(ROOT, "scripts/publish-build.mjs")).href);
+  const { files } = mod.buildSite(
+    JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8")),
+    JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"))
+  );
+  const wordKey = Object.keys(files).find((k) => k.startsWith("word/"));
+  assert.ok(files[wordKey].includes('<meta property="og:type" content="article">'), "word page declares og:type article");
+  for (const tag of OG_TAGS) assert.ok(files[wordKey].includes(tag), "word page carries " + tag);
+  const legalKey = Object.keys(files).find((k) => /^about\/index\.html$/.test(k));
+  assert.ok(files[legalKey].includes('<meta property="og:type" content="website">'), "legal page declares og:type website");
+  for (const tag of OG_TAGS) assert.ok(files[legalKey].includes(tag), "legal page carries " + tag);
+
+  // The committed pages match the generator (only the head grew; body untouched).
+  for (const n of fs.readdirSync(path.join(PUBLIC, "word")).slice(0, 5)) {
+    const committed = fs.readFileSync(path.join(PUBLIC, "word", n), "utf8");
+    assert.ok(committed.includes('content="https://ghareebalquran.com/og.png"'), "committed word page " + n + " points at og.png");
+  }
+});
