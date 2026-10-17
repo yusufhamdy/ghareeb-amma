@@ -159,14 +159,19 @@ try {
     console.log(`CLIENT-VERIFY: challenge day tiles = ${dayTiles}`);
   }
 
-  // Day 1 must resolve its word refs (proves {no,word} objects -> tuples works)
+  // Day 1 must resolve its word refs (proves {no,word} objects -> tuples works).
+  // Since Phase D the day screen is collapsible cards, not list rows.
   await page.goto(`http://127.0.0.1:${PORT}/?emul=1#/day/1`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#dw .list.g .row', { timeout: 15000 });
-  const dayRows = await page.$$eval('#dw .list.g .row', (els) => els.length);
-  if (dayRows < 1) {
-    die('day 1 rendered no word rows (challenge refs did not resolve)');
+  await page.waitForSelector('#dw .dcard', { timeout: 15000 });
+  const dayCards = await page.$$eval('#dw .dcard', (els) => els.length);
+  if (dayCards < 1) {
+    die('day 1 rendered no word cards (challenge refs did not resolve)');
   } else {
-    console.log(`CLIENT-VERIFY: challenge day-1 word rows = ${dayRows}`);
+    console.log(`CLIENT-VERIFY: challenge day-1 word cards = ${dayCards}`);
+  }
+  // open every card, as scripts/qa-phase6.mjs does, so the resolved words show
+  for (const c of await page.$$('#dw .dcard')) {
+    await c.click().catch(() => {});
   }
 
   if (pageErrors.length) die('page errors occurred');

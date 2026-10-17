@@ -115,9 +115,9 @@ async function main() {
       const dayTiles = await page.$$eval('#app .cg .dy', (e) => e.length);
       if (dayTiles !== 30) failures.push(prefix + `challenge: expected 30 day tiles, got ${dayTiles}`);
       await go('#/day/1');
-      await page.waitForSelector('#dw .list.g .row', { timeout: 15000 });
-      const dayRows = await page.$$eval('#dw .list.g .row', (e) => e.length);
-      if (dayRows < 1) failures.push(prefix + 'day 1: no word rows');
+      await page.waitForSelector('#dw .dcard', { timeout: 15000 });
+      const dayCards = await page.$$eval('#dw .dcard', (e) => e.length);
+      if (dayCards < 1) failures.push(prefix + 'day 1: no word cards');
 
       // quiz
       await go('#/quiz');

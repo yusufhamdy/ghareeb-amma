@@ -216,6 +216,7 @@ async function main() {
     check('home: draw button and surah link present', !!(await page.$('[data-a="rnd"]')) && !!(await page.$('a[href="#/surahs"]')));
     const navCount = await countOf(page, '#nv a');
     check('home: floating nav has 4 tabs', navCount === 4, navCount);
+    await page.waitForFunction(() => window.__DATA_SRC__ && window.__DATA_SRC__ !== 'pending', { timeout: 15000 }).catch(() => {});
     const src = await page.evaluate(() => window.__DATA_SRC__).catch(() => '?');
     check('home: data source silently falls back to json', src === 'json', src);
     const bodyTxt = await textOf(page, '#app');
@@ -664,6 +665,7 @@ async function main() {
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
     const shown = await waitFor(page, '#app .sub', 8000);
     check('offline: home renders from local JSON with Firestore unreachable (<1800ms)', shown && Date.now() - t0 < 1800, (Date.now() - t0) + 'ms');
+    await page.waitForFunction(() => window.__DATA_SRC__ && window.__DATA_SRC__ !== 'pending', { timeout: 15000 }).catch(() => {});
     const src = await page.evaluate(() => window.__DATA_SRC__).catch(() => '?');
     check('offline: data source is json and no error is shown', src === 'json', src);
     await go(page, '#/challenge');
