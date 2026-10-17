@@ -446,7 +446,10 @@ async function main() {
 
     await go(page, '#/day/1');
     const dwShown = await waitFor(page, '#dw', 12000);
-    check('challenge: day 1 opens and plays the roulette into its words', dwShown);
+    const dcards = await page.$$('#dw .dcard');
+    check('challenge: day 1 opens as stacked word cards', dwShown && dcards.length >= 3, String(dcards.length));
+    // D3: the day is completed by opening every word card; only then the done button enables
+    for (const c of dcards) { await c.click().catch(() => {}); }
     try { await page.waitForFunction(() => { const b = document.querySelector('[data-a="done"]'); return b && !b.disabled; }, { timeout: 8000 }); } catch {}
     await page.click('[data-a="done"]').catch(() => {});
     await sleep(200);
