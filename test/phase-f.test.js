@@ -150,7 +150,7 @@ test("F1: at 400px the arrows sit above the list; at 1440px they flank it at the
     await mob.waitForSelector("#app .cw .pnb.pv", { timeout: 20000 });
     const g = await mob.evaluate(() => {
       const r = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
-      return { pv: r("#app .cw .pnb.pv"), nx: r("#app .cw .pnb.nx"), list: r("#app .cw .one") };
+      return { pv: r("#app .cw .pnb.pv"), nx: r("#app .cw .pnb.nx"), list: r("#app .cw .list") };
     });
     assert.ok(g.pv && g.nx && g.list, "controls and list render");
     assert.ok(g.pv.bottom <= g.list.top + 1, "at 400px the previous control sits above the words list");
@@ -165,7 +165,7 @@ test("F1: at 400px the arrows sit above the list; at 1440px they flank it at the
     await desk.waitForSelector("#app .cw .pnb.pv", { timeout: 20000 });
     const sg = await desk.evaluate(() => {
       const r = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
-      return { pv: r("#app .cw .pnb.pv"), nx: r("#app .cw .pnb.nx"), list: r("#app .cw .one") };
+      return { pv: r("#app .cw .pnb.pv"), nx: r("#app .cw .pnb.nx"), list: r("#app .cw .list") };
     });
     assert.ok(sg.pv.left >= sg.list.right - 1, "at 1440px the previous control is to the inline-start of the list");
     assert.ok(sg.nx.right <= sg.list.left + 1, "at 1440px the next control is to the inline-end of the list");
