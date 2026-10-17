@@ -402,3 +402,67 @@ test("D5: admin uses a custom delete dialog and mirrored icons, never a native c
     assert.equal(outTag, "svg", "unauthorized logout icon at start");
   } finally { await envU.close(); }
 });
+
+// ---------------------------------------------------------------------------
+// D6: favicon + generated icons
+// ---------------------------------------------------------------------------
+const FAV_TAGS = ['href="/favicon.svg"', 'href="/favicon-32.png"', 'href="/apple-touch-icon.png"'];
+
+test("D6: favicon and icons exist and every head links the svg, 32px png and apple-touch-icon", { timeout: 120000 }, async (t) => {
+  // Files on disk.
+  const svg = fs.readFileSync(path.join(PUBLIC, "favicon.svg"), "utf8");
+  assert.ok(/rx="225"/.test(svg), "rounded square uses a ~22% corner radius: " + (svg.match(/rx="\d+"/) || ["none"])[0]);
+  assert.ok(svg.includes('fill="#1E6B50"'), "tile uses the default palette accent");
+  assert.ok(svg.includes('fill-rule="evenodd"'), "glyph path uses the even-odd rule for its counters");
+  for (const [f, size] of Object.entries({ "favicon-32.png": 32, "apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512 })) {
+    const b = fs.readFileSync(path.join(PUBLIC, f));
+    assert.equal(b.readUInt32BE(16), size, f + " is " + size + "px wide");
+    assert.equal(b.readUInt32BE(20), size, f + " is " + size + "px high");
+  }
+
+  // Static heads.
+  for (const f of ["index.html", "404.html", "admin/index.html"]) {
+    const html = fs.readFileSync(path.join(PUBLIC, f), "utf8");
+    for (const tag of FAV_TAGS) assert.ok(html.includes(tag), f + " head links " + tag);
+  }
+
+  // The publisher emits the same head for the generated word and legal pages.
+  const { pathToFileURL } = require("url");
+  const mod = await import(pathToFileURL(path.join(ROOT, "scripts/publish-build.mjs")).href);
+  const { files, wordCount } = mod.buildSite(
+    JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8")),
+    JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"))
+  );
+  assert.ok(wordCount >= 73, "publisher generated the word pages (" + wordCount + ")");
+  const wordKey = Object.keys(files).find((k) => k.startsWith("word/"));
+  const legalKeys = Object.keys(files).filter((k) => /^(about|privacy|terms|rights)\/index\.html$/.test(k));
+  assert.equal(legalKeys.length, 4, "publisher generated the four legal pages");
+  for (const k of [wordKey, ...legalKeys]) {
+    for (const tag of FAV_TAGS) assert.ok(files[k].includes(tag), k + " links " + tag);
+  }
+
+  // The glyph must survive the 16px favicon size.
+  const env = await setup(t, {});
+  if (!env) return;
+  try {
+    const page = await env.page(200, 200);
+    const px = await page.evaluate(async (url) => {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = 16; c.height = 16;
+      const x = c.getContext("2d");
+      x.drawImage(img, 0, 0, 16, 16);
+      const d = x.getImageData(0, 0, 16, 16).data;
+      let tile = 0, glyph = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] > 40) tile++;
+        if (d[i] > 120 && d[i + 3] > 120) glyph++;
+      }
+      return { tile, glyph };
+    }, env.base + "/favicon.svg");
+    assert.ok(px.tile >= 256 * 0.9, "the tile fills the icon at 16px (tile px " + px.tile + ")");
+    assert.ok(px.glyph >= 15, "the glyph stays legible at 16px (glyph px " + px.glyph + ")");
+  } finally { await env.close(); }
+});

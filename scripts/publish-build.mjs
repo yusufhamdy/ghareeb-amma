@@ -238,7 +238,7 @@ export function renderWordPage(r) {
     '<meta name="description" content="' + desc + '">\n' +
     '<link rel="canonical" href="' + SITE + "/word/" + r.slug + '.html">\n' +
     '<meta property="og:title" content="' + ogTitle + '"><meta property="og:description" content="' + desc + '"><meta property="og:image" content="' + SITE + '/og-image.png"><meta property="og:locale" content="ar_AR">\n' +
-    '<link rel="icon" href="/icon-192.png">\n' +
+    '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
     "<style>" + CSS + "</style></head>\n" +
     '<body><main><header><a class="logo q" href="/">' + A.LOGO + "</a>" +
@@ -267,7 +267,7 @@ export function renderLegalPage(entry) {
     '<meta name="description" content="' + esc(entry.title) + '">\n' +
     '<link rel="canonical" href="' + SITE + "/" + entry.slug + '/">\n' +
     '<meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:locale" content="ar_AR">\n' +
-    '<link rel="icon" href="/icon-192.png">\n' +
+    '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
     "<style>" + CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style></head>\n" +
     '<body><main><a href="/" class="q" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
