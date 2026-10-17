@@ -195,18 +195,19 @@ test("B3: shade surah cards are rectangles and day tiles are 44px with even gaps
 // ---------------------------------------------------------------------------
 // B4: per-theme hover / press / focus + centered social tile (items 12, 13)
 // ---------------------------------------------------------------------------
-test("B4: hovering a card transforms it, social tile is centered, reduced-motion keeps transform none", { timeout: 120000 }, async (t) => {
+test("B4: hovering a card shows a soft shadow without moving, social tile is centered, reduced-motion keeps transform none", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
     const page = await env.page(900, 900);
     await page.waitForSelector("#app a.g.card", { timeout: 20000 });
+    await page.waitForTimeout(700);
     const cardSel = "#app a.g.card";
 
     const t0 = await page.$eval(cardSel, (e) => getComputedStyle(e).transform);
     await page.hover(cardSel);
     const t1 = await page.$eval(cardSel, (e) => ({ tr: getComputedStyle(e).transform, sh: getComputedStyle(e).boxShadow }));
-    assert.notEqual(t1.tr, t0, "hovering a card changes its transform");
+    assert.equal(t1.tr, t0, "hovering a card does not move it (shadow only)");
     assert.ok(t1.sh !== "none", "hovering a card applies a soft shadow/glow");
 
     // social icon: the ::before disc shares the icon box centre

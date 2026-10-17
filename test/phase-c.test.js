@@ -175,20 +175,20 @@ const probeBg = (page, name) => page.evaluate((v) => {
   const c = getComputedStyle(d).backgroundColor; d.remove(); return c;
 }, name);
 
-test("F3: draw button and its outlined siblings invert on hover (AA in both themes)", { timeout: 120000 }, async (t) => {
+test("F3: the glass filled draw button keeps its fill and swaps only its shadow; outlined siblings invert (AA in both themes)", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
     const page = await env.page(1440, 900);
     await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
     const accent = await probeBg(page, "--ac");
-    const filled0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
-    const tr0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).transform);
+    const filled0 = await page.$eval('#app [data-a="rnd"]', (e) => ({ bg: getComputedStyle(e).backgroundColor, tr: getComputedStyle(e).transform, sh: getComputedStyle(e).boxShadow }));
     await page.hover('#app [data-a="rnd"]');
     await page.waitForTimeout(340);
-    const filled1 = await page.$eval('#app [data-a="rnd"]', (e) => ({ bg: getComputedStyle(e).backgroundColor, tr: getComputedStyle(e).transform }));
-    assert.notEqual(filled1.bg, filled0, "hovering the filled button changes its background");
-    assert.notEqual(filled1.tr, tr0, "hovering the filled button animates it (light motion)");
+    const filled1 = await page.$eval('#app [data-a="rnd"]', (e) => ({ bg: getComputedStyle(e).backgroundColor, tr: getComputedStyle(e).transform, sh: getComputedStyle(e).boxShadow }));
+    assert.equal(filled1.bg, filled0.bg, "the glass filled draw button keeps its background");
+    assert.equal(filled1.tr, filled0.tr, "the glass filled draw button does not move");
+    assert.notEqual(filled1.sh, filled0.sh, "the glass filled draw button swaps only its shadow");
 
     const olSel = '#app .acts .btn.o';
     const ol0 = await page.$eval(olSel, (e) => getComputedStyle(e).backgroundColor);
@@ -229,7 +229,7 @@ test("F3: draw button and its outlined siblings invert on hover (AA in both them
     await page.waitForTimeout(340);
     const r = await page.$eval('#app [data-a="rnd"]', (e) => ({ bg: getComputedStyle(e).backgroundColor, tr: getComputedStyle(e).transform }));
     assert.equal(r.tr, "none", "reduced motion keeps colour, drops the transform");
-    assert.notEqual(r.bg, b0, "reduced motion still swaps the colour");
+    assert.equal(r.bg, b0, "the glass filled draw button keeps its colour under reduced motion");
   } finally { await rmv.close(); }
 });
 
@@ -379,48 +379,33 @@ const DAYSNAP = `(() => {
   };
 })()`;
 
-test("C2: multi-word day reveals one card at a time; one-word day stays single", { timeout: 120000 }, async (t) => {
-  const env = await setup(t, { reducedMotion: "reduce" });
-  if (!env) return;
+test("C2: the day screen stacks rising word cards, and reduced motion keeps them still", { timeout: 120000 }, async (t) => {
+  const rm = await setup(t, { reducedMotion: "reduce" });
+  if (!rm) return;
   try {
-    const page = await env.page(390, 844);
+    const page = await rm.page(390, 844);
     await nav(page, "#/day/1");
-    await page.waitForSelector("#dw.show", { timeout: 10000 });
+    await page.waitForSelector("#dw .dcard", { timeout: 20000 });
     const s0 = await page.evaluate(DAYSNAP);
-    assert.ok(s0.dwVisible, "the day content is shown after the roulette");
-    assert.equal(s0.cards, 3, "a 3-word day renders 3 cards");
-    assert.equal(s0.open, 1, "exactly one card is open");
-    assert.equal(s0.openIdx, 0, "the first card is the open one");
-    assert.equal(s0.done, 0, "no card is collapsed yet");
-    assert.equal(s0.lk, 2, "the following cards show the locked hint");
-    assert.equal(s0.k, "1", "the counter starts at 1");
+    assert.ok(s0.dwVisible, "the day content is shown (no roulette gate)");
+    assert.equal(s0.cards, 3, "a 3-word day renders 3 stacked cards");
+    assert.equal(s0.open, 0, "the cards start collapsed");
+    assert.equal(s0.k, "0", "the counter starts at 0");
     assert.equal(s0.m, "3", "the counter knows the total");
-    assert.ok(s0.dnext, "the next button is present");
+    assert.ok(!s0.dnext, "there is no next button on the stacked day screen");
+    assert.equal(await page.$("#rou"), null, "there is no roulette overlay on the day screen");
+    const names = await page.evaluate(() => [...document.querySelectorAll("#dw .dcard")].map((c) => getComputedStyle(c).animationName));
+    assert.ok(names.every((n) => n === "none"), "reduced motion drops the rise animation");
 
-    await page.click('#dw [data-a="dnext"]');
-    await page.waitForFunction(() => { const c = document.querySelector('.dcount'); return c && c.dataset.k === '2'; }, null, { timeout: 3000 });
+    await page.locator("#dw .dcard").nth(0).click();
     const s1 = await page.evaluate(DAYSNAP);
-    assert.equal(s1.open, 1, "still exactly one open card");
-    assert.equal(s1.openIdx, 1, "the next card is now the open one");
-    assert.equal(s1.done, 1, "the finished card collapsed");
-    assert.equal(s1.lk, 1, "one locked hint remains");
-    assert.equal(s1.k, "2", "the counter advanced");
-
-    await page.click('#dw [data-a="dnext"]');
-    await page.waitForFunction(() => { const c = document.querySelector('.dcount'); return c && c.dataset.k === '3'; }, null, { timeout: 3000 });
+    assert.equal(s1.open, 1, "tapping a card opens it");
+    assert.equal(s1.k, "1", "the counter counts the opened card");
+    await page.locator("#dw .dcard").nth(1).click();
     const s2 = await page.evaluate(DAYSNAP);
-    assert.equal(s2.openIdx, 2, "the last card is the open one");
-    assert.ok(!s2.dnext, "the next button disappears on the last card");
-    assert.ok(s2.doneBtn, "the done button is present");
-
-    await nav(page, "#/day/2");
-    await page.waitForSelector("#dw.show", { timeout: 10000 });
-    const s3 = await page.evaluate(DAYSNAP);
-    assert.equal(s3.cards, 1, "a one-word day renders a single card");
-    assert.equal(s3.open, 1, "that card is open");
-    assert.equal(s3.m, "1", "the counter total is 1");
-    assert.ok(!s3.dnext, "a single card day has no next button");
-  } finally { await env.close(); }
+    assert.equal(s2.open, 2, "a second card can be open at the same time");
+    assert.equal(s2.k, "2", "the counter counts distinct opened cards");
+  } finally { await rm.close(); }
 
   // rise animation present (and delay staggered) when motion is allowed
   const anim = await setup(t, {});
@@ -428,7 +413,7 @@ test("C2: multi-word day reveals one card at a time; one-word day stays single",
   try {
     const page = await anim.page(390, 844);
     await nav(page, "#/day/1");
-    await page.waitForSelector("#dw.show", { timeout: 12000 });
+    await page.waitForSelector("#dw .dcard", { timeout: 20000 });
     const a = await page.evaluate(() => {
       const cs = [...document.querySelectorAll("#dw .dcard")].map((c) => ({
         name: getComputedStyle(c).animationName,
