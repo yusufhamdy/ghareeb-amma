@@ -332,6 +332,116 @@ const DAYREAD = () => ({
   pv: null, nx: null,
 });
 
+// ---------------------------------------------------------------------------
+// F4: smarter wrong options
+// ---------------------------------------------------------------------------
+function coreAndPool() {
+  const QCORE = require(path.join(PUBLIC, "quiz-core.js"));
+  const seo = require(path.join(ROOT, "functions", "seo.js"));
+  const data = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
+  const numOf = (s) => QCORE.SURAH_NO[seo.SURAH_SLUG[String(s).split(/\s+/).pop()]] || 0;
+  return { QCORE: QCORE, pool: QCORE.buildPool(data, numOf) };
+}
+
+test("F4: wrong options are real other meanings, never equal/containing, length-matched", { timeout: 60000 }, () => {
+  const c = coreAndPool();
+  const QCORE = c.QCORE, pool = c.pool;
+  assert.equal(pool.length, 73, "the pool holds every word of the data");
+  assert.equal(new Set(pool.map((x) => x.id)).size, pool.length, "pool ids are unique");
+  assert.ok(pool.every((x) => x.sn > 0), "every pool entry knows its surah number");
+  const known = new Set(pool.map((x) => x.id));
+  let widened = 0;
+  for (const t of pool) {
+    const tk = QCORE.nrm(t.mean), tl = tk.length;
+    const cand = pool.filter((x) => x.id !== t.id && x.km && x.km !== tk && !x.km.includes(tk) && !tk.includes(x.km));
+    const uniq = [];
+    const seen = new Set();
+    for (const x of cand) if (!seen.has(x.km)) { seen.add(x.km); uniq.push(x); }
+    const d = QCORE.pickDistractors(t, pool, 3);
+    assert.equal(d.length, 3, "three wrong options for " + t.id);
+    assert.equal(new Set(d.map((x) => x.km)).size, 3, "wrong options are distinct for " + t.id);
+    for (const x of d) {
+      assert.notEqual(x.id, t.id, "the word itself is never an option (" + t.id + ")");
+      assert.ok(known.has(x.id), "options are real words (" + t.id + " -> " + x.id + ")");
+      assert.ok(x.km !== tk && !x.km.includes(tk) && !tk.includes(x.km), "options never leak the answer (" + t.id + " -> " + x.id + ")");
+    }
+    const w25 = uniq.filter((x) => Math.abs(x.km.length - tl) <= 0.25 * tl);
+    if (w25.length >= 3) {
+      for (const x of d) assert.ok(Math.abs(x.km.length - tl) <= 0.25 * tl, "preferred +-25% length window for " + t.id);
+    } else {
+      widened++;
+    }
+  }
+  assert.ok(widened > 0 && widened < 10, "the window widens only for the few means with too few peers (" + widened + ")");
+});
+
+test("F4: the option order is a uniform shuffle and does not mutate its input", { timeout: 30000 }, () => {
+  const QCORE = coreAndPool().QCORE;
+  let seed = 7;
+  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const N = 8000, cnt = [0, 0, 0, 0];
+  for (let i = 0; i < N; i++) cnt[QCORE.shuffle([0, 1, 2, 3], rand).indexOf(0)]++;
+  for (let i = 0; i < 4; i++) {
+    assert.ok(Math.abs(cnt[i] - N / 4) < 200, "slot " + i + " is equally likely (" + cnt[i] + " of " + N + ")");
+  }
+  const src = [1, 2, 3, 4];
+  QCORE.shuffle(src);
+  assert.deepEqual(src, [1, 2, 3, 4], "shuffle returns a copy");
+});
+
+test("F4: the quiz drives the core - four real, distinct options per question", { timeout: 180000 }, async (t) => {
+  const env = await setup(t);
+  if (!env) return;
+  try {
+    const page = await env.page(390, 844);
+    await page.waitForFunction(() => typeof QCORE !== "undefined" && typeof W !== "undefined" && W.length > 0);
+    const app = await page.evaluate(() => W.map((w) => ({ id: w.id, km: w.km, mean: w.mean })));
+    const nums = await page.evaluate(() => S.map((s) => s.num));
+
+    const c = coreAndPool();
+    const QCORE = c.QCORE, pool = c.pool;
+    assert.equal(pool.length, app.length, "the core pool covers every word the app built");
+    const byId = new Map(pool.map((x) => [x.id, x]));
+    for (const w of app) {
+      const p = byId.get(w.id);
+      assert.ok(p, "core pool has " + w.id);
+      assert.equal(p.km, w.km, "normalised meaning matches the app for " + w.id);
+      assert.equal(p.mean, w.mean, "displayed meaning matches the app for " + w.id);
+    }
+    const have = new Set(Object.keys(QCORE.SURAH_NO).map((k) => QCORE.SURAH_NO[k]));
+    for (const n of nums) assert.ok(have.has(n), "SURAH_NO covers surah " + n);
+
+    const wired = await page.evaluate(() => {
+      let pd = 0, sh = 0;
+      const op = QCORE.pickDistractors, os = QCORE.shuffle;
+      QCORE.pickDistractors = function () { pd++; return op.apply(this, arguments); };
+      QCORE.shuffle = function () { sh++; return os.apply(this, arguments); };
+      qStart();
+      QCORE.pickDistractors = op;
+      QCORE.shuffle = os;
+      return {
+        pd: pd, sh: sh,
+        opts: Q.qs.map((q) => q.o.length),
+        ci: Q.qs.map((q) => q.o.indexOf(q.w)),
+        distinct: Q.qs.every((q) => new Set(q.o.map((x) => x.km)).size === q.o.length),
+        firstMean: Q.qs[0].w.mean,
+        firstOpts: Q.qs[0].o.map((x) => x.mean),
+      };
+    });
+    assert.equal(wired.opts.length, Math.min(10, app.length), "a quiz is ten questions");
+    assert.equal(wired.pd, wired.opts.length, "every question draws its wrong options from the core");
+    assert.ok(wired.sh >= wired.opts.length, "every question's options are shuffled by the core");
+    for (const n of wired.opts) assert.equal(n, 4, "four options per question");
+    for (const i of wired.ci) assert.ok(i >= 0, "the correct option is always present");
+    assert.ok(wired.distinct, "options within a question are distinct");
+    assert.ok(wired.firstOpts.includes(wired.firstMean), "the first question offers its own meaning");
+
+    await nav(page, "#/quiz");
+    await page.waitForFunction(() => document.querySelectorAll("#app .opts .opt").length > 0);
+    assert.equal(await page.evaluate(() => document.querySelectorAll("#app .opts .opt").length), 4, "the quiz page renders four options");
+  } finally { await env.close(); }
+});
+
 test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are disabled", { timeout: 180000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
