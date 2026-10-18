@@ -373,7 +373,7 @@ const DAYSNAP = `(() => {
     lk: cards.filter((c) => c.classList.contains('lk')).length,
     openIdx: cards.findIndex((c) => c.classList.contains('open')),
     k: cnt ? cnt.dataset.k : null,
-    m: cnt ? cnt.dataset.m : null,
+    m: cnt ? cnt.dataset.mtot : null,
     dnext: !!document.querySelector('#dw [data-a="dnext"]'),
     doneBtn: !!document.querySelector('#dw [data-a="done"]'),
   };
