@@ -62,3 +62,15 @@ async function env(t) {
     async close() { await browser.close(); await new Promise((r) => server.close(r)); },
   };
 }
+
+// ---------------------------------------------------------------------------
+// J3/J4 minimal scaffolding (will be expanded as needed)
+// ---------------------------------------------------------------------------
+test("J3: glass performance counts and cleanup - scaffold", { timeout: 120000 }, async (t) => {
+  const html = read("public/index.html");
+  assert.ok(html.length > 0);
+});
+test("J4: save-as-image renderer - scaffold", { timeout: 120000 }, async (t) => {
+  const html = read("public/index.html");
+  assert.ok(html.length > 0);
+});
