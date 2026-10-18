@@ -468,9 +468,7 @@ r.setProperty('--tc',c[2]);r.setProperty('--sf',dark?mx(c[0],'#ffffff',.07):mx(c
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applySet());
 applySet();
 document.body.insertAdjacentHTML('beforeend','<button class="g ib" id="gear" data-a="set" aria-label="الإعدادات">'+ICO.g+'</button>');
-const gBtn=document.getElementById('gear'),qEl=document.getElementById('q');
-if(qEl){qEl.addEventListener('focus',()=>{if(gBtn){gBtn.style.opacity='0';gBtn.style.visibility='hidden';gBtn.style.pointerEvents='none';gBtn.setAttribute('aria-hidden','true');}},{passive:true});
-        qEl.addEventListener('blur',()=>{if(gBtn){gBtn.style.opacity='';gBtn.style.visibility='';gBtn.style.pointerEvents='';gBtn.removeAttribute('aria-hidden');}},{passive:true});}
+const gBtn=document.getElementById('gear');
 Promise.all([window.__WORDS__?Promise.resolve(window.__WORDS__):fetch('words.json').then(r=>r.json()),window.__CH__?Promise.resolve(window.__CH__):fetch('challenge.json').then(r=>r.json()).catch(()=>[])]).then(a=>{build(a[0]);CHM=Array.isArray(a[1])?{}:(a[1]||{});CH=Array.isArray(a[1])?a[1]:(CHM.days||[]);render();const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}}).catch(()=>{const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}$('app').innerHTML=failView()});
 if('serviceWorker' in navigator&&!window.__WORDS__)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
