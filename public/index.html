@@ -192,7 +192,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(hover:hover){.cols .card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .cols .card:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--sbd))}}
 @media(prefers-reduced-motion:reduce){:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}}
 /* B5: floating settings gear (above content, below open sheets) */
-#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
+#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
 #gear:hover,#gear:active,#gear:focus-visible{transform:rotate(60deg)}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
@@ -209,7 +209,13 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* F4: social strip gets a very light hover shadow, never a movement */
 .strip{transition:box-shadow .35s}
 @media(hover:hover){.strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
-/* F5: shade header - roomier tagline line-height and a fixed gap to the counts line */
+/* J1: search collapse */
+.acts, .strip{transition:height .2s ease,margin .2s ease,padding .2s ease,opacity .2s ease;overflow:hidden}
+.searching .acts, .searching .strip{height:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;visibility:hidden;pointer-events:none}
+.searching .acts, .searching .strip[aria-hidden="true"]{display:block}
+@media (prefers-reduced-motion: reduce){.acts,.strip{transition:none}}
+
+/* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
 .shade h1+.sub{margin-top:8px}
 /* H4: surah heading - the name block over the count block, then the words row */
@@ -316,7 +322,7 @@ if(p==='challenge'||p==='quiz')return `${head()}<div class="g card"><h1>${p==='q
 return `${head()}<div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div>`;
 function nf(){return `${head()}<div class="g card">الصفحة غير موجودة. <a href="#/" style="color:var(--ac)">العودة إلى الرئيسية</a></div>`}}
 function route(){const h=location.hash.replace(/^#\/?/,'').split('/');return[h[0]||'home',decodeURIComponent(h[1]||'')]}
-function render(){const r=route();$('app').innerHTML=view(r);const tab={home:0,word:0,surahs:1,surah:1,challenge:2,quiz:3}[r[0]];$('nv').innerHTML=[['','بحث'],['surahs','السور'],['challenge','التحدي'],['quiz','اختبر نفسك']].map((x,i)=>`<a href="#/${x[0]}" class="${i===tab?'on':''}">${x[1]}</a>`).join('');scrollTo(0,0);const q=$('q');if(q)q.addEventListener('input',()=>{const l=rank(q.value);$('res').innerHTML=!q.value.trim()?'':l.length?`<div class="list g rs">${l.slice(0,30).map(wrow).join('')}</div>`:'<div class="g card m">لا توجد نتيجة لـ «'+esc(q.value)+'». جرّب كلمة أخرى.</div>'})}
+function render(){const r=route();$('app').innerHTML=view(r);const tab={home:0,word:0,surahs:1,surah:1,challenge:2,quiz:3}[r[0]];$('nv').innerHTML=[['','بحث'],['surahs','السور'],['challenge','التحدي'],['quiz','اختبر نفسك']].map((x,i)=>`<a href="#/${x[0]}" class="${i===tab?'on':''}">${x[1]}</a>`).join('');scrollTo(0,0);const q=$('q');if(q){q.oninput=()=>{const l=rank(q.value);const v=q.value.trim();if(v){document.body.classList.add('searching');}else{document.body.classList.remove('searching');}const res=$('res');res.innerHTML=!v?'':l.length?`<div class="list g rs">${l.slice(0,30).map(wrow).join('')}</div>`:'<div class="g card m">لا توجد نتيجة لـ «'+esc(q.value)+'». جرّب كلمة أخرى.</div>';};}}
 function $(i){return document.getElementById(i)}
 const wc=n=>n===1?'كلمة واحدة':n===2?'كلمتان':(n<=10?n+' كلمات':n+' كلمة');
 function rnd(){const r=route();let w;do{w=W[Math.floor(Math.random()*W.length)]}while(W.length>1&&r[0]==='word'&&w.id===r[1]);location.hash='#/word/'+w.id}
@@ -355,7 +361,7 @@ let STYLES=['glass','shade'];const STN={glass:'زجاج',shade:'ظلال'};
 function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass';p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">الإعدادات</b><button class="btn o" data-a="close" style="height:40px;color:var(--ac)">تم</button></div>${STYLES.length>1?`<div><div class="m" style="margin-bottom:8px">الستايل</div><div class="seg g">${STYLES.map(x=>`<button data-st="${x}" class="${st===x?'on':''}">${STN[x]}</button>`).join('')}</div></div>`:''}<div><div class="m" style="margin-bottom:8px">المظهر</div><div class="seg g">${[['auto','تلقائي'],['light','نهار'],['dark','ليل']].map(x=>`<button data-m="${x[0]}" class="${set.mode===x[0]?'on':''}">${x[1]}</button>`).join('')}</div></div>${`<div><div class="m" style="margin-bottom:10px">ألوان التوهج</div><div class="sw">${Object.keys(PAL).map(k=>`<button data-p="${k}" class="${set.pal===k?'on':''}"><i style="background:radial-gradient(circle at 30% 30%,${PAL[k][2][3]},${PAL[k][2][2]})"></i>${PAL[k][0]}</button>`).join('')}</div></div>`}${st==='glass'?`<div><div class="m" style="margin-bottom:8px">شدة الزجاج</div><label class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="1" max="5" step="1" value="${set.gl}" aria-label="شدة الزجاج"><span class="lbl">قوي</span></label></div>`:''}<div class="tg"><span>إيقاف الحركة</span><button data-c="1" class="${set.cm?'on':''}" aria-label="إيقاف الحركة"></button></div>`}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();$('sh').classList.add('open');return}if(d.a==='close'||t.id==='sh'&&e.target===t){$('sh').classList.remove('open');return}if(d.a==='rnd'){drawWord();return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='gs'){set.gl=+e.target.value;set.gv=2;LS.set(set);applySet()}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')$('sh').classList.remove('open')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const q=$('q');if(q&&q.value){q.value='';q.dispatchEvent(new Event('input',{bubbles:true}));q.focus();return;}$('sh').classList.remove('open');}});
 addEventListener('hashchange',()=>{$('sh').classList.remove('open');render()});
 const PR={get(){try{return JSON.parse(localStorage.getItem('gq-prog'))||{done:[]}}catch(e){return{done:[]}}},set(v){try{localStorage.setItem('gq-prog',JSON.stringify(v))}catch(e){}}};
 let CH=[],CHM={},Q=null,NS=false,AU=null;
@@ -462,6 +468,9 @@ r.setProperty('--tc',c[2]);r.setProperty('--sf',dark?mx(c[0],'#ffffff',.07):mx(c
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applySet());
 applySet();
 document.body.insertAdjacentHTML('beforeend','<button class="g ib" id="gear" data-a="set" aria-label="الإعدادات">'+ICO.g+'</button>');
+const gBtn=document.getElementById('gear'),qEl=document.getElementById('q');
+if(qEl){qEl.addEventListener('focus',()=>{if(gBtn){gBtn.style.opacity='0';gBtn.style.visibility='hidden';gBtn.style.pointerEvents='none';gBtn.setAttribute('aria-hidden','true');}},{passive:true});
+        qEl.addEventListener('blur',()=>{if(gBtn){gBtn.style.opacity='';gBtn.style.visibility='';gBtn.style.pointerEvents='';gBtn.removeAttribute('aria-hidden');}},{passive:true});}
 Promise.all([window.__WORDS__?Promise.resolve(window.__WORDS__):fetch('words.json').then(r=>r.json()),window.__CH__?Promise.resolve(window.__CH__):fetch('challenge.json').then(r=>r.json()).catch(()=>[])]).then(a=>{build(a[0]);CHM=Array.isArray(a[1])?{}:(a[1]||{});CH=Array.isArray(a[1])?a[1]:(CHM.days||[]);render();const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}}).catch(()=>{const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}$('app').innerHTML=failView()});
 if('serviceWorker' in navigator&&!window.__WORDS__)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
