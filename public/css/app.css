@@ -235,6 +235,12 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .dw .dcard{animation:rise .5s cubic-bezier(.3,1.2,.5,1) both;animation-delay:var(--d,0ms)}
 @media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 @media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
+/* K4: measurement showed the small repeated controls were the bulk of the
+   per-route blurred layers (up to 37 visible on /challenge: 34 day dots, 4 quiz
+   options, 3 word rows). Blur is kept on the large surfaces - the cards, the
+   strip, the word list, the nav and the roulette card - while these controls
+   stay translucent and drop the (expensive) backdrop filter. */
+.btn,.opt,.row,.pnb,.ib,.sb,.dy,.chip,.so,.seg,.toast{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* K3: ALL motion is gated by exactly ONE class (.cm, set on <html> for the static
    pages and on <body> in the app) and ONE media query (device
    prefers-reduced-motion). The two blocks below carry identical declarations, so

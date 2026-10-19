@@ -258,6 +258,12 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .dw .dcard{animation:rise .5s cubic-bezier(.3,1.2,.5,1) both;animation-delay:var(--d,0ms)}
 @media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 @media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
+/* K4: measurement showed the small repeated controls were the bulk of the
+   per-route blurred layers (up to 37 visible on /challenge: 34 day dots, 4 quiz
+   options, 3 word rows). Blur is kept on the large surfaces - the cards, the
+   strip, the word list, the nav and the roulette card - while these controls
+   stay translucent and drop the (expensive) backdrop filter. */
+.btn,.opt,.row,.pnb,.ib,.sb,.dy,.chip,.so,.seg,.toast{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* K3: ALL motion is gated by exactly ONE class (.cm, set on <html> for the static
    pages and on <body> in the app) and ONE media query (device
    prefers-reduced-motion). The two blocks below carry identical declarations, so
@@ -346,6 +352,7 @@ function rnd(){const r=route();let w;do{w=W[Math.floor(Math.random()*W.length)]}
 const SKIPICO='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:scaleX(-1)"><path d="M5 4l10 8-10 8zM19 5v14"/></svg>';
 let lastPick=null;
 function sfx(n){try{if(typeof SND!=='undefined'&&SND&&SND[n])SND[n]()}catch(e){}}
+let rouAbort=null;
 function rouOpen(pool,onPick){
   const list=(pool&&pool.length?pool:W).filter(w=>w&&w.word);
   if(!list.length){if(onPick)onPick(null);return}
@@ -361,8 +368,11 @@ function rouOpen(pool,onPick){
   el.innerHTML=`<div class="roucard g" role="dialog" aria-modal="true" aria-label="اسحب كلمة"><div class="rout">اسحب كلمة</div><div class="rous">جاري اختيار كلمة لك…</div><div class="reel"><div class="reelstrip" id="reels">${inner}</div></div><div class="rouacts"><button class="btn o" data-a="rskip">تخطَّ ${SKIPICO}</button></div>${set.snd?'<div class="rousnd">الصوت مفعّل · يمكن إيقافه من الإعدادات</div>':''}</div>`;
   document.body.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('in'));
-  let done=false,clr=null,clr2=null;
-  const finish=()=>{if(done)return;done=true;if(clr)clearInterval(clr);if(clr2)clearTimeout(clr2);try{el.remove()}catch(e){}if(onPick)onPick(pick)};
+  let done=false,clr=null,clr2=null,quiet=false;
+  const finish=()=>{if(done)return;done=true;rouAbort=null;if(clr)clearInterval(clr);if(clr2)clearTimeout(clr2);try{el.remove()}catch(e){}if(!quiet&&onPick)onPick(pick)};
+  // K4: a route change aborts the open roulette without navigating to its pick,
+  // so its interval + timers never outlive the route.
+  rouAbort=()=>{quiet=true;finish()};
   const strip=el.querySelector('#reels');
   if(rm){clr=setTimeout(finish,300)}
   else{
@@ -378,7 +388,7 @@ function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass';
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();$('sh').classList.add('open');return}if(d.a==='close'||t.id==='sh'&&e.target===t){$('sh').classList.remove('open');return}if(d.a==='rnd'){drawWord();return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='gs'){set.gl=+e.target.value;set.gv=2;LS.set(set);applySet()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const q=$('q');if(q&&q.value){q.value='';q.dispatchEvent(new Event('input',{bubbles:true}));q.focus();return;}$('sh').classList.remove('open');}});
-addEventListener('hashchange',()=>{$('sh').classList.remove('open');render()});
+addEventListener('hashchange',()=>{$('sh').classList.remove('open');if(rouAbort)rouAbort();render()});
 const PR={get(){try{return JSON.parse(localStorage.getItem('gq-prog'))||{done:[]}}catch(e){return{done:[]}}},set(v){try{localStorage.setItem('gq-prog',JSON.stringify(v))}catch(e){}}};
 let CH=[],CHM={},Q=null,NS=false,AU=null;
 const CK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4"><path d="M5 12l5 5 9-10"/></svg>',LK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
