@@ -238,3 +238,163 @@ test("K2: every static page has one canonical and ASCII-only JSON-LD with the ri
     for (const t of types) assert.ok(blocks.some((b) => b.includes('"@type":"' + t + '"')), p + " must include " + t);
   }
 });
+
+// ---------------------------------------------------------------- K3 --------
+
+test("K3: all motion is gated by exactly one .cm class block and one reduced-motion media query", () => {
+  const css = read("css/app.css");
+  const mq = [...css.matchAll(/@media\(prefers-reduced-motion:reduce\)\{([\s\S]*?)\n\}/g)];
+  assert.strictEqual(mq.length, 1, "exactly one prefers-reduced-motion media query");
+  const body = mq[0][1];
+  for (const decl of [
+    "animation:none;transition:none",
+    "#gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}",
+    "transform:none!important",
+    ".reelstrip{transition:opacity .3s}",
+  ]) {
+    assert.ok(body.includes(decl), "media query is missing: " + decl);
+  }
+  // The .cm class mirrors the same gates (entrance, hover lift, gear, cards, reel).
+  assert.ok(/\.cm #gear:hover,\.cm #gear:active,\.cm #gear:focus-visible/.test(css), ".cm disables the gear rotation");
+  assert.ok(css.includes(".cm .dcard.open .chev"), ".cm stills the open chevron");
+  assert.ok(css.includes(".cm .reelstrip{transition:opacity .3s}"), ".cm makes the roulette a quick fade");
+  assert.ok(/\.cm [^{]*\{animation:none;transition:none\}/.test(css), "the .cm block mirrors the media query");
+  assert.ok(css.includes(".cm #bg i"), "the glow blobs are gated by .cm (and stay visible)");
+});
+
+test("K3: first visit follows the device; a saved choice always wins (app + shared bootstrap)", () => {
+  const html = read("index.html");
+  assert.ok(
+    html.includes("if(LS.get().cm===undefined)set.cm=matchMedia('(prefers-reduced-motion:reduce)').matches;"),
+    "the app defaults stop-motion from the device only when nothing is saved"
+  );
+  assert.ok(html.includes("const rm=set.cm||matchMedia('(prefers-reduced-motion:reduce)').matches;"), "the roulette honours the saved toggle");
+  const boot = read("theme-boot.js");
+  assert.ok(boot.includes("if (!hasCm) set.cm = matchMedia(\"(prefers-reduced-motion:reduce)\").matches;"), "the static bootstrap mirrors the same default");
+});
+
+function staticServer(root) {
+  const types = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".png": "image/png",
+    ".svg": "image/svg+xml",
+    ".woff2": "font/woff2",
+  };
+  return require("node:http").createServer((req, res) => {
+    let p = decodeURIComponent((req.url || "/").split("?")[0]);
+    if (p === "/") p = "/index.html";
+    const file = path.join(root, p);
+    if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+      res.writeHead(404);
+      res.end("not found");
+      return;
+    }
+    res.writeHead(200, { "content-type": types[path.extname(file)] || "application/octet-stream" });
+    fs.createReadStream(file).pipe(res);
+  });
+}
+
+// Loads the real app in Chromium with a chosen saved gq-set record (or none, for
+// a first visit) and an emulated device motion preference. Skips cleanly when
+// Chromium is unavailable.
+async function k3env(t, opts) {
+  let chromium;
+  try {
+    ({ chromium } = require("playwright"));
+  } catch (e) {
+    t.skip("playwright not installed");
+    return null;
+  }
+  let browser;
+  try {
+    browser = await chromium.launch();
+  } catch (e) {
+    t.skip("chromium unavailable: " + e.message);
+    return null;
+  }
+  const words = read("words.json");
+  const ch = read("challenge.json");
+  const server = staticServer(PUBLIC);
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = "http://127.0.0.1:" + server.address().port;
+  const init =
+    "window.__WORDS__=" + words + ";window.__CH__=" + ch + ";" +
+    (opts.set === null ? "" : "try{localStorage.setItem('gq-set',JSON.stringify(" + JSON.stringify(opts.set) + "))}catch(e){}");
+  return {
+    async open() {
+      const page = await browser.newPage({ viewport: { width: 400, height: 844 } });
+      await page.emulateMedia({ reducedMotion: opts.reducedMotion || "no-preference", colorScheme: "light" });
+      await page.addInitScript({ content: init });
+      await page.goto(base + "/index.html", { waitUntil: "load" });
+      await page.waitForSelector("#app .acts, #app .card, #app header", { timeout: 20000 });
+      return page;
+    },
+    async close() {
+      await browser.close();
+      await new Promise((r) => server.close(r));
+    },
+  };
+}
+
+const K3SET = { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false };
+
+test("K3: the saved stop-motion choice turns every motion off in the app", { timeout: 120000 }, async (t) => {
+  const env = await k3env(t, { set: Object.assign({}, K3SET, { cm: true }) });
+  if (!env) return;
+  try {
+    const page = await env.open();
+    assert.ok(await page.evaluate(() => document.body.classList.contains("cm")), "the cm class is applied from the saved choice");
+    assert.strictEqual(await page.$eval("#gear", (e) => getComputedStyle(e).transitionDuration), "0s", "the gear rotation transition is removed");
+    const entrance = await page.$eval("#app.pg>*:not(header)", (e) => getComputedStyle(e).transitionDuration);
+    assert.ok(/^(0s|0\.001s)$/.test(entrance), "the page entrance transition is removed (got " + entrance + ")");
+    const btn = await page.$("#app .acts .btn");
+    if (btn) {
+      const d = await btn.evaluate((e) => getComputedStyle(e).transitionDuration);
+      assert.ok(/^(0s|0\.001s)$/.test(d), "the hover-lift transition is removed (got " + d + ")");
+    }
+    await page.evaluate(() => { location.hash = "#/day/1"; });
+    await page.waitForSelector("#dw .dcard", { timeout: 20000 });
+    const names = await page.evaluate(() => [...document.querySelectorAll("#dw .dcard")].map((c) => getComputedStyle(c).animationName));
+    assert.ok(names.every((n) => n === "none"), "there is no challenge stagger under cm");
+  } finally {
+    await env.close();
+  }
+});
+
+test("K3: a saved stop-motion choice is used as-is instead of the device default", { timeout: 120000 }, async (t) => {
+  const off = await k3env(t, { set: Object.assign({}, K3SET, { cm: false }) });
+  if (!off) return;
+  try {
+    const page = await off.open();
+    assert.ok(!(await page.evaluate(() => document.body.classList.contains("cm"))), "no cm class when motion is on");
+    const gear = await page.$eval("#gear", (e) => getComputedStyle(e).transitionDuration);
+    assert.ok(gear.includes("0.5s"), "the gear rotation transition is present when motion is on (got " + gear + ")");
+  } finally {
+    await off.close();
+  }
+
+  const saved = await k3env(t, { set: Object.assign({}, K3SET, { cm: false }), reducedMotion: "reduce" });
+  if (!saved) return;
+  try {
+    const page = await saved.open();
+    assert.ok(!(await page.evaluate(() => document.body.classList.contains("cm"))), "a saved choice is not overwritten by the device");
+  } finally {
+    await saved.close();
+  }
+});
+
+test("K3: a first visit with no saved choice follows the device", { timeout: 120000 }, async (t) => {
+  const first = await k3env(t, { set: null, reducedMotion: "reduce" });
+  if (!first) return;
+  try {
+    const page = await first.open();
+    assert.ok(await page.evaluate(() => document.body.classList.contains("cm")), "first visit + reduced motion => stop-motion on");
+  } finally {
+    await first.close();
+  }
+});
+
+

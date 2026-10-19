@@ -309,7 +309,7 @@ test("I2: the real settings controls still change the theme (mouse and keyboard)
   const e = await env(t);
   if (!e) return;
   try {
-    const page = await e.page(400, { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false });
+    const page = await e.page(400, { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false, cm: false });
     await loadRoute(page, e.base, "", null);
     await page.click("#gear");
     await page.waitForSelector("#sh.open", { timeout: 5000 });

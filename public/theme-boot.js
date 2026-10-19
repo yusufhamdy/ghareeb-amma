@@ -31,10 +31,15 @@
     return "#" + out;
   }
   var set = { mode: "auto", pal: "def", gl: 3, cm: false, style: "glass" };
+  var hasCm = false;
   try {
     var saved = JSON.parse(localStorage.getItem("gq-set") || "{}");
     for (var k in saved) { if (saved[k] !== undefined) set[k] = saved[k]; }
+    hasCm = saved.cm !== undefined;
   } catch (e) {}
+  // K3: on the first visit (no saved choice) stop-motion follows the device's
+  // prefers-reduced-motion; once toggled, the saved choice always wins.
+  if (!hasCm) set.cm = matchMedia("(prefers-reduced-motion:reduce)").matches;
   if (set.gv !== 2) { var g = set.gl; set.gl = g === 0 ? 1 : g === 1 ? 3 : g === 2 ? 5 : (g >= 1 && g <= 5 ? g : 3); set.gv = 2; }
   function apply() {
     var dark = set.mode === "dark" || (set.mode === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);

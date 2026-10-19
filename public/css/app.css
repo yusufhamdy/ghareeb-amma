@@ -11,8 +11,6 @@ button,input{font:inherit;color:inherit}
 #bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
 #bg i:nth-child(2){bottom:60px;left:-90px;width:300px;height:300px;background:var(--b2);opacity:.7;animation:dr 30s ease-in-out infinite alternate-reverse}
 @keyframes dr{to{transform:translate(30px,40px)}}
-.cm #bg i{animation:none}
-@media(prefers-reduced-motion:reduce){#bg i{animation:none}}
 .g{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));-webkit-backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 30px rgba(0,0,0,.15)}
 @media(prefers-reduced-transparency:reduce){.g{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}}
 .wrap{position:relative;max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 150px;display:flex;flex-direction:column;gap:18px}
@@ -94,7 +92,6 @@ nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12p
 nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18);animation:pop .4s}@keyframes pop{40%{transform:scale(1.2)}}
 .dt{position:absolute;top:7px;right:calc(50% - 18px);width:10px;height:10px;border-radius:50%;background:#d4553f;border:2px solid var(--bg)}
 .pg>*:not(header){animation:pgin .25s ease-out}.pgs>*:not(header){animation:pgs .3s cubic-bezier(.3,.8,.3,1)}@keyframes pgin{from{transform:translateY(6px)}}@keyframes pgs{from{transform:translateX(-18px)}}
-@media(prefers-reduced-motion:reduce){.pg>*:not(header),.pgs>*:not(header),nav.g .ind,.lb i,nav.g .t.on svg{animation:none;transition:none}}.cm .pg>*:not(header),.cm .pgs>*:not(header){animation:none}
 .lg2 p{margin:0 0 12px;line-height:2}.strip{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:20px;font-size:14px}.strip>span:first-child{flex:1;line-height:1.6}.so{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:22px;font-size:13px;color:var(--ac)}.strip .so{padding:0;width:44px;height:44px;justify-content:center}.strip .so span{display:none}.strip button{width:36px;height:36px;border:0;background:none;font-size:22px;color:var(--mu);cursor:pointer}
 .ft{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}.fs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.fs .so{border:1px solid var(--ln)}.fl{display:flex;flex-wrap:wrap;gap:4px 18px;justify-content:center;font-size:13px}.fl a{padding:8px 0}
 .opts{display:flex;flex-direction:column;gap:12px}
@@ -169,7 +166,6 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .so:hover:before,.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
 .cols .card{transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease}
 @media(hover:hover){.cols .card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .cols .card:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--sbd))}}
-@media(prefers-reduced-motion:reduce){:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}}
 /* B5: floating settings gear (above content, below open sheets) */
 #gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
 #gear:hover,#gear:active,#gear:focus-visible{transform:rotate(60deg)}
@@ -192,7 +188,6 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .acts, .strip{transition:height .2s ease,margin .2s ease,padding .2s ease,opacity .2s ease;overflow:hidden}
 .searching .acts, .searching .strip{height:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;visibility:hidden;pointer-events:none}
 .searching .acts, .searching .strip[aria-hidden="true"]{display:block}
-@media (prefers-reduced-motion: reduce){.acts,.strip{transition:none}}
 
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
@@ -217,7 +212,6 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .reel{background:color-mix(in srgb,var(--tc) 10%,var(--sf))}
 .shade .reelrow{color:var(--tx)}
 .shade .reelrow.pick{box-shadow:0 0 22px var(--tc);background:color-mix(in srgb,var(--tc) 22%,var(--sf))}
-@media(prefers-reduced-motion:reduce){.reelstrip{transition:opacity .3s}}
 /* D3: challenge day cards - stacked, collapsible (no roulette, no next) */
 .dw{display:flex;flex-direction:column;gap:14px}
 .dh{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"h h" "p n";gap:12px;align-items:center}
@@ -240,7 +234,24 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @keyframes rise{from{transform:translateY(16px)}to{transform:none}}
 .dw .dcard{animation:rise .5s cubic-bezier(.3,1.2,.5,1) both;animation-delay:var(--d,0ms)}
 @media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
-@media(prefers-reduced-motion:reduce){.dw .dcard{animation:none}.dcard .chev{transition:none}.dcard.open .chev{transform:none}}
+@media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
+/* K3: ALL motion is gated by exactly ONE class (.cm, set on <html> for the static
+   pages and on <body> in the app) and ONE media query (device
+   prefers-reduced-motion). The two blocks below carry identical declarations, so
+   the toggle and the OS setting behave identically: entrance animations off, no
+   hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
+   the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
+   visible but static, and the nav does not slide. Sound is untouched. */
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .cols .card,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
+.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
+.cm .reelstrip{transition:opacity .3s}
+@media(prefers-reduced-motion:reduce){
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.cols .card,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
+.reelstrip{transition:opacity .3s}
+}
 
 footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}
 .fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}
