@@ -260,7 +260,7 @@ test("K4c: a burst of typing is coalesced into one result rebuild instead of one
   } finally { await e.close(); }
 });
 
-test("K5: the sheet preview and the saved file share one canvas renderer and the save runs inside the tap", { timeout: 180000 }, async (t) => {
+test("K5: the sheet preview and the saved file share one canvas renderer; desktop saves directly", { timeout: 180000 }, async (t) => {
   const e = await envOrSkip(t);
   if (!e) return;
   try {
@@ -291,14 +291,16 @@ test("K5: the sheet preview and the saved file share one canvas renderer and the
     assert.ok(!prev.legacyText, "the container-query text preview is gone (it does not render on older iOS)");
     assert.ok(prev.rgAspect.replace(/\s+/g, "") === "4/5", "the regular preview keeps 4/5 (got " + prev.rgAspect + ")");
     assert.ok(prev.stAspect.replace(/\s+/g, "") === "9/16", "the story preview keeps 9/16 (got " + prev.stAspect + ")");
-    // The tap must call share synchronously, while the user activation is still live.
-    const sync = await page.evaluate(() => {
-      window.__shared = 0;
-      const btn = document.querySelector('[data-a="savepng"]');
-      btn.click();
-      return window.__shared;
-    });
-    assert.strictEqual(sync, 1, "navigator.share is invoked within the tap, not after an async gap (got " + sync + ")");
+    // Desktop (no coarse pointer): even though canShare() reports true, the tap must
+    // save the PNG directly and must never open the share sheet.
+    await page.evaluate(() => { window.__shared = 0; });
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.click('#sh [data-a="savepng"]'),
+    ]);
+    const shared = await page.evaluate(() => window.__shared);
+    assert.strictEqual(shared, 0, "a desktop tap does not call navigator.share (got " + shared + ")");
+    assert.ok(/\.png$/.test(dl.suggestedFilename()), "a desktop tap saves a PNG directly (got " + dl.suggestedFilename() + ")");
     await page.close();
   } finally { await e.close(); }
 });
