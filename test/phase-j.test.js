@@ -221,3 +221,42 @@ test("K4b: the action rows only clip while the search collapses, so button shado
     await page.close();
   } finally { await e.close(); }
 });
+
+test("K4c: a burst of typing is coalesced into one result rebuild instead of one per key", { timeout: 180000 }, async (t) => {
+  const e = await envOrSkip(t);
+  if (!e) return;
+  try {
+    const page = await open(e, { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false, cm: false });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    // Count every write to the results container.
+    await page.evaluate(() => {
+      window.__RESW = 0;
+      const res = document.getElementById("res");
+      const proto = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+      Object.defineProperty(res, "innerHTML", {
+        configurable: true,
+        get() { return proto.get.call(this); },
+        set(v) { window.__RESW++; return proto.set.call(this, v); },
+      });
+    });
+    await page.click("#q");
+    // Six keys in a burst (shorter than the debounce window).
+    for (const ch of ["\u0627", "\u0644", "\u0644", "\u0647", "\u0645", "\u0627"]) {
+      await page.type("#q", ch, { delay: 0 });
+      await page.waitForTimeout(25);
+    }
+    // Feedback stays instant even though the list render is deferred.
+    assert.ok(await page.evaluate(() => document.body.classList.contains("searching")), "the collapse reacts on the first key");
+    // Only the trailing keystroke should have rebuilt the list.
+    const writes = await page.evaluate(() => window.__RESW);
+    assert.ok(writes <= 2, "six keys caused " + writes + " result rebuilds (max 2)");
+    // And the results do arrive once typing pauses.
+    await page.fill("#q", "");
+    await page.fill("#q", "\u0627");
+    await page.waitForSelector("#res .list.rs .row", { timeout: 5000 });
+    const rows = await page.evaluate(() => document.querySelectorAll("#res .row").length);
+    assert.ok(rows > 0, "the results still render after a pause (got " + rows + " rows)");
+    await page.close();
+  } finally { await e.close(); }
+});

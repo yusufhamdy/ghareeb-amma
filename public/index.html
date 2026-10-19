@@ -347,7 +347,7 @@ if(p==='challenge'||p==='quiz')return `${head()}<div class="g card"><h1>${p==='q
 return `${head()}<div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div>`;
 function nf(){return `${head()}<div class="g card">الصفحة غير موجودة. <a href="#/" style="color:var(--ac)">العودة إلى الرئيسية</a></div>`}}
 function route(){const h=location.hash.replace(/^#\/?/,'').split('/');return[h[0]||'home',decodeURIComponent(h[1]||'')]}
-function render(){const r=route();$('app').innerHTML=view(r);const tab={home:0,word:0,surahs:1,surah:1,challenge:2,quiz:3}[r[0]];$('nv').innerHTML=[['','بحث'],['surahs','السور'],['challenge','التحدي'],['quiz','اختبر نفسك']].map((x,i)=>`<a href="#/${x[0]}" class="${i===tab?'on':''}">${x[1]}</a>`).join('');scrollTo(0,0);const q=$('q');if(q){q.oninput=()=>{const l=rank(q.value);const v=q.value.trim();if(v){document.body.classList.add('searching');}else{document.body.classList.remove('searching');}const res=$('res');res.innerHTML=!v?'':l.length?`<div class="list g rs">${l.slice(0,30).map(wrow).join('')}</div>`:'<div class="g card m">لا توجد نتيجة لـ «'+esc(q.value)+'». جرّب كلمة أخرى.</div>';};}}
+function render(){clearTimeout(qT);const r=route();$('app').innerHTML=view(r);const tab={home:0,word:0,surahs:1,surah:1,challenge:2,quiz:3}[r[0]];$('nv').innerHTML=[['','بحث'],['surahs','السور'],['challenge','التحدي'],['quiz','اختبر نفسك']].map((x,i)=>`<a href="#/${x[0]}" class="${i===tab?'on':''}">${x[1]}</a>`).join('');scrollTo(0,0);const q=$('q');if(q){q.oninput=()=>{const v=q.value.trim();if(v){document.body.classList.add('searching');}else{document.body.classList.remove('searching');}const res=$('res');if(!res)return;clearTimeout(qT);if(!v){res.innerHTML='';return}qT=setTimeout(()=>{const l=rank(q.value);res.innerHTML=!v?'':l.length?`<div class="list g rs">${l.slice(0,30).map(wrow).join('')}</div>`:'<div class="g card m">لا توجد نتيجة لـ «'+esc(q.value)+'». جرّب كلمة أخرى.</div>';},120);}}}
 function $(i){return document.getElementById(i)}
 const wc=n=>n===1?'كلمة واحدة':n===2?'كلمتان':(n<=10?n+' كلمات':n+' كلمة');
 function rnd(){const r=route();let w;do{w=W[Math.floor(Math.random()*W.length)]}while(W.length>1&&r[0]==='word'&&w.id===r[1]);location.hash='#/word/'+w.id}
@@ -355,7 +355,7 @@ function rnd(){const r=route();let w;do{w=W[Math.floor(Math.random()*W.length)]}
 const SKIPICO='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:scaleX(-1)"><path d="M5 4l10 8-10 8zM19 5v14"/></svg>';
 let lastPick=null;
 function sfx(n){try{if(typeof SND!=='undefined'&&SND&&SND[n])SND[n]()}catch(e){}}
-let rouAbort=null;
+let rouAbort=null,qT=0;
 function rouOpen(pool,onPick){
   const list=(pool&&pool.length?pool:W).filter(w=>w&&w.word);
   if(!list.length){if(onPick)onPick(null);return}
