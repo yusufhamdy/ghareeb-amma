@@ -2,9 +2,8 @@
 /*
  * phase-j.test.js - Phase J acceptance.
  *
- * J1: search layout collapse when typing; gear hides while typing (J2);
- * J3: iOS glass performance counts and cleanup;
- * J4: save-as-image renderer produces identical preview/saved layout and respects theme.
+ * K4: iOS glass performance counts, cleanup, shadow clipping and typing latency;
+ * K5: the save-as-image preview and the saved file use one renderer and save inside the tap.
  *
  * ASCII-only; Arabic only as \uXXXX escapes if needed.
  */
@@ -257,6 +256,49 @@ test("K4c: a burst of typing is coalesced into one result rebuild instead of one
     await page.waitForSelector("#res .list.rs .row", { timeout: 5000 });
     const rows = await page.evaluate(() => document.querySelectorAll("#res .row").length);
     assert.ok(rows > 0, "the results still render after a pause (got " + rows + " rows)");
+    await page.close();
+  } finally { await e.close(); }
+});
+
+test("K5: the sheet preview and the saved file share one canvas renderer and the save runs inside the tap", { timeout: 180000 }, async (t) => {
+  const e = await envOrSkip(t);
+  if (!e) return;
+  try {
+    const page = await open(e, { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false, cm: false });
+    // Chromium has no functional file share, so record the Web Share calls.
+    await page.evaluate(() => {
+      window.__shared = 0;
+      Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
+      Object.defineProperty(navigator, "share", { configurable: true, value: () => { window.__shared++; return Promise.resolve(); } });
+    });
+    await goHash(page, "#/word/78-0", '[data-a="card"]');
+    await page.click('[data-a="card"]');
+    await page.waitForSelector("#sh .arts", { timeout: 20000 });
+    await page.waitForTimeout(300);
+    const prev = await page.evaluate(() => {
+      const art = document.querySelector("#sh .art");
+      const img = art && art.querySelector("img");
+      return {
+        hasImg: !!img,
+        src: img ? String(img.getAttribute("src") || "") : "",
+        legacyText: !!document.querySelector("#sh .art .aw"),
+        rgAspect: getComputedStyle(document.querySelector("#sh .art.rg")).aspectRatio,
+        stAspect: getComputedStyle(document.querySelector("#sh .art.st")).aspectRatio,
+      };
+    });
+    assert.ok(prev.hasImg, "the preview is produced by the canvas renderer (an <img>)");
+    assert.ok(/^(blob:|data:image\/png)/.test(prev.src), "the preview is the rendered PNG (src " + prev.src.slice(0, 12) + ")");
+    assert.ok(!prev.legacyText, "the container-query text preview is gone (it does not render on older iOS)");
+    assert.ok(prev.rgAspect.replace(/\s+/g, "") === "4/5", "the regular preview keeps 4/5 (got " + prev.rgAspect + ")");
+    assert.ok(prev.stAspect.replace(/\s+/g, "") === "9/16", "the story preview keeps 9/16 (got " + prev.stAspect + ")");
+    // The tap must call share synchronously, while the user activation is still live.
+    const sync = await page.evaluate(() => {
+      window.__shared = 0;
+      const btn = document.querySelector('[data-a="savepng"]');
+      btn.click();
+      return window.__shared;
+    });
+    assert.strictEqual(sync, 1, "navigator.share is invoked within the tap, not after an async gap (got " + sync + ")");
     await page.close();
   } finally { await e.close(); }
 });
