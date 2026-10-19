@@ -193,3 +193,31 @@ test("K4: at 4x CPU no navigation over 200ms, TBT under 300ms, and a clean exit 
     await page.close();
   } finally { await e.close(); }
 });
+
+test("K4b: the action rows only clip while the search collapses, so button shadows are not cut", { timeout: 120000 }, async (t) => {
+  const e = await envOrSkip(t);
+  if (!e) return;
+  try {
+    const page = await open(e, { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false, cm: false });
+    const rest = await page.evaluate(() => {
+      const a = document.querySelector("#app .acts");
+      const s = document.querySelector(".strip");
+      return { acts: getComputedStyle(a).overflow, clip: getComputedStyle(a).overflowClipMargin, strip: s ? getComputedStyle(s).overflow : "n/a" };
+    });
+    assert.strictEqual(rest.acts, "visible", "the action row does not clip at rest (got " + rest.acts + ")");
+    assert.ok(rest.strip === "visible" || rest.strip === "n/a", "the strip does not clip at rest (got " + rest.strip + ")");
+    await page.hover('#app .acts [data-a="rnd"]');
+    await page.waitForTimeout(300);
+    const shadow = await page.$eval('#app .acts [data-a="rnd"]', (el) => getComputedStyle(el).boxShadow);
+    assert.ok(shadow && shadow !== "none", "the hover shadow is painted");
+    await page.fill("#q", "\u0627");
+    await page.waitForTimeout(80);
+    const searching = await page.evaluate(() => getComputedStyle(document.querySelector("#app .acts")).overflow);
+    assert.strictEqual(searching, "hidden", "the action row clips while collapsing (got " + searching + ")");
+    await page.fill("#q", "");
+    await page.waitForTimeout(80);
+    const back = await page.evaluate(() => getComputedStyle(document.querySelector("#app .acts")).overflow);
+    assert.strictEqual(back, "visible", "the action row stops clipping once the search clears (got " + back + ")");
+    await page.close();
+  } finally { await e.close(); }
+});

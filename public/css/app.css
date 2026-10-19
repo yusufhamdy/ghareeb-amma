@@ -185,8 +185,11 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .strip{transition:box-shadow .35s}
 @media(hover:hover){.strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 /* J1: search collapse */
-.acts, .strip{transition:height .2s ease,margin .2s ease,padding .2s ease,opacity .2s ease;overflow:hidden}
-.searching .acts, .searching .strip{height:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;visibility:hidden;pointer-events:none}
+/* K4b: overflow was permanently hidden on the action rows, clipping the button
+   shadow into a straight grey band (the .acts box bottom == button bottom, so a
+   hover/focus shadow with a 24px blur is cut off). Clip only while collapsing. */
+.acts, .strip{transition:height .2s ease,margin .2s ease,padding .2s ease,opacity .2s ease}
+.searching .acts, .searching .strip{height:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
 .searching .acts, .searching .strip[aria-hidden="true"]{display:block}
 
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
