@@ -83,6 +83,7 @@ const A = {
   F_RIGHTS: "\u0627\u0644\u062d\u0642\u0648\u0642 \u0648\u0627\u0644\u0645\u0635\u0627\u062f\u0631", // "rights and sources"
   OL: "\ufd3f", // ornate left parenthesis
   OR: "\ufd3e", // ornate right parenthesis
+  SURAH_T_PRE: "\u0645\u0639\u0627\u0646\u064a \u0643\u0644\u0645\u0627\u062a \u0633\u0648\u0631\u0629 ", // "meanings of the words of surah "
 };
 
 const SURAH_PREFIX_RE = /^\u0633\u0648\u0631\u0629\s*/; // leading "surah "
@@ -272,6 +273,7 @@ function staticHead(o) {
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     '<script src="/theme-boot.js"></script>\n' +
+    (o.jsonLd || []).map((j) => '<script type="application/ld+json">' + jsonLd(j) + "</script>\n").join("") +
     "</head>\n"
   );
 }
@@ -290,6 +292,37 @@ function countPhrase(n) {
   if (n === 2) return A.TWO_WORDS;
   if (n <= 10) return n + A.WORDS_PLURAL;
   return n + A.WORD_SINGULAR;
+}
+
+// One deterministic diacritics stripper for the title/description copies only
+// (the body keeps the original). Removes the tashkeel marks, the dagger alif,
+// the Quranic annotation marks and the tatweel.
+const DIACRITICS = /[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g;
+function stripDiacritics(s) {
+  return String(s == null ? "" : s).replace(DIACRITICS, "");
+}
+
+// Cut a copy at a word boundary so it never exceeds max characters.
+function cutAtWord(s, max) {
+  const t = String(s == null ? "" : s).trim().replace(/\s+/g, " ");
+  if (t.length <= max) return t;
+  const head = t.slice(0, max);
+  const i = head.lastIndexOf(" ");
+  return (i > 0 ? head.slice(0, i) : head).trim();
+}
+
+// JSON-LD for the static pages, ASCII-escaped so the generator stays ASCII-only.
+function jsonLd(obj) {
+  return JSON.stringify(obj).replace(/[\u0080-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+}
+
+// A BreadcrumbList from an ordered [{ name, item }] trail.
+function breadcrumb(trail) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((t, i) => ({ "@type": "ListItem", position: i + 1, name: t.name, item: t.item })),
+  };
 }
 
 function staticFooter(year) {
@@ -316,13 +349,28 @@ export function buildSurahs(records) {
 }
 
 export function renderWordPage(r) {
-  const title = A.T_PRE + esc(r.word) + A.T_SUF + " | " + A.LOGO;
-  const ogTitle = A.T_PRE + esc(r.word) + A.T_SUF;
-  const descMeaning =
-    String(r.rawMeaning).startsWith(String(r.word) + ":")
-      ? r.rawMeaning
-      : String(r.word) + ": " + r.rawMeaning;
-  const desc = esc(descMeaning) + " (" + esc(r.surahFull) + A.COMMA + A.AYAH + esc(r.label) + ")";
+  // K2: title/description copies are diacritics-stripped copies of the page data;
+  // the body keeps the original diacritics.
+  const title = A.LOGO + " - " + stripDiacritics(r.word) + " - " + stripDiacritics(r.surahShort);
+  const ogTitle = title;
+  const desc = cutAtWord(stripDiacritics(r.rawMeaning), 155);
+  const wordUrl = SITE + "/word/" + r.slug + ".html";
+  const surahUrl = SITE + "/surah/" + r.surahSlug + ".html";
+  const ld = [
+    {
+      "@context": "https://schema.org",
+      "@type": "DefinedTerm",
+      name: r.word,
+      description: r.rawMeaning,
+      inDefinedTermSet: { "@type": "DefinedTermSet", name: A.LOGO, url: SITE + "/" },
+      url: wordUrl,
+    },
+    breadcrumb([
+      { name: A.LOGO, item: SITE + "/" },
+      { name: r.surahShort, item: surahUrl },
+      { name: r.word, item: wordUrl },
+    ]),
+  ];
   const ayah = renderAyah(r.ayah);
   const surahHref = "/surah/" + r.surahSlug + ".html";
   const appHref = "/#/word/" + r.no + "-" + r.idx;
@@ -351,7 +399,7 @@ export function renderWordPage(r) {
     '<div class="acts"><a class="btn o g" href="/surah/' + r.surahSlug + '.html">' + BOOK + A.ALL_SURAH + "</a></div></div>";
   const year = new Date().getFullYear();
   return (
-    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article" }) +
+    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
     '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
@@ -368,9 +416,16 @@ export function renderWordPage(r) {
 }
 
 export function renderSurahPage(s) {
-  const title = esc(s.name) + " | " + A.LOGO;
+  const title = A.SURAH_T_PRE + stripDiacritics(s.name) + " - " + A.LOGO;
   const count = countPhrase(s.words.length) + A.IN_THIS_SURAH;
-  const desc = esc(s.name) + A.COMMA + A.AYAH + count;
+  const desc = cutAtWord(stripDiacritics(s.name) + " - " + count, 155);
+  const surahUrl = SITE + "/surah/" + s.slug + ".html";
+  const ld = [
+    breadcrumb([
+      { name: A.LOGO, item: SITE + "/" },
+      { name: s.name, item: surahUrl },
+    ]),
+  ];
   const sbtn = (o, dir) => {
     const inner = dir === "pv" ? CHEV_R + " " + A.PREV_SURAH : A.NEXT_SURAH + " " + CHEV_L;
     return o
@@ -387,7 +442,7 @@ export function renderSurahPage(s) {
     .join("");
   const year = new Date().getFullYear();
   return (
-    staticHead({ title, desc, canonical: SITE + "/surah/" + s.slug + ".html", ogTitle: title, ogDesc: desc, type: "website" }) +
+    staticHead({ title, desc, canonical: SITE + "/surah/" + s.slug + ".html", ogTitle: title, ogDesc: desc, type: "website", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
     '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
