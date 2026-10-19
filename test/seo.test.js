@@ -70,8 +70,11 @@ test("public/sitemap.xml lists the home URL, the canonical word slugs and the le
   const xml = fs.readFileSync(path.join(ROOT, "public", "sitemap.xml"), "utf8");
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   assert.strictEqual(locs[0], SITE + "/");
-  assert.strictEqual(locs.length, 1 + slugs.length + legal.LEGAL.length);
+  // Phase K: the sitemap now also lists the 28 static surah pages.
+  const surahSlugs = Object.values(seo.SURAH_SLUG);
+  assert.strictEqual(locs.length, 1 + slugs.length + surahSlugs.length + legal.LEGAL.length);
   for (const s of slugs) assert.ok(locs.includes(SITE + "/word/" + s + ".html"), "sitemap missing " + s);
+  for (const s of surahSlugs) assert.ok(locs.includes(SITE + "/surah/" + s + ".html"), "sitemap missing surah " + s);
   for (const entry of legal.LEGAL) assert.ok(locs.includes(SITE + "/" + entry.slug + "/"), "sitemap missing legal " + entry.slug);
 });
 
@@ -133,8 +136,10 @@ test("publish generator reproduces the committed static site byte-for-byte", asy
       "page mismatch: " + f
     );
   }
-  const expected = ["words.json", "challenge.json", "sitemap.xml"]
+  const surahKeys = Object.values(seo.SURAH_SLUG).map((s) => "surah/" + s + ".html");
+  const expected = ["words.json", "challenge.json", "sitemap.xml", "css/app.css"]
     .concat(fileSlugs.map((f) => "word/" + f + ".html"))
+    .concat(surahKeys)
     .concat(legal.LEGAL.map((e) => e.slug + "/index.html"))
     .sort();
   assert.deepStrictEqual(Object.keys(files).sort(), expected);

@@ -241,3 +241,11 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .dw .dcard{animation:rise .5s cubic-bezier(.3,1.2,.5,1) both;animation-delay:var(--d,0ms)}
 @media(hover:hover){.dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .dcard:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 @media(prefers-reduced-motion:reduce){.dw .dcard{animation:none}.dcard .chev{transition:none}.dcard.open .chev{transform:none}}
+
+footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}
+.fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}
+.para{font-size:17px;line-height:1.95;margin:0 0 14px}
+.legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}
+h2{font-size:20px;margin:6px 0 12px;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}

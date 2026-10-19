@@ -46,6 +46,8 @@ const seo = require("../functions/seo.js");
 const challenge = require("../functions/challenge.js");
 const { LEGAL } = require("../functions/legal.js");
 
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
 const SITE = "https://ghareebalquran.com";
 const MIN_WORDS = 73;
 
@@ -58,7 +60,17 @@ const A = {
   AYAH: "\u0622\u064a\u0629 ", // "ayah "
   COMMA: "\u060c ", // U+060C ARABIC COMMA, then a space
   OTHER: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0633\u0648\u0631\u0629 ", // "other words from surah "
-  APP: "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642", // "open in the app"
+  APP: "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639", // "open on the site"
+  PREV_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous word"
+  PREV_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous surah"
+  NEXT_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next word"
+  NEXT_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next surah"
+  ALL_SURAS: "\u0643\u0644 \u0627\u0644\u0633\u0648\u0631", // "all surahs"
+  ONE_WORD: "\u0643\u0644\u0645\u0629 \u0648\u0627\u062d\u062f\u0629", // "one word"
+  TWO_WORDS: "\u0643\u0644\u0645\u062a\u0627\u0646", // "two words"
+  WORDS_PLURAL: " \u0643\u0644\u0645\u0627\u062a", // " words" (count >= 3, <= 10)
+  WORD_SINGULAR: " \u0643\u0644\u0645\u0629", // " word" (count > 10)
+  IN_THIS_SURAH: " \u0641\u064a \u0647\u0630\u0647 \u0627\u0644\u0633\u0648\u0631\u0629.", // " in this surah."
   HOME: "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629", // "home"
   MEANING: "\u0627\u0644\u0645\u0639\u0646\u0649", // "the meaning"
   OTHER_SAME: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0646\u0641\u0633 \u0627\u0644\u0633\u0648\u0631\u0629", // "other words from the same surah"
@@ -108,9 +120,11 @@ const SURAH_NO = {
   "\u0627\u0644\u0646\u0628\u0623": 78,
 };
 
-// Fixed inline stylesheet shared by every static word page (ASCII). Mirrors the
-// design-spec-final `dlword` screen (cards, chips, RTL logical spacing).
-const CSS =
+// Legacy inline stylesheet (kept for the legal pages' older look). The shared
+// stylesheet for every static page is the app's own <style> block, extracted
+// from public/index.html at build time by appCss() below and committed as
+// public/css/app.css.
+const LEGACY_CSS =
   ":root{--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
   "@media(prefers-color-scheme:dark){:root{--bg:#0A0E1F;--tx:#ECEFFA;--mu:#A3ABC9;--ac:#9FB4FF;--ln:rgba(255,255,255,.13);--gb:rgba(255,255,255,.07)}}\n" +
   "*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.8}\n" +
@@ -127,6 +141,27 @@ const CSS =
   ".btn.o{background:transparent;color:var(--ac);border:1px solid var(--ac)}h2{font-size:20px;margin:6px 0 12px;text-align:center}\n" +
   ".chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.chip{display:inline-block;background:var(--gb);border:1px solid var(--ln);border-radius:999px;padding:10px 16px;font-size:20px}\n" +
   "footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}.fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:8px;font-size:14px}";
+
+// Extra rules the app renders with JS/markup the static pages also need (footer,
+// legal paragraphs, the standalone legal <main>). ASCII only.
+const STATIC_CSS_TAIL =
+  "\nfooter{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}\n" +
+  ".fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}\n" +
+  ".para{font-size:17px;line-height:1.95;margin:0 0 14px}\n" +
+  ".legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}\n" +
+  "h2{font-size:20px;margin:6px 0 12px;text-align:center}\n" +
+  ".chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}\n" +
+  ".chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}\n";
+
+// The shared static-page stylesheet: the app's own <style> block (single source
+// of truth) read at build time, plus the small tail above. Committed as
+// public/css/app.css and linked from every static page.
+export function appCss() {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  const m = html.match(/<style>([\s\S]*?)<\/style>/);
+  if (!m) throw new Error("public/index.html has no <style> block");
+  return m[1] + STATIC_CSS_TAIL;
+}
 
 const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -198,11 +233,86 @@ export function buildRecords(surahs) {
           .map((o, j) => ({ word: o.word, slug: o.slug, j }))
           .filter((o) => o.j !== idx)
           .map((o) => ({ word: o.word, slug: o.slug })),
+        prev: idx > 0 ? { word: sorted[idx - 1].word, slug: sorted[idx - 1].slug } : null,
         next: sorted[idx + 1] ? { word: sorted[idx + 1].word, slug: sorted[idx + 1].slug } : null,
       });
     });
   });
+  // Surah-level links for the static surah pages (prev/next surah + the surah
+  // slug shared with the word pages). Order follows the data order.
+  const seqOrder = [];
+  records.forEach((r) => {
+    if (!seqOrder.includes(r.surahSeq)) seqOrder.push(r.surahSeq);
+  });
+  records.forEach((r) => {
+    const i = seqOrder.indexOf(r.surahSeq);
+    const slugOf = (seq) => {
+      const first = records.find((x) => x.surahSeq === seq);
+      return seo.SURAH_SLUG[first.surahShort] || "surah-" + first.no;
+    };
+    r.surahSlug = slugOf(r.surahSeq);
+    r.surahPrev = i > 0 ? { no: records.find((x) => x.surahSeq === seqOrder[i - 1]).no, slug: slugOf(seqOrder[i - 1]) } : null;
+    r.surahNext = i < seqOrder.length - 1 ? { no: records.find((x) => x.surahSeq === seqOrder[i + 1]).no, slug: slugOf(seqOrder[i + 1]) } : null;
+  });
   return records;
+}
+
+// Shared head for every static page: fonts, the extracted app stylesheet and
+// the synchronous theme bootstrap (applied before first paint).
+function staticHead(o) {
+  return (
+    "<!doctype html>\n" +
+    '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n' +
+    '<meta name="theme-color" content="#F2F0E8">\n' +
+    "<title>" + o.title + "</title>\n" +
+    '<meta name="description" content="' + o.desc + '">\n' +
+    '<link rel="canonical" href="' + o.canonical + '">\n' +
+    '<meta property="og:type" content="' + (o.type || "website") + '"><meta property="og:title" content="' + o.ogTitle + '"><meta property="og:description" content="' + o.ogDesc + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + o.ogTitle + '"><meta name="twitter:description" content="' + o.ogDesc + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
+    '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
+    '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
+    '<script src="/theme-boot.js"></script>\n' +
+    "</head>\n"
+  );
+}
+
+const CHEV_R = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+const CHEV_L = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+const EXT =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
+const BOOK =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+
+// The app's existing count phrasing ("كلمة واحدة" / "كلمتان" / "n كلمات" /
+// "n كلمة"), escaped for this ASCII-only module.
+function countPhrase(n) {
+  if (n === 1) return A.ONE_WORD;
+  if (n === 2) return A.TWO_WORDS;
+  if (n <= 10) return n + A.WORDS_PLURAL;
+  return n + A.WORD_SINGULAR;
+}
+
+function staticFooter(year) {
+  return (
+    '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY +
+    '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' +
+    A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n"
+  );
+}
+
+// One surah group per surah, in data order, with its words in the same sorted
+// order the word pages use (ascending ayah).
+export function buildSurahs(records) {
+  const out = [];
+  records.forEach((r) => {
+    let s = out[out.length - 1];
+    if (!s || s.seq !== r.surahSeq) {
+      s = { seq: r.surahSeq, no: r.no, slug: r.surahSlug, name: r.surahShort, prev: r.surahPrev, next: r.surahNext, words: [] };
+      out.push(s);
+    }
+    s.words.push({ word: r.word, slug: r.slug, label: r.label });
+  });
+  return out;
 }
 
 export function renderWordPage(r) {
@@ -214,45 +324,80 @@ export function renderWordPage(r) {
       : String(r.word) + ": " + r.rawMeaning;
   const desc = esc(descMeaning) + " (" + esc(r.surahFull) + A.COMMA + A.AYAH + esc(r.label) + ")";
   const ayah = renderAyah(r.ayah);
-  const ext =
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
-  const book =
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
-  const chev =
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  const surahHref = "/surah/" + r.surahSlug + ".html";
+  const appHref = "/#/word/" + r.no + "-" + r.idx;
+  const pv = r.prev
+    ? { label: A.PREV_WORD, href: "/word/" + r.prev.slug + ".html" }
+    : r.surahPrev
+      ? { label: A.PREV_SURAH, href: "/surah/" + r.surahPrev.slug + ".html" }
+      : { label: A.PREV_SURAH, href: null };
+  const nx = r.next
+    ? { label: A.NEXT_WORD, href: "/word/" + r.next.slug + ".html" }
+    : r.surahNext
+      ? { label: A.NEXT_SURAH, href: "/surah/" + r.surahNext.slug + ".html" }
+      : { label: A.NEXT_SURAH, href: null };
+  const navBtn = (o, dir) => {
+    const inner = (dir === "pv" ? CHEV_R + " " : "") + o.label + (dir === "nx" ? " " + CHEV_L : "");
+    return o.href
+      ? '<a class="g pnb ' + dir + '" href="' + o.href + '">' + inner + "</a>"
+      : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
+  };
   const chips = r.others
-    .map((o) => '<a class="chip q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a>")
+    .map((o) => '<a class="g chip q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a>")
     .join("");
-  const nextBtn = r.next ? '<a class="btn o" href="/word/' + r.next.slug + '.html">' + A.NEXT + "</a>" : "";
   const others =
-    '<div class="card"><h2>' + A.OTHER_SAME + "</h2>" +
+    '<div class="g card"><h2>' + A.OTHER_SAME + "</h2>" +
     (chips ? '<div class="chips">' + chips + "</div>" : "") +
-    '<div class="acts">' + nextBtn +
-    '<a class="btn o" href="/#/surah/' + r.no + '">' + book + A.ALL_SURAH + "</a>" +
-    "</div></div>";
+    '<div class="acts"><a class="btn o g" href="/surah/' + r.surahSlug + '.html">' + BOOK + A.ALL_SURAH + "</a></div></div>";
   const year = new Date().getFullYear();
   return (
-    "<!doctype html>\n" +
-    '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n' +
-    "<title>" + title + "</title>\n" +
-    '<meta name="description" content="' + desc + '">\n' +
-    '<link rel="canonical" href="' + SITE + "/word/" + r.slug + '.html">\n' +
-    '<meta property="og:type" content="article"><meta property="og:title" content="' + ogTitle + '"><meta property="og:description" content="' + desc + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + ogTitle + '"><meta name="twitter:description" content="' + desc + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
-    '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
-    '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
-    "<style>" + CSS + "</style></head>\n" +
-    '<body><main><header><a class="logo q" href="/">' + A.LOGO + "</a>" +
-    '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + ext + A.APP + "</a></header>\n" +
-    '<a class="pill" href="/#/surah/' + r.no + '">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + chev + "</a>\n" +
+    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article" }) +
+    '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
+    '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
+    '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
+    '<a class="pill" href="/surah/' + r.surahSlug + '.html">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + CHEV_L + "</a>\n" +
+    '<div class="cw">' + navBtn(pv, "pv") +
     '<div class="cols">' +
-    '<div class="card"><div class="wd q">' + esc(r.word) + '</div><div class="ay q">' + ayah + "</div></div>" +
-    '<div class="card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + "</div></div>" +
-    "</div>\n" +
-    '<p class="m">' + esc(r.source) + "</p>\n" +
+    '<div class="g card"><div class="wd q">' + esc(r.word) + '</div><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
+    '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + "</div></div>" +
+    "</div>" + navBtn(nx, "nx") + "</div>\n" +
     others +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
-    "</main></body></html>"
+    "</div></body></html>"
+  );
+}
+
+export function renderSurahPage(s) {
+  const title = esc(s.name) + " | " + A.LOGO;
+  const count = countPhrase(s.words.length) + A.IN_THIS_SURAH;
+  const desc = esc(s.name) + A.COMMA + A.AYAH + count;
+  const sbtn = (o, dir) => {
+    const inner = dir === "pv" ? CHEV_R + " " + A.PREV_SURAH : A.NEXT_SURAH + " " + CHEV_L;
+    return o
+      ? '<a class="g pnb ' + dir + '" href="/surah/' + o.slug + '.html">' + inner + "</a>"
+      : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
+  };
+  const rows = s.words
+    .map(
+      (w) =>
+        '<a class="row" href="/word/' + w.slug + '.html">' +
+        '<span class="q w" style="flex:1;font-size:25px">' + esc(w.word) + "</span>" +
+        '<span class="m">' + A.AYAH + esc(w.label) + "</span>" + CHEV_L + "</a>"
+    )
+    .join("");
+  const year = new Date().getFullYear();
+  return (
+    staticHead({ title, desc, canonical: SITE + "/surah/" + s.slug + ".html", ogTitle: title, ogDesc: desc, type: "website" }) +
+    '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
+    '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
+    '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
+    '<div class="shd"><h1 class="q">' + esc(s.name) + '</h1><div class="sub">' + count + "</div>" +
+    '<div class="cw snav">' + sbtn(s.prev, "pv") +
+    '<div class="list g rs">' + rows + "</div>" +
+    sbtn(s.next, "nx") + "</div></div>\n" +
+    '<div class="acts"><a class="btn o g" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
+    '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
+    "</div></body></html>"
   );
 }
 
@@ -270,9 +415,10 @@ export function renderLegalPage(entry) {
     '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
     '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
-    '<link rel="stylesheet" href="/fonts/fonts.css">\n' +
-    "<style>" + CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style></head>\n" +
-    '<body><main><a href="/" class="q" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
+    '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
+    "<style>" + LEGACY_CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style>\n" +
+    '<script src="/theme-boot.js"></script></head>\n' +
+    '<body><main class="legal"><a href="/" class="q" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
     '<h1 class="q" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
     paras + "\n" +
     '<a class="b" href="/">' + A.HOME + "</a>\n" +
@@ -280,7 +426,7 @@ export function renderLegalPage(entry) {
   );
 }
 
-function buildSitemap(records) {
+function buildSitemap(records, surahList) {
   // The committed sitemap lists each surah's words in ascending ayah order
   // (the static pages keep the raw data order). Stable tie-break on data index.
   const ordered = records
@@ -293,6 +439,9 @@ function buildSitemap(records) {
     "<url><loc>" + SITE + "/</loc><priority>1.0</priority></url>\n";
   for (const r of ordered) {
     xml += "<url><loc>" + SITE + "/word/" + r.slug + ".html</loc><priority>0.6</priority></url>\n";
+  }
+  for (const s of surahList || []) {
+    xml += "<url><loc>" + SITE + "/surah/" + s.slug + ".html</loc><priority>0.5</priority></url>\n";
   }
   for (const entry of LEGAL) {
     xml += "<url><loc>" + SITE + "/" + entry.slug + "/</loc><priority>0.4</priority></url>\n";
@@ -342,13 +491,16 @@ export function buildSite(surahs, challengeState) {
   validateInput(surahs);
   const records = buildRecords(surahs);
   validateRecords(records);
+  const surahList = buildSurahs(records);
   const files = {};
   files["words.json"] = JSON.stringify(surahs, null, 2);
   files["challenge.json"] = JSON.stringify(challenge.sanitizePublicChallenge(challengeState), null, 1);
-  files["sitemap.xml"] = buildSitemap(records);
+  files["sitemap.xml"] = buildSitemap(records, surahList);
+  files["css/app.css"] = appCss();
   for (const r of records) files["word/" + r.slug + ".html"] = renderWordPage(r);
+  for (const s of surahList) files["surah/" + s.slug + ".html"] = renderSurahPage(s);
   for (const entry of LEGAL) files[entry.slug + "/index.html"] = renderLegalPage(entry);
-  return { files, hash: hashFiles(files), wordCount: records.length };
+  return { files, hash: hashFiles(files), wordCount: records.length, surahs: surahList };
 }
 
 export function writeSite(outDir, files, meta) {
