@@ -32,6 +32,8 @@ const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637
 const SOURCE = "\u0627\u0644\u0645\u0635\u062f\u0631"; // "the source" (removed line)
 const OTHER_WORDS = "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0646\u0641\u0633 \u0627\u0644\u0633\u0648\u0631\u0629"; // "other words from the same surah"
 const LOGO = "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646"; // "Ghareeb Al-Quran"
+const WORD_T_PRE = "\u0645\u0639\u0646\u0649 "; // "meaning of "
+const WORD_T_IN_SURAH = " \u0641\u064a \u0633\u0648\u0631\u0629 "; // " in surah "
 const HOME_TITLE =
   "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646 - \u0645\u0639\u0627\u0646\u064a \u0643\u0644\u0645\u0627\u062a \u062c\u0632\u0621 \u0639\u0645";
 const HOME_DESC =
@@ -189,13 +191,22 @@ test("K2: home carries one ASCII-only WebSite JSON-LD block", () => {
   assert.doesNotThrow(() => JSON.parse(blocks[0]));
 });
 
-test("K2: word pages use the stripped title/description patterns with equal og/twitter copies", () => {
+test("K2: word pages use the stripped title/description patterns with equal og/twitter copies", async () => {
+  const { loadRecords } = await import(pathToFileURL(path.join(ROOT, "tools", "arabic-proof.mjs")).href);
+  const { records } = loadRecords();
+  const strip = (s) => String(s == null ? "" : s).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "");
+  const seen = new Set();
   for (const f of wordFiles()) {
     const html = read("word/" + f);
     const title = titleOf(html);
-    assert.ok(title.startsWith(LOGO + " - "), f + " title starts with the brand");
-    assert.ok(/^.+ - .+ - .+$/.test(title), f + " title is brand - word - surah");
+    const r = records.find((x) => x.slug === f.replace(/\.html$/, ""));
+    assert.ok(r, f + " has a data record");
+    // The new pattern: "meaning of {word} in surah {surah} - brand", all
+    // diacritics stripped; the brand stays the suffix.
+    const expected = WORD_T_PRE + strip(r.word) + WORD_T_IN_SURAH + strip(r.surahShort) + " - " + LOGO;
+    assert.strictEqual(title, expected, f + " title follows the word-first pattern");
     assert.ok(!DIACRITIC_RE.test(title), f + " title is diacritics-stripped");
+    seen.add(title);
     const desc = metaName(html, "description");
     assert.ok(desc && desc.length > 0 && desc.length <= 155, f + " description is 1..155 chars");
     assert.ok(!DIACRITIC_RE.test(desc), f + " description is diacritics-stripped");
@@ -206,6 +217,7 @@ test("K2: word pages use the stripped title/description patterns with equal og/t
     // The body keeps the original diacritics.
     assert.ok(DIACRITIC_RE.test(html.slice(html.indexOf("<body"))), f + " body keeps the original Arabic");
   }
+  assert.strictEqual(seen.size, wordFiles().length, "every word page has a unique title");
 });
 
 test("K2: surah pages use the surah title/description patterns", () => {

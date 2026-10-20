@@ -193,6 +193,10 @@ function main() {
   // Pre-K1 labels that the K1/K2 rebuild replaced with new (non-data) labels:
   // an old meaning-label and an old next-nav label, identified by hash.
   const KNOWN_REMOVED_LABEL_IDS = new Set(["f169e956", "5cf7af74"]);
+  // The L4 word-page title pattern introduces one label run ("surah", 4
+  // chars) that also happens to occur as a substring of the data; it is a
+  // deliberate, agreed label, not a data change, so it is allowlisted here.
+  const KNOWN_ADDED_DATA_RUN_IDS = new Set(["fd27741f"]);
   const tmp = path.join(os.tmpdir(), "ghareeb-phase-l-temp-proof");
   let missing = 0, extra = 0, removedUnexpected = 0;
   const extraIds = [], runMissingIds = [], removedUnexpectedIds = [], removedAllowedIds = [];
@@ -210,7 +214,7 @@ function main() {
     const preData = new Set([...baselineRuns].filter((r) => dataRuns.has(r)));
     const curData = new Set([...currentWordRuns].filter((r) => dataRuns.has(r)));
     for (const r of preData) if (!curData.has(r)) { missing++; runMissingIds.push(hash8(r)); }
-    for (const r of curData) if (!preData.has(r)) { extra++; extraIds.push(hash8(r)); }
+    for (const r of curData) if (!preData.has(r) && !KNOWN_ADDED_DATA_RUN_IDS.has(hash8(r))) { extra++; extraIds.push(hash8(r)); }
 
     const allowedRemoved = new Set([...dataRuns, ...sourceRuns, ...runsOf(OPEN_APP), ...runsOf(SOURCE_LABEL)]);
     for (const r of baselineRuns) {

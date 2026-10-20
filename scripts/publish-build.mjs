@@ -351,7 +351,7 @@ export function buildSurahs(records) {
 export function renderWordPage(r) {
   // K2: title/description copies are diacritics-stripped copies of the page data;
   // the body keeps the original diacritics.
-  const title = A.LOGO + " - " + stripDiacritics(r.word) + " - " + stripDiacritics(r.surahShort);
+  const title = "\u0645\u0639\u0646\u0649 " + stripDiacritics(r.word) + " \u0641\u064a \u0633\u0648\u0631\u0629 " + stripDiacritics(r.surahShort || r.surahName || r.surahFull) + " - " + A.LOGO;
   const ogTitle = title;
   const desc = cutAtWord(stripDiacritics(r.rawMeaning), 155);
   const wordUrl = SITE + "/word/" + r.slug + ".html";
