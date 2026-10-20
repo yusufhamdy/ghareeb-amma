@@ -69,6 +69,19 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    if (event.request.mode === 'navigate' && event.request.url.startsWith(self.location.origin)) {
+        event.respondWith(
+            fetch(event.request).then(res => {
+                if (res && res.ok) {
+                    const copy = res.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(event.request, copy)).catch(() => {});
+                }
+                return res;
+            }).catch(() => caches.match(event.request).then(cached => cached || caches.match('/')))
+        );
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then(cached => cached || fetch(event.request))
     );

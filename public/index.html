@@ -359,7 +359,7 @@ function rnd(){const r=route();let w;do{w=W[Math.floor(Math.random()*W.length)]}
 const SKIPICO='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:scaleX(-1)"><path d="M5 4l10 8-10 8zM19 5v14"/></svg>';
 let lastPick=null;
 function sfx(n){try{if(typeof SND!=='undefined'&&SND&&SND[n])SND[n]()}catch(e){}}
-try{if(document.fonts)['100px "Amiri Quran"','40px "IBM Plex Sans Arabic"','40px "IBM Plex Mono"'].forEach(f=>document.fonts.load(f))}catch(e){}
+try{if(document.fonts)['100px "Amiri Quran"','40px "IBM Plex Sans Arabic"','40px "IBM Plex Mono"'].forEach(f=>document.fonts.load(f).catch(()=>{}))}catch(e){}
 let rouAbort=null,qT=0;
 function rouOpen(pool,onPick){
   const list=(pool&&pool.length?pool:W).filter(w=>w&&w.word);
