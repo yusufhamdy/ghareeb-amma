@@ -110,3 +110,93 @@ test("L2: offline reload of the app shell renders with zero pageerrors", async (
   assert.ok(offlineRendered, "offline reload of / must render the app shell from cache");
   assert.deepStrictEqual(pageErrors, [], "zero pageerrors across the whole run");
 });
+
+test("L3: /css/app.css and /theme-boot.js are precached and served offline", async (t) => {
+  const browser = await launchBrowser(t);
+  if (!browser) return;
+
+  const server = staticServer(PUBLIC);
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const BASE = "http://127.0.0.1:" + server.address().port;
+  t.after(async () => { await browser.close().catch(() => {}); server.close(); });
+
+  const swText = fs.readFileSync(path.join(PUBLIC, "sw.js"), "utf8");
+  const cacheName = (swText.match(/CACHE_NAME\s*=\s*'([^']+)'/) || [])[1] || "";
+  assert.match(cacheName, /^ghareeb-pwa-v\d+$/, "CACHE_NAME stays in the ghareeb-pwa-vN pattern, no bump");
+
+  const ctx = await browser.newContext();
+  await ctx.route("**/gstatic.com/firebasejs/**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/javascript", body: "export default {};\n" }));
+  const page = await ctx.newPage();
+  t.after(() => ctx.close().catch(() => {}));
+
+  await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#q", { state: "attached", timeout: 12000 });
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; }).catch(() => {});
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, { timeout: 15000 }).catch(() => {});
+
+  // The install-time precache list must hold the stylesheet and theme boot.
+  const precached = await page.evaluate(async (name) => {
+    const c = await caches.open(name);
+    const keys = (await c.keys()).map((r) => new URL(r.url).pathname);
+    return { hasCss: keys.includes("/css/app.css"), hasBoot: keys.includes("/theme-boot.js") };
+  }, cacheName);
+  assert.ok(precached.hasCss, cacheName + " must precache /css/app.css");
+  assert.ok(precached.hasBoot, cacheName + " must precache /theme-boot.js");
+
+  // Offline: both must be served from the cache (network is gone).
+  await ctx.setOffline(true);
+  const served = await page.evaluate(async () => {
+    const get = async (u) => { try { const r = await fetch(u); return { ok: r.ok, status: r.status, len: (await r.text()).length }; } catch (e) { return { ok: false, status: 0, len: 0 }; } };
+    return { css: await get("/css/app.css"), boot: await get("/theme-boot.js") };
+  });
+  await ctx.setOffline(false).catch(() => {});
+  assert.ok(served.css.ok && served.css.len > 0, "/css/app.css must be served from cache offline");
+  assert.ok(served.boot.ok && served.boot.len > 0, "/theme-boot.js must be served from cache offline");
+});
+
+test("L3: activation deletes caches left by other pwa versions", async (t) => {
+  const browser = await launchBrowser(t);
+  if (!browser) return;
+
+  const server = staticServer(PUBLIC);
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const BASE = "http://127.0.0.1:" + server.address().port;
+  t.after(async () => { await browser.close().catch(() => {}); server.close(); });
+
+  const swText = fs.readFileSync(path.join(PUBLIC, "sw.js"), "utf8");
+  const cacheName = (swText.match(/CACHE_NAME\s*=\s*'([^']+)'/) || [])[1] || "";
+
+  // Simulate an upgrade: plant a cache from an older version on the origin
+  // *before* the service worker ever registers (via a same-origin page that
+  // does not register one), then load the app. The activate handler must
+  // delete every ghareeb-pwa-* cache that is not the current version.
+  const ctx2 = await browser.newContext();
+  await ctx2.route("**/gstatic.com/firebasejs/**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/javascript", body: "export default {};\n" }));
+  const page2 = await ctx2.newPage();
+  t.after(() => ctx2.close().catch(() => {}));
+
+  await page2.goto(BASE + "/manifest.json", { waitUntil: "domcontentloaded" });
+  const planted = await page2.evaluate(async () => {
+    const old = await caches.open("ghareeb-pwa-v18");
+    await old.put("/stale-old-version", new Response("old"));
+    return caches.keys();
+  });
+  assert.ok(planted.includes("ghareeb-pwa-v18"), "old-version cache must exist before activation");
+
+  await page2.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+  await page2.evaluate(async () => { await navigator.serviceWorker.ready; }).catch(() => {});
+  await page2.waitForFunction(async (keep) => {
+    const names = await caches.keys();
+    return names.includes(keep) && !names.includes("ghareeb-pwa-v18");
+  }, cacheName, { timeout: 15000 }).catch(() => {});
+
+  const after = await page2.evaluate(async (keep) => {
+    const names = await caches.keys();
+    return { names, hasCurrent: names.includes(keep) };
+  }, cacheName);
+  assert.ok(after.hasCurrent, "current cache " + cacheName + " must survive activation");
+  assert.ok(!after.names.includes("ghareeb-pwa-v18"), "old-version cache must be deleted on activation");
+});
