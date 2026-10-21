@@ -152,7 +152,14 @@ const STATIC_CSS_TAIL =
   ".legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}\n" +
   "h2{font-size:20px;margin:6px 0 12px;text-align:center}\n" +
   ".chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}\n" +
-  ".chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}\n";
+  ".chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}\n" +
+  // M2: the app stacks a card's own children with its flex gap (its cards are
+  // flex columns, e.g. .cols .card{...gap:8px} in the app's <style>). The
+  // static "other words" card is a plain .card (not inside .cols), so it must
+  // carry the same internal stacking; the app's own inter-block gap is 14px.
+  // The more specific .cols .card rule above still wins for the word/meaning
+  // cards, so the app's look is untouched.
+  ".card{display:flex;flex-direction:column;gap:14px}\n";
 
 // The shared static-page stylesheet: the app's own <style> block (single source
 // of truth) read at build time, plus the small tail above. Committed as

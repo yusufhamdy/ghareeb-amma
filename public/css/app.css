@@ -269,3 +269,4 @@ footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-
 h2{font-size:20px;margin:6px 0 12px;text-align:center}
 .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}
+.card{display:flex;flex-direction:column;gap:14px}
