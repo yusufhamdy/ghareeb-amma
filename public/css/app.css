@@ -192,6 +192,18 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .searching .acts, .searching .strip{height:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
 .searching .acts, .searching .strip[aria-hidden="true"]{display:block}
 
+/* N2: HOME action row only (.hacts) - the two buttons hugged the right edge of
+   the full-width row (RTL flex-start) and left the left half empty, so the row
+   looked unbalanced against the full-width search box and social card, and at
+   820px it was still not centered (only >=1025px was). Phones (<=600px): the
+   buttons share the row's width equally, side by side, content centered.
+   Tablet/desktop (>=601px): their natural widths, centered in the column.
+   Nothing here touches the collapse: .acts still carries the transition and
+   the .searching rules above, so height/margin/padding/opacity still fold to 0
+   and overflow stays visible at rest. */
+@media(max-width:600px){.acts.hacts{flex-wrap:nowrap}.acts.hacts .btn{flex:1 1 0;min-width:0}.acts.hacts .btn:not(.o){border:1px solid transparent}}
+@media(min-width:601px){.acts.hacts{justify-content:center}}
+
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
 .shade h1+.sub{margin-top:8px}
