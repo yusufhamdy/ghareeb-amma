@@ -215,6 +215,18 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .searching .acts, .searching .strip{height:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
 .searching .acts, .searching .strip[aria-hidden="true"]{display:block}
 
+/* N2: HOME action row only (.hacts) - the two buttons hugged the right edge of
+   the full-width row (RTL flex-start) and left the left half empty, so the row
+   looked unbalanced against the full-width search box and social card, and at
+   820px it was still not centered (only >=1025px was). Phones (<=600px): the
+   buttons share the row's width equally, side by side, content centered.
+   Tablet/desktop (>=601px): their natural widths, centered in the column.
+   Nothing here touches the collapse: .acts still carries the transition and
+   the .searching rules above, so height/margin/padding/opacity still fold to 0
+   and overflow stays visible at rest. */
+@media(max-width:600px){.acts.hacts{flex-wrap:nowrap}.acts.hacts .btn{flex:1 1 0;min-width:0}.acts.hacts .btn:not(.o){border:1px solid transparent}}
+@media(min-width:601px){.acts.hacts{justify-content:center}}
+
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
 .shade h1+.sub{margin-top:8px}
@@ -344,7 +356,7 @@ if(p==='surahs')return `${head()}<div><h1>السور</h1><div class="sub">${S.le
 if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();const si=S.indexOf(s),sp=si>0?S[si-1]:null,sn=si<S.length-1?S[si+1]:null;const sbtn=(o,dir)=>{const inner=dir==='pv'?CIc+' السورة السابقة':'السورة التالية '+CIcL;return o?`<a class="g pnb ${dir}" href="#/surah/${o.num}">${inner}</a>`:`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`};return `${head()}<div class="shd"><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div><div class="cw snav">${sbtn(sp,'pv')}<div class="list g rs">${s.w.map(wrow).join('')}</div>${sbtn(sn,'nx')}</div></div><a class="btn o g" href="#/surahs">${BI.bk}كل السور</a>`;}
 if(p==='word'){const w=byId(a);if(!w)return nf();return `${head()}<a class="pill" href="#/surah/${w.s.num}">${esc(w.s.name)} · آية ${esc(w.ay.label)}${CIcL}</a>${wordNav(w)}<div class="acts v3"><a class="btn o g" href="#/surah/${w.s.num}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>كلمات أخرى من نفس السورة</a><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة أخرى</button><button class="btn o" data-a="card" data-id="${w.id}">${BI.dl}حفظ كصورة</button></div>`;}
 if(p==='challenge'||p==='quiz')return `${head()}<div class="g card"><h1>${p==='quiz'?'اختبر نفسك':'تحدي غريب عمّ'}</h1><div class="sub" style="margin-top:8px">قيد الإعداد.</div></div>`;
-return `${head()}<div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div>`;
+return `${head()}<div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts hacts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div>`;
 function nf(){return `${head()}<div class="g card">الصفحة غير موجودة. <a href="#/" style="color:var(--ac)">العودة إلى الرئيسية</a></div>`}}
 function route(){const h=location.hash.replace(/^#\/?/,'').split('/');return[h[0]||'home',decodeURIComponent(h[1]||'')]}
 // The `searching` class is the single source of truth for the home search state:
