@@ -434,17 +434,20 @@ function dayView(n){const c=CH.find(x=>x.d==n);if(!c)return _view(['word','x']);
 // ---- C3: Web Audio sound module (4 short, theme-aware cues, lazily created) ----
 const SND=(()=>{let ctx=null;const shade=()=>document.body.classList.contains('shade');
 const ac=()=>{if(!set.snd)return null;try{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}catch(e){return null}};
-const sch=(c,o)=>{const os=c.createOscillator(),g=c.createGain();os.type=o.t;os.frequency.value=o.f;const t=c.currentTime+(o.at||0);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(o.g||.06,t+(o.ak||.012));g.gain.exponentialRampToValueAtTime(.0001,t+o.d);os.connect(g);g.connect(c.destination);os.start(t);os.stop(t+o.d+.03)};
+const sch=(c,o)=>{const os=c.createOscillator(),g=c.createGain();os.type=o.t;os.frequency.value=o.f;const t=c.currentTime+(o.at||0);if(o.f2)os.frequency.exponentialRampToValueAtTime(o.f2,t+(o.sl||o.d));g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(o.g||.06,t+(o.ak||.012));g.gain.exponentialRampToValueAtTime(.0001,t+o.d);os.connect(g);g.connect(c.destination);os.start(t);os.stop(t+o.d+.03)};
 const BADG=.1045;
+const GDG=.057,SDG=.05,GUG=.093,SUG=.0775;
 // every cue is a builder that only schedules nodes on the AudioContext it is given,
 // so the same code renders live or offline (OfflineAudioContext) for loudness checks.
 const CUES={
 ok:{glass:c=>{sch(c,{t:'sine',f:660,d:.13,g:.06});sch(c,{t:'sine',f:880,d:.14,at:.10,g:.06})},shade:c=>{sch(c,{t:'triangle',f:440,d:.13,g:.06});sch(c,{t:'triangle',f:587,d:.14,at:.10,g:.06})}},
 bad:{glass:c=>{sch(c,{t:'sine',f:392,d:.11,ak:.01,g:BADG});sch(c,{t:'sine',f:311,d:.11,at:.11,ak:.01,g:BADG})},shade:c=>{sch(c,{t:'triangle',f:392,d:.11,ak:.01,g:BADG});sch(c,{t:'triangle',f:311,d:.11,at:.11,ak:.01,g:BADG})}},
 tick:{glass:c=>{sch(c,{t:'sine',f:1400,d:.035,g:.03})},shade:c=>{sch(c,{t:'square',f:900,d:.035,g:.035})}},
-land:{glass:c=>{sch(c,{t:'sine',f:880,d:.16,g:.05})},shade:c=>{sch(c,{t:'triangle',f:587,d:.16,g:.05})}}};
+land:{glass:c=>{sch(c,{t:'sine',f:880,d:.16,g:.05})},shade:c=>{sch(c,{t:'triangle',f:587,d:.16,g:.05})}},
+done:{glass:c=>{sch(c,{t:'sine',f:523,d:.11,ak:.01,g:GDG});sch(c,{t:'sine',f:659,at:.11,d:.11,ak:.01,g:GDG});sch(c,{t:'sine',f:784,at:.22,d:.13,ak:.01,g:GDG})},shade:c=>{sch(c,{t:'triangle',f:523,d:.11,ak:.01,g:SDG});sch(c,{t:'triangle',f:659,at:.11,d:.11,ak:.01,g:SDG});sch(c,{t:'triangle',f:784,at:.22,d:.13,ak:.01,g:SDG})}},
+undo:{glass:c=>{sch(c,{t:'sine',f:440,f2:330,sl:.14,d:.16,ak:.01,g:GUG})},shade:c=>{sch(c,{t:'triangle',f:440,f2:330,sl:.14,d:.16,ak:.01,g:SUG})}}};
 const play=n=>{const c=ac();if(!c)return;try{CUES[n][shade()?'shade':'glass'](c)}catch(e){}};
-return{ok:()=>play('ok'),bad:()=>play('bad'),tick:()=>play('tick'),land:()=>play('land'),cue:(n,t,c)=>CUES[n][t||(shade()?'shade':'glass')](c)}})();
+return{ok:()=>play('ok'),bad:()=>play('bad'),tick:()=>play('tick'),land:()=>play('land'),done:()=>play('done'),undo:()=>play('undo'),cue:(n,t,c)=>CUES[n][t||(shade()?'shade':'glass')](c)}})();
 // D3: the day screen no longer spins a roulette; opening a card marks that word viewed.
 function qStart(){const sh=a=>QCORE.shuffle(a);Q={i:0,s:0,a:null,qs:sh(W).slice(0,Math.min(10,W.length)).map(w=>({w,o:sh(QCORE.pickDistractors(w,W,3).concat([w]))}))}}
 function qView(){if(!Q)qStart();const n=Q.qs.length;if(Q.i>=n)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px"><h1>نتيجتك</h1>${ring(Q.s,n,96)}<div class="sub">${Q.s} من ${n}</div><div class="acts"><button class="btn" data-a="qre">اختبار جديد</button><a class="btn o" href="#/">الرئيسية</a></div></div>`;const q=Q.qs[Q.i],a=Q.a;return `${head()}<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="font-size:24px">اختبر نفسك</h1><span class="m">${Q.i+1} من ${n}</span></div><div class="bar"><i style="width:${Q.i/n*100}%"></i></div><div class="g card"><div class="m">ما معنى الكلمة المظللة؟</div><div class="ay q">${AY(q.w.ay)}</div></div><div class="opts">${q.o.map((x,i)=>`<button class="g opt${a!==null?(x===q.w?' ok':i===a?' bad':''):''}" data-o="${i}"${a!==null?' disabled':''}><span class="ogi" aria-hidden="true">${a!==null?(x===q.w?OKI:i===a?BADI:''):''}</span>${esc(x.mean)}</button>`).join('')}</div>${`<div class="acts"${a===null?' style="visibility:hidden"':''}><button class="btn" data-a="qn">${Q.i+1<n?'التالي'+BI.fw:'النتيجة'}</button><a class="btn o" href="#/word/${q.w.id}">افتح الكلمة</a></div>`}`}
@@ -486,7 +489,7 @@ if(d.st){if(!t.closest('#sh'))return;set.style=d.st;LS.set(set);applySet();sheet
 if(d.o!==undefined&&Q&&Q.a===null){Q.a=+d.o;const q=Q.qs[Q.i];if(q.o[Q.a]===q.w){Q.s++;sfx('ok');navigator.vibrate&&navigator.vibrate(15)}else sfx('bad');rr();return}
 if(d.a==='qn'){Q.i++;Q.a=null;render();return}
 if(d.a==='qre'){qStart();render();return}
-if(d.a==='done'){const p=PR.get(),n=+d.d;if(!isDayUnlocked(n)){toast(lockMsg(n));return}const has=p.done.includes(n);if(!has&&!viewedAll(n)){toast('اقرأ معاني كل كلمات اليوم أولًا');return}p.done=has?p.done.filter(z=>z!==n):p.done.concat(n);PR.set(p);refreshDay();return}
+if(d.a==='done'){const p=PR.get(),n=+d.d;if(!isDayUnlocked(n)){toast(lockMsg(n));return}const has=p.done.includes(n);if(!has&&!viewedAll(n)){toast('اقرأ معاني كل كلمات اليوم أولًا');return}p.done=has?p.done.filter(z=>z!==n):p.done.concat(n);PR.set(p);sfx(has?'undo':'done');refreshDay();return}
 if(d.a==='dword'){if(!DG)return;const c=CH.find(x=>x.d===DG.n);if(!c)return;const ws=dayWords(c),i=+d.i,w=ws[i];if(!w)return;if(DG.exp.has(i)){DG.exp.delete(i)}else{DG.exp.add(i);markWordOpened(c.d,w)}const open=DG.exp.has(i);t.classList.toggle('open',open);t.setAttribute('aria-expanded',open?'true':'false');refreshDay();return}
 if(d.a==='reset'){if(confirm('هل تريد مسح تقدمك في التحدي؟')){PR.set({done:[]});VW.set({});render()}return}
 if(d.a==='lock'){toast(lockMsg(+d.d));return}
