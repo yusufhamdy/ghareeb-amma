@@ -43,11 +43,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Unit tests
-        run: npm test
-
       - name: Install Playwright browser (client verification)
         run: npx playwright install --with-deps chromium
+
+      - name: Unit tests
+        run: npm test
 
       - name: Static checks (fonts, redirects, sitemap, secrets)
         run: node scripts/ci/checks.mjs
