@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v23';
+const CACHE_NAME = 'ghareeb-pwa-v24';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -36,55 +36,67 @@ self.addEventListener('message', event => {
     }
 });
 
+function cacheKey(req) {
+    const u = new URL(req.url);
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+}
+
+function putInCache(req, res) {
+    if (!res || !res.ok || res.type !== 'basic') return;
+    const copy = res.clone();
+    caches.open(CACHE_NAME).then(c => c.put(cacheKey(req), copy)).catch(() => {});
+}
+
+async function fromCache(req) {
+    return (await caches.match(cacheKey(req))) ||
+           (await caches.match(req, { ignoreSearch: true }));
+}
+
+const OFFLINE_HTML = '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>غير متصل</title><p style="font-family:sans-serif;text-align:center;margin-top:40vh">لا يوجد اتصال بالإنترنت</p></html>';
+
 self.addEventListener('fetch', event => {
-    if (event.request.method !== 'GET') return;
+    const req = event.request;
+    if (req.method !== 'GET') return;
 
-    const url = new URL(event.request.url);
+    const url = new URL(req.url);
+    if (url.origin !== self.location.origin) return;
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return;
 
-    // Never intercept the admin area: always pass through to the network,
-    // no caching (avoids serving a stale/unauthenticated admin shell).
-    if (url.origin === self.location.origin &&
-        (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
-        return;
-    }
-
-    const isAppFile = url.origin === self.location.origin &&
-        (url.pathname === '/' ||
-         url.pathname === '/index.html' ||
-         url.pathname === '/words.json' ||
-         url.pathname === '/challenge.json' ||
-         url.pathname.endsWith('.js') ||
-         url.pathname.endsWith('.css'));
-
-    if (isAppFile) {
+    if (req.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request, { cache: 'no-cache' })
-                .then(response => {
-                    if (response && response.ok) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                    }
-                    return response;
-                })
-                .catch(() => caches.match(event.request))
+            fetch(req)
+                .then(res => { putInCache(req, res); return res; })
+                .catch(async () =>
+                    (await fromCache(req)) ||
+                    (await caches.match('/index.html')) ||
+                    (await caches.match('/')) ||
+                    new Response(OFFLINE_HTML, {
+                        status: 503,
+                        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                    })
+                )
         );
         return;
     }
 
-    if (event.request.mode === 'navigate' && event.request.url.startsWith(self.location.origin)) {
+    const isAppFile =
+        url.pathname === '/words.json' ||
+        url.pathname === '/challenge.json' ||
+        url.pathname.endsWith('.js') ||
+        url.pathname.endsWith('.css');
+
+    if (isAppFile) {
         event.respondWith(
-            fetch(event.request).then(res => {
-                if (res && res.ok) {
-                    const copy = res.clone();
-                    caches.open(CACHE_NAME).then(c => c.put(event.request, copy)).catch(() => {});
-                }
-                return res;
-            }).catch(() => caches.match(event.request).then(cached => cached || caches.match('/')))
+            fetch(req, { cache: 'no-cache' })
+                .then(res => { putInCache(req, res); return res; })
+                .catch(async () => (await fromCache(req)) || Response.error())
         );
         return;
     }
 
     event.respondWith(
-        caches.match(event.request).then(cached => cached || fetch(event.request))
+        caches.match(req).then(cached => cached || fetch(req))
     );
 });
