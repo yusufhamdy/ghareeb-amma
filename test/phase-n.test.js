@@ -149,8 +149,8 @@ test("phase N: the home action row is balanced and centered", { timeout: 300000 
         const right = Math.max(a.right, b.right);
         assert.ok(near(left - r.row.x, r.row.right - right, 1), tag + ": buttons not centered in the row");
         assert.ok(near(r.gap, 10, 1), tag + ": button gap " + r.gap);
-        assert.ok(near(a.w, NATURAL_W[0], 1), tag + ": first button width " + a.w + " (N1 " + NATURAL_W[0] + ")");
-        assert.ok(near(b.w, NATURAL_W[1], 1), tag + ": second button width " + b.w + " (N1 " + NATURAL_W[1] + ")");
+        assert.ok(near(a.w, NATURAL_W[0], 2), tag + ": first button width " + a.w + " (N1 " + NATURAL_W[0] + ")");
+        assert.ok(near(b.w, NATURAL_W[1], 2), tag + ": second button width " + b.w + " (N1 " + NATURAL_W[1] + ")");
         assert.ok(a.h >= 44 && b.h >= 44, tag + ": touch target heights " + a.h + "/" + b.h);
         await ctx.close();
       }

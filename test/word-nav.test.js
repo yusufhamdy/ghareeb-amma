@@ -21,11 +21,12 @@ const test = require("node:test");
 const assert = require("node:assert");
 const fs = require("fs");
 const http = require("http");
+const os = require("os");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC = path.join(ROOT, "public");
-const REPORT = "C:/Users/Yusuf/AppData/Local/Temp/opencode/step4-walk-report.json";
+const REPORT = path.join(os.tmpdir(), "step4-walk-report.json");
 
 const AR = {
   prevWord: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629",           // الكلمة السابقة
