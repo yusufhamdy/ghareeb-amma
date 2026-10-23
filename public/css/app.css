@@ -178,9 +178,9 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
 /* F3: the filled draw button inverts with its outlined siblings on hover/focus */
 @media(hover:hover){
-.acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.drawfx:hover,.drawfx:focus-visible,a.card:focus-visible>.drawfx{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
 .acts:has([data-a="rnd"]) .btn.o:hover,.acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--ac);color:var(--btf);border-color:var(--ac);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}
-.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.shade .drawfx:hover,.shade .drawfx:focus-visible,.shade a.card:focus-visible>.drawfx{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 }
 /* F4: social strip gets a very light hover shadow, never a movement */
