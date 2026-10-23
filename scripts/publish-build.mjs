@@ -410,13 +410,15 @@ export function renderWordPage(r) {
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
     '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
+    "<main>" +
     '<a class="pill" href="/surah/' + r.surahSlug + '.html">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + CHEV_L + "</a>\n" +
     '<div class="cw">' + navBtn(pv, "pv") +
     '<div class="cols">' +
-    '<div class="g card"><div class="wd q">' + esc(r.word) + '</div><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
+    '<div class="g card"><h1 class="wd q">' + esc(r.word) + '</h1><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
     '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + "</div></div>" +
     "</div>" + navBtn(nx, "nx") + "</div>\n" +
     others +
+    "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</div></body></html>"
   );
@@ -453,11 +455,13 @@ export function renderSurahPage(s) {
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
     '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
+    "<main>" +
     '<div class="shd"><h1 class="q">' + esc(s.name) + '</h1><div class="sub">' + count + "</div>" +
     '<div class="cw snav">' + sbtn(s.prev, "pv") +
     '<div class="list g rs">' + rows + "</div>" +
     sbtn(s.next, "nx") + "</div></div>\n" +
     '<div class="acts"><a class="btn o g" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
+    "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</div></body></html>"
   );
