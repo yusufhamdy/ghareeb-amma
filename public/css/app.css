@@ -197,22 +197,38 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(max-width:600px){.acts.hacts{flex-wrap:nowrap}.acts.hacts .btn{flex:1 1 0;min-width:0}.acts.hacts .btn:not(.o){border:1px solid transparent}}
 @media(min-width:601px){.acts.hacts{justify-content:center}}
 
-/* P1: one interaction system, independent of where an element sits.
-   Tier 1 - filled buttons (.btn without .o; the day "done" button keeps it in
-   its undo .o state too): glass keeps its fill and gains a rim + accent glow,
-   shade inverts to the outlined surface. Press scale comes from B4 above.
-   Tier 2 - outlined buttons (.btn.o): the generic B4 hover shadow + press
-   scale only, no colour inversion.
-   Tier 3 - rows, cards, prev/next, day dots: unchanged (B2-B4, D3).
-   Tier 4 - small text links and pills: a subtle shift toward the accent and
-   a light press (opacity only, so nothing moves). Logos get no effect.
+/* P1: one interaction rule per design style, independent of where an element sits.
+   Buttons, glass - never change colour. Filled .btn (and the day "done" button in
+   its undo .o state too) gains a rim + accent glow; outlined .btn.o gets the
+   generic B4 hover shadow. Press is the B4 scale.
+   Buttons, shade - every button inverts on hover and focus-visible: filled .btn
+   becomes the outlined surface, outlined .btn.o (the done button's undo state
+   included) becomes filled. The filled button's outline is an inset 1px
+   box-shadow, not a real border, so hover never changes layout; outlined
+   buttons only recolour the border they already have. Colour transitions with
+   the background. Press is the shade B4 scale.
+   Rows and cards (rows, .pnb, day dots, .dcard, the challenge card): their B2-B4
+   / D3 hovers, glass surah rows get the plain-list tint, and every one gets a
+   light opacity press (nothing moves).
+   Small text links and pills: a subtle shift toward the accent and an opacity
+   press. Logos get no effect.
    Every :hover lives inside @media(hover:hover) so nothing sticks on touch. */
+.shade .btn{transition:transform .25s,border-color .25s,background .25s,box-shadow .25s,color .25s}
 @media(hover:hover){
 :is(.btn:not(.o),.btn[data-a="done"]):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.shade :is(.btn:not(.o),.btn[data-a="done"]):hover{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.shade .btn:not(.o):hover{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
+.shade .btn.o:hover{background:var(--tx);color:var(--bg)!important;border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 }
 :is(.btn:not(.o),.btn[data-a="done"]):focus-visible,a.card:focus-visible>.btn:not(.o){box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.shade :is(.btn:not(.o),.btn[data-a="done"]):focus-visible,.shade a.card:focus-visible>.btn:not(.o){background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.shade .btn:not(.o):focus-visible,.shade a.card:focus-visible>.btn:not(.o){background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
+/* the !important beats the settings sheet's inline accent text on its outlined "done" button */
+.shade .btn.o:focus-visible{background:var(--tx);color:var(--bg)!important;border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.list.sl a.row{position:relative;isolation:isolate}
+.list.sl a.row:before{content:"";position:absolute;inset:0 -8px;z-index:-1;border-radius:16px;background:color-mix(in srgb,var(--ac) 10%,transparent);opacity:0;pointer-events:none;transition:opacity .25s}
+@media(hover:hover){.list.sl a.row:hover:before{opacity:1}}
+.shade .list.sl a.row:before{display:none}
+:is(a.row,a.pnb,a.dy,button.dy,.dcard,a.card):active{opacity:.8}
+.dy.lk:active{opacity:.5}
 :is(a.pill,.fl a,a.m,.card>a:not([class])){transition:color .2s,opacity .15s}
 @media(hover:hover){:is(a.pill,.fl a,a.m,.card>a:not([class])):hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}
 :is(a.pill,.fl a,a.m,.card>a:not([class])):active{opacity:.7}
@@ -278,7 +294,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}

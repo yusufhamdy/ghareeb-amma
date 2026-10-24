@@ -175,7 +175,7 @@ const probeBg = (page, name) => page.evaluate((v) => {
   const c = getComputedStyle(d).backgroundColor; d.remove(); return c;
 }, name);
 
-test("F3: the glass filled draw button keeps its fill and swaps only its shadow; outlined siblings invert (AA in both themes)", { timeout: 120000 }, async (t) => {
+test("F3: glass buttons never change colour on hover (filled swaps its shadow, outlined gets the generic shadow); every shade button inverts", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
@@ -207,6 +207,7 @@ test("F3: the glass filled draw button keeps its fill and swaps only its shadow;
     const page = await shade.page(1440, 900);
     await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
     const tx = await probeBg(page, "--tx");
+    const bg = await probeBg(page, "--bg");
     const f0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
     await page.hover('#app [data-a="rnd"]');
     await page.waitForTimeout(340);
@@ -218,8 +219,8 @@ test("F3: the glass filled draw button keeps its fill and swaps only its shadow;
     await page.waitForTimeout(340);
     const o1 = await page.$eval(oSel, (e) => ({ bg: getComputedStyle(e).backgroundColor, c: getComputedStyle(e).color, sh: getComputedStyle(e).boxShadow }));
     assert.notEqual(o1.sh, o0.sh, "shade: outlined button gets the generic hover shadow");
-    assert.notEqual(o1.bg, tx, "shade: outlined sibling does not invert to the filled surface");
-    assert.equal(o1.c, o0.c, "shade: outlined sibling keeps its text colour (no inversion)");
+    assert.equal(o1.bg, tx, "shade: outlined sibling inverts to the filled surface");
+    assert.equal(o1.c, bg, "shade: outlined sibling's text inverts to the page background colour");
   } finally { await shade.close(); }
 
   const rmv = await setup(t, { reducedMotion: "reduce" });
@@ -239,7 +240,7 @@ test("F3: the glass filled draw button keeps its fill and swaps only its shadow;
 // ---------------------------------------------------------------------------
 // F4: social card gets a shadow on hover without moving
 // ---------------------------------------------------------------------------
-test("F4: social strip hover adds a shadow and never moves; icon hover intact", { timeout: 120000 }, async (t) => {
+test("F4: the social strip container has no hover effect and never moves; the icon glow stays intact", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
