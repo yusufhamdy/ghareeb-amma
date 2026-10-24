@@ -146,8 +146,9 @@ const LEGACY_CSS =
 // Extra rules the app renders with JS/markup the static pages also need (footer,
 // legal paragraphs, the standalone legal <main>). ASCII only.
 const STATIC_CSS_TAIL =
-  "\nfooter{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}\n" +
-  ".fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}\n" +
+  // Q3: the static footer mirrors the app's footer (.ft) exactly; the link row
+  // (.fl, 13px) comes from the extracted app stylesheet unchanged.
+  "\nfooter{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}\n" +
   ".para{font-size:17px;line-height:1.95;margin:0 0 14px}\n" +
   ".legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}\n" +
   "h2{font-size:20px;margin:6px 0 12px;text-align:center}\n" +

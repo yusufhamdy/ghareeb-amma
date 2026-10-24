@@ -24,6 +24,10 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .sb input{flex:1;border:0;background:transparent;font-size:17px;outline:none;min-width:0}
 .btn{height:46px;padding:0 22px;border:0;border-radius:23px;background:var(--ac);color:var(--btf);font-size:15px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .btn.o{background:var(--gb);border:1px solid var(--gbr);color:var(--tx);cursor:pointer}
+/* Q1: an outlined button that also carries .g must not pick up the glass card drop shadow at rest */
+.btn.o.g{box-shadow:none}
+/* Q2: disabled buttons and answered quiz options show no pointer and (below) no hover */
+.btn:disabled{cursor:not-allowed}.opt:disabled{cursor:default}
 .acts{display:flex;gap:10px;flex-wrap:wrap}
 .list{border-radius:24px;padding:6px 16px;display:flex;flex-direction:column}
 .row{display:flex;align-items:center;gap:14px;padding:12px 4px;min-height:60px}
@@ -153,7 +157,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* B4: per-theme interaction (hover / press / focus) */
 .btn{gap:8px}.btn svg{flex:none}
 .btn,.opt,.pnb,.chip,a.g,button.g{transition:transform .35s cubic-bezier(.3,1.4,.5,1),box-shadow .3s}
-@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
+@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:scale(.96)}
 /* E2: quiz options never move on press, and every option reserves the ok/bad glyph slot from the start */
 .opt:active{transform:none!important}
@@ -163,7 +167,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
 @media(hover:hover){.so:hover:before{opacity:1;transform:scale(1.05)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
-@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
+@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
 .shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
@@ -215,9 +219,9 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    Every :hover lives inside @media(hover:hover) so nothing sticks on touch. */
 .shade .btn{transition:transform .25s,border-color .25s,background .25s,box-shadow .25s,color .25s}
 @media(hover:hover){
-:is(.btn:not(.o),.btn[data-a="done"]):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.shade .btn:not(.o):hover{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
-.shade .btn.o:hover{background:var(--tx);color:var(--bg)!important;border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+:is(.btn:not(.o),.btn[data-a="done"]):not(:disabled):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade .btn:not(.o):not(:disabled):hover{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
+.shade .btn.o:not(:disabled):hover{background:var(--tx);color:var(--bg)!important;border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
 }
 :is(.btn:not(.o),.btn[data-a="done"]):focus-visible,a.card:focus-visible>.btn:not(.o){box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
 .shade .btn:not(.o):focus-visible,.shade a.card:focus-visible>.btn:not(.o){background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
@@ -305,8 +309,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .reelstrip{transition:opacity .3s}
 }
 
-footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}
-.fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}
+footer{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}
 .para{font-size:17px;line-height:1.95;margin:0 0 14px}
 .legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}
 h2{font-size:20px;margin:6px 0 12px;text-align:center}
