@@ -159,7 +159,7 @@ test("legal pages contain their paragraphs verbatim", () => {
     assert.match(html, /<link rel="canonical" href="https:\/\/ghareebalquran\.com\/[a-z]+\/">/);
     for (const p of entry.paras) {
       const escaped = esc(p);
-      assert.ok(html.includes(escaped), "missing paragraph in " + entry.slug);
+      assert.ok(html.replace(/<a href="mailto:[^"]*">([^<]*)<\/a>/g, "$1").includes(escaped), "missing paragraph in " + entry.slug);
       assert.ok(nodec(escaped).includes(p), "paragraph not verbatim in " + entry.slug);
     }
   }

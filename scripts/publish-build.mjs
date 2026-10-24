@@ -87,6 +87,7 @@ const A = {
 };
 
 const SURAH_PREFIX_RE = /^\u0633\u0648\u0631\u0629\s*/; // leading "surah "
+const EMAIL_RE = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g; // contact email inside a legal paragraph
 
 // Surah name (without the leading "surah " word) -> mushaf number. Fixed set:
 // Juz Amma surahs that currently carry words. Used only for the app deep link.
@@ -146,8 +147,9 @@ const LEGACY_CSS =
 // Extra rules the app renders with JS/markup the static pages also need (footer,
 // legal paragraphs, the standalone legal <main>). ASCII only.
 const STATIC_CSS_TAIL =
-  "\nfooter{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}\n" +
-  ".fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}\n" +
+  // Q3: the static footer mirrors the app's footer (.ft) exactly; the link row
+  // (.fl, 13px) comes from the extracted app stylesheet unchanged.
+  "\nfooter{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}\n" +
   ".para{font-size:17px;line-height:1.95;margin:0 0 14px}\n" +
   ".legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}\n" +
   "h2{font-size:20px;margin:6px 0 12px;text-align:center}\n" +
@@ -159,7 +161,12 @@ const STATIC_CSS_TAIL =
   // carry the same internal stacking; the app's own inter-block gap is 14px.
   // The more specific .cols .card rule above still wins for the word/meaning
   // cards, so the app's look is untouched.
-  ".card{display:flex;flex-direction:column;gap:14px}\n";
+  ".card{display:flex;flex-direction:column;gap:14px}\n" +
+  // P1 Tier 4: the legal pages' home link is a small text link, so it gets the
+  // same subtle hover colour and light (opacity-only) press as the app's links.
+  ":is(.legal>a.b,.para a){transition:color .2s,opacity .15s}\n" +
+  "@media(hover:hover){:is(.legal>a.b,.para a):hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}\n" +
+  ":is(.legal>a.b,.para a):active{opacity:.7}\n";
 
 // The shared static-page stylesheet: the app's own <style> block (single source
 // of truth) read at build time, plus the small tail above. Committed as
@@ -471,7 +478,8 @@ export function renderSurahPage(s) {
 // functions/legal.js (never retyped here). Same bare sheet as the word pages.
 export function renderLegalPage(entry) {
   const title = esc(entry.title) + " | " + A.LOGO;
-  const paras = entry.paras.map((p) => '<p class="para">' + esc(p) + "</p>").join("\n");
+  // The contact email becomes a mailto link; the paragraph text itself is unchanged.
+  const paras = entry.paras.map((p) => '<p class="para">' + esc(p).replace(EMAIL_RE, '<a href="mailto:$&">$&</a>') + "</p>").join("\n");
   return (
     "<!doctype html>\n" +
     '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n' +

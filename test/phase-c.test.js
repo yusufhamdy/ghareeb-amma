@@ -175,7 +175,7 @@ const probeBg = (page, name) => page.evaluate((v) => {
   const c = getComputedStyle(d).backgroundColor; d.remove(); return c;
 }, name);
 
-test("F3: the glass filled draw button keeps its fill and swaps only its shadow; outlined siblings invert (AA in both themes)", { timeout: 120000 }, async (t) => {
+test("F3: glass buttons never change colour on hover (filled swaps its shadow, outlined gets the generic shadow); every shade button inverts", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
@@ -191,12 +191,14 @@ test("F3: the glass filled draw button keeps its fill and swaps only its shadow;
     assert.notEqual(filled1.sh, filled0.sh, "the glass filled draw button swaps only its shadow");
 
     const olSel = '#app .acts .btn.o';
-    const ol0 = await page.$eval(olSel, (e) => getComputedStyle(e).backgroundColor);
+    const ol0 = await page.$eval(olSel, (e) => ({ bg: getComputedStyle(e).backgroundColor, sh: getComputedStyle(e).boxShadow }));
     await page.hover(olSel);
     await page.waitForTimeout(340);
-    const ol1 = await page.$eval(olSel, (e) => getComputedStyle(e).backgroundColor);
-    assert.notEqual(ol1, ol0, "hovering the outlined sibling changes its background");
-    assert.equal(ol1, accent, "the outlined button inverts to the accent fill");
+    const ol1 = await page.$eval(olSel, (e) => ({ bg: getComputedStyle(e).backgroundColor, sh: getComputedStyle(e).boxShadow }));
+    assert.equal(ol1.bg, ol0.bg, "hovering the outlined sibling keeps its background (no inversion)");
+    assert.notEqual(ol1.bg, accent, "the outlined button does not invert to the accent fill");
+    assert.notEqual(ol1.sh, ol0.sh, "hovering the outlined sibling adds the generic hover shadow");
+    assert.ok(/inset/.test(ol1.sh), "the outlined hover shadow is the generic rim + glow");
   } finally { await env.close(); }
 
   const shade = await setup(t, { set: { style: "shade" } });
@@ -205,18 +207,20 @@ test("F3: the glass filled draw button keeps its fill and swaps only its shadow;
     const page = await shade.page(1440, 900);
     await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
     const tx = await probeBg(page, "--tx");
+    const bg = await probeBg(page, "--bg");
     const f0 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
     await page.hover('#app [data-a="rnd"]');
     await page.waitForTimeout(340);
     const f1 = await page.$eval('#app [data-a="rnd"]', (e) => getComputedStyle(e).backgroundColor);
     assert.notEqual(f1, f0, "shade: filled button inverts on hover");
     const oSel = '#app .acts .btn.o';
-    const o0 = await page.$eval(oSel, (e) => getComputedStyle(e).backgroundColor);
+    const o0 = await page.$eval(oSel, (e) => ({ bg: getComputedStyle(e).backgroundColor, c: getComputedStyle(e).color, sh: getComputedStyle(e).boxShadow }));
     await page.hover(oSel);
     await page.waitForTimeout(340);
-    const o1 = await page.$eval(oSel, (e) => getComputedStyle(e).backgroundColor);
-    assert.notEqual(o1, o0, "shade: outlined button changes on hover");
-    assert.equal(o1, tx, "shade: outlined sibling inverts to the filled surface");
+    const o1 = await page.$eval(oSel, (e) => ({ bg: getComputedStyle(e).backgroundColor, c: getComputedStyle(e).color, sh: getComputedStyle(e).boxShadow }));
+    assert.notEqual(o1.sh, o0.sh, "shade: outlined button gets the generic hover shadow");
+    assert.equal(o1.bg, tx, "shade: outlined sibling inverts to the filled surface");
+    assert.equal(o1.c, bg, "shade: outlined sibling's text inverts to the page background colour");
   } finally { await shade.close(); }
 
   const rmv = await setup(t, { reducedMotion: "reduce" });
@@ -236,7 +240,7 @@ test("F3: the glass filled draw button keeps its fill and swaps only its shadow;
 // ---------------------------------------------------------------------------
 // F4: social card gets a shadow on hover without moving
 // ---------------------------------------------------------------------------
-test("F4: social strip hover adds a shadow and never moves; icon hover intact", { timeout: 120000 }, async (t) => {
+test("F4: the social strip container has no hover effect and never moves; the icon glow stays intact", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
@@ -246,7 +250,7 @@ test("F4: social strip hover adds a shadow and never moves; icon hover intact", 
     await page.hover("#app .strip");
     await page.waitForTimeout(420);
     const s = await page.$eval("#app .strip", (e) => ({ sh: getComputedStyle(e).boxShadow, tr: getComputedStyle(e).transform }));
-    assert.notEqual(s.sh, sh0, "hovering the social card changes its box-shadow");
+    assert.equal(s.sh, sh0, "the non-clickable social card has no hover shadow");
     assert.equal(s.tr, "none", "the social card never moves on hover");
 
     // the icon hover (unchanged) still reveals its disc
@@ -265,7 +269,7 @@ test("F4: social strip hover adds a shadow and never moves; icon hover intact", 
     await page.hover("#app .strip");
     await page.waitForTimeout(420);
     const s = await page.$eval("#app .strip", (e) => ({ sh: getComputedStyle(e).boxShadow, tr: getComputedStyle(e).transform }));
-    assert.notEqual(s.sh, b0, "shade: hover still adds a shadow");
+    assert.equal(s.sh, b0, "shade: the non-clickable social card has no hover shadow");
     assert.equal(s.tr, "none", "shade: the card never moves");
   } finally { await shade.close(); }
 });

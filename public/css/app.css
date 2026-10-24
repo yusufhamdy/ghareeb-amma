@@ -1,5 +1,5 @@
 
-:root{--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--b1:#8FCBAE;--b2:#EBC98A;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px}
+:root{--bad:color-mix(in srgb,#E53935 50%,var(--tx));--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--b1:#8FCBAE;--b2:#EBC98A;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.7;min-height:100vh}
 a{color:inherit;text-decoration:none}
@@ -11,6 +11,14 @@ button,input{font:inherit;color:inherit}
 #bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
 #bg i:nth-child(2){bottom:60px;left:-90px;width:300px;height:300px;background:var(--b2);opacity:.7;animation:dr 30s ease-in-out infinite alternate-reverse}
 @keyframes dr{to{transform:translate(30px,40px)}}
+/* R11: glass glow veil - each blob is faded toward the page colour (the same as lowering its opacity)
+   just enough for AA on the text above it: 31% on light pages, 60% on dark ones, picked from the page
+   background's own lightness. Shade's blobs override this; without relative colours the glow is unchanged. */
+@supports (color:oklch(from red l c h)){
+:root{--veil:oklch(from var(--bg) l c h / calc(.6 - .29 * clamp(0,(l - .5) * 1000,1)))}
+#bg i:nth-child(1){background:linear-gradient(var(--veil),var(--veil)),var(--b1)}
+#bg i:nth-child(2){background:linear-gradient(var(--veil),var(--veil)),var(--b2)}
+}
 .g{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));-webkit-backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 30px rgba(0,0,0,.15)}
 @media(prefers-reduced-transparency:reduce){.g{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}}
 .wrap{position:relative;max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 150px;display:flex;flex-direction:column;gap:18px}.wrap>main{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;min-width:0}
@@ -22,8 +30,13 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .card{border-radius:24px;padding:22px}
 .sb{display:flex;align-items:center;gap:10px;padding:0 18px;height:54px;border-radius:27px}
 .sb input{flex:1;border:0;background:transparent;font-size:17px;outline:none;min-width:0}
+.sb input::placeholder{color:color-mix(in srgb,var(--mu) 55%,var(--tx));opacity:1}
 .btn{height:46px;padding:0 22px;border:0;border-radius:23px;background:var(--ac);color:var(--btf);font-size:15px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .btn.o{background:var(--gb);border:1px solid var(--gbr);color:var(--tx);cursor:pointer}
+/* Q1: an outlined button that also carries .g must not pick up the glass card drop shadow at rest */
+.btn.o.g{box-shadow:none}
+/* Q2: disabled buttons and answered quiz options show no pointer and (below) no hover */
+.btn:disabled{cursor:not-allowed;opacity:.6}.opt:disabled{cursor:default}
 .acts{display:flex;gap:10px;flex-wrap:wrap}
 .list{border-radius:24px;padding:6px 16px;display:flex;flex-direction:column}
 .row{display:flex;align-items:center;gap:14px;padding:12px 4px;min-height:60px}
@@ -86,8 +99,8 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 .bar{height:6px;border-radius:3px;background:var(--ln)}.bar i{display:block;height:6px;border-radius:3px;background:var(--ac)}
 .opt{display:block;width:100%;text-align:right;padding:14px 18px;border-radius:18px;font-size:16px;cursor:pointer;line-height:1.7}
 .opt.ok{background:var(--ac);color:var(--btf);border-color:var(--ac)}
-.opt.bad{border-color:#d4553f;color:#d4553f}
-.dy{position:relative;padding:0;font:inherit;font-weight:600;cursor:pointer}.dy .bg{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--bg);color:var(--ac);border:1px solid var(--ac);display:flex;align-items:center;justify-content:center}.dy.lk{opacity:.6;color:var(--mu);cursor:not-allowed}.dy.lk .bg{color:var(--mu);border-color:var(--mu)}.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:22px;font-size:14px;z-index:20;white-space:nowrap;display:flex;align-items:center;gap:8px}.lg{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--mu)}.lg .li{display:inline-flex;align-items:center;gap:8px}.lg .li .sw{width:24px!important;height:24px!important;border-radius:8px!important;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center;cursor:default}.lg .li .sw:not(.cur){box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.18)}.lg .li .sw .bg{width:13px;height:13px;top:-4px;right:-4px}.lg .li .sw .bg svg{width:8px;height:8px}
+.opt.bad{border-color:var(--bad);color:var(--bad)}
+.dy{position:relative;padding:0;font:inherit;font-weight:600;cursor:pointer}.dy .bg{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--bg);color:var(--ac);border:1px solid var(--ac);display:flex;align-items:center;justify-content:center}.dy.lk{color:var(--mu);cursor:not-allowed;background-color:color-mix(in srgb,var(--gb) 45%,transparent);box-shadow:none}.dy.lk .bg{color:var(--mu);border-color:var(--mu)}.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:22px;font-size:14px;z-index:20;white-space:nowrap;display:flex;align-items:center;gap:8px}.lg{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--mu)}.lg .li{display:inline-flex;align-items:center;gap:8px}.lg .li .sw{width:24px!important;height:24px!important;border-radius:8px!important;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center;cursor:default}.lg .li .sw:not(.cur){box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.18)}.lg .li .sw .bg{width:13px;height:13px;top:-4px;right:-4px}.lg .li .sw .bg svg{width:8px;height:8px}
 .ld{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .4s}.ld.gone{opacity:0;pointer-events:none}.ld .logo{font-size:44px}.lb{width:120px;height:3px;background:var(--ln);border-radius:2px;overflow:hidden}.lb i{display:block;height:100%;width:40%;background:var(--ac);animation:ldm 1.1s ease-in-out infinite}@keyframes ldm{from{transform:translateX(120%)}to{transform:translateX(-260%)}}
 nav.g{display:grid;grid-template-columns:repeat(4,1fr);padding:6px;transition:transform .35s cubic-bezier(.3,.8,.3,1)}nav.g.hide{transform:translateX(-50%) translateY(120px)}
 nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12px)/4);border-radius:26px;background:var(--ac);transform:translateX(calc(var(--i,0)*-100%));transition:transform .45s cubic-bezier(.34,1.4,.64,1)}nav.g.none .ind{opacity:0}
@@ -134,7 +147,9 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .dy{width:44px!important;height:44px!important;aspect-ratio:auto;border-radius:12px!important;border:0;color:var(--tx);align-items:center;padding:0;background:var(--sf)!important}
 .shade .dy.ok{background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 40%,var(--sf)))!important}.shade .dy.cur{background:var(--sf)!important;border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf)!important;filter:none;color:var(--mu)}
 .shade .dy .bg{background:var(--bg);color:var(--ac);border-color:var(--ac)}
-.shade .cg{grid-template-columns:repeat(auto-fill,44px)!important;justify-content:center;gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--mu);color:var(--mu);opacity:.7}
+/* R12: shade dark, neon and mint - their bright completed-day tile needs the dark page colour for its number (AA) */
+.sh-neo-n .dy.ok,.sh-min-n .dy.ok{color:color-mix(in srgb,var(--bg) 30%,#000)}
+.shade .cg{grid-template-columns:repeat(auto-fill,44px)!important;justify-content:center;gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--bad);color:var(--bad)}
 .shade #sh .p{background:var(--bg)}
 @media(min-width:601px){.shade .list.sl{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1025px){.shade .list.sl{grid-template-columns:repeat(4,1fr)}.shade .cols .card:first-child{background:linear-gradient(180deg,var(--tc) 0,color-mix(in srgb,var(--tc) 38%,var(--sf)) 52px,var(--sf) 110px) no-repeat border-box var(--sf);padding-top:118px}}
@@ -153,39 +168,30 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* B4: per-theme interaction (hover / press / focus) */
 .btn{gap:8px}.btn svg{flex:none}
 .btn,.opt,.pnb,.chip,a.g,button.g{transition:transform .35s cubic-bezier(.3,1.4,.5,1),box-shadow .3s}
-@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
+@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:scale(.96)}
 /* E2: quiz options never move on press, and every option reserves the ok/bad glyph slot from the start */
 .opt:active{transform:none!important}
 .ogi{display:inline-block;width:24px;height:16px;vertical-align:-2px}
 .so{position:relative;isolation:isolate}
 .so:before{content:"";position:absolute;inset:-2px;border-radius:50%;z-index:-1;opacity:0;transform:scale(.55);transition:.4s cubic-bezier(.3,1.4,.5,1);background:radial-gradient(circle,color-mix(in srgb,var(--ac) 55%,transparent),color-mix(in srgb,var(--ac) 18%,transparent) 65%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--ac) 45%,transparent)}
-.so:hover:before,.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+@media(hover:hover){.so:hover:before{opacity:1;transform:scale(1.05)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
-@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
+@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
-.shade .so:hover:before,.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
-.cols .card{transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease}
-@media(hover:hover){.cols .card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .cols .card:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--sbd))}}
+.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
+@media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
 /* B5: floating settings gear (above content, below open sheets) */
 #gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
-#gear:hover,#gear:active,#gear:focus-visible{transform:rotate(60deg)}
+#gear:active,#gear:focus-visible{transform:rotate(60deg)}
+@media(hover:hover){#gear:hover{transform:rotate(60deg)}}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
 /* F2: prev/next identical structure - icon above text on desktop, same height */
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
-/* F3: the filled draw button inverts with its outlined siblings on hover/focus */
-@media(hover:hover){
-.acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.drawfx.drawfx:hover,.drawfx.drawfx:focus-visible,a.card:focus-visible>.drawfx{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.acts:has([data-a="rnd"]) .btn.o:hover,.acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--ac);color:var(--btf);border-color:var(--ac);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}
-.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.shade .drawfx.drawfx:hover,.shade .drawfx.drawfx:focus-visible,.shade a.card:focus-visible>.drawfx{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-}
-/* F4: social strip gets a very light hover shadow, never a movement */
-.strip{transition:box-shadow .35s}
-@media(hover:hover){.strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 /* J1: search collapse */
 /* K4b: overflow was permanently hidden on the action rows, clipping the button
    shadow into a straight grey band (the .acts box bottom == button bottom, so a
@@ -205,6 +211,44 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    and overflow stays visible at rest. */
 @media(max-width:600px){.acts.hacts{flex-wrap:nowrap}.acts.hacts .btn{flex:1 1 0;min-width:0}.acts.hacts .btn:not(.o){border:1px solid transparent}}
 @media(min-width:601px){.acts.hacts{justify-content:center}}
+
+/* P1: one interaction rule per design style, independent of where an element sits.
+   Buttons, glass - never change colour. Filled .btn (and the day "done" button in
+   its undo .o state too) gains a rim + accent glow; outlined .btn.o gets the
+   generic B4 hover shadow. Press is the B4 scale.
+   Buttons, shade - every button inverts on hover and focus-visible: filled .btn
+   becomes the outlined surface, outlined .btn.o (the done button's undo state
+   included) becomes filled. The filled button's outline is an inset 1px
+   box-shadow, not a real border, so hover never changes layout; outlined
+   buttons only recolour the border they already have. Colour transitions with
+   the background. Press is the shade B4 scale.
+   Rows and cards (rows, .pnb, day dots, .dcard, the challenge card): their B2-B4
+   / D3 hovers, glass surah rows get the plain-list tint, and every one gets a
+   light opacity press (nothing moves).
+   Small text links and pills: a subtle shift toward the accent and an opacity
+   press. Logos get no effect.
+   Every :hover lives inside @media(hover:hover) so nothing sticks on touch. */
+.shade .btn{transition:transform .25s,border-color .25s,background .25s,box-shadow .25s,color .25s}
+@media(hover:hover){
+:is(.btn:not(.o),.btn[data-a="done"]):not(:disabled):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade .btn:not(.o):not(:disabled):hover{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
+.shade .btn.o:not(:disabled):hover{background:var(--tx);color:var(--bg)!important;border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+}
+:is(.btn:not(.o),.btn[data-a="done"]):focus-visible,a.card:focus-visible>.btn:not(.o){box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade .btn:not(.o):focus-visible,.shade a.card:focus-visible>.btn:not(.o){background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln),0 10px 24px rgba(0,0,0,.3)}
+/* the !important beats the settings sheet's inline accent text on its outlined "done" button */
+.shade .btn.o:focus-visible{background:var(--tx);color:var(--bg)!important;border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.list.sl a.row{position:relative;isolation:isolate}
+.list.sl a.row:before{content:"";position:absolute;inset:0 -8px;z-index:-1;border-radius:16px;background:color-mix(in srgb,var(--ac) 10%,transparent);opacity:0;pointer-events:none;transition:opacity .25s}
+@media(hover:hover){.list.sl a.row:hover:before{opacity:1}}
+.shade .list.sl a.row:before{display:none}
+:is(a.row,a.pnb,a.dy,button.dy,.dcard,a.card):active{opacity:.8}
+
+:is(a.pill,.fl a,a.m,.card>a:not([class]),.lg2 a){transition:color .2s,opacity .15s}
+@media(hover:hover){:is(a.pill,.fl a,a.m,.card>a:not([class]),.lg2 a):hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}
+:is(a.pill,.fl a,a.m,.card>a:not([class]),.lg2 a):active{opacity:.7}
+/* one focus ring for the search field container (its input drops its own outline) */
+.sb:focus-within{outline:2px solid var(--ac);outline-offset:2px}
 
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
@@ -265,22 +309,24 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .cols .card,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
-.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
+.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.cols .card,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
-:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }
 
-footer{margin-top:26px;text-align:center;border-top:1px solid var(--ln);padding-top:16px}
-.fl{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:8px 0;font-size:14px}
+footer{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}
 .para{font-size:17px;line-height:1.95;margin:0 0 14px}
 .legal{max-width:680px;margin:0 auto;padding:22px 18px 60px}
 h2{font-size:20px;margin:6px 0 12px;text-align:center}
 .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}
 .card{display:flex;flex-direction:column;gap:14px}
+:is(.legal>a.b,.para a){transition:color .2s,opacity .15s}
+@media(hover:hover){:is(.legal>a.b,.para a):hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}
+:is(.legal>a.b,.para a):active{opacity:.7}
