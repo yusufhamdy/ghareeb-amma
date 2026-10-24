@@ -184,32 +184,23 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .ogi{display:inline-block;width:24px;height:16px;vertical-align:-2px}
 .so{position:relative;isolation:isolate}
 .so:before{content:"";position:absolute;inset:-2px;border-radius:50%;z-index:-1;opacity:0;transform:scale(.55);transition:.4s cubic-bezier(.3,1.4,.5,1);background:radial-gradient(circle,color-mix(in srgb,var(--ac) 55%,transparent),color-mix(in srgb,var(--ac) 18%,transparent) 65%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--ac) 45%,transparent)}
-.so:hover:before,.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+@media(hover:hover){.so:hover:before{opacity:1;transform:scale(1.05)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
 @media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
-.shade .so:hover:before,.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
-.cols .card{transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease}
-@media(hover:hover){.cols .card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .cols .card:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--sbd))}}
+.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
+@media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
 /* B5: floating settings gear (above content, below open sheets) */
 #gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
-#gear:hover,#gear:active,#gear:focus-visible{transform:rotate(60deg)}
+#gear:active,#gear:focus-visible{transform:rotate(60deg)}
+@media(hover:hover){#gear:hover{transform:rotate(60deg)}}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
 /* F2: prev/next identical structure - icon above text on desktop, same height */
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
-/* F3: the filled draw button inverts with its outlined siblings on hover/focus */
-@media(hover:hover){
-.acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.drawfx.drawfx:hover,.drawfx.drawfx:focus-visible,a.card:focus-visible>.drawfx{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.acts:has([data-a="rnd"]) .btn.o:hover,.acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--ac);color:var(--btf);border-color:var(--ac);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}
-.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.shade .drawfx.drawfx:hover,.shade .drawfx.drawfx:focus-visible,.shade a.card:focus-visible>.drawfx{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-}
-/* F4: social strip gets a very light hover shadow, never a movement */
-.strip{transition:box-shadow .35s}
-@media(hover:hover){.strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 /* J1: search collapse */
 /* K4b: overflow was permanently hidden on the action rows, clipping the button
    shadow into a straight grey band (the .acts box bottom == button bottom, so a
@@ -229,6 +220,28 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    and overflow stays visible at rest. */
 @media(max-width:600px){.acts.hacts{flex-wrap:nowrap}.acts.hacts .btn{flex:1 1 0;min-width:0}.acts.hacts .btn:not(.o){border:1px solid transparent}}
 @media(min-width:601px){.acts.hacts{justify-content:center}}
+
+/* P1: one interaction system, independent of where an element sits.
+   Tier 1 - filled buttons (.btn without .o; the day "done" button keeps it in
+   its undo .o state too): glass keeps its fill and gains a rim + accent glow,
+   shade inverts to the outlined surface. Press scale comes from B4 above.
+   Tier 2 - outlined buttons (.btn.o): the generic B4 hover shadow + press
+   scale only, no colour inversion.
+   Tier 3 - rows, cards, prev/next, day dots: unchanged (B2-B4, D3).
+   Tier 4 - small text links and pills: a subtle shift toward the accent and
+   a light press (opacity only, so nothing moves). Logos get no effect.
+   Every :hover lives inside @media(hover:hover) so nothing sticks on touch. */
+@media(hover:hover){
+:is(.btn:not(.o),.btn[data-a="done"]):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade :is(.btn:not(.o),.btn[data-a="done"]):hover{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+}
+:is(.btn:not(.o),.btn[data-a="done"]):focus-visible,a.card:focus-visible>.btn:not(.o){box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade :is(.btn:not(.o),.btn[data-a="done"]):focus-visible,.shade a.card:focus-visible>.btn:not(.o){background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+:is(a.pill,.fl a,a.m,.card>a:not([class])){transition:color .2s,opacity .15s}
+@media(hover:hover){:is(a.pill,.fl a,a.m,.card>a:not([class])):hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}
+:is(a.pill,.fl a,a.m,.card>a:not([class])):active{opacity:.7}
+/* one focus ring for the search field container (its input drops its own outline) */
+.sb:focus-within{outline:2px solid var(--ac);outline-offset:2px}
 
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
@@ -289,14 +302,14 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .cols .card,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
-.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
+.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.cols .card,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
-:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }
 </style>
@@ -429,11 +442,11 @@ function markWordOpened(n,w){const all=VW.get();const v=all[n]||{};v[dkey(n,w)]=
 const dayWords=d=>d.w.map(x=>{const no=Array.isArray(x)?x[0]:x.no,k=Array.isArray(x)?x[1]:x.word;return W.find(w=>w.s.num===no&&w.k===k)}).filter(Boolean);
 const nextDay=()=>{const d=done(),r=released(),x=CH.find(c=>!d.includes(c.d)&&c.d<=r);return x?x.d:Math.max(1,r)};
 const ring=(n,t,sz=64)=>{const c=2*Math.PI*26;return `<svg width="${sz}" height="${sz}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--ln)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--ac)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(c*n/t).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 32 32)"/><text x="32" y="38" text-anchor="middle" font-size="18" font-weight="600" fill="var(--tx)" font-family="IBM Plex Sans Arabic">${n}</text></svg>`};
-const ringCard=()=>CH.length?`<a class="g card" href="#/challenge" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(done().length,CH.length)}</span><div style="flex:1"><b>تحدي غريب عمّ</b><div class="m">${done().length?'اليوم '+Math.min(nextDay(),CH.length)+' من '+CH.length:CH.length+' يومًا لفهم كلمات جزء عم'}</div></div><span class="btn drawfx" style="height:40px">${done().length?'تابع'+BI.fw:'ابدأ'}</span></a>`:'';
-function chView(){const dn=done(),nd=nextDay(),r=released();return `${head()}<div><h1>تحدي غريب عمّ</h1><div class="sub">${CH.length} يومًا، يوم جديد كل يوم مع مقطع مصوّر.</div></div><div class="g card" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(dn.length,CH.length)}</span><div style="flex:1"><b>${dn.length} من ${CH.length} أيام مكتملة</b><div class="m">${r?'اليوم الحالي: '+r:lockMsg(1)}</div></div></div><div class="cg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px 0;justify-items:center">${CH.map(c=>{const o=dn.includes(c.d),lk=c.d>r,cl='g dy'+(o?' ok':'')+(c.d===r?' cur':'')+(lk?' lk':''),bg=o?`<span class="bg">${CK}</span>`:lk?`<span class="bg">${LK}</span>`:'';return lk?`<button class="${cl}" data-a="lock" data-d="${c.d}" aria-label="اليوم ${c.d} مقفول">${c.d}${bg}</button>`:`<a href="#/day/${c.d}" class="${cl}" aria-label="اليوم ${c.d}">${c.d}${bg}</a>`}).join('')}</div><div class="lg"><span class="li"><span class="g dy ok sw"><span class="bg">${CK}</span></span>مكتمل</span><span class="li"><span class="g dy sw"></span>متاح</span><span class="li"><span class="g dy cur sw"></span>اليوم</span><span class="li"><span class="g dy lk sw"><span class="bg">${LK}</span></span>مقفول</span></div>${r?`<div class="acts"><a class="btn drawfx" href="#/day/${nd}">${dn.length?'تابع اليوم '+nd+BI.fw:'ابدأ التحدي'}</a>${dn.length?'<button class="btn o" data-a="reset">إعادة التحدي</button>':''}</div>`:''}`}
+const ringCard=()=>CH.length?`<a class="g card" href="#/challenge" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(done().length,CH.length)}</span><div style="flex:1"><b>تحدي غريب عمّ</b><div class="m">${done().length?'اليوم '+Math.min(nextDay(),CH.length)+' من '+CH.length:CH.length+' يومًا لفهم كلمات جزء عم'}</div></div><span class="btn" style="height:40px">${done().length?'تابع'+BI.fw:'ابدأ'}</span></a>`:'';
+function chView(){const dn=done(),nd=nextDay(),r=released();return `${head()}<div><h1>تحدي غريب عمّ</h1><div class="sub">${CH.length} يومًا، يوم جديد كل يوم مع مقطع مصوّر.</div></div><div class="g card" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(dn.length,CH.length)}</span><div style="flex:1"><b>${dn.length} من ${CH.length} أيام مكتملة</b><div class="m">${r?'اليوم الحالي: '+r:lockMsg(1)}</div></div></div><div class="cg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px 0;justify-items:center">${CH.map(c=>{const o=dn.includes(c.d),lk=c.d>r,cl='g dy'+(o?' ok':'')+(c.d===r?' cur':'')+(lk?' lk':''),bg=o?`<span class="bg">${CK}</span>`:lk?`<span class="bg">${LK}</span>`:'';return lk?`<button class="${cl}" data-a="lock" data-d="${c.d}" aria-label="اليوم ${c.d} مقفول">${c.d}${bg}</button>`:`<a href="#/day/${c.d}" class="${cl}" aria-label="اليوم ${c.d}">${c.d}${bg}</a>`}).join('')}</div><div class="lg"><span class="li"><span class="g dy ok sw"><span class="bg">${CK}</span></span>مكتمل</span><span class="li"><span class="g dy sw"></span>متاح</span><span class="li"><span class="g dy cur sw"></span>اليوم</span><span class="li"><span class="g dy lk sw"><span class="bg">${LK}</span></span>مقفول</span></div>${r?`<div class="acts"><a class="btn" href="#/day/${nd}">${dn.length?'تابع اليوم '+nd+BI.fw:'ابدأ التحدي'}</a>${dn.length?'<button class="btn o" data-a="reset">إعادة التحدي</button>':''}</div>`:''}`}
 let DG=null; // D3: current day state {n,m,exp:Set(index)}
 function refreshDay(){const c=CH.find(x=>x.d===(DG&&DG.n));if(!c)return;const ws=dayWords(c),M=ws.length,opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,ok=done().includes(c.d),all=viewedAll(c.d);const cnt=document.querySelector('.dcount');if(cnt){cnt.textContent=K+' من '+M+' كلمات';cnt.dataset.k=K;cnt.dataset.mtot=M}const bar=document.querySelector('.dprog .bar i');if(bar)bar.style.width=(M?Math.round(K/M*100):0)+'%';document.querySelectorAll('#dw .dcard').forEach(el=>{const i=+el.dataset.i,w=ws[i],b=el.querySelector('.bdg');if(b&&w)b.innerHTML=(opened[dkey(c.d,w)]===true)?DCK:String(i+1)});const db=document.querySelector('[data-a="done"][data-d]');if(db){db.classList.toggle('o',ok);db.disabled=!ok&&!all;db.textContent=ok?'تم الإنجاز (إلغاء)':(all?'تم إنجاز اليوم':'اقرأ معاني كل الكلمات أولًا')}}
-function dayView(n){const c=CH.find(x=>x.d==n);if(!c)return _view(['word','x']);if(c.d>released())return `${head()}<div class="g card" style="text-align:center"><h1 style="font-size:24px">اليوم ${c.d}</h1><div class="sub" style="margin:8px 0 14px">${esc(lockMsg(c.d))}</div><a class="btn" href="#/challenge">العودة إلى التحدي</a></div>`;const ws=dayWords(c),M=ws.length,ok=done().includes(c.d);if(!DG||DG.n!==c.d)DG={n:c.d,m:M,exp:new Set()};DG.m=M;if(M===1){DG.exp.add(0);markWordOpened(c.d,ws[0])}const opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,pct=M?Math.round(K/M*100):0;const card=(w,i)=>{const open=DG.exp.has(i),seen=opened[dkey(c.d,w)]===true;return `<button type="button" class="dcard${open?' open':''}" data-a="dword" data-i="${i}" aria-expanded="${open?'true':'false'}" style="--d:${i*140}ms"><span class="dhead"><span class="bdg" aria-hidden="true">${seen?DCK:i+1}</span><span class="q dword">${esc(w.word)}</span><span class="chev">${DCHEV}</span></span><span class="dbody"><span class="ay q">${AY(w.ay)}</span><span>${esc(w.mean)}</span><span class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</span></span></button>`};const dn=(dir)=>{const p=dir==='pv',on=p?c.d>1:c.d<CH.length,hr='#/day/'+(p?c.d-1:c.d+1),ic=p?BI.bw:BI.fw,lbl=p?'اليوم السابق':'اليوم التالي',inner=p?ic+lbl:lbl+ic;return on?`<a class="btn o ${dir}" href="${hr}">${inner}</a>`:`<span class="btn o ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`};return `${head()}<div class="dh">${dn('pv')}<h1>اليوم ${c.d} <span class="m">من ${CH.length}</span></h1>${dn('nx')}</div><div class="g card dprog"><b class="dcount" data-k="${K}" data-mtot="${M}">${K} من ${M} كلمات</b><div class="bar"><i style="width:${pct}%"></i></div></div><div id="dw" class="dw">${ws.map((w,i)=>card(w,i)).join('')}${c.reel?`<a class="btn o" href="${esc(c.reel)}" target="_blank" rel="noopener">شاهد المقطع</a>`:''}<div class="acts"><button class="btn drawfx${ok?' o':''}" data-a="done" data-d="${c.d}" ${(!ok&&!viewedAll(c.d))?'disabled':''}>${ok?'تم الإنجاز (إلغاء)':(viewedAll(c.d)?'تم إنجاز اليوم':'اقرأ معاني كل الكلمات أولًا')}</button></div></div>`}
+function dayView(n){const c=CH.find(x=>x.d==n);if(!c)return _view(['word','x']);if(c.d>released())return `${head()}<div class="g card" style="text-align:center"><h1 style="font-size:24px">اليوم ${c.d}</h1><div class="sub" style="margin:8px 0 14px">${esc(lockMsg(c.d))}</div><a class="btn" href="#/challenge">العودة إلى التحدي</a></div>`;const ws=dayWords(c),M=ws.length,ok=done().includes(c.d);if(!DG||DG.n!==c.d)DG={n:c.d,m:M,exp:new Set()};DG.m=M;if(M===1){DG.exp.add(0);markWordOpened(c.d,ws[0])}const opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,pct=M?Math.round(K/M*100):0;const card=(w,i)=>{const open=DG.exp.has(i),seen=opened[dkey(c.d,w)]===true;return `<button type="button" class="dcard${open?' open':''}" data-a="dword" data-i="${i}" aria-expanded="${open?'true':'false'}" style="--d:${i*140}ms"><span class="dhead"><span class="bdg" aria-hidden="true">${seen?DCK:i+1}</span><span class="q dword">${esc(w.word)}</span><span class="chev">${DCHEV}</span></span><span class="dbody"><span class="ay q">${AY(w.ay)}</span><span>${esc(w.mean)}</span><span class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</span></span></button>`};const dn=(dir)=>{const p=dir==='pv',on=p?c.d>1:c.d<CH.length,hr='#/day/'+(p?c.d-1:c.d+1),ic=p?BI.bw:BI.fw,lbl=p?'اليوم السابق':'اليوم التالي',inner=p?ic+lbl:lbl+ic;return on?`<a class="btn o ${dir}" href="${hr}">${inner}</a>`:`<span class="btn o ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`};return `${head()}<div class="dh">${dn('pv')}<h1>اليوم ${c.d} <span class="m">من ${CH.length}</span></h1>${dn('nx')}</div><div class="g card dprog"><b class="dcount" data-k="${K}" data-mtot="${M}">${K} من ${M} كلمات</b><div class="bar"><i style="width:${pct}%"></i></div></div><div id="dw" class="dw">${ws.map((w,i)=>card(w,i)).join('')}${c.reel?`<a class="btn o" href="${esc(c.reel)}" target="_blank" rel="noopener">شاهد المقطع</a>`:''}<div class="acts"><button class="btn${ok?' o':''}" data-a="done" data-d="${c.d}" ${(!ok&&!viewedAll(c.d))?'disabled':''}>${ok?'تم الإنجاز (إلغاء)':(viewedAll(c.d)?'تم إنجاز اليوم':'اقرأ معاني كل الكلمات أولًا')}</button></div></div>`}
 // ---- C3: Web Audio sound module (4 short, theme-aware cues, lazily created) ----
 const SND=(()=>{let ctx=null;const shade=()=>document.body.classList.contains('shade');
 const ac=()=>{if(!set.snd)return null;try{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}catch(e){return null}};

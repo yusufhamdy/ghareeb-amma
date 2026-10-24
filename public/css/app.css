@@ -160,32 +160,23 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .ogi{display:inline-block;width:24px;height:16px;vertical-align:-2px}
 .so{position:relative;isolation:isolate}
 .so:before{content:"";position:absolute;inset:-2px;border-radius:50%;z-index:-1;opacity:0;transform:scale(.55);transition:.4s cubic-bezier(.3,1.4,.5,1);background:radial-gradient(circle,color-mix(in srgb,var(--ac) 55%,transparent),color-mix(in srgb,var(--ac) 18%,transparent) 65%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--ac) 45%,transparent)}
-.so:hover:before,.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+.so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
+@media(hover:hover){.so:hover:before{opacity:1;transform:scale(1.05)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
 @media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
-.shade .so:hover:before,.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
-.cols .card{transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease}
-@media(hover:hover){.cols .card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .cols .card:hover{border-color:color-mix(in srgb,var(--tc) 55%,var(--sbd))}}
+.shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
+@media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
 /* B5: floating settings gear (above content, below open sheets) */
 #gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
-#gear:hover,#gear:active,#gear:focus-visible{transform:rotate(60deg)}
+#gear:active,#gear:focus-visible{transform:rotate(60deg)}
+@media(hover:hover){#gear:hover{transform:rotate(60deg)}}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
 /* F2: prev/next identical structure - icon above text on desktop, same height */
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
-/* F3: the filled draw button inverts with its outlined siblings on hover/focus */
-@media(hover:hover){
-.acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.drawfx.drawfx:hover,.drawfx.drawfx:focus-visible,a.card:focus-visible>.drawfx{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
-.acts:has([data-a="rnd"]) .btn.o:hover,.acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--ac);color:var(--btf);border-color:var(--ac);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}
-.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:hover,.shade .acts:has([data-a="rnd"]) [data-a="rnd"]:focus-visible,.shade .drawfx.drawfx:hover,.shade .drawfx.drawfx:focus-visible,.shade a.card:focus-visible>.drawfx{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.shade .acts:has([data-a="rnd"]) .btn.o:hover,.shade .acts:has([data-a="rnd"]) .btn.o:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}
-}
-/* F4: social strip gets a very light hover shadow, never a movement */
-.strip{transition:box-shadow .35s}
-@media(hover:hover){.strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.12)}.shade .strip:hover{box-shadow:0 6px 16px rgba(0,0,0,.32)}}
 /* J1: search collapse */
 /* K4b: overflow was permanently hidden on the action rows, clipping the button
    shadow into a straight grey band (the .acts box bottom == button bottom, so a
@@ -205,6 +196,28 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    and overflow stays visible at rest. */
 @media(max-width:600px){.acts.hacts{flex-wrap:nowrap}.acts.hacts .btn{flex:1 1 0;min-width:0}.acts.hacts .btn:not(.o){border:1px solid transparent}}
 @media(min-width:601px){.acts.hacts{justify-content:center}}
+
+/* P1: one interaction system, independent of where an element sits.
+   Tier 1 - filled buttons (.btn without .o; the day "done" button keeps it in
+   its undo .o state too): glass keeps its fill and gains a rim + accent glow,
+   shade inverts to the outlined surface. Press scale comes from B4 above.
+   Tier 2 - outlined buttons (.btn.o): the generic B4 hover shadow + press
+   scale only, no colour inversion.
+   Tier 3 - rows, cards, prev/next, day dots: unchanged (B2-B4, D3).
+   Tier 4 - small text links and pills: a subtle shift toward the accent and
+   a light press (opacity only, so nothing moves). Logos get no effect.
+   Every :hover lives inside @media(hover:hover) so nothing sticks on touch. */
+@media(hover:hover){
+:is(.btn:not(.o),.btn[data-a="done"]):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade :is(.btn:not(.o),.btn[data-a="done"]):hover{background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+}
+:is(.btn:not(.o),.btn[data-a="done"]):focus-visible,a.card:focus-visible>.btn:not(.o){box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.shade :is(.btn:not(.o),.btn[data-a="done"]):focus-visible,.shade a.card:focus-visible>.btn:not(.o){background:transparent;color:var(--tx);border:1px solid var(--ln);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+:is(a.pill,.fl a,a.m,.card>a:not([class])){transition:color .2s,opacity .15s}
+@media(hover:hover){:is(a.pill,.fl a,a.m,.card>a:not([class])):hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}
+:is(a.pill,.fl a,a.m,.card>a:not([class])):active{opacity:.7}
+/* one focus ring for the search field container (its input drops its own outline) */
+.sb:focus-within{outline:2px solid var(--ac);outline-offset:2px}
 
 /* F5: shade header - roomier tagline line and a fixed gap to the counts line */
 .shade h1{line-height:1.5}
@@ -265,14 +278,14 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .cols .card,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
-.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
+.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.cols .card,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
-:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row,.cols .card):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }
 
@@ -284,3 +297,6 @@ h2{font-size:20px;margin:6px 0 12px;text-align:center}
 .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border-radius:999px;font-size:20px;color:var(--ac);cursor:pointer}
 .card{display:flex;flex-direction:column;gap:14px}
+.legal>a.b{transition:color .2s,opacity .15s}
+@media(hover:hover){.legal>a.b:hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}
+.legal>a.b:active{opacity:.7}

@@ -159,7 +159,12 @@ const STATIC_CSS_TAIL =
   // carry the same internal stacking; the app's own inter-block gap is 14px.
   // The more specific .cols .card rule above still wins for the word/meaning
   // cards, so the app's look is untouched.
-  ".card{display:flex;flex-direction:column;gap:14px}\n";
+  ".card{display:flex;flex-direction:column;gap:14px}\n" +
+  // P1 Tier 4: the legal pages' home link is a small text link, so it gets the
+  // same subtle hover colour and light (opacity-only) press as the app's links.
+  ".legal>a.b{transition:color .2s,opacity .15s}\n" +
+  "@media(hover:hover){.legal>a.b:hover{color:color-mix(in srgb,var(--ac) 70%,var(--tx))}}\n" +
+  ".legal>a.b:active{opacity:.7}\n";
 
 // The shared static-page stylesheet: the app's own <style> block (single source
 // of truth) read at build time, plus the small tail above. Committed as
