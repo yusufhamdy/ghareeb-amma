@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v29';
+const CACHE_NAME = 'ghareeb-pwa-v30';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -7,7 +7,13 @@ const assetsToCache = [
     '/apple-touch-icon.png',
     '/og-image.png',
     '/css/app.css',
-    '/theme-boot.js'
+    '/theme-boot.js',
+    '/quiz-core.js',
+    '/migrate.js',
+    '/firebase-config.js',
+    '/word-gap.js',
+    '/words.json',
+    '/challenge.json'
 ];
 
 self.addEventListener('install', event => {
