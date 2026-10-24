@@ -503,34 +503,93 @@ return{ok:()=>play('ok'),bad:()=>play('bad'),tick:()=>play('tick'),land:()=>play
 function qStart(){const sh=a=>QCORE.shuffle(a);Q={i:0,s:0,a:null,qs:sh(W).slice(0,Math.min(10,W.length)).map(w=>({w,o:sh(QCORE.pickDistractors(w,W,3).concat([w]))}))}}
 function qView(){if(!Q)qStart();const n=Q.qs.length;if(Q.i>=n)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px"><h1>نتيجتك</h1>${ring(Q.s,n,96)}<div class="sub">${Q.s} من ${n}</div><div class="acts"><button class="btn" data-a="qre">اختبار جديد</button><a class="btn o" href="#/">الرئيسية</a></div></div>`;const q=Q.qs[Q.i],a=Q.a;return `${head()}<div style="display:flex;justify-content:space-between;align-items:center"><h1>اختبر نفسك</h1><span class="m">${Q.i+1} من ${n}</span></div><div class="bar"><i style="width:${Q.i/n*100}%"></i></div><div class="g card"><div class="m">ما معنى الكلمة المظللة؟</div><div class="ay q">${AY(q.w.ay)}</div></div><div class="opts">${q.o.map((x,i)=>`<button class="g opt${a!==null?(x===q.w?' ok':i===a?' bad':''):''}" data-o="${i}"${a!==null?' disabled':''}><span class="ogi" aria-hidden="true">${a!==null?(x===q.w?OKI:i===a?BADI:''):''}</span>${esc(x.mean)}</button>`).join('')}</div>${`<div class="acts"${a===null?' style="visibility:hidden"':''}><button class="btn" data-a="qn">${Q.i+1<n?'التالي'+BI.fw:'النتيجة'}</button><a class="btn o" href="#/word/${q.w.id}">افتح الكلمة</a></div>`}`}
 function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');const art=(sc,cls,lbl,on)=>`<button class="opt2${on?' on':''}" data-sc="${sc}" aria-pressed="${on?'true':'false'}"><div class="artw"><div class="art ${cls}"><div class="lg3 q">غريب القرآن</div><div class="pl">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div class="aw q">${esc(w.word)}</div><div class="av q">${AY(w.ay)}</div><div class="am">${esc(w.mean)}</div></div></div><span>${lbl}</span></button>`;p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:44px">إلغاء</button></div><div class="m">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="arts">${art('n','rg','عادية · 1080×1350',false)}${art('s','st','ستوري · 1080×1920',true)}</div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="s" style="align-self:stretch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>حفظ على جهازي</button>`;$('sh').classList.add('open');cardFonts().then(()=>p.querySelectorAll('.artw').forEach(wr=>{const im=wr.firstElementChild;im.style.padding='0';const c=renderCard(w,im.classList.contains('st')?'s':'n');const put=u=>{const i=document.createElement('img');i.alt='';i.src=u;i.style.cssText='width:100%;height:100%;object-fit:cover;display:block';im.textContent='';im.appendChild(i)};if(c.toBlob)c.toBlob(b=>put(URL.createObjectURL(b)),'image/png');else put(c.toDataURL('image/png'))}))}
-function cardFonts(){if(!document.fonts||!document.fonts.load)return Promise.resolve();return Promise.all(['74px "Amiri Quran"','120px "Amiri Quran"','46px "Amiri Quran"','28px "IBM Plex Sans Arabic"','34px "IBM Plex Sans Arabic"','24px "IBM Plex Sans Arabic"'].map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>document.fonts.ready).catch(()=>{})}
+function cardFonts(){if(!document.fonts||!document.fonts.load)return Promise.resolve();return Promise.all(CARD_FONTS.map(([f,t])=>document.fonts.load(f,t).catch(()=>{}))).then(()=>document.fonts.ready).catch(()=>{})}
 function cardMobile(){try{if(matchMedia('(hover: none) and (pointer: coarse)').matches)return true}catch(e){}return /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle|Opera Mini/i.test(navigator.userAgent||'')}
 function downloadBlob(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+// Save-as-image card: mirrors the word page at a fixed size; content auto-fits instead of growing the canvas.
+const CARD_FONTS=[['40px "Amiri Quran"','غريب ﴿﴾'],['40px "Amiri Quran"','a'],['400 40px "IBM Plex Sans Arabic"','المعنى'],['400 40px "IBM Plex Sans Arabic"','a'],['500 40px "IBM Plex Sans Arabic"','المعنى'],['500 40px "IBM Plex Sans Arabic"','a'],['600 40px "IBM Plex Sans Arabic"','المعنى'],['600 40px "IBM Plex Sans Arabic"','a']];
 function renderCard(w,size){size=size==='s'?'s':'n';
-const CW=1080,MIN=size==='s'?1920:1350,WMAX=CW-70*2-60,titleTxt='غريب القرآن',refTxt=w.s.name+' · آية '+w.ay.label,verseTxt='﴿'+w.ay.segments.map(g=>g.before+g.hl+g.after).join(' ')+'﴾',c=document.createElement('canvas'),x=c.getContext('2d'),cs=getComputedStyle(document.documentElement),v=k=>cs.getPropertyValue(k).trim();
-x.direction='rtl';x.textAlign='center';
-const met=(font,txt)=>{x.font=font;const s=parseFloat(font),m=x.measureText(txt),a=m.actualBoundingBoxAscent!=null?m.actualBoundingBoxAscent:(m.fontBoundingBoxAscent!=null?m.fontBoundingBoxAscent:s*.8),d=m.actualBoundingBoxDescent!=null?m.actualBoundingBoxDescent:(m.fontBoundingBoxDescent!=null?m.fontBoundingBoxDescent:s*.25);return{asc:a,desc:d,h:a+d,w:m.width}};
-const lines=(font,txt,lead)=>{x.font=font;const s=parseFloat(font),words=String(txt).split(' '),out=[];let cur='';for(const wd of words){const n=cur?cur+' '+wd:wd;if(cur&&x.measureText(n).width>WMAX){out.push(cur);cur=wd}else cur=n}out.push(cur);const gap=s*lead;let h=0,mw=0;const ls=out.map(t=>{const k=met(font,t),o={txt:t,asc:k.asc,desc:k.desc,top:h,base:h+k.asc};if(k.w>mw)mw=k.w;h+=k.h+gap;return o});if(ls.length)h-=gap;return{ls,h,w:mw}};
-let wf=120;x.font=wf+'px "Amiri Quran"';const ww=x.measureText(w.word).width;if(ww>WMAX)wf=Math.max(56,Math.floor(wf*WMAX/ww));wf+='px "Amiri Quran"';
-const T=met('74px "Amiri Quran"',titleTxt),R=met('28px "IBM Plex Sans Arabic"',refTxt),WD=met(wf,w.word),MN=lines('34px "IBM Plex Sans Arabic"',w.mean,.34),VS=lines('46px "Amiri Quran"',verseTxt,.30);
-const stack=R.h+48+WD.h+48+MN.h+34+2+34+VS.h,CH=Math.max(MIN,Math.ceil((stack+128)/.72));
-c.width=CW;c.height=CH;x.direction='rtl';x.textAlign='center';
-x.fillStyle=v('--bg');x.fillRect(0,0,CW,CH);
-const bl=(cx,cy,r,col)=>{const g=x.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,col+'cc');g.addColorStop(1,col+'00');x.fillStyle=g;x.fillRect(0,0,CW,CH)};
-bl(CW*.88,CH*.08,CH*.5,v('--b1'));bl(CW*.1,CH*.94,CH*.45,v('--b2'));
-const pad=70,ct=CH*.12,ch=CH*.72;
-x.beginPath();x.roundRect?x.roundRect(pad,ct,CW-pad*2,ch,44):x.rect(pad,ct,CW-pad*2,ch);x.fillStyle=v('--gb');x.fill();x.strokeStyle=v('--gbr');x.lineWidth=2;x.stroke();
-x.fillStyle=v('--ac');x.font='74px "Amiri Quran"';x.fillText(titleTxt,CW/2,CH*.09);
-const bx={w:CW,h:CH,card:{top:ct,bottom:ct+ch},title:{top:CH*.09-T.asc,bottom:CH*.09+T.desc,w:T.w}};let y=ct+(ch-stack)/2;
-x.fillStyle=v('--mu');x.font='28px "IBM Plex Sans Arabic"';x.fillText(refTxt,CW/2,y+R.asc);bx.ref={top:y,bottom:y+R.h,w:R.w};y+=R.h+48;
-x.fillStyle=v('--ac');x.font=wf;x.fillText(w.word,CW/2,y+WD.asc);bx.word={top:y,bottom:y+WD.h,w:WD.w};y+=WD.h+48;
-x.fillStyle=v('--tx');x.font='34px "IBM Plex Sans Arabic"';MN.ls.forEach(l=>x.fillText(l.txt,CW/2,y+l.base));bx.mean={top:y,bottom:y+MN.h,w:MN.w};y+=MN.h+34;
-x.strokeStyle=v('--ln');x.lineWidth=2;x.beginPath();x.moveTo(CW*.25,y);x.lineTo(CW*.75,y);x.stroke();y+=36;
-x.fillStyle=v('--tx');x.font='46px "Amiri Quran"';VS.ls.forEach(l=>x.fillText(l.txt,CW/2,y+l.base));bx.verse={top:y,bottom:y+VS.h,w:VS.w};
-x.fillStyle=v('--mu');x.font='24px "IBM Plex Sans Arabic"';x.fillText('ghareebalquran.com',CW/2,CH*.955);
-c.__card=bx;return c}
+const st=size==='s',W=1080,H=st?1920:1350,K=st?1.1:1,S=W/390,B=170/64*K,M=72,P=60*K,PM=54*K,GAP=st?44:36,TOP=st?250:72,BOT=st?360:72,IW=W-2*M-2*P,XR=W-M-P,
+c=document.createElement('canvas'),x=c.getContext('2d'),cs=getComputedStyle(document.documentElement),v=k=>cs.getPropertyValue(k).trim(),shade=document.body.classList.contains('shade');
+c.width=W;c.height=H;x.direction='rtl';x.textAlign='right';
+const AQ=s=>s+'px "Amiri Quran"',PX=(wt,s)=>wt+' '+s+'px "IBM Plex Sans Arabic"';
+const rgb=s=>{x.fillStyle='#000';x.fillStyle=s||'#000';const f=x.fillStyle;if(f[0]==='#')return[1,3,5].map(i=>parseInt(f.substr(i,2),16)).concat(1);const m=f.match(/[\d.]+/g).map(Number);return[m[0],m[1],m[2],m[3]==null?1:m[3]]};
+const rgba=(k,a)=>`rgba(${k[0]},${k[1]},${k[2]},${a==null?k[3]:a})`,mix=(a,b,t)=>[0,1,2].map(i=>Math.round(a[i]*(1-t)+b[i]*t)).concat(1);
+const met=(font,t)=>{x.font=font;const m=x.measureText(t),s=parseFloat(font.replace(/^\d00 /,''));return{w:m.width,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,fa:m.fontBoundingBoxAscent!=null?m.fontBoundingBoxAscent:s*.9,fd:m.fontBoundingBoxDescent!=null?m.fontBoundingBoxDescent:s*.3}};
+const wrap=(font,t,max)=>{x.font=font;const out=[];let cur='',ok=true;for(const wd of String(t).split(' ')){const n=cur?cur+' '+wd:wd;if(cur&&x.measureText(n).width>max){out.push(cur);cur=wd}else cur=n;if(x.measureText(wd).width>max)ok=false}out.push(cur);return{ls:out,ok:ok&&out.every(l=>x.measureText(l).width<=max)}};
+// CSS-like line box: baseline sits half-leading below the box top.
+const lbox=(font,lh,s)=>{const k=met(font,'المعنى a');return{h:lh*s,base:(lh*s-(k.fa+k.fd))/2+k.fa}};
+const C={bg:rgb(v('--bg')),ac:rgb(v('--ac')),tx:v('--tx'),mu:v('--mu'),ln:v('--ln'),b1:rgb(v('--b1')),b2:rgb(v('--b2')),gb:v('--gb'),gbr:v('--gbr'),tc:rgb(v('--tc')||v('--b1')),sf:rgb(v('--sf')||v('--bg')),sbd:v('--sbd')||v('--gbr')};
+const pill=w.s.name+' · آية '+w.ay.label,LG=66*K,PF=32*K,PH=76*K,PPX=35*K;
+// Ayah as glue groups (split at spaces); each <mark> is one unbreakable piece, like the site's inline-block mark.
+const G=[];let cur=null;const nw=()=>{cur=[];G.push(cur)};
+const addT=t=>t.split(' ').forEach((p,i)=>{if(i>0||!cur)nw();if(p)cur.push({t:p,mk:false})});
+w.ay.segments.forEach((g,i)=>{if(i>0)nw();addT('﴿'+g.before);if(g.hl){if(!cur)nw();cur.push({t:g.hl,mk:true})}addT(g.after+'﴾')});
+const GR=G.filter(g=>g.length);
+const lay=f=>{const o={f,ok:true};
+const lg=met(AQ(LG),'غريب القرآن');o.HH=Math.max(PH,lg.asc+lg.desc);o.lg=lg;o.pw=met(PX(600,PF),pill).w+2*PPX;
+let ws=170*K*f,wl;for(;;){wl=wrap(AQ(ws),w.word,IW);if((wl.ls.length<=2&&wl.ok)||ws<24)break;ws*=.96}
+if(!wl.ok||wl.ls.length>2)o.ok=false;
+const wm=wl.ls.map(t=>met(AQ(ws),t));const wb=[wm[0].asc];for(let i=1;i<wm.length;i++)wb.push(wb[i-1]+Math.max(1.5*ws,wm[i-1].desc+wm[i].asc+.08*ws));
+o.ws=ws;o.wl=wl.ls;o.wb=wb;o.wInk=wb[wb.length-1]+wm[wm.length-1].desc;o.div=o.wInk+28;
+const as=58*K*f,am=met(AQ(as),'﴿'),hl=(1.6*as-(am.fa+am.fd))/2,mT=am.fa+hl+.08*as,mB=am.fd+hl+.14*as,mX=.32*as;
+x.font=AQ(as);const sp=x.measureText(' ').width;
+const gs=GR.map(g=>{const ps=g.map(p=>{const k=met(AQ(as),p.t);return{t:p.t,mk:p.mk,w:k.w+(p.mk?2*mX:0),top:p.mk?Math.max(mT,k.asc):k.asc,bot:p.mk?Math.max(mB,k.desc):k.desc}});return{ps,w:ps.reduce((a,p)=>a+p.w,0)}});
+const al=[];let ln=null;for(const g of gs){if(g.w>IW)o.ok=false;if(ln&&ln.w+sp+g.w<=IW){ln.gs.push(g);ln.w+=sp+g.w}else{ln={gs:[g],w:g.w};al.push(ln)}}
+al.forEach(l=>{l.top=Math.max(...l.gs.flatMap(g=>g.ps.map(p=>p.top)));l.bot=Math.max(...l.gs.flatMap(g=>g.ps.map(p=>p.bot)))});
+const ab=al.length?[o.div+30+al[0].top]:[];for(let i=1;i<al.length;i++)ab.push(ab[i-1]+Math.max(2.1*as,al[i-1].bot+al[i].top+.1*as));
+o.as=as;o.al=al;o.ab=ab;o.sp=sp;o.mT=mT;o.mB=mB;o.mX=mX;o.aInk=al.length?ab[ab.length-1]+al[al.length-1].bot:o.wInk;
+o.WH=P+o.aInk+P;
+const ms=52*K*f,L1=lbox(PX(400,30*K),1.7,30*K),ml=wrap(PX(500,ms),w.mean,IW),L2=lbox(PX(500,ms),1.6,ms),sl=wrap(PX(400,27*K),w.src||'',IW),L3=lbox(PX(400,27*K),1.7,27*K),g2=14*K;
+if(!ml.ok||!sl.ok)o.ok=false;
+o.ms=ms;o.ml=ml.ls;o.sl=w.src?sl.ls:[];o.L1=L1;o.L2=L2;o.L3=L3;o.g2=g2;
+o.MH=PM+L1.h+g2+ml.ls.length*L2.h+(o.sl.length?g2+o.sl.length*L3.h:0)+PM;
+o.FL=lbox(PX(500,30*K),1.7,30*K);
+o.stack=o.HH+GAP+o.WH+GAP+o.MH+GAP+o.FL.h;return o};
+const avail=H-TOP-BOT;let o;for(let f=1;f>.39;f=Math.round((f-.04)*100)/100){o=lay(f);if(o.ok&&o.stack<=avail)break}
+// ---- background
+const bgK=C.bg,lin=n=>{n/=255;return n<=.04045?n/12.92:Math.pow((n+.055)/1.055,2.4)},[lr,lg_,lb]=bgK.slice(0,3).map(lin),
+okL=.2104542553*Math.cbrt(.4122214708*lr+.5363325363*lg_+.0514459929*lb)+.793617785*Math.cbrt(.2119034982*lr+.6806995451*lg_+.1073969566*lb)-.0040720406*Math.cbrt(.0883024619*lr+.2817188376*lg_+.6299787005*lb);
+x.fillStyle=rgba(bgK,1);x.fillRect(0,0,W,H);
+const erf=z=>{const t=1/(1+.3275911*Math.abs(z)),y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-z*z);return z<0?-y:y};
+// blurred disc (CSS circle + filter:blur) as a radial profile
+const disc=(cx,cy,R,sg,col,op)=>{const end=R+3*sg,g=x.createRadialGradient(cx,cy,0,cx,cy,end);for(let i=0;i<=16;i++){const r=end*i/16;g.addColorStop(i/16,rgba(col,op*.5*(1+erf((R-r)/(sg*Math.SQRT2)))))}x.fillStyle=g;x.fillRect(0,0,W,H)};
+const ell=(cx,cy,rx,ry,col,op)=>{x.save();x.translate(cx,cy);x.scale(1,ry/rx);const g=x.createRadialGradient(0,0,0,0,0,rx);for(let i=0;i<=10;i++){const t=i/10;g.addColorStop(t,rgba(col,op*Math.pow(1-t,1.6)))}x.fillStyle=g;x.fillRect(-rx,-rx,2*rx,2*rx);x.restore()};
+if(shade){ell(.5*W,-.01*H,.68*.7*W*Math.SQRT2+46*S,.68*.23*H*Math.SQRT2+46*S,C.tc,1);ell(-.18*W+150*S,H-.06*H-150*S,150*S*.68*Math.SQRT2+50*S,150*S*.68*Math.SQRT2+50*S,C.tc,.55)}
+else{const va=okL>.5?.31:.6;disc(W-90*S,70*S,160*S,35*S,mix(C.b1,bgK,va),.8);disc(60*S,H-210*S,150*S,35*S,mix(C.b2,bgK,va),.7)}
+// ---- geometry
+const ops=[],cards={};let y=TOP+(avail-o.stack)/2;
+const T=(t,X,Y,font,col,card,al,role)=>{al=al||'right';x.font=font;x.textAlign=al;const m=x.measureText(t);ops.push({t,x:X,y:Y,font,col,card:card||null,al,role,box:{l:X-m.actualBoundingBoxLeft,r:X+m.actualBoundingBoxRight,t:Y-m.actualBoundingBoxAscent,b:Y+m.actualBoundingBoxDescent}})};
+const hy=y;y+=o.HH+GAP;cards.word={x:M,y,w:W-2*M,h:o.WH};const wy=y+P;y+=o.WH+GAP;cards.mean={x:M,y,w:W-2*M,h:o.MH};const my=y;y+=o.MH+GAP;const fy=y;
+const lgB=hy+o.HH/2+(o.lg.asc-o.lg.desc)/2;T('غريب القرآن',W-M,lgB,AQ(LG),rgba(C.ac,1),null,'right','logo');
+const pl={x:M,y:hy+(o.HH-PH)/2,w:o.pw,h:PH},pb=lbox(PX(600,PF),PH/PF,PF);
+o.wl.forEach((t,i)=>T(t,XR,wy+o.wb[i],AQ(o.ws),rgba(C.ac,1),'word','right','word'));
+const divY=o.al.length?wy+o.div:null,marks=[];
+o.al.forEach((l,i)=>{const b=wy+o.ab[i];let xr=XR;l.gs.forEach(g=>{g.ps.forEach(p=>{if(p.mk){marks.push({x:xr-p.w,y:b-o.mT,w:p.w,h:o.mT+o.mB,card:'word'});T(p.t,xr-o.mX,b,AQ(o.as),C.tx,'word','right','ayah')}else T(p.t,xr,b,AQ(o.as),C.tx,'word','right','ayah');xr-=p.w});xr-=o.sp})});
+let my2=my+PM;T('المعنى',XR,my2+o.L1.base,PX(400,30*K),C.mu,'mean','right','label');my2+=o.L1.h+o.g2;
+o.ml.forEach(t=>{T(t,XR,my2+o.L2.base,PX(500,o.ms),C.tx,'mean','right','meaning');my2+=o.L2.h});
+if(o.sl.length){my2+=o.g2;o.sl.forEach(t=>{T(t,XR,my2+o.L3.base,PX(400,27*K),C.mu,'mean','right','source');my2+=o.L3.h})}
+T('ghareebalquran.com',W/2,fy+o.FL.base,PX(500,30*K),C.mu,null,'center','footer');
+// ---- cards
+const R=shade?47*K:44*K,rr=b=>{x.beginPath();x.roundRect?x.roundRect(b.x,b.y,b.w,b.h,R):x.rect(b.x,b.y,b.w,b.h)};
+const inset=(b,a)=>{x.save();rr(b);x.clip();x.beginPath();x.roundRect?(x.roundRect(b.x,b.y,b.w,b.h,R),x.roundRect(b.x,b.y+2,b.w,b.h,R)):(x.rect(b.x,b.y,b.w,2));x.fillStyle=`rgba(255,255,255,${a})`;x.fill('evenodd');x.restore()};
+['word','mean'].forEach(k=>{const b=cards[k];
+if(shade){if(k==='word'){const g=x.createLinearGradient(0,b.y,0,b.y+b.h);g.addColorStop(0,rgba(C.tc,1));g.addColorStop(Math.min(1,42*B/b.h),rgba(mix(C.tc,C.sf,.62),1));g.addColorStop(Math.min(1,90*B/b.h),rgba(C.sf,1));g.addColorStop(1,rgba(C.sf,1));x.fillStyle=g}else x.fillStyle=rgba(C.sf,1);
+rr(b);x.fill();x.strokeStyle=C.sbd;x.lineWidth=2;x.stroke();if(k==='word')inset(b,.3)}
+else{x.save();x.shadowColor='rgba(0,0,0,.15)';x.shadowBlur=30*B;x.shadowOffsetY=10*B;rr(b);x.fillStyle=C.gb;x.fill();x.restore();rr(b);x.strokeStyle=C.gbr;x.lineWidth=2;x.stroke();inset(b,.4)}});
+// pill (same in both styles, like the site)
+x.beginPath();x.roundRect?x.roundRect(pl.x,pl.y,pl.w,pl.h,pl.h/2):x.rect(pl.x,pl.y,pl.w,pl.h);x.fillStyle=rgba(C.ac,.2);x.fill();x.strokeStyle=rgba(C.ac,.55);x.lineWidth=2;x.stroke();
+T(pill,pl.x+pl.w-PPX,pl.y+pb.base,PX(600,PF),C.tx,'pill','right','pill');
+// divider + highlights + text
+if(divY!=null){x.save();x.setLineDash([7,7]);x.strokeStyle=C.ln;x.lineWidth=2;x.beginPath();x.moveTo(XR,divY);x.lineTo(XR-IW,divY);x.stroke();x.restore()}
+marks.forEach(m=>{x.beginPath();x.roundRect?x.roundRect(m.x,m.y,m.w,m.h,10/28*o.as):x.rect(m.x,m.y,m.w,m.h);x.fillStyle=rgba(C.ac,.2);x.fill()});
+ops.forEach(p=>{x.font=p.font;x.fillStyle=p.col;x.textAlign=p.al;x.fillText(p.t,p.x,p.y)});
+cards.pill=pl;
+const un=bs=>bs.length?{l:Math.min(...bs.map(b=>b.l)),r:Math.max(...bs.map(b=>b.r)),t:Math.min(...bs.map(b=>b.t)),b:Math.max(...bs.map(b=>b.b))}:null,boxes={};
+['logo','pill','word','ayah','label','meaning','source','footer'].forEach(k=>{boxes[k]=un(ops.filter(p=>p.role===k).map(p=>p.box).concat(k==='ayah'?marks.map(m=>({l:m.x,r:m.x+m.w,t:m.y,b:m.y+m.h})):[]))});
+c.__card={W,H,f:o.f,fit:o.ok&&o.stack<=avail,cards,ops,marks,boxes,divider:divY,safe:st?{top:250,bottom:H-360}:null};return c}
 function d2b(u){const s=u.slice(u.indexOf(',')+1),bin=atob(s),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:'image/png'})}
-function card(w,size){size=size==='s'?'s':'n';const name='ghareeb-'+w.id+'-'+(size==='s'?'story':'card')+'.png';const fire=()=>{const c=renderCard(w,size);if(cardMobile()){const b=d2b(c.toDataURL('image/png')),f=new File([b],name,{type:'image/png'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){navigator.share({files:[f]}).catch(err=>{if(!err||err.name!=='AbortError')downloadBlob(b,name)});return}downloadBlob(b,name);return}if(c.toBlob)c.toBlob(b=>{if(b)downloadBlob(b,name)},'image/png');else downloadBlob(d2b(c.toDataURL('image/png')),name)};let ready=true;try{ready=!document.fonts||!document.fonts.check||(document.fonts.check('120px "Amiri Quran"')&&document.fonts.check('28px "IBM Plex Sans Arabic"'))}catch(e){ready=true}ready?fire():cardFonts().then(fire)}
+function card(w,size){size=size==='s'?'s':'n';const name='ghareeb-'+w.id+'-'+(size==='s'?'story':'card')+'.png';const fire=()=>{const c=renderCard(w,size);if(cardMobile()){const b=d2b(c.toDataURL('image/png')),f=new File([b],name,{type:'image/png'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){navigator.share({files:[f]}).catch(err=>{if(!err||err.name!=='AbortError')downloadBlob(b,name)});return}downloadBlob(b,name);return}if(c.toBlob)c.toBlob(b=>{if(b)downloadBlob(b,name)},'image/png');else downloadBlob(d2b(c.toDataURL('image/png')),name)};let ready=true;try{ready=!document.fonts||!document.fonts.check||CARD_FONTS.every(([f,t])=>document.fonts.check(f,t))}catch(e){ready=true}ready?fire():cardFonts().then(fire)}
 const _view=view;view=function(r){const p=r[0];if(p==='challenge')return chView();if(p==='day')return dayView(r[1]);if(p==='quiz')return qView();let h=_view(r);if(p==='home')h=h.replace('<div id="res"></div>','<div id="res"></div>'+ringCard());return h};
 const _render=render;render=function(){_render();if(route()[0]==='day'){const a=document.querySelectorAll('#nv a');if(a[2])a[2].classList.add('on')}};
 const _sheet=sheet;sheet=function(){_sheet();document.querySelector('#sh .p').insertAdjacentHTML('beforeend','<div class="tg"><span>الصوت</span><button data-s="1" class="'+(set.snd?'on':'')+'" aria-pressed="'+(set.snd?'true':'false')+'" aria-label="الصوت"></button></div>')};

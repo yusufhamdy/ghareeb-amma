@@ -4,10 +4,11 @@
  *
  * Renders the verse card in real Chromium with the real self-hosted fonts and
  * checks:
- *   - the reference line and the word never overlap (>= 24px ink gap) and no
- *     block leaves the glass card or the canvas (no clipping);
- *   - a long word, a long meaning and a long verse still fit (the canvas height
- *     is computed from the measured blocks);
+ *   - the blocks keep their order (header, word, divider, ayah, meaning card,
+ *     footer), the word ink clears the divider by >= 24px, nothing overlaps and
+ *     no text leaves its card or the canvas (no clipping);
+ *   - the canvas is exactly 1080x1350 or 1080x1920 and long content auto-fits;
+ *     story keeps the top 250px and bottom 360px free;
  *   - a desktop tap saves a PNG file directly and never calls navigator.share;
  *   - a mobile (touch) tap goes through navigator.share with the PNG file, and
  *     cancelling the sheet does nothing (no download, no toast).
@@ -93,6 +94,49 @@ const SHARE_PROBE =
 // ---------------------------------------------------------------------------
 // Layout: measured blocks, >= 24px ink gaps, nothing clipped.
 // ---------------------------------------------------------------------------
+// Every check works on the renderer's own measured ink boxes (__card).
+function checkLayout(box, size, why, hasAyah) {
+  const H = size === "s" ? 1920 : 1350;
+  assert.ok(box, why + ": rendered layout boxes");
+  assert.strictEqual(box.W, CARD_W, why + ": canvas width is exactly " + CARD_W);
+  assert.strictEqual(box.H, H, why + ": canvas height is exactly " + H);
+  const canvas = { x: 0, y: 0, w: box.W, h: box.H };
+  const inside = (b, r) => b.l >= r.x && b.r <= r.x + r.w && b.t >= r.y && b.b <= r.y + r.h;
+  const rect = (r) => ({ l: r.x, r: r.x + r.w, t: r.y, b: r.y + r.h });
+  const { cards, boxes: bx } = box;
+
+  // nothing clipped: every card and every text run stays on the canvas and inside its own card
+  for (const k of ["word", "mean", "pill"]) assert.ok(inside(rect(cards[k]), canvas), why + ": " + k + " card is inside the canvas");
+  for (const op of box.ops) {
+    const r = op.card ? cards[op.card] : canvas;
+    assert.ok(inside(op.box, r), why + ": " + op.role + " text stays inside " + (op.card || "the canvas"));
+  }
+  for (const m of box.marks) assert.ok(inside(rect(m), cards.word), why + ": ayah highlight stays inside the word card");
+
+  // order: header, word, divider, ayah, meaning card, footer - with no overlaps
+  const headBottom = Math.max(bx.logo.b, cards.pill.y + cards.pill.h);
+  assert.ok(cards.pill.x + cards.pill.w < bx.logo.l, why + ": the pill and the logo do not overlap");
+  assert.ok(headBottom + MIN_GAP <= cards.word.y, why + ": the header sits above the word card");
+  assert.ok(cards.word.y + cards.word.h + MIN_GAP <= cards.mean.y, why + ": the word card sits above the meaning card");
+  assert.ok(cards.mean.y + cards.mean.h + MIN_GAP <= bx.footer.t, why + ": the footer sits below the meaning card");
+  assert.ok(bx.label.b <= bx.meaning.t && bx.meaning.b <= bx.source.t, why + ": label, meaning and source do not overlap");
+  if (hasAyah) {
+    assert.ok(bx.ayah && box.divider != null, why + ": the ayah and divider are drawn");
+    assert.ok(bx.word.b + MIN_GAP <= box.divider,
+      why + ": word ink/divider gap >= " + MIN_GAP + " (got " + (box.divider - bx.word.b).toFixed(1) + ")");
+    assert.ok(box.divider + 1 < bx.ayah.t, why + ": the divider does not touch the ayah");
+  } else {
+    assert.strictEqual(box.divider, null, why + ": no divider without an ayah");
+    assert.strictEqual(bx.ayah, null, why + ": no ayah drawn");
+  }
+
+  // story: keep the Instagram UI areas free (top 250px, bottom 360px)
+  if (size === "s") {
+    const all = box.ops.map((o) => o.box).concat([cards.word, cards.mean, cards.pill].map(rect));
+    for (const b of all) assert.ok(b.t >= 250 && b.b <= H - 360, why + ": story content stays out of the top 250px and bottom 360px");
+  }
+}
+
 test("card image: the measured layout never overlaps and never clips", { timeout: 180000 }, async (t) => {
   const browser = await launchBrowser(t);
   if (!browser) return;
@@ -109,36 +153,25 @@ test("card image: the measured layout never overlaps and never clips", { timeout
     const fontsReady = await page.evaluate(() => ({
       quran: document.fonts.check('120px "Amiri Quran"'),
       ui: document.fonts.check('28px "IBM Plex Sans Arabic"'),
+      ui500: document.fonts.check('500 28px "IBM Plex Sans Arabic"'),
+      ui600: document.fonts.check('600 28px "IBM Plex Sans Arabic"'),
     }));
     assert.ok(fontsReady.quran, "the Quranic font is loaded before measuring");
-    assert.ok(fontsReady.ui, "the UI font is loaded before measuring");
+    assert.ok(fontsReady.ui && fontsReady.ui500 && fontsReady.ui600, "the UI font (400/500/600) is loaded before measuring");
 
     for (const c of CASES) {
       const box = await page.evaluate((a) => renderCard(byId(a.id), a.size).__card, c);
-      assert.ok(box, c.why + ": rendered layout boxes");
-      assert.ok(box.ref.bottom + MIN_GAP <= box.word.top,
-        c.why + ": reference/word ink gap >= " + MIN_GAP + " (got " + (box.word.top - box.ref.bottom).toFixed(1) + ")");
-      assert.ok(box.word.bottom + MIN_GAP <= box.mean.top,
-        c.why + ": word/meaning ink gap >= " + MIN_GAP + " (got " + (box.mean.top - box.word.bottom).toFixed(1) + ")");
-      assert.ok(box.mean.bottom <= box.verse.top, c.why + ": meaning does not run into the verse");
-      assert.ok(box.title.bottom <= box.card.top, c.why + ": the title sits above the glass card");
-      assert.ok(box.ref.top >= box.card.top && box.verse.bottom <= box.card.bottom,
-        c.why + ": all card content stays inside the glass card");
-      assert.ok(box.card.bottom < box.h && box.verse.bottom < box.h, c.why + ": nothing is clipped at the bottom");
-      assert.ok(box.h >= (c.size === "s" ? 1920 : 1350), c.why + ": canvas is at least the frame height");
-      for (const k of ["title", "ref", "word", "mean", "verse"]) {
-        assert.ok(box[k].w <= CARD_W, c.why + ": " + k + " width " + box[k].w.toFixed(1) + " <= " + CARD_W);
-      }
+      checkLayout(box, c.size, c.why, true);
     }
 
-    // A word with no verse text must still lay out without overlap.
-    const empty = await page.evaluate(() => {
-      const w = Object.assign({}, byId("78-0"), { ay: { label: "", segments: [] } });
-      return renderCard(w, "n").__card;
-    });
-    assert.ok(empty.ref.bottom + MIN_GAP <= empty.word.top, "no-verse word: reference/word gap >= 24");
-    assert.ok(empty.word.bottom + MIN_GAP <= empty.mean.top, "no-verse word: word/meaning gap >= 24");
-    assert.ok(empty.verse.bottom < empty.h, "no-verse word: stays inside the canvas");
+    // A word with no ayah segments: no divider and no ayah, and the layout is still valid.
+    for (const size of ["n", "s"]) {
+      const empty = await page.evaluate((sz) => {
+        const w = Object.assign({}, byId("78-0"), { ay: { label: "", segments: [] } });
+        return renderCard(w, sz).__card;
+      }, size);
+      checkLayout(empty, size, "no-ayah word (" + size + ")", false);
+    }
     await page.close();
   } finally { await browser.close(); await srv.close(); }
 });
