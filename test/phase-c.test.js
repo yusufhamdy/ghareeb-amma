@@ -255,7 +255,12 @@ test("F4: the social strip container has no hover effect and never moves; the ic
 
     // the icon hover (unchanged) still reveals its disc
     await page.hover("#app .so");
-    await page.waitForTimeout(150);
+    // Wait for the glow transition to have started and fully finished (no running
+    // animation left on the icon or its ::before), not a fixed delay.
+    await page.waitForFunction(() => {
+      const e = document.querySelector("#app .so");
+      return getComputedStyle(e, "::before").opacity !== "0" && e.getAnimations({ subtree: true }).length === 0;
+    }, null, { timeout: 5000 });
     const op = await page.$eval("#app .so", (e) => getComputedStyle(e, "::before").opacity);
     assert.ok(parseFloat(op) > 0.9, "social icon hover disc is still intact");
   } finally { await env.close(); }
@@ -353,10 +358,17 @@ test("C1: draw opens a reel overlay; skip lands on a word route; reduced-motion 
     await nav(page, "#/word/78-0");
     await page.waitForSelector('#app [data-a="rnd"]', { timeout: 20000 });
     const prev2 = await page.evaluate(() => location.hash);
-    const t0 = Date.now();
+    // Time the app's own work inside the page: from the click event reaching the
+    // document to the route change, so runner/CDP round trips are not counted.
+    await page.evaluate(() => {
+      window.__C1 = {};
+      document.addEventListener("click", () => { if (window.__C1.t0 == null) window.__C1.t0 = performance.now(); }, true);
+      addEventListener("hashchange", () => { if (window.__C1.t0 != null && window.__C1.t1 == null) window.__C1.t1 = performance.now(); });
+    });
     await page.click('#app [data-a="rnd"]');
     await page.waitForFunction((p) => location.hash !== p && /^#\/word\/.+/.test(location.hash), prev2, { timeout: 3000 });
-    const ms = Date.now() - t0;
+    await page.waitForFunction(() => window.__C1.t1 != null, null, { timeout: 3000 });
+    const ms = Math.round(await page.evaluate(() => window.__C1.t1 - window.__C1.t0));
     assert.ok(ms <= 500, "reduced motion resolves to the result in <=500ms (got " + ms + "ms)");
     assert.equal(await page.$("#rou"), null, "no lingering overlay under reduced motion");
   } finally { await rm.close(); }

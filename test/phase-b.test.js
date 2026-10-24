@@ -312,11 +312,18 @@ test("B7: ok/bad options show a decorative aria-hidden check/cross glyph", { tim
   try {
     const page = await env.page(900, 900);
     let sawBad = false, sawOk = false;
-    for (let pick = 0; pick < 4 && !sawBad; pick++) {
-      await page.evaluate(() => { location.hash = "#/"; });
-      await page.evaluate(() => { location.hash = "#/quiz"; });
-      await page.waitForSelector("#app .opts .opt", { timeout: 20000 });
-      await page.click('#app .opt[data-o="' + pick + '"]');
+    // Keep answering (next question, or a new quiz after the result screen),
+    // rotating the picked option, until a wrong pick shows its cross glyph.
+    // Bounded: each pick is wrong with probability 3/4, so 30 tries never all hit.
+    await page.evaluate(() => { location.hash = "#/quiz"; });
+    for (let pick = 0; pick < 30 && !sawBad; pick++) {
+      await page.waitForSelector('#app .opts .opt:not([disabled]), #app [data-a="qre"]', { timeout: 20000 });
+      if (await page.$('#app [data-a="qre"]')) {
+        await page.click('#app [data-a="qre"]');
+        await page.waitForSelector("#app .opts .opt:not([disabled])", { timeout: 20000 });
+      }
+      const count = await page.$$eval("#app .opts .opt", (els) => els.length);
+      await page.click('#app .opt[data-o="' + (pick % count) + '"]');
       await page.waitForSelector("#app .opt.ok", { timeout: 20000 });
       const r = await page.evaluate(() => {
         const ok = document.querySelector("#app .opt.ok");
@@ -330,6 +337,7 @@ test("B7: ok/bad options show a decorative aria-hidden check/cross glyph", { tim
       assert.ok(r.ok, "the correct option carries an aria-hidden check glyph");
       sawOk = true;
       if (r.bad) { assert.ok(r.bad, "the wrong option carries an aria-hidden cross glyph"); sawBad = true; }
+      else await page.click('#app [data-a="qn"]');
     }
     assert.ok(sawOk, "quiz produced an ok option");
     assert.ok(sawBad, "quiz produced a wrong (bad) option across picks");

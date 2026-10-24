@@ -173,22 +173,35 @@ test("K4: at 4x CPU no navigation over 200ms, TBT under 300ms, and a clean exit 
     const page = await open(e, { mode: "light", pal: "def", gl: 3, style: "glass", gv: 2, snd: false, cm: false });
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    // Each figure is the median of 3 navigations (re-entering from a neutral
+    // route every time), so one slow runner tick cannot decide the result.
+    const median = (xs) => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+    const RUNS = 3;
     for (const [name, hash, sel] of [["challenge", "#/challenge", "#app .card"], ["day", "#/day/1", "#dw .dcard"], ["home", "#/", "#app"]]) {
-      await page.evaluate(() => { window.__LT.length = 0; });
-      await goHash(page, hash, sel);
-      await page.waitForTimeout(600);
-      const lt = await page.evaluate(() => window.__LT.slice());
-      const tbt = lt.reduce((s, d) => s + Math.max(0, d - 50), 0);
-      assert.ok(tbt < 300, name + " TBT is " + tbt + "ms (max 300)");
-      assert.ok(Math.max(0, ...lt) <= 200, name + " has a " + Math.max(0, ...lt) + "ms long task (max 200)");
+      const tbts = [], maxes = [];
+      for (let run = 0; run < RUNS; run++) {
+        await goHash(page, "#/surahs", "#app .list.sl .row");
+        await page.evaluate(() => { window.__LT.length = 0; });
+        await goHash(page, hash, sel);
+        await page.waitForTimeout(600);
+        const lt = await page.evaluate(() => window.__LT.slice());
+        tbts.push(lt.reduce((s, d) => s + Math.max(0, d - 50), 0));
+        maxes.push(Math.max(0, ...lt));
+      }
+      assert.ok(median(tbts) < 300, name + " median TBT is " + median(tbts) + "ms (max 300; runs " + tbts.join("/") + ")");
+      assert.ok(median(maxes) <= 200, name + " median longest task is " + median(maxes) + "ms (max 200; runs " + maxes.join("/") + ")");
     }
-    await goHash(page, "#/challenge", "#app .card");
-    await page.evaluate(() => { window.__LT.length = 0; });
-    await page.evaluate(() => { location.hash = "#/"; });
-    await page.waitForSelector("#app", { timeout: 20000 });
-    await page.waitForTimeout(800);
-    const after = await page.evaluate(() => window.__LT.slice());
-    assert.ok(Math.max(0, ...after) <= 200, "leaving the challenge left a " + Math.max(0, ...after) + "ms long task (max 200)");
+    const exits = [];
+    for (let run = 0; run < RUNS; run++) {
+      await goHash(page, "#/surahs", "#app .list.sl .row");
+      await goHash(page, "#/challenge", "#app .card");
+      await page.evaluate(() => { window.__LT.length = 0; });
+      await page.evaluate(() => { location.hash = "#/"; });
+      await page.waitForSelector("#app", { timeout: 20000 });
+      await page.waitForTimeout(800);
+      exits.push(Math.max(0, ...(await page.evaluate(() => window.__LT.slice()))));
+    }
+    assert.ok(median(exits) <= 200, "leaving the challenge left a median longest task of " + median(exits) + "ms (max 200; runs " + exits.join("/") + ")");
     await page.close();
   } finally { await e.close(); }
 });
@@ -240,11 +253,18 @@ test("K4c: a burst of typing is coalesced into one result rebuild instead of one
       });
     });
     await page.click("#q");
-    // Six keys in a burst (shorter than the debounce window).
-    for (const ch of ["\u0627", "\u0644", "\u0644", "\u0647", "\u0645", "\u0627"]) {
-      await page.type("#q", ch, { delay: 0 });
-      await page.waitForTimeout(25);
-    }
+    // Six keys in a burst, 25ms apart (shorter than the debounce window). The keys
+    // are dispatched inside the page on a 25ms timer chain: each next-key timer is
+    // due before the previous key's debounce timer, and timers fire in due order,
+    // so the gaps stay under the debounce however slow the runner is.
+    await page.evaluate(async (keys) => {
+      const q = document.getElementById("q");
+      for (const ch of keys) {
+        q.value += ch;
+        q.dispatchEvent(new InputEvent("input", { bubbles: true, data: ch, inputType: "insertText" }));
+        await new Promise((r) => setTimeout(r, 25));
+      }
+    }, ["\u0627", "\u0644", "\u0644", "\u0647", "\u0645", "\u0627"]);
     // Feedback stays instant even though the list render is deferred.
     assert.ok(await page.evaluate(() => document.body.classList.contains("searching")), "the collapse reacts on the first key");
     // Only the trailing keystroke should have rebuilt the list.
@@ -274,7 +294,13 @@ test("K5: the sheet preview and the saved file share one canvas renderer; deskto
     await goHash(page, "#/word/78-0", '[data-a="card"]');
     await page.click('[data-a="card"]');
     await page.waitForSelector("#sh .arts", { timeout: 20000 });
-    await page.waitForTimeout(300);
+    // Wait for the card fonts to finish loading and for both previews to be
+    // swapped to their rendered PNG <img>, instead of a fixed delay.
+    await page.waitForFunction(() => {
+      const arts = [...document.querySelectorAll("#sh .art")];
+      return document.fonts.status === "loaded" && arts.length === 2 &&
+        arts.every((a) => { const i = a.querySelector("img"); return i && /^(blob:|data:image\/png)/.test(i.getAttribute("src") || ""); });
+    }, null, { timeout: 20000 });
     const prev = await page.evaluate(() => {
       const art = document.querySelector("#sh .art");
       const img = art && art.querySelector("img");

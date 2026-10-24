@@ -97,13 +97,18 @@ try {
   await page.route(/firebasejs\/10\.14\.1\/firebase-firestore\.js$/, (r) => r.fulfill({ path: fsJs, contentType: 'text/javascript' }));
 
   await page.goto(`http://127.0.0.1:${PORT}/?emul=1`, { waitUntil: 'domcontentloaded' });
-  // migrate.js sets __DATA_SRC__ = 'pending' synchronously, so wait for it to
-  // leave 'pending' (it becomes 'firestore' or the offline 'json' fallback).
-  await page.waitForFunction(() => typeof window.__DATA_SRC__ === 'string' && window.__DATA_SRC__ !== 'pending', { timeout: 30000 });
+  // migrate.js starts at 'pending' and may report the 'json' fallback first when
+  // the emulator answers after its 800ms first-render deadline; a late Firestore
+  // reply then upgrades it to 'firestore'. Wait for that settled value instead of
+  // reading the first one, and fail if it never reaches 'firestore'.
+  const SETTLE_MS = 15000;
+  const settled = await page
+    .waitForFunction(() => window.__DATA_SRC__ === 'firestore', null, { timeout: SETTLE_MS })
+    .then(() => true, () => false);
 
   const dataSrc = await page.evaluate(() => window.__DATA_SRC__);
-  if (dataSrc !== 'firestore') {
-    die(`expected window.__DATA_SRC__ === 'firestore', got '${dataSrc}'`);
+  if (!settled || dataSrc !== 'firestore') {
+    die(`expected window.__DATA_SRC__ to settle on 'firestore' within ${SETTLE_MS}ms, got '${dataSrc}'`);
   } else {
     console.log(`CLIENT-VERIFY: data source = ${dataSrc} (Firestore, emulator)`);
   }
@@ -173,6 +178,10 @@ try {
   for (const c of await page.$$('#dw .dcard')) {
     await c.click().catch(() => {});
   }
+
+  // The source must still be Firestore at the end (it never falls back once settled).
+  const finalSrc = await page.evaluate(() => window.__DATA_SRC__);
+  if (finalSrc !== 'firestore') die(`window.__DATA_SRC__ ended as '${finalSrc}', expected 'firestore'`);
 
   if (pageErrors.length) die('page errors occurred');
   if (consoleErrors.length) die('console errors occurred');
