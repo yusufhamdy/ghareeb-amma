@@ -427,6 +427,7 @@ export function renderWordPage(r) {
     others +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
+    '<script src="/word-gap.js" defer></script>' +
     "</div></body></html>"
   );
 }

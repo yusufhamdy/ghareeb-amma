@@ -95,14 +95,19 @@ test("K1: public/index.html structure is untouched (still inline, no shared-css 
   assert.ok(!html.includes("/theme-boot.js"), "index.html must not link the static-pages bootstrap");
 });
 
-test("K1: every static page links the shared stylesheet and the synchronous theme bootstrap only", () => {
+test("K1: every static page links the shared stylesheet and the synchronous theme bootstrap only (word pages also defer /word-gap.js)", () => {
   const pages = [
     ...wordFiles().map((f) => "word/" + f),
     ...surahFiles().map((f) => "surah/" + f),
     ...["about", "privacy", "terms", "rights"].map((s) => s + "/index.html"),
   ];
+  const WORD_GAP = '<script src="/word-gap.js" defer></script>';
   for (const p of pages) {
-    const html = read(p);
+    const full = read(p);
+    // Word pages may add exactly one deferred /word-gap.js; every check below runs on the rest of the page.
+    if (p.startsWith("word/")) assert.strictEqual(full.split(WORD_GAP).length - 1, 1, p + " must load /word-gap.js once, deferred");
+    else assert.ok(!full.includes("/word-gap.js"), p + " must not load /word-gap.js");
+    const html = p.startsWith("word/") ? full.replace(WORD_GAP, "") : full;
     assert.ok(html.includes('<link rel="stylesheet" href="/css/app.css">'), p + " must link the shared stylesheet");
     assert.ok(html.includes('<script src="/theme-boot.js"></script>'), p + " must include the theme bootstrap");
     assert.ok(html.indexOf('<script src="/theme-boot.js"></script>') < html.indexOf("</head>"), p + " theme bootstrap must be in <head>");

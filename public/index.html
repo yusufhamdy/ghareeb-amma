@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://ghareebalquran.com/og.png">
 <link rel="canonical" href="https://ghareebalquran.com/">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646","url":"https://ghareebalquran.com/","inLanguage":"ar"}</script>
-<link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/firebase-config.js"></script><script src="/migrate.js"></script><script src="/quiz-core.js"></script>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/firebase-config.js"></script><script src="/migrate.js"></script><script src="/quiz-core.js"></script><script src="/word-gap.js" defer></script>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <style>
 :root{--bad:color-mix(in srgb,#E53935 50%,var(--tx));--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--b1:#8FCBAE;--b2:#EBC98A;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px}
@@ -146,6 +146,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .cw .ay{font-size:clamp(21px,3.6vw,25px);line-height:2.1}
 .cw .vr{margin-top:8px;padding-top:12px;border-top:1px dashed var(--ln)}
 .cw .mn{font-size:20px;line-height:1.9}
+@media(min-width:601px){.cw .mn{font-size:clamp(20px,calc(16.43px + .5952vw),25px)}}
 .acts.v3{justify-content:center}
 @media(max-width:600px){.acts.v3 .btn{flex:1 1 100%}}
 @media(min-width:801px){.cw{grid-template-columns:auto 1fr auto;grid-template-areas:"p c n";align-items:center}.pnb{flex-direction:column;width:104px;min-height:112px;padding:14px 8px;text-align:center;justify-content:center}}
@@ -623,7 +624,7 @@ const TABS=[['','بحث','<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>
 const seenD=()=>{try{return +localStorage.getItem('gq-seen')||0}catch(e){return 0}};
 function navBuild(i){const nv=$('nv');nv.style.setProperty('--i',Math.max(0,i));nv.className='g'+(nv.classList.contains('hide')?' hide':'')+(i<0?' none':'');nv.innerHTML='<i class="ind"></i>'+TABS.map((t,k)=>`<a href="#/${t[0]}" class="t${k===i?' on':''}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t[2]}</svg><span>${t[1]}</span>${k===2&&CH.length&&released()>seenD()&&i!==2?'<b class="dt"></b>':''}</a>`).join('')}
 const _view2=view;view=function(r){const p=r[0];if(['about','privacy','terms','rights'].includes(p))return legal(p)+foot();if(p==='fail')return failView()+foot();if(!['home','surahs','surah','word','challenge','day','quiz'].includes(p))return nf404()+foot();let h=_view2(r);if(h.includes('الصفحة غير موجودة.'))return nf404()+foot();if(p==='home')h=h.replace('<div id="res"></div>',strip()+'<div id="res"></div>');if(p==='word'){const w=byId(r[1]);if(w)h+=`<a class="m" style="text-align:center;padding:10px" href="mailto:${MAIL}?subject=${encodeURIComponent('بلاغ عن خطأ: '+w.word)}">أبلغ عن خطأ في هذه الكلمة</a>`;if(w&&w.reel)h=h.replace('<div class="acts">','<a class="btn o" href="'+esc(w.reel)+'" target="_blank" rel="noopener">شاهد شرح الكلمة في مقطع قصير</a><div class="acts">')}return h+foot()};
-const _render2=render;let _rk='\u0000';render=function(){_render2();const r=route()[0],i={home:0,word:0,surahs:1,surah:1,challenge:2,day:2,quiz:3}[r];navBuild(i===undefined?-1:i);if(r==='challenge'||r==='day'){try{localStorage.setItem('gq-seen',released())}catch(e){}}const a=$('app'),key=location.hash||'#/';if(key===_rk){a.classList.remove('pg','pgs');return}_rk=key;a.classList.remove('pg','pgs');void a.offsetWidth;a.classList.add(['word','surah','day'].includes(r)?'pgs':'pg')};
+const _render2=render;let _rk='\u0000';render=function(){_render2();const r=route()[0];if(r==='word'&&window.wordGap)wordGap();const i={home:0,word:0,surahs:1,surah:1,challenge:2,day:2,quiz:3}[r];navBuild(i===undefined?-1:i);if(r==='challenge'||r==='day'){try{localStorage.setItem('gq-seen',released())}catch(e){}}const a=$('app'),key=location.hash||'#/';if(key===_rk){a.classList.remove('pg','pgs');return}_rk=key;a.classList.remove('pg','pgs');void a.offsetWidth;a.classList.add(['word','surah','day'].includes(r)?'pgs':'pg')};
 let ly=0;addEventListener('scroll',()=>{const nv=$('nv');if(!nv)return;const d=scrollY-ly;if(Math.abs(d)>8){nv.classList.toggle('hide',d>0&&scrollY>140);ly=scrollY}},{passive:true});
 document.addEventListener('click',e=>{if(e.target.closest('nav .t')&&navigator.vibrate)navigator.vibrate(8);});
 
