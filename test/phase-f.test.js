@@ -470,14 +470,14 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
         return { tag: e.tagName, href: e.getAttribute("href"), dis: e.getAttribute("aria-disabled"), text: (e.textContent||"").trim(), svg: !!e.querySelector("svg"),
           top: r.top, left: r.left, right: r.right, width: r.width, height: r.height, pe: cs.pointerEvents, op: cs.opacity,
           last: e.lastElementChild ? e.lastElementChild.tagName : null, path: e.querySelector("svg path") ? e.querySelector("svg path").getAttribute("d") : null }; };
-      const h = document.querySelector(".dh h1"), hr = h && h.getBoundingClientRect();
-      return { pv: ctl(".dh .pv"), nx: ctl(".dh .nx"), h1: hr ? { top: hr.top, bottom: hr.bottom, left: hr.left, right: hr.right } : null };
+      const d = document.querySelector("#dw"), dr = d && d.getBoundingClientRect();
+      return { pv: ctl("#app .cw.dnav .pv"), nx: ctl("#app .cw.dnav .nx"), dw: dr ? { top: dr.top, bottom: dr.bottom } : null };
     })()`);
 
     await nav(page, "#/day/5");
-    await page.waitForSelector(".dh .pv", { timeout: 20000 });
+    await page.waitForSelector("#app .cw.dnav .pv", { timeout: 20000 });
     const d5 = await read();
-    assert.ok(d5.pv && d5.nx, "the day page shows both arrows next to the title");
+    assert.ok(d5.pv && d5.nx, "the day page shows both pills");
     assert.equal(d5.pv.tag, "A", "day 5 previous is a link");
     assert.equal(d5.pv.href, "#/day/4", "day 5 previous goes to day 4");
     assert.equal(d5.nx.tag, "A", "day 5 next is a link");
@@ -486,10 +486,10 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
     assert.ok(d5.nx.text.includes(LB.nextDay), "next keeps the existing day label");
     assert.ok(d5.pv.svg && d5.nx.svg, "both arrows carry a chevron");
     assert.ok(d5.pv.pe !== "none", "an enabled control is clickable");
-    assert.ok(d5.h1 && d5.pv.left >= d5.h1.right - 1 && d5.nx.right <= d5.h1.left + 1, "the arrows flank the title");
+    assert.ok(d5.dw && d5.pv.top >= d5.dw.bottom && d5.nx.top >= d5.dw.bottom, "the pills sit below the word cards");
 
     await nav(page, "#/day/1");
-    await page.waitForSelector(".dh .pv", { timeout: 20000 });
+    await page.waitForSelector("#app .cw.dnav .pv", { timeout: 20000 });
     const d1 = await read();
     assert.equal(d1.pv.tag, "SPAN", "day 1 previous is not a link");
     assert.equal(d1.pv.dis, "true", "day 1 previous is aria-disabled");
@@ -500,7 +500,7 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
     assert.equal(d1.nx.href, "#/day/2", "day 1 next goes to day 2");
 
     await nav(page, "#/day/" + (await page.evaluate(() => CH.length)));
-    await page.waitForSelector(".dh .pv", { timeout: 20000 });
+    await page.waitForSelector("#app .cw.dnav .pv", { timeout: 20000 });
     const dN = await read();
     const lastDay = await page.evaluate(() => CH.length);
     assert.equal(dN.nx.tag, "SPAN", "the last day next is not a link");
@@ -509,36 +509,38 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
     assert.equal(dN.pv.tag, "A", "the last day previous stays a link");
     assert.equal(dN.pv.href, "#/day/" + (lastDay - 1), "the last day previous goes to the day before");
 
-    // positions of both controls are identical across days (disabled never hidden)
+    // both controls keep their place across days (disabled never hidden); vertically they follow the word cards
     for (const k of ["pv", "nx"]) {
       for (const [name, v] of [["day1", d1], ["day5", d5], ["last", dN]]) {
         assert.ok(Math.abs(v[k].left - d5[k].left) <= 1, name + " " + k + " left is stable (" + v[k].left + " vs " + d5[k].left + ")");
-        assert.ok(Math.abs(v[k].top - d5[k].top) <= 1, name + " " + k + " top is stable");
+        assert.ok(v[k].top >= v.dw.bottom, name + " " + k + " sits below the word cards");
         assert.ok(Math.abs(v[k].width - d5[k].width) <= 1, name + " " + k + " width is stable");
         assert.ok(Math.abs(v[k].height - d5[k].height) <= 1, name + " " + k + " height is stable");
       }
     }
-    // the existing next keeps its look: .btn with the forward arrow last
-    assert.equal(d5.nx.last, "svg", "the existing next arrow is the last child of the button");
-    assert.ok((d5.nx.path || "").includes("M19 12H5"), "the existing next arrow still points left");
+    // the next pill carries the shared chevron at its outer edge, pointing left
+    assert.equal(d5.nx.last, "svg", "the next chevron is the last child of the pill");
+    assert.ok((d5.nx.path || "").includes("M15 5l-7 7 7 7"), "the next chevron points left");
   } finally { await env.close(); }
 });
 
-test("F2: a locked next day is still handled exactly as before", { timeout: 180000 }, async (t) => {
+test("F2: a locked next day shows a disabled next pill with a lock line", { timeout: 180000 }, async (t) => {
   const raw = JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"));
   const env = await setup(t, { ch: Object.assign({}, raw, { releasedUpTo: null }), prog: { done: [] } });
   if (!env) return;
   try {
     const page = await env.page(1440, 900);
     await nav(page, "#/day/1");
-    await page.waitForSelector(".dh .nx", { timeout: 20000 });
+    await page.waitForSelector("#app .cw.dnav .nx", { timeout: 20000 });
     const r = await page.evaluate(`(() => {
-      const e = document.querySelector(".dh .nx");
-      return { tag: e.tagName, href: e.getAttribute("href"), dis: e.getAttribute("aria-disabled") };
+      const e = document.querySelector("#app .cw.dnav .nx"), ps = e.querySelector(".ps");
+      return { tag: e.tagName, href: e.getAttribute("href"), dis: e.getAttribute("aria-disabled"), ps: ps ? ps.textContent.trim() : null, lock: !!(ps && ps.querySelector("svg rect")) };
     })()`);
-    assert.equal(r.tag, "A", "the next control is still a link even when the next day is locked");
-    assert.equal(r.href, "#/day/2", "it still points at the next day");
-    assert.equal(r.dis, null, "it is not marked disabled");
+    assert.equal(r.tag, "SPAN", "the next control is not a link while the next day is locked");
+    assert.equal(r.href, null, "it has no target");
+    assert.equal(r.dis, "true", "it is marked disabled");
+    assert.equal(r.ps, "\u0628\u0639\u062f \u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u064a\u0648\u0645", "its second line explains when it opens");
+    assert.ok(r.lock, "the second line carries a lock icon");
     await nav(page, "#/day/2");
     await page.waitForSelector("#app .card", { timeout: 20000 });
     const locked = await page.evaluate(() => ({

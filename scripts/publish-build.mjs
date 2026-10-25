@@ -167,6 +167,8 @@ const STATIC_CSS_TAIL =
   // The chips' shadow (10px + 30px blur = 40px) ends before the translucent
   // "all words" button below them; the card's own gap is 14px.
   ".chips+.acts{margin-top:26px}\n" +
+  // S8: in glass dark the chips sit on two glass layers; mixing the accent toward the text colour keeps them >= 4.5:1
+  ":root.dk:not(.shade) .chip{color:color-mix(in srgb,var(--ac) 35%,var(--tx))}\n" +
   // P1 Tier 4: the legal pages' home link is a small text link, so it gets the
   // same subtle hover colour and light (opacity-only) press as the app's links.
   ":is(.legal>a.b,.para a){transition:color .2s,opacity .15s}\n" +
@@ -483,7 +485,7 @@ export function renderSurahPage(s) {
     '<div class="cw snav">' +
     '<div class="list g rs">' + rows + "</div>" +
     sbtn(s.prev, "pv") + sbtn(s.next, "nx") + "</div></div>\n" +
-    '<div class="acts"><a class="btn o g" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
+    '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</div></body></html>"

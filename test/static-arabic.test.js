@@ -8,9 +8,9 @@ const path = require("path");
 const seo = require("../functions/seo.js");
 
 const ROOT = path.join(__dirname, "..");
-const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "open on the site"
+const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "browse the site"
 const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"; // removed label
-const SOURCE_LABEL = "\u0627\u0644\u0645\u0635\u062f\u0631"; // the removed source line's label
+const SOURCE_LABEL = "\u0627\u0644\u0645\u0635\u062f\u0631"; // the source line's label (word pages only)
 const SURAH_PREFIX_RE = /^\u0633\u0648\u0631\u0629\s*/; // leading "surah "
 
 // Minimal text-node scanner (skips comments, script/style and all tags; the

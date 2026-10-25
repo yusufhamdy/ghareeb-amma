@@ -6,7 +6,7 @@
  * bootstrap. These tests prove the generator extracts the app's <style> block
  * into one committed stylesheet, every static page links it plus the synchronous
  * theme bootstrap and nothing else, the word pages were rebuilt to match the app
- * (no source line, "open on the site" button, prev/next), the 28 static surah
+ * (source line, "browse the site" button, prev/next), the 28 static surah
  * pages exist, and the sitemap lists them.
  *
  * K2: SEO titles/descriptions per the spec, diacritics stripped only in the
@@ -29,7 +29,7 @@ const loadPublish = () => import(pathToFileURL(path.join(ROOT, "scripts", "publi
 // Arabic labels under test (escaped).
 const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "browse the site"
 const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"; // "open in the app" (removed)
-const SOURCE = "\u0627\u0644\u0645\u0635\u062f\u0631"; // "the source" (removed line)
+const SOURCE = "\u0627\u0644\u0645\u0635\u062f\u0631"; // "the source" (the word pages' source line)
 const OTHER_WORDS = "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0646\u0641\u0633 \u0627\u0644\u0633\u0648\u0631\u0629"; // "other words from the same surah"
 const LOGO = "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646"; // "Ghareeb Al-Quran"
 const WORD_T_PRE = "\u0645\u0639\u0646\u0649 "; // "meaning of "
@@ -128,7 +128,7 @@ test("K1: the theme bootstrap applies the saved gq-set record before first paint
   assert.ok(isAscii(boot), "theme bootstrap stays ASCII-only");
 });
 
-test("K1: word pages are rebuilt like the app (no source line, open-on-site, prev/next, others card)", () => {
+test("K1: word pages are rebuilt like the app (source line, browse-the-site pill, prev/next, others card)", () => {
   const files = wordFiles();
   assert.strictEqual(files.length, 73, "exactly the 73 canonical word pages");
   for (const f of files) {

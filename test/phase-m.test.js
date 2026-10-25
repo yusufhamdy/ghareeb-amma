@@ -53,7 +53,7 @@ function startServer() {
 
 // SPA values measured in step 1 (before the fix) must not drift.
 const SPA_BASELINE = {
-  gapChipToBtn: 14, // the app's inter-block gap (.cw{gap:14px})
+  gapChipToBtn: 40, // the app's row gap above the pills (.cw row-gap: the cards' 40px shadow reach)
   cardPadBottom: 22,
 };
 
