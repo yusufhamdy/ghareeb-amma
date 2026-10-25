@@ -133,7 +133,7 @@ test("F1: every surah links to its neighbours and the boundaries are disabled", 
   } finally { await env.close(); }
 });
 
-test("F1: at 400px the arrows sit above the list; at 1440px they flank it as 104x116 tiles", { timeout: 180000 }, async (t) => {
+test("F1: the arrows are a row of two 58px pills below the list (sharing the row at 400px, 250px each at 1440px)", { timeout: 180000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
@@ -153,13 +153,15 @@ test("F1: at 400px the arrows sit above the list; at 1440px they flank it as 104
       return { pv: r("#app .cw .pnb.pv"), nx: r("#app .cw .pnb.nx"), list: r("#app .cw .list") };
     });
     assert.ok(g.pv && g.nx && g.list, "controls and list render");
-    assert.ok(g.pv.bottom <= g.list.top + 1, "at 400px the previous control sits above the words list");
-    assert.ok(g.nx.bottom <= g.list.top + 1, "at 400px the next control sits above the words list");
+    assert.ok(g.pv.top >= g.list.bottom - 1, "at 400px the previous control sits below the words list");
+    assert.ok(g.nx.top >= g.list.bottom - 1, "at 400px the next control sits below the words list");
+    assert.ok(Math.abs(g.pv.width - g.nx.width) <= 1 && Math.abs(g.pv.top - g.nx.top) <= 1, "at 400px the two pills share one row equally");
+    assert.ok(Math.abs(g.pv.height - 58) <= 1 && Math.abs(g.nx.height - 58) <= 1, "at 400px both pills are 58px tall");
     assert.ok(g.pv.height >= 44 && g.nx.height >= 44, "at 400px both controls keep a 44px target");
     assert.ok(g.pv.left >= g.nx.right - 1, "in RTL the previous control is the inline-start (right) one");
     await mob.close();
 
-    // desktop placement + the tile size (the word page uses pills now; the surah tiles keep 104x116)
+    // desktop placement + the pill size (the same pills as the word page)
     const desk = await env.page(1440, 900);
     await nav(desk, "#/surah/" + mid);
     await desk.waitForSelector("#app .cw .pnb.pv", { timeout: 20000 });
@@ -167,12 +169,13 @@ test("F1: at 400px the arrows sit above the list; at 1440px they flank it as 104
       const r = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
       return { pv: r("#app .cw .pnb.pv"), nx: r("#app .cw .pnb.nx"), list: r("#app .cw .list") };
     });
-    assert.ok(sg.pv.left >= sg.list.right - 1, "at 1440px the previous control is to the inline-start of the list");
-    assert.ok(sg.nx.right <= sg.list.left + 1, "at 1440px the next control is to the inline-end of the list");
-    assert.ok(Math.abs(sg.pv.width - 104) <= 1, "surah previous tile width stays 104 (" + sg.pv.width + ")");
-    assert.ok(Math.abs(sg.pv.height - 116) <= 1, "surah previous tile height stays 116");
-    assert.ok(Math.abs(sg.nx.width - 104) <= 1, "surah next tile width stays 104");
-    assert.ok(Math.abs(sg.nx.height - 116) <= 1, "surah next tile height stays 116");
+    assert.ok(sg.pv.top >= sg.list.bottom - 1 && sg.nx.top >= sg.list.bottom - 1, "at 1440px both controls sit below the list");
+    assert.ok(sg.pv.left >= sg.nx.right - 1, "at 1440px the previous control is the inline-start (right) one");
+    assert.ok(Math.abs((sg.pv.right + sg.nx.left) / 2 - (sg.list.left + sg.list.right) / 2) <= 1, "at 1440px the pill row is centered under the list");
+    assert.ok(Math.abs(sg.pv.width - 250) <= 1, "surah previous pill width is 250 (" + sg.pv.width + ")");
+    assert.ok(Math.abs(sg.pv.height - 58) <= 1, "surah previous pill height is 58");
+    assert.ok(Math.abs(sg.nx.width - 250) <= 1, "surah next pill width is 250");
+    assert.ok(Math.abs(sg.nx.height - 58) <= 1, "surah next pill height is 58");
     await desk.close();
   } finally { await env.close(); }
 });

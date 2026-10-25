@@ -152,7 +152,6 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(max-width:600px){.acts.v3 .btn{flex:1 1 100%}}
 @media(min-width:801px){.cw{grid-template-columns:auto 1fr auto;grid-template-areas:"p c n";align-items:center}.pnb{flex-direction:column;width:104px;min-height:112px;padding:14px 8px;text-align:center;justify-content:center}}
 .cw.snav>.list{grid-area:c}
-@media(max-width:800px){.cw.snav{grid-template-areas:"p n" "c c"}}
 .shade h1{font-family:'Amiri Quran',serif;font-weight:400;font-size:clamp(34px,7vw,60px);line-height:1.35}
 .shade .bd,.shade .lg{font-family:'IBM Plex Mono','IBM Plex Sans Arabic',monospace}
 .shade .g,.shade .card,.shade .sb,.shade .strip,.shade .toast,.shade .seg,.shade .list,.shade .ib{background:var(--sf);border:1px solid var(--sbd);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
@@ -219,17 +218,18 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* F2: prev/next identical structure - icon above text on desktop, same height */
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
 /* word page prev/next: pills on every width - chevron beside the text, the surah line under the label when crossing
-   surahs. Fixed 58px height so the row never jumps; both share the row. Surah-page tiles (.snav) are untouched. */
+   surahs (always, on the surah page). Fixed 58px height so the row never jumps; both share the row. One rule set for the
+   word page and the surah page (.snav, where the words list keeps the width it had between the old 104px tiles). */
 .pnb .ps{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;line-height:1.3;color:var(--ac);opacity:.75;white-space:nowrap}.pnb .ps svg{width:13px;height:13px;flex:none}
-.cw:not(.snav) .pnb{display:grid;grid-template-columns:auto auto;column-gap:10px;align-content:center;align-items:center;justify-content:center;justify-items:start;justify-self:stretch;width:auto;height:58px;min-height:0;padding:0 16px;border-radius:999px;font-size:16px;font-weight:500;line-height:1.35;text-align:start;white-space:nowrap}
-.cw:not(.snav) .pv:has(>.ps)>svg{grid-row:1/span 2}.cw:not(.snav) .nx:has(>.ps)>.ps{grid-row:2;grid-column:1}.cw:not(.snav) .nx:has(>.ps)>svg{grid-row:1/span 2;grid-column:2}
-@media(max-width:360px){.cw:not(.snav) .pnb{padding:0 10px;column-gap:6px}}
-@media(min-width:801px){.cw:not(.snav){grid-template-columns:1fr 1fr;grid-template-areas:"c c" "p n";align-items:stretch}.cw:not(.snav) .pnb{width:250px}.cw:not(.snav) .pv{justify-self:end}.cw:not(.snav) .nx{justify-self:start}}
+.cw .pnb{display:grid;grid-template-columns:auto auto;column-gap:10px;align-content:center;align-items:center;justify-content:center;justify-items:start;justify-self:stretch;width:auto;height:58px;min-height:0;padding:0 16px;border-radius:999px;font-size:16px;font-weight:500;line-height:1.35;text-align:start;white-space:nowrap}
+.cw .pv:has(>.ps)>svg{grid-row:1/span 2}.cw .nx:has(>.ps)>.ps{grid-row:2;grid-column:1}.cw .nx:has(>.ps)>svg{grid-row:1/span 2;grid-column:2}
+@media(max-width:360px){.cw .pnb{padding:0 8px;column-gap:6px}}
+@media(min-width:801px){.cw{grid-template-columns:1fr 1fr;grid-template-areas:"c c" "p n";align-items:stretch}.cw .pnb{width:250px}.cw .pv{justify-self:end}.cw .nx{justify-self:start}.cw.snav>.list{width:calc(100% - 236px);justify-self:center}}
 /* Tier 2 (outlined buttons): glass keeps the shared hover shadow and press scale, no opacity press; shade inverts on
    hover and focus-visible (the surah line follows the text colour) with no size change */
-.cw:not(.snav) a.pnb:active{opacity:1}
-@media(hover:hover){.shade .cw:not(.snav) a.pnb:hover{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw:not(.snav) a.pnb:hover .ps{color:inherit}}
-.shade .cw:not(.snav) a.pnb:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw:not(.snav) a.pnb:focus-visible .ps{color:inherit}
+.cw a.pnb:active{opacity:1}
+@media(hover:hover){.shade .cw a.pnb:not(:disabled):hover{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw a.pnb:not(:disabled):hover .ps{color:inherit}}
+.shade .cw a.pnb:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw a.pnb:focus-visible .ps{color:inherit}
 /* J1: search collapse */
 /* K4b: overflow was permanently hidden on the action rows, clipping the button
    shadow into a straight grey band (the .acts box bottom == button bottom, so a
@@ -401,16 +401,17 @@ const CIc='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="c
 const CIcL='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 const DCHEV='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 const DCK='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+// prev/next pill shared by the word and surah pages: o={label,href,sur,aria} or {label,dis:true}; the surah line shows when o.sur is set
+function pnBtn(o,dir){const ps=o.sur?`<span class="ps" aria-hidden="true">${BI.bk}${esc(o.sur)}</span>`:'';const inner=dir==='pv'?CIc+' '+o.label+ps:o.label+' '+CIcL+ps;return o.dis
+    ?`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`
+    :`<a class="g pnb ${dir}" href="${o.href}"${o.aria?` aria-label="${esc(o.aria)}"`:''}>${inner}</a>`}
 function wordNav(w){
   const idx=W.indexOf(w);
   const prev=idx>0?W[idx-1]:null;
   const next=idx>=0&&idx<W.length-1?W[idx+1]:null;
   // always word to word (W order); a second line names the surah when the target is in another one
-  const pv=prev?{label:'الكلمة السابقة',href:'#/word/'+prev.id,sur:prev.s.num!==w.s.num?prev.s.name:''}:{label:'الكلمة السابقة',dis:true};
-  const nx=next?{label:'الكلمة التالية',href:'#/word/'+next.id,sur:next.s.num!==w.s.num?next.s.name:''}:{label:'الكلمة التالية',dis:true};
-  const btn=(o,dir)=>{const ps=o.sur?`<span class="ps" aria-hidden="true">${BI.bk}${esc(o.sur)}</span>`:'';const inner=dir==='pv'?CIc+' '+o.label+ps:o.label+' '+CIcL+ps;return o.dis
-    ?`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`
-    :`<a class="g pnb ${dir}" href="${o.href}"${o.sur?` aria-label="${o.label}، من سورة ${esc(o.sur)}"`:''}>${inner}</a>`};
+  const to=(x,label)=>{if(!x)return{label,dis:true};const sur=x.s.num!==w.s.num?x.s.name:'';return{label,href:'#/word/'+x.id,sur,aria:sur?label+'، من سورة '+sur:''}};
+  const pv=to(prev,'الكلمة السابقة'),nx=to(next,'الكلمة التالية'),btn=pnBtn;
   return `<div class="cw">${btn(pv,'pv')}<div class="cols">
 <div class="g card"><div class="wd q">${esc(w.word)}</div><div class="vr"><div class="ay q">${AY(w.ay)}</div></div></div>
 <div class="g card"><div class="m">المعنى</div><div class="mn">${esc(w.mean)}</div><div class="m">${esc(w.src)}</div></div>
@@ -418,7 +419,7 @@ function wordNav(w){
 }
 function view(r){const [p,a]=r;
 if(p==='surahs')return `${head()}<div><h1>السور</h1><div class="sub">${S.length} سورة فيها كلمات حاليًا.</div></div><div class="list g sl">${S.map(s=>`<a class="row" href="#/surah/${s.num}"><span class="bd">${s.num}</span><span class="q" style="flex:1;font-size:25px">${esc(s.name)}</span><span class="m">${wc(s.w.length)}</span>${ICO.c}</a>`).join('')}</div>`;
-if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();const si=S.indexOf(s),sp=si>0?S[si-1]:null,sn=si<S.length-1?S[si+1]:null;const sbtn=(o,dir)=>{const inner=dir==='pv'?CIc+' السورة السابقة':'السورة التالية '+CIcL;return o?`<a class="g pnb ${dir}" href="#/surah/${o.num}">${inner}</a>`:`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`};return `${head()}<div class="shd"><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div><div class="cw snav">${sbtn(sp,'pv')}<div class="list g rs">${s.w.map(wrow).join('')}</div>${sbtn(sn,'nx')}</div></div><a class="btn o g" href="#/surahs">${BI.bk}كل السور</a>`;}
+if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();const si=S.indexOf(s),sp=si>0?S[si-1]:null,sn=si<S.length-1?S[si+1]:null;const sbtn=(o,dir)=>{const label=dir==='pv'?'السورة السابقة':'السورة التالية';return pnBtn(o?{label,href:'#/surah/'+o.num,sur:o.name,aria:label+'، '+o.name}:{label,dis:true},dir)};return `${head()}<div class="shd"><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div><div class="cw snav"><div class="list g rs">${s.w.map(wrow).join('')}</div>${sbtn(sp,'pv')}${sbtn(sn,'nx')}</div></div><a class="btn o g" href="#/surahs">${BI.bk}كل السور</a>`;}
 if(p==='word'){const w=byId(a);if(!w)return nf();return `${head()}<a class="pill" href="#/surah/${w.s.num}">${esc(w.s.name)} · آية ${esc(w.ay.label)}${CIcL}</a>${wordNav(w)}<div class="acts v3"><a class="btn o g" href="#/surah/${w.s.num}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>كلمات أخرى من نفس السورة</a><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة أخرى</button><button class="btn o" data-a="card" data-id="${w.id}">${BI.dl}حفظ كصورة</button></div>`;}
 if(p==='challenge'||p==='quiz')return `${head()}<div class="g card"><h1>${p==='quiz'?'اختبر نفسك':'تحدي غريب عمّ'}</h1><div class="sub" style="margin-top:8px">قيد الإعداد.</div></div>`;
 return `${head()}<main><div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts hacts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div></main>`;

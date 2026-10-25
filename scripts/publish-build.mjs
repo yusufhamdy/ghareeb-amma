@@ -66,6 +66,7 @@ const A = {
   NEXT_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next word"
   NEXT_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next surah"
   FROM_SURAH: "\u060c \u0645\u0646 \u0633\u0648\u0631\u0629 ", // ", from surah " (accessible name of a cross-surah prev/next)
+  COMMA: "\u060c ", // ", " (accessible name of the surah-page prev/next)
   ALL_SURAS: "\u0643\u0644 \u0627\u0644\u0633\u0648\u0631", // "all surahs"
   ONE_WORD: "\u0643\u0644\u0645\u0629 \u0648\u0627\u062d\u062f\u0629", // "one word"
   TWO_WORDS: "\u0643\u0644\u0645\u062a\u0627\u0646", // "two words"
@@ -264,6 +265,7 @@ export function buildRecords(surahs) {
     if (!seqOrder.includes(r.surahSeq)) seqOrder.push(r.surahSeq);
   });
   const noOf = (seq) => records.find((x) => x.surahSeq === seq).no;
+  const nameOf = (seq) => records.find((x) => x.surahSeq === seq).surahShort;
   seqOrder.sort((a, b) => noOf(a) - noOf(b));
   records.forEach((r) => {
     const i = seqOrder.indexOf(r.surahSeq);
@@ -272,8 +274,8 @@ export function buildRecords(surahs) {
       return seo.SURAH_SLUG[first.surahShort] || "surah-" + first.no;
     };
     r.surahSlug = slugOf(r.surahSeq);
-    r.surahPrev = i > 0 ? { no: records.find((x) => x.surahSeq === seqOrder[i - 1]).no, slug: slugOf(seqOrder[i - 1]) } : null;
-    r.surahNext = i < seqOrder.length - 1 ? { no: records.find((x) => x.surahSeq === seqOrder[i + 1]).no, slug: slugOf(seqOrder[i + 1]) } : null;
+    r.surahPrev = i > 0 ? { no: noOf(seqOrder[i - 1]), slug: slugOf(seqOrder[i - 1]), name: nameOf(seqOrder[i - 1]) } : null;
+    r.surahNext = i < seqOrder.length - 1 ? { no: noOf(seqOrder[i + 1]), slug: slugOf(seqOrder[i + 1]), name: nameOf(seqOrder[i + 1]) } : null;
   });
   // Word-page prev/next always lead to a word, in the app's order (surah number,
   // then the sorted order above); crossing into another surah carries its name.
@@ -312,6 +314,18 @@ const EXT =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
 const BOOK =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+
+// The prev/next pill shared by the word and surah pages (same markup as the
+// app's pnBtn): o = { label, href, surah, aria }; no href -> disabled. The
+// surah line (open book + name) shows whenever o.surah is set.
+function navBtn(o, dir) {
+  const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK + esc(o.surah) + "</span>" : "";
+  const inner = dir === "pv" ? CHEV_R + " " + o.label + ps : o.label + " " + CHEV_L + ps;
+  const al = o.aria ? ' aria-label="' + esc(o.aria) + '"' : "";
+  return o.href
+    ? '<a class="g pnb ' + dir + '" href="' + o.href + '"' + al + ">" + inner + "</a>"
+    : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
+}
 
 // The app's existing count phrasing ("كلمة واحدة" / "كلمتان" / "n كلمات" /
 // "n كلمة"), escaped for this ASCII-only module.
@@ -402,17 +416,10 @@ export function renderWordPage(r) {
   const ayah = renderAyah(r.ayah);
   const surahHref = "/surah/" + r.surahSlug + ".html";
   const appHref = "/#/word/" + r.no + "-" + r.idx;
-  const link = (w, label) => ({ label, href: w ? "/word/" + w.slug + ".html" : null, surah: w ? w.surah : "" });
+  const link = (w, label) =>
+    w ? { label, href: "/word/" + w.slug + ".html", surah: w.surah, aria: w.surah ? label + A.FROM_SURAH + w.surah : "" } : { label, href: null };
   const pv = link(r.wordPrev, A.PREV_WORD);
   const nx = link(r.wordNext, A.NEXT_WORD);
-  const navBtn = (o, dir) => {
-    const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK + esc(o.surah) + "</span>" : "";
-    const inner = dir === "pv" ? CHEV_R + " " + o.label + ps : o.label + " " + CHEV_L + ps;
-    const al = o.surah ? ' aria-label="' + o.label + A.FROM_SURAH + esc(o.surah) + '"' : "";
-    return o.href
-      ? '<a class="g pnb ' + dir + '" href="' + o.href + '"' + al + ">" + inner + "</a>"
-      : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
-  };
   const chips = r.others
     .map((o) => '<a class="g chip q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a>")
     .join("");
@@ -453,10 +460,8 @@ export function renderSurahPage(s) {
     ]),
   ];
   const sbtn = (o, dir) => {
-    const inner = dir === "pv" ? CHEV_R + " " + A.PREV_SURAH : A.NEXT_SURAH + " " + CHEV_L;
-    return o
-      ? '<a class="g pnb ' + dir + '" href="/surah/' + o.slug + '.html">' + inner + "</a>"
-      : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
+    const label = dir === "pv" ? A.PREV_SURAH : A.NEXT_SURAH;
+    return navBtn(o ? { label, href: "/surah/" + o.slug + ".html", surah: o.name, aria: label + A.COMMA + o.name } : { label, href: null }, dir);
   };
   const rows = s.words
     .map(
@@ -474,9 +479,9 @@ export function renderSurahPage(s) {
     '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<div class="shd"><h1 class="q">' + esc(s.name) + '</h1><div class="sub">' + count + "</div>" +
-    '<div class="cw snav">' + sbtn(s.prev, "pv") +
+    '<div class="cw snav">' +
     '<div class="list g rs">' + rows + "</div>" +
-    sbtn(s.next, "nx") + "</div></div>\n" +
+    sbtn(s.prev, "pv") + sbtn(s.next, "nx") + "</div></div>\n" +
     '<div class="acts"><a class="btn o g" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
