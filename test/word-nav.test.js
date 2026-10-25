@@ -158,7 +158,7 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
             }),
             pv: pv ? { tag: pv.tagName, href: pv.getAttribute("href"), text: pv.textContent.trim(), ad: pv.getAttribute("aria-disabled"), op: pv.style.opacity, chev: chev(pv), r: rect(pv), vis: pv.offsetWidth > 0 && pv.offsetHeight > 0 } : null,
             nx: nx ? { tag: nx.tagName, href: nx.getAttribute("href"), text: nx.textContent.trim(), ad: nx.getAttribute("aria-disabled"), op: nx.style.opacity, chev: chev(nx), r: rect(nx), vis: nx.offsetWidth > 0 && nx.offsetHeight > 0 } : null,
-            acts: qa("#app .acts.v3 > *").map((a) => ({ tag: a.tagName, href: a.getAttribute("href"), da: a.getAttribute("data-a"), did: a.getAttribute("data-id") })),
+            acts: qa("#app .acts.v3 > *:not(.pr), #app .acts.v3 > .pr > *").map((a) => ({ tag: a.tagName, href: a.getAttribute("href"), da: a.getAttribute("data-a"), did: a.getAttribute("data-id") })),
             colsR: rect(cols),
             grid: getComputedStyle(q("#app .cw")).gridTemplateAreas.replace(/\s+/g, " ").trim(),
           };
@@ -219,8 +219,8 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
           assert.ok(d.nx.vis && d.nx.r.h >= 44 && d.nx.r.w > 0, "disabled control still visible, >=44px");
         }
 
-        // three actions in spec order: other-words -> draw -> save
-        assert.equal(d.acts.length, 3, "three action buttons");
+        // four actions in spec order: other-words -> draw -> save -> share (save and share share one row)
+        assert.equal(d.acts.length, 4, "four action buttons");
         assert.equal(d.acts[0].tag, "A");
         assert.equal(d.acts[0].href, "#/surah/" + s.num, "1st = other words from this surah");
         assert.equal(d.acts[1].tag, "BUTTON");
@@ -228,6 +228,8 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
         assert.equal(d.acts[2].tag, "BUTTON");
         assert.equal(d.acts[2].da, "card", "3rd = save as image");
         assert.equal(d.acts[2].did, cur.id);
+        assert.equal(d.acts[3].tag, "BUTTON");
+        assert.equal(d.acts[3].da, "share", "4th = share");
 
         // enabled nav targets are >=44px too
         if (d.pv.tag === "A") assert.ok(d.pv.r.h >= 44, "prev touch target >=44px");

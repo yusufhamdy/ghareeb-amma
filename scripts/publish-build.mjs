@@ -60,7 +60,7 @@ const A = {
   AYAH: "\u0622\u064a\u0629 ", // "ayah "
   COMMA: "\u060c ", // U+060C ARABIC COMMA, then a space
   OTHER: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0633\u0648\u0631\u0629 ", // "other words from surah "
-  APP: "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639", // "open on the site"
+  APP: "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639", // "browse the site"
   PREV_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous word"
   PREV_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous surah"
   NEXT_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next word"
@@ -439,7 +439,7 @@ export function renderWordPage(r) {
     '<div class="cw">' + navBtn(pv, "pv") +
     '<div class="cols">' +
     '<div class="g card"><h1 class="wd q">' + esc(r.word) + '</h1><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
-    '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + "</div></div>" +
+    '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + '</div><div class="m">' + esc(r.source || "") + "</div></div>" +
     "</div>" + navBtn(nx, "nx") + "</div>\n" +
     others +
     "</main>" +

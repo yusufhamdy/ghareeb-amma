@@ -21,7 +21,7 @@ button,input{font:inherit;color:inherit}
 }
 .g{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));-webkit-backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 30px rgba(0,0,0,.15)}
 @media(prefers-reduced-transparency:reduce){.g{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}}
-.wrap{position:relative;max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 150px;display:flex;flex-direction:column;gap:18px}.wrap>main{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;min-width:0}
+.wrap{position:relative;max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 150px;display:flex;flex-direction:column;gap:18px}.wrap>main,.wrap>.hm{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;min-width:0}
 header{display:flex;justify-content:space-between;align-items:center}
 .logo{font-size:28px;color:var(--ac)}
 .ib{width:44px;height:44px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;color:var(--ac);cursor:pointer}
@@ -29,7 +29,7 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .sub{font-size:15px;color:var(--mu)}
 .card{border-radius:24px;padding:22px}
 .sb{display:flex;align-items:center;gap:10px;padding:0 18px;height:54px;border-radius:27px}
-.sb input{flex:1;border:0;background:transparent;font-size:17px;outline:none;min-width:0}
+.sb input{flex:1;border:0;background:transparent;font-size:17px;outline:none;min-width:0;-webkit-appearance:none;appearance:none}.sb input::-webkit-search-cancel-button,.sb input::-webkit-search-decoration{-webkit-appearance:none;display:none}
 .sb input::placeholder{color:color-mix(in srgb,var(--mu) 55%,var(--tx));opacity:1}
 .btn{height:46px;padding:0 22px;border:0;border-radius:23px;background:var(--ac);color:var(--btf);font-size:15px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .btn.o{background:var(--gb);border:1px solid var(--gbr);color:var(--tx);cursor:pointer}
@@ -57,6 +57,13 @@ nav a{min-height:44px;padding:0 14px;display:flex;align-items:center;border-radi
 nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh{position:fixed;inset:0;z-index:10;display:none;background:rgba(0,0,0,.25)}
 #sh.open{display:block}
+/* S1/L5: the bottom nav covers max(20px, safe area) + 64px of the viewport: focused or scrolled-to elements stop above it,
+   and the page always ends with the footer clear of it. Desktop (>=1025px) puts the nav at the top. */
+@media(max-width:1024px){.gq{scroll-padding-bottom:calc(max(20px,env(safe-area-inset-bottom)) + 64px)}#app{padding-bottom:max(150px,calc(max(20px,env(safe-area-inset-bottom)) + 112px))}}
+/* S2/S3: programmatic focus targets (page heading, sheet panel) never paint a ring */
+h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
+/* M2: two equal buttons share one row in the word/surah action rows */
+.acts.v3 .pr{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:0 0 auto}.acts.v3 .pr .btn{min-width:0}.acts.v3 .pr.pf{flex:1 1 100%}@media(max-width:600px){.acts.v3 .pr{flex:1 1 100%}}
 #sh .p{position:absolute;left:12px;right:12px;bottom:12px;max-width:520px;margin:0 auto;border-radius:32px;padding:20px 22px;display:flex;flex-direction:column;gap:18px;max-height:calc(100% - 24px);overflow:auto;background:var(--bg)}
 .seg{display:flex;border-radius:22px;padding:4px;gap:4px}
 .seg button{flex:1;height:38px;border:0;border-radius:18px;background:none;cursor:pointer;font-size:14px}

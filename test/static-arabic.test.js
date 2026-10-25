@@ -8,7 +8,7 @@ const path = require("path");
 const seo = require("../functions/seo.js");
 
 const ROOT = path.join(__dirname, "..");
-const OPEN_SITE = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639"; // "open on the site"
+const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "open on the site"
 const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"; // removed label
 const SOURCE_LABEL = "\u0627\u0644\u0645\u0635\u062f\u0631"; // the removed source line's label
 const SURAH_PREFIX_RE = /^\u0633\u0648\u0631\u0629\s*/; // leading "surah "
@@ -75,7 +75,9 @@ function loadRecords() {
 function pageChecks(file, html) {
   assert.ok(!html.includes(OPEN_APP), file + ": old open-in-app label is gone");
   const text = textNodes(html);
-  assert.ok(!text.includes(SOURCE_LABEL), file + ": source line label is gone");
+  // word pages show the same source line as the app; surah pages have none
+  if (file.startsWith("word/")) assert.ok(text.includes(SOURCE_LABEL), file + ": source line label is shown");
+  else assert.ok(!text.includes(SOURCE_LABEL), file + ": source line label is gone");
   const pill = html.match(/<a class="pill"[^>]*>([\s\S]*?)<\/a>/);
   assert.ok(pill, file + ": has the open-on-site pill");
   const pillText = pill[1].replace(/<svg[\s\S]*?<\/svg>/g, "").trim();

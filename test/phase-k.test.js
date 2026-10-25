@@ -27,7 +27,7 @@ const PUBLIC = path.join(ROOT, "public");
 const loadPublish = () => import(pathToFileURL(path.join(ROOT, "scripts", "publish-build.mjs")).href);
 
 // Arabic labels under test (escaped).
-const OPEN_SITE = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639"; // "open on the site"
+const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "browse the site"
 const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"; // "open in the app" (removed)
 const SOURCE = "\u0627\u0644\u0645\u0635\u062f\u0631"; // "the source" (removed line)
 const OTHER_WORDS = "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0646\u0641\u0633 \u0627\u0644\u0633\u0648\u0631\u0629"; // "other words from the same surah"
@@ -137,7 +137,7 @@ test("K1: word pages are rebuilt like the app (no source line, open-on-site, pre
     assert.ok(html.includes('<link rel="canonical" href="https://ghareebalquran.com/word/' + slug + '.html">'), f + " canonical");
     assert.ok(html.includes(OPEN_SITE), f + " must show the open-on-site button");
     assert.ok(!html.includes(OPEN_APP), f + " must not show the old open-in-app label");
-    assert.ok(!html.includes(SOURCE), f + " must not show the source line");
+    assert.ok(html.includes(SOURCE), f + " must show the source line");
     assert.ok(html.includes('class="g pnb pv"') && html.includes('class="g pnb nx"'), f + " app-style prev/next controls");
     assert.ok(html.includes(OTHER_WORDS), f + " others card heading");
     assert.ok(html.includes('href="/surah/'), f + " links to its static surah page");
