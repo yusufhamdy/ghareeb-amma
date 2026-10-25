@@ -66,7 +66,7 @@ async function iconRestShape(br) {
   NEW["i-bk static"] = m ? m[0] : "";
   for (const [k, svg] of Object.entries(NEW)) {
     const old = OLD[k.split(" ")[0]];
-    const shot = async (html) => { await p.setContent(`<body style="margin:0;background:#fff;color:#000"><div id=w style="display:inline-block;padding:4px">${html}</div></body>`); return p.locator("#w").screenshot(); };
+    const shot = async (html) => { await p.setContent(`<style>svg.im .pt{opacity:0}</style><body style="margin:0;background:#fff;color:#000"><div id=w style="display:inline-block;padding:4px">${html}</div></body>`); return p.locator("#w").screenshot(); };
     const a = await shot(old), b = await shot(svg);
     const d = await p.evaluate(async ([x, y]) => {
       const ld = (s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = "data:image/png;base64," + s; });
@@ -83,13 +83,15 @@ async function iconRestShape(br) {
 }
 
 // state of every path/the svg of a control: transform, opacity, dashoffset
-const PARTS = (sel) => (() => {
+const PARTS = (sel) => {
   const c = document.querySelector(sel), svg = c && c.querySelector(":scope>svg.im"); if (!svg) return null;
   const g = (e) => { const s = getComputedStyle(e); return { tr: s.transform, op: s.opacity, dof: s.strokeDashoffset }; };
   const out = { svg: g(svg) };
-  svg.querySelectorAll("path,rect,circle").forEach((e, i) => { const k = e.getAttribute("class") || (svg.classList.contains("i-dl") ? "tray" : svg.classList.contains("i-sr") ? "box" : "p"); out[k + "#" + i] = g(e); });
+  svg.querySelectorAll("path,rect,circle").forEach((e, i) => { const k = (e.getAttribute("class") || "p").replace("pt ", ""); out[k + "#" + i] = g(e); });
   return out;
-});
+};
+// animations that swap the single rest path (.w) for the parts (.st = still parts) per icon
+const SWAP = { "i-sh": 1, "i-dl": 2, "i-sr": 2, "i-bk": 1, "i-pf": 0 };
 const moved = (a, b) => a.tr !== b.tr || a.op !== b.op || a.dof !== b.dof;
 
 async function iconMotion(br, base) {
@@ -104,31 +106,31 @@ async function iconMotion(br, base) {
       await p.evaluate(() => { window.__noClick = true; });
       const h = p.locator(sel).first();
       await h.scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(700);
-      const rest = await p.evaluate(PARTS(sel));
+      const rest = await p.evaluate(PARTS, sel);
       if (!rest) { fail(id + ": icon not found"); continue; }
       const isMoving = (k) => parts.includes(k.split("#")[0]);
       for (const [trig, run] of [
         ["hover", async () => { await h.hover(); }],
         ["focus", async () => { await p.mouse.move(1, 1); await p.keyboard.press("Shift"); await h.evaluate((e) => e.focus({ preventScroll: true })); }],
-        ["press", async () => { await p.mouse.move(1, 1); await h.evaluate((e) => e.blur()); const b = await h.boundingBox(); await p.mouse.move(b.x + 2, b.y + 2); await p.waitForTimeout(700); await p.evaluate(() => { window.__AS = []; }); await p.mouse.down(); await p.mouse.up(); }],
+        ["press", async () => { await p.mouse.move(1, 1); await h.evaluate((e) => e.blur()); const b = await h.boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await p.waitForTimeout(700); await p.evaluate(() => { window.__AS = []; }); await p.mouse.down(); await p.mouse.up(); }],
       ]) {
         await p.evaluate(() => { window.__AS = []; window.__AI = 0; });
         await run();
         // sample mid-animation: only the named parts may differ from rest
         const mids = [];
-        for (const t of [60, 120, 200, 280]) { await p.waitForTimeout(t === 60 ? 60 : t - [60, 120, 200, 280][[60, 120, 200, 280].indexOf(t) - 1]); mids.push(await p.evaluate(PARTS(sel))); }
+        for (const t of [60, 120, 200, 280]) { await p.waitForTimeout(t === 60 ? 60 : t - [60, 120, 200, 280][[60, 120, 200, 280].indexOf(t) - 1]); mids.push(await p.evaluate(PARTS, sel)); }
         await p.waitForTimeout(900);
-        const after = await p.evaluate(PARTS(sel));
+        const after = await p.evaluate(PARTS, sel);
         const st = await p.evaluate(() => ({ as: window.__AS.slice(), ai: window.__AI }));
         bump("iconTriggers");
         let movedNamed = false;
         for (const m of mids) for (const k of Object.keys(rest)) {
-          if (moved(rest[k], m[k])) { if (isMoving(k)) movedNamed = true; else fail(`${id} ${trig}: part ${k} moved (${JSON.stringify(m[k])})`); }
+          if (moved(rest[k], m[k])) { if (isMoving(k)) movedNamed = true; else if (/^(w|st)#/.test(k) && rest[k].tr === m[k].tr && rest[k].dof === m[k].dof) continue; else fail(`${id} ${trig}: part ${k} moved (${JSON.stringify(m[k])})`); }
         }
         if (!movedNamed) fail(`${id} ${trig}: the named part never moved`);
         for (const k of Object.keys(rest)) if (moved(rest[k], after[k])) fail(`${id} ${trig}: ${k} not back at rest (${JSON.stringify(after[k])})`);
         // once per trigger: one start per moving element, no iterations
-        const per = {}; st.as.forEach((x) => { per[x.split("|")[1]] = (per[x.split("|")[1]] || 0) + 1; });
+        const per = {}; st.as.forEach((x) => { const k = x.split("|")[1].replace("pt ", ""); per[k] = (per[k] || 0) + 1; });
         const expect = parts.map((x) => x === "svg" ? "im i-pf" : x);
         const counts = expect.map((x) => Object.entries(per).filter(([k]) => k === x).reduce((s, [, v]) => s + v, 0));
         const nEl = { s: 2, h: 2, ar: 1, bl: 1, br: 1, "im i-pf": 1 };
@@ -142,7 +144,7 @@ async function iconMotion(br, base) {
       await h.hover(); await p.waitForTimeout(700); await p.evaluate(() => { window.__AS = []; });
       await p.mouse.down(); await p.mouse.up(); await p.waitForTimeout(1600);
       const rep = await p.evaluate(() => window.__AS.length);
-      const per1 = parts.reduce((s, x) => s + ({ s: 2, h: 2, ar: 1, bl: 1, br: 1, svg: 1 })[x], 0);
+      const per1 = parts.reduce((s, x) => s + ({ s: 2, h: 2, ar: 1, bl: 1, br: 1, svg: 1 })[x], 0) + SWAP[cls];
       bump("iconHoverPress");
       if (rep !== per1) fail(`${id}: press while hovered started ${rep} animations, want ${per1}`);
       await p.mouse.move(1, 1); await p.waitForTimeout(300);
@@ -155,12 +157,12 @@ async function iconMotion(br, base) {
     const ctx = await ctxFor(br, { w: 390, touch: true, set: { style }, ch: chWith(LINKS) });
     const p = await ctx.newPage();
     await p.addInitScript(() => addEventListener("click", (e) => { if (e.target.closest("a,button")) { e.preventDefault(); e.stopPropagation(); } }, true));
-    for (const [label, url, sel, , parts] of CONTROLS) {
+    for (const [label, url, sel, cls, parts] of CONTROLS) {
       await go(p, base, url, sel); await p.locator(sel).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
       await p.evaluate(() => { window.__AS = []; window.__AI = 0; });
       await p.locator(sel).first().tap(); await p.waitForTimeout(1500);
       const st = await p.evaluate(() => ({ as: window.__AS.slice(), ai: window.__AI, imp: document.querySelectorAll(".imp").length }));
-      const per1 = parts.reduce((s, x) => s + ({ s: 2, h: 2, ar: 1, bl: 1, br: 1, svg: 1 })[x], 0);
+      const per1 = parts.reduce((s, x) => s + ({ s: 2, h: 2, ar: 1, bl: 1, br: 1, svg: 1 })[x], 0) + SWAP[cls];
       bump("iconTap");
       if (st.as.length !== per1 || st.ai) fail(`icons touch ${style} ${label}: tap started ${st.as.length} (want ${per1}), iterations ${st.ai}`);
     }
@@ -175,11 +177,11 @@ async function iconMotion(br, base) {
       await go(p, base, url, sel);
       if (mode === "disabled") { const ok = await p.evaluate((s) => { const e = document.querySelector(s); if (e.tagName === "BUTTON") e.disabled = true; else e.setAttribute("aria-disabled", "true"); return true; }, sel); void ok; }
       const h = p.locator(sel).first(); await h.scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(300);
-      const rest = await p.evaluate(PARTS(sel));
+      const rest = await p.evaluate(PARTS, sel);
       await p.evaluate(() => { window.__AS = []; });
-      await h.hover({ force: true }); await p.waitForTimeout(120); const a = await p.evaluate(PARTS(sel));
-      await p.mouse.down(); await p.waitForTimeout(120); const b = await p.evaluate(PARTS(sel)); await p.mouse.up();
-      await p.mouse.move(1, 1); await p.keyboard.press("Shift"); await h.evaluate((e) => e.focus({ preventScroll: true })); await p.waitForTimeout(120); const c = await p.evaluate(PARTS(sel));
+      await h.hover({ force: true }); await p.waitForTimeout(120); const a = await p.evaluate(PARTS, sel);
+      await p.mouse.down(); await p.waitForTimeout(120); const b = await p.evaluate(PARTS, sel); await p.mouse.up();
+      await p.mouse.move(1, 1); await p.keyboard.press("Shift"); await h.evaluate((e) => e.focus({ preventScroll: true })); await p.waitForTimeout(120); const c = await p.evaluate(PARTS, sel);
       const as = await p.evaluate(() => window.__AS.length);
       bump("iconOff");
       for (const [st, x] of [["hover", a], ["press", b], ["focus", c]]) for (const k of Object.keys(rest)) if (moved(rest[k], x[k])) fail(`icons ${mode} ${style}/${w} ${label} ${st}: ${k} moved`);
@@ -230,7 +232,7 @@ async function doneUndo(br, base) {
       const wantSn = step === "done" ? { done: 1, undo: 0 } : { done: 1, undo: 1 };
       if (r.sn.done !== wantSn.done || r.sn.undo !== wantSn.undo) fail(`${id} ${step}: sounds ${JSON.stringify(r.sn)} want ${JSON.stringify(wantSn)}`);
       const visible = step === "done" ? "u" : "d";
-      if (r.hidden.includes(visible) || r.hidden.length !== 1) fail(`${id} ${step}: aria-hidden labels ${r.hidden} (visible should be ${visible})`);
+      if (r.hidden.slice().sort().join() !== ["r", "d", "u"].filter((x) => x !== visible).sort().join()) fail(`${id} ${step}: aria-hidden labels ${r.hidden} (visible should be ${visible})`);
       if ((step === "done") !== /\bo\b/.test(r.pressed)) fail(`${id} ${step}: outlined state wrong (${r.pressed})`);
       await p.waitForTimeout(300);
     }
@@ -260,26 +262,26 @@ async function doneUndo(br, base) {
 
 // -------------------------------------------------------------------------------------------------------------- lock
 async function lockPill(br, base) {
-  for (const style of ["glass", "shade"]) for (const w of [390, 1440]) for (const [mode, cm, touch] of [["mouse", false, false], ["touch", false, true], ["cm", true, false]]) {
+  for (const style of ["glass", "shade"]) for (const w of [390, 1440]) for (const [mode, cm, touch] of [["mouse", false, false], ["touch", false, true], ["keyboard", false, false], ["cm", true, false]]) {
     const id = `lock ${mode} ${style}/${w}`;
     const ctx = await ctxFor(br, { w, touch, set: { style, cm }, prog: { done: [] } });
     const p = await ctx.newPage();
     await go(p, base, "/#/day/1", "#app .cw.dnav .nx");
     const sel = "#app .cw.dnav .nx";
     const info = await p.evaluate((s) => { const e = document.querySelector(s); return { tag: e.tagName, dis: e.getAttribute("aria-disabled"), hasDisabled: e.hasAttribute("disabled"), href: e.getAttribute("href"), pe: getComputedStyle(e).pointerEvents }; }, sel);
-    if (info.tag !== "SPAN" || info.dis !== "true" || info.hasDisabled || info.href !== null || info.pe === "none") fail(`${id}: locked pill is ${JSON.stringify(info)}`);
+    if (info.tag !== "BUTTON" || info.dis !== "true" || info.hasDisabled || info.href !== null || info.pe === "none") fail(`${id}: locked pill is ${JSON.stringify(info)}`);
     const snap = () => p.evaluate((s) => { const e = document.querySelector(s), c = getComputedStyle(e), k = e.querySelector(".ps svg"); return { sh: c.boxShadow, tr: c.transform, bg: c.backgroundColor, op: c.opacity, ktr: getComputedStyle(k).transform, an: k.getAnimations().length }; }, sel);
     await p.locator(sel).scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(400);
     const rest = await snap();
     if (!touch) {
-      await p.hover(sel); await p.waitForTimeout(400); const hv = await snap();
+      await p.hover(sel, { force: true }); await p.waitForTimeout(400); const hv = await snap();
       bump("lockHover");
       if (JSON.stringify(hv) !== JSON.stringify(rest)) fail(`${id}: hover changed the locked pill ${JSON.stringify(rest)} -> ${JSON.stringify(hv)}`);
       await p.mouse.move(1, 1);
     }
     await p.evaluate(() => { window.__AS = []; document.querySelectorAll(".toast").forEach((t) => t.remove()); });
     const hash0 = await p.evaluate(() => location.hash);
-    if (touch) await p.tap(sel); else await p.click(sel);
+    if (touch) await p.tap(sel, { force: true }); else if (mode === "keyboard") { await p.keyboard.press("Shift"); await p.focus(sel); await p.keyboard.press("Enter"); } else await p.click(sel, { force: true });
     const mids = [];
     for (let i = 0; i < 8; i++) { await p.waitForTimeout(40); mids.push(await p.evaluate((s) => new DOMMatrix(getComputedStyle(document.querySelector(s + " .ps svg")).transform).m41, sel)); }
     await p.waitForTimeout(500);
@@ -299,7 +301,7 @@ async function lockPill(br, base) {
   // reduced motion: toast, no shake
   const ctx = await ctxFor(br, { w: 390, rm: "reduce", prog: { done: [] } });
   const p = await ctx.newPage(); await go(p, base, "/#/day/1", "#app .cw.dnav .nx");
-  await p.evaluate(() => { window.__AS = []; }); await p.click("#app .cw.dnav .nx"); await p.waitForTimeout(500);
+  await p.evaluate(() => { window.__AS = []; }); await p.click("#app .cw.dnav .nx", { force: true }); await p.waitForTimeout(500);
   const r = await p.evaluate(() => ({ as: window.__AS.length, toast: document.querySelectorAll(".toast").length }));
   bump("lockReduced");
   if (r.as || r.toast !== 1) fail(`lock reduced: ${r.as} animations, ${r.toast} toasts`);
@@ -328,7 +330,7 @@ async function videoCard(br, base) {
         return { t: s.textContent, href: a.getAttribute("href"), target: a.target, rel: a.rel, w: r.width, top: r.top, h: r.height, trunc: s.scrollWidth > s.clientWidth + 0.5 || rs.left < r.left || rs.right > r.right || ri.left < r.left || ri.right > r.right, o: a.classList.contains("o") && a.classList.contains("btn"), icon: a.querySelector("svg").outerHTML.replace(/ class="im i-pf" aria-hidden="true"/, "") };
       });
       const lastCard = cards[cards.length - 1];
-      return { title: vc && vc.querySelector("h2").textContent, vbs, order: { cardsBottom: R(lastCard).bottom, vcTop: vc && R(vc).top, vcBottom: vc && R(vc).bottom, doneTop: R(db).top, doneBottom: R(db).bottom, pillTop: Math.min(R(pv).top, R(nx).top) }, overflowX: document.documentElement.scrollWidth > innerWidth, IC };
+      return { title: vc && vc.querySelector("h2").textContent, vbs, order: { cardsBottom: R(lastCard).bottom, vcTop: vc && R(vc).top, vcBottom: vc && R(vc).bottom, doneTop: R(db).top, doneBottom: R(db).bottom, pillTop: Math.min(R(pv).top, R(nx).top) }, overflowX: document.documentElement.scrollWidth > innerWidth, IC: Object.fromEntries(Object.entries(IC).map(([k, v]) => { const t = document.createElement("template"); t.innerHTML = v; return [k, t.content.firstChild.outerHTML]; })) };
     });
     bump("videoCases");
     const names = r.vbs.map((x) => x.t);
@@ -361,9 +363,9 @@ async function videoCard(br, base) {
     if (r.vbs.length && w !== 320) {
       const snap = () => p.evaluate(() => { const a = document.querySelector(".vcard a.vb"), c = getComputedStyle(a), r = a.getBoundingClientRect(); return { bg: c.backgroundColor, c: c.color, w: r.width.toFixed(2), h: r.height.toFixed(2) }; });
       const vars = await p.evaluate(() => { const d = document.createElement("div"); document.body.appendChild(d); const g = (v) => { d.style.background = "var(" + v + ")"; return getComputedStyle(d).backgroundColor; }; const o = { tx: g("--tx"), bg: g("--bg") }; d.remove(); return o; });
-      await p.locator(".vcard a.vb").first().scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); const rest = await snap();
-      await p.hover(".vcard a.vb"); const hov = await snap(); await p.mouse.move(1, 1);
-      await p.keyboard.press("Shift"); await p.focus(".vcard a.vb"); const foc = await snap(); await p.evaluate(() => document.activeElement.blur());
+      await p.locator(".vcard a.vb").first().scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(450); const rest = await snap();
+      await p.hover(".vcard a.vb"); await p.waitForTimeout(450); const hov = await snap(); await p.mouse.move(1, 1);
+      await p.keyboard.press("Shift"); await p.focus(".vcard a.vb"); await p.waitForTimeout(450); const foc = await snap(); await p.evaluate(() => document.activeElement.blur());
       bump("videoTier");
       for (const [st, s] of [["hover", hov], ["focus", foc]]) {
         if (style === "glass" && (s.bg !== rest.bg || s.c !== rest.c)) fail(`${id} ${st}: glass colour changed`);

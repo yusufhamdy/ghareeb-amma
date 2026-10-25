@@ -536,7 +536,7 @@ test("F2: a locked next day shows a disabled next pill with a lock line", { time
       const e = document.querySelector("#app .cw.dnav .nx"), ps = e.querySelector(".ps");
       return { tag: e.tagName, href: e.getAttribute("href"), dis: e.getAttribute("aria-disabled"), ps: ps ? ps.textContent.trim() : null, lock: !!(ps && ps.querySelector("svg rect")) };
     })()`);
-    assert.equal(r.tag, "SPAN", "the next control is not a link while the next day is locked");
+    assert.equal(r.tag, "BUTTON", "the next control is an aria-disabled button, not a link, while the next day is locked");
     assert.equal(r.href, null, "it has no target");
     assert.equal(r.dis, "true", "it is marked disabled");
     assert.equal(r.ps, "\u0628\u0639\u062f \u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u064a\u0648\u0645", "its second line explains when it opens");
