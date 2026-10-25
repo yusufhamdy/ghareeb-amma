@@ -13,8 +13,8 @@
  *     rendered), never hidden
  *   - RTL chevrons: previous points right, next points left
  *   - the three actions in spec order: other-words link -> draw -> save
- *   - layout: below 801px the nav is a row under the cards; from 801px one
- *     button per side; touch targets >= 44px
+ *   - layout: the nav is a row of two pills under the cards at every width
+ *     (previous on the right, next on the left); touch targets >= 44px
  * It reports the surah count + data order to a UTF-8 JSON file (Arabic names are
  * never printed to the console).
  */
@@ -38,7 +38,7 @@ const AR = {
 const CHEV_RIGHT = "M9 5l7 7-7 7"; // previous (RTL: start side points right)
 const CHEV_LEFT = "M15 5l-7 7 7 7"; // next (RTL: end side points left)
 const GRID_MOBILE = '"c c" "p n"';
-const GRID_DESKTOP = '"p c n"';
+const GRID_DESKTOP = '"c c" "p n"';
 
 function staticServer(root) {
   const types = {
@@ -249,21 +249,22 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
     assert.equal(boundary.first.prevDisabled, true, "very first word has a disabled previous");
     assert.equal(boundary.last.nextDisabled, true, "very last word has a disabled next");
 
-    // ---- desktop layout: one control per side ----
+    // ---- desktop layout: the pill row under the cards ----
     await page.setViewportSize({ width: 1000, height: 900 });
     await nav("#/word/" + boundary.first.id, wordReady, boundary.first.id);
     const desk = await page.evaluate(() => {
       const q = (s) => document.querySelector(s);
-      const R = (el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), right: Math.round(r.right), h: Math.round(r.height) }; };
+      const R = (el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), right: Math.round(r.right), bottom: Math.round(r.bottom), h: Math.round(r.height) }; };
       const cols = q("#app .cw .cols");
       return {
         grid: getComputedStyle(q("#app .cw")).gridTemplateAreas.replace(/\s+/g, " ").trim(),
         pv: R(q("#app .cw .pnb.pv")), nx: R(q("#app .cw .pnb.nx")), cols: R(cols),
       };
     });
-    assert.ok(desk.grid === GRID_DESKTOP, "desktop grid is p|c|n (got " + desk.grid + ")");
-    assert.ok(desk.pv.x >= desk.cols.right - 2, "previous control is on the right side");
-    assert.ok(desk.nx.right <= desk.cols.x + 2, "next control is on the left side");
+    assert.ok(desk.grid === GRID_DESKTOP, "desktop grid is cards over a p|n row (got " + desk.grid + ")");
+    assert.ok(desk.pv.y >= desk.cols.bottom - 2 && desk.nx.y >= desk.cols.bottom - 2, "desktop pills sit below the cards");
+    assert.ok(Math.abs(desk.pv.y - desk.nx.y) < 2, "desktop pills share one row");
+    assert.ok(desk.pv.x >= desk.nx.right, "previous control is on the right side, next on the left");
     assert.ok(desk.pv.h >= 44 && desk.nx.h >= 44, "desktop nav targets >=44px");
 
     // ---- report ----

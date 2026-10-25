@@ -194,10 +194,18 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
 /* F2: prev/next identical structure - icon above text on desktop, same height */
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
-/* word nav: second line with the target surah when prev/next crosses surahs; fixed height so the row never jumps */
-.pnb .ps{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;line-height:1.3;color:var(--ac);opacity:.75;white-space:nowrap}.pnb .ps svg{width:13px;height:13px;flex:none}.cw .nx>.ps{order:-1}
-@media(max-width:360px){.cw:not(.snav) .pnb{padding:0 12px}}
-@media(max-width:800px){.cw:not(.snav) .pnb{height:48px}.cw .pnb:has(>.ps){display:inline-grid;grid-template-columns:auto auto;column-gap:8px;align-content:center;align-items:center}.cw .pv:has(>.ps)>svg{grid-row:1/span 2}.cw .nx:has(>.ps)>.ps{grid-row:2;grid-column:1}.cw .nx:has(>.ps)>svg{grid-row:1/span 2;grid-column:2}}
+/* word page prev/next: pills on every width - chevron beside the text, the surah line under the label when crossing
+   surahs. Fixed 58px height so the row never jumps; both share the row. Surah-page tiles (.snav) are untouched. */
+.pnb .ps{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;line-height:1.3;color:var(--ac);opacity:.75;white-space:nowrap}.pnb .ps svg{width:13px;height:13px;flex:none}
+.cw:not(.snav) .pnb{display:grid;grid-template-columns:auto auto;column-gap:10px;align-content:center;align-items:center;justify-content:center;justify-items:start;justify-self:stretch;width:auto;height:58px;min-height:0;padding:0 16px;border-radius:999px;font-size:16px;font-weight:500;line-height:1.35;text-align:start;white-space:nowrap}
+.cw:not(.snav) .pv:has(>.ps)>svg{grid-row:1/span 2}.cw:not(.snav) .nx:has(>.ps)>.ps{grid-row:2;grid-column:1}.cw:not(.snav) .nx:has(>.ps)>svg{grid-row:1/span 2;grid-column:2}
+@media(max-width:360px){.cw:not(.snav) .pnb{padding:0 10px;column-gap:6px}}
+@media(min-width:801px){.cw:not(.snav){grid-template-columns:1fr 1fr;grid-template-areas:"c c" "p n";align-items:stretch}.cw:not(.snav) .pnb{width:250px}.cw:not(.snav) .pv{justify-self:end}.cw:not(.snav) .nx{justify-self:start}}
+/* Tier 2 (outlined buttons): glass keeps the shared hover shadow and press scale, no opacity press; shade inverts on
+   hover and focus-visible (the surah line follows the text colour) with no size change */
+.cw:not(.snav) a.pnb:active{opacity:1}
+@media(hover:hover){.shade .cw:not(.snav) a.pnb:hover{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw:not(.snav) a.pnb:hover .ps{color:inherit}}
+.shade .cw:not(.snav) a.pnb:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw:not(.snav) a.pnb:focus-visible .ps{color:inherit}
 /* J1: search collapse */
 /* K4b: overflow was permanently hidden on the action rows, clipping the button
    shadow into a straight grey band (the .acts box bottom == button bottom, so a
