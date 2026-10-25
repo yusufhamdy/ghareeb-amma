@@ -133,19 +133,6 @@
     });
   }
 
-  // Static word pages: mark dark mode (the same decision theme-boot.js makes) so the glass chips can use their
-  // higher-contrast colour in dark mode only. The app never shows chips.
-  function markDark() {
-    try {
-      var s = JSON.parse(localStorage.getItem('gq-set')) || {}, m = s.mode || 'auto';
-      document.documentElement.classList.toggle('dk', m === 'dark' || (m === 'auto' && matchMedia('(prefers-color-scheme:dark)').matches));
-    } catch (e) {}
-  }
-  if (!document.getElementById('app')) {
-    markDark();
-    try { matchMedia('(prefers-color-scheme:dark)').addEventListener('change', markDark); } catch (e) {}
-  }
-
   window.wordGap = fit;
   window.markInk = inkMarks;
   addEventListener('resize', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(function () { fit(); inkMarks(); }); });

@@ -317,6 +317,10 @@ const EXT =
 const BOOK =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
 
+// The same book split into its two halves, for the "all surahs" button whose halves open on hover/focus/press (S12).
+const BOOK_M =
+  '<svg class="im i-bk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="bl" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path class="br" d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+
 // The prev/next pill shared by the word and surah pages (same markup as the
 // app's pnBtn): o = { label, href, surah, aria }; no href -> disabled. The
 // surah line (open book + name) shows whenever o.surah is set.
@@ -485,7 +489,7 @@ export function renderSurahPage(s) {
     '<div class="cw snav">' +
     '<div class="list g rs">' + rows + "</div>" +
     sbtn(s.prev, "pv") + sbtn(s.next, "nx") + "</div></div>\n" +
-    '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
+    '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK_M + A.ALL_SURAS + "</a></div>\n" +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</div></body></html>"
@@ -578,6 +582,36 @@ function validateRecords(records) {
   }
 }
 
+// Per-platform video links: reelIg / reelTt / reelYt, each https on its platform's host. The public challenge carries
+// a link only when it is set and valid; every other field of a day (private notes included) stays out, exactly as
+// sanitizePublicChallenge decides. The old single "reel" link is kept as it is until release.
+export const REEL_LINKS = [
+  ["reelIg", ["instagram.com", "www.instagram.com"]],
+  ["reelTt", ["tiktok.com", "www.tiktok.com", "vm.tiktok.com"]],
+  ["reelYt", ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"]],
+];
+export function reelLinkOk(url, hosts) {
+  try {
+    const u = new URL(String(url));
+    return u.protocol === "https:" && hosts.includes(u.hostname.toLowerCase());
+  } catch (e) {
+    return false;
+  }
+}
+export function publicChallenge(state) {
+  const out = challenge.sanitizePublicChallenge(state);
+  const src = state && Array.isArray(state.days) ? state.days : [];
+  out.days.forEach((day, i) => {
+    const s = src[i] || {};
+    for (const [key, hosts] of REEL_LINKS) {
+      if (typeof s[key] !== "string" || !s[key]) continue;
+      if (!reelLinkOk(s[key], hosts)) throw new Error("refusing to publish; day " + day.d + " has an invalid " + key + ": " + s[key]);
+      day[key] = s[key];
+    }
+  });
+  return out;
+}
+
 // Build the whole site in memory. Returns { files, hash, wordCount }.
 export function buildSite(surahs, challengeState) {
   validateInput(surahs);
@@ -586,7 +620,7 @@ export function buildSite(surahs, challengeState) {
   const surahList = buildSurahs(records);
   const files = {};
   files["words.json"] = JSON.stringify(surahs, null, 2);
-  files["challenge.json"] = JSON.stringify(challenge.sanitizePublicChallenge(challengeState), null, 1);
+  files["challenge.json"] = JSON.stringify(publicChallenge(challengeState), null, 1);
   files["sitemap.xml"] = buildSitemap(records, surahList);
   files["css/app.css"] = appCss();
   for (const r of records) files["word/" + r.slug + ".html"] = renderWordPage(r);

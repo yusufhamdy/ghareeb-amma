@@ -118,13 +118,13 @@ const store={
   await FB.fs.setDoc(FB.fs.doc(FB.db,"config","admins"),{emails:l});
  },
  async chLoad(){
-  if(!live()){const x=localStorage.getItem("gqch");if(x){const y=JSON.parse(x);return {startDate:y.startDate==null?null:y.startDate,releasedUpTo:y.releasedUpTo==null?null:y.releasedUpTo,days:CL.toTuples(y.days)}}}
-  else{const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"public","challenge"));if(s.exists())return {startDate:s.data().startDate==null?null:s.data().startDate,releasedUpTo:s.data().releasedUpTo==null?null:s.data().releasedUpTo,days:CL.toTuples(s.data().days||[])}}
-  try{const d=await(await fetch("/challenge.json")).json();return {startDate:d.startDate==null?null:d.startDate,releasedUpTo:d.releasedUpTo==null?null:d.releasedUpTo,days:CL.toTuples(d.days||[])}}catch(e){return {startDate:null,releasedUpTo:null,days:[]}}
+  if(!live()){const x=localStorage.getItem("gqch");if(x){const y=JSON.parse(x);return {startDate:y.startDate==null?null:y.startDate,releasedUpTo:y.releasedUpTo==null?null:y.releasedUpTo,days:withLinks(CL.toTuples(y.days),y.days)}}}
+  else{const s=await FB.fs.getDoc(FB.fs.doc(FB.db,"public","challenge"));if(s.exists())return chFromDoc(s.data())}
+  try{const d=await(await fetch("/challenge.json")).json();return {startDate:d.startDate==null?null:d.startDate,releasedUpTo:d.releasedUpTo==null?null:d.releasedUpTo,days:withLinks(CL.toTuples(d.days||[]),d.days)}}catch(e){return {startDate:null,releasedUpTo:null,days:[]}}
  },
  async chSave(c){
   if(!live()){localStorage.setItem("gqch",JSON.stringify(c));return}
-  await FB.fs.setDoc(FB.fs.doc(FB.db,"public","challenge"),{startDate:c.startDate==null?null:c.startDate,releasedUpTo:c.releasedUpTo==null?null:c.releasedUpTo,days:CL.toObjects(c.days)});
+  await FB.fs.setDoc(FB.fs.doc(FB.db,"public","challenge"),chDoc(c));
  },
  async chNotes(){
   if(!live())return JSON.parse(localStorage.getItem("gqchn")||"{}");
@@ -168,8 +168,17 @@ function tabW(){
 <div class="sm" style="margin-bottom:8px">${list.length} كلمة</div>
 <div class="g card">${list.slice(0,80).map(o=>`<div class="row"><span class="q rw">${esc(o.w)}</span><span class="t"><div>${esc(o.m)}</div><div class="sm">${esc(nm(o.e))} · آية ${esc((o.e.ayahs[o.wi]||{}).label)}</div></span><button class="g sm2" data-a="editW" data-v="${o.si}.${o.wi}">${IC_PEN}تعديل</button><button class="g sm2 dg" data-a="delW" data-v="${o.si}.${o.wi}">${IC_TRASH}حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد نتائج.</div>'}</div>${list.length>80?'<div class="sm" style="margin-top:8px">ظاهر أول 80 نتيجة، استخدم البحث.</div>':""}`;
 }
-/* Challenge tab: edit startDate, releasedUpTo, per-day words/reel and the
+/* Challenge tab: edit startDate, releasedUpTo, per-day words/video links and the
    PRIVATE admin-only day notes. Release follows the sequential rule. */
+/* Video links per platform. Each is optional, https only, on its platform's host. The old single "reel" link stays in
+   the data untouched (the live site reads it until release); a day that has only it gets it prefilled by its host. */
+const RL=[["reelIg","ig","رابط إنستغرام","إنستغرام",["instagram.com","www.instagram.com"],"instagram.com"],["reelTt","tt","رابط تيك توك","تيك توك",["tiktok.com","www.tiktok.com","vm.tiktok.com"],"tiktok.com أو vm.tiktok.com"],["reelYt","yt","رابط يوتيوب","يوتيوب",["youtube.com","www.youtube.com","m.youtube.com","youtu.be"],"youtube.com أو youtu.be"]];
+function linkHost(u){try{const x=new URL(u);return x.protocol==="https:"?x.hostname.toLowerCase():null}catch(e){return null}}
+function linkOk(u,r){const h=linkHost(u);return !!h&&r[4].includes(h)}
+function withLinks(days,src){return days.map((d,i)=>{const o=(src||[])[i]||{};RL.forEach(r=>{if(typeof o[r[0]]==="string"&&o[r[0]])d[r[0]]=o[r[0]]});return d})}
+function chFromDoc(x){return {startDate:x.startDate==null?null:x.startDate,releasedUpTo:x.releasedUpTo==null?null:x.releasedUpTo,days:withLinks(CL.toTuples(x.days||[]),x.days)}}
+function chDoc(c){return {startDate:c.startDate==null?null:c.startDate,releasedUpTo:c.releasedUpTo==null?null:c.releasedUpTo,days:withLinks(CL.toObjects(c.days),c.days)}}
+function linkNames(d){return RL.filter(r=>d[r[0]]).map(r=>r[3])}
 function existSet(){const s=new Set();D.surahs.forEach(e=>e.words.forEach(w=>s.add((e.no||0)+"::"+N(w))));return s}
 function wordOk(ref){return existSet().has(ref[0]+"::"+N(ref[1]))}
 function suraNameByNo(no){const e=D.surahs.find(x=>x.no===no);return e?nm(e):"سورة "+no}
@@ -192,7 +201,7 @@ function tabC(){
 ${bad.length?`<div class="sm dg" style="margin-top:8px">تحذير: ${bad.length} مرجع كلمة غير موجود في البيانات: ${bad.slice(0,6).map(b=>esc(b.ref[1])).join("، ")}</div>`:""}
 </div>
 <div class="sm" style="margin:6px 0 10px">${CH.days.length} يوم${CH.startDate?" · يبدأ "+esc(CH.startDate):""}</div>
-<div class="g card">${CH.days.map(d=>`<div class="row"><span class="nb">${d.d}</span><span class="t"><div>${(d.w||[]).map(r=>esc(r[1])).join(" · ")||'<span class="sm">لا كلمات</span>'}</div><div class="sm">${(d.w||[]).length} كلمة${d.reel?" · ريلز ✓":""}${CHN[String(d.d)]?" · ملاحظة خاصة ✓":""}</div></span><button class="g sm2" data-a="chDay" data-v="${d.d}">${IC_PEN}تعديل</button></div>`).join("")||'<div class="sm" style="padding:16px">لا أيام.</div>'}</div>`;
+<div class="g card">${CH.days.map(d=>`<div class="row"><span class="nb">${d.d}</span><span class="t"><div>${(d.w||[]).map(r=>esc(r[1])).join(" · ")||'<span class="sm">لا كلمات</span>'}</div><div class="sm">${(d.w||[]).length} كلمة${linkNames(d).length?" · فيديو: "+linkNames(d).join("، "):(d.reel?" · ريلز ✓":"")}${CHN[String(d.d)]?" · ملاحظة خاصة ✓":""}</div></span><button class="g sm2" data-a="chDay" data-v="${d.d}">${IC_PEN}تعديل</button></div>`).join("")||'<div class="sm" style="padding:16px">لا أيام.</div>'}</div>`;
 }
 function chStatusHtml(){
  const override=CH.releasedUpTo==null?0:+CH.releasedUpTo;
@@ -208,8 +217,9 @@ function dayModal(){
 <label class="lb">الكلمات (${x.w.length})</label>
 <div class="g card" style="padding:4px 12px">${x.w.length?x.w.map((r,i)=>`<div class="row"><span class="q rw">${esc(r[1])}</span><span class="t sm">${esc(suraNameByNo(r[0]))}</span><button class="g sm2 dg" data-a="chDelW" data-v="${i}">${IC_TRASH}حذف</button></div>`).join(""):'<div class="sm" style="padding:12px">لا كلمات بعد.</div>'}</div>
 <div class="bar" style="margin-top:12px"><select class="in" data-f="c.addS"><option value="">السورة</option>${rows().map(r=>`<option value="${r.i}">${esc(r.name)}</option>`).join("")}</select><select class="in" data-f="c.addW"><option value="">الكلمة</option></select><button class="pill btn" data-a="chAddW">إضافة</button></div>
-<label class="lb">رابط الريلز</label>
-<input class="in" dir="ltr" data-f="c.reel" value="${esc(x.reel||"")}" placeholder="https://...">
+${RL.map(r=>`<label class="lb" for="rl-${r[1]}">${r[2]} (اختياري)</label>
+<input class="in" id="rl-${r[1]}" dir="ltr" data-f="c.${r[0]}" value="${esc(x.links[r[0]]||"")}" placeholder="https://..."${x.err[r[0]]?` aria-invalid="true" aria-describedby="rle-${r[1]}"`:""}>
+${x.err[r[0]]?`<div class="sm dg" id="rle-${r[1]}" role="alert">${esc(x.err[r[0]])}</div>`:""}`).join("")}
 <label class="lb">ملاحظة اليوم (خاصة، لا تظهر للزوار إطلاقًا)</label>
 <textarea class="in" data-f="c.note">${esc(x.note||"")}</textarea>
 <div class="acts"><button class="g pill" data-a="chSpin">${CL.SPIN_LABEL}</button><span class="sm" id="spinRes"></span><button class="pill btn" data-a="chSaveDay">حفظ اليوم</button><button class="g pill" data-a="close">إلغاء</button></div>`);
@@ -292,11 +302,11 @@ async function act(a,v,btn){
  else if(a==="chSaveMeta"){if(!CH)return;const raw=$('[data-f="c.releasedUpTo"]').value;const n=raw===""?null:+raw;if(n!=null&&(!Number.isInteger(n)||n<0||n>CH.days.length))return toast("قيمة الفتح الإضافي غير صحيحة.",true);CH.startDate=$('[data-f="c.startDate"]').value||null;CH.releasedUpTo=n;try{await store.chSave(CH);toast("تم حفظ إعدادات التحدي.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
  else if(a==="chStatus"){if(!CH)return;modal(chStatusHtml())}
  else if(a==="chExport"){if(!CH)return;const b=new Blob([JSON.stringify({startDate:CH.startDate,releasedUpTo:CH.releasedUpTo,days:CH.days},null,1)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="challenge.json";l.click()}
- else if(a==="chDay"){if(!CH)return;const d=CH.days.find(z=>z.d===+v);if(!d)return;EDD={d:d.d,w:clone(d.w||[]),reel:d.reel||"",note:CHN[String(d.d)]||""};dayModal()}
+ else if(a==="chDay"){if(!CH)return;const d=CH.days.find(z=>z.d===+v);if(!d)return;const links={};RL.forEach(r=>{links[r[0]]=d[r[0]]||""});if(!RL.some(r=>links[r[0]])&&d.reel){const h=linkHost(d.reel),r=RL.find(r=>r[4].includes(h));if(r)links[r[0]]=d.reel}EDD={d:d.d,w:clone(d.w||[]),links,err:{},note:CHN[String(d.d)]||""};dayModal()}
  else if(a==="chDelW"){if(!EDD)return;const idx=+v;confirmDlg("حذف هذه الكلمة؟",()=>{EDD.w.splice(idx,1);dayModal()},btn)}
  else if(a==="chAddW"){if(!EDD)return;const ss=$('[data-f="c.addS"]'),ws=$('[data-f="c.addW"]');if(ss.value===""||ws.value==="")return toast("اختر السورة والكلمة.",true);const e=D.surahs[+ss.value],w=e.words[+ws.value],ref=[e.no||0,N(w)];if(!wordOk(ref))return toast("الكلمة غير موجودة في البيانات.",true);if(EDD.w.some(r=>r[0]===ref[0]&&r[1]===ref[1]))return toast("الكلمة مضافة بالفعل.",true);EDD.w.push(ref);dayModal()}
  else if(a==="chSpin"){if(!EDD)return;const r=CL.rouletteSelect(EDD.w,{});if(!r)return;const el=$("#spinRes");if(el)el.textContent=String(r.value[1]);}
- else if(a==="chSaveDay"){if(!EDD)return;if(EDD.reel&&EDD.reel.indexOf("https://")!==0)return toast("رابط الريلز لازم يبدأ بـ https://",true);const problems=EDD.w.filter(r=>!wordOk(r));if(problems.length)return toast("فيه كلمات غير موجودة في البيانات.",true);const ch=clone(CH),d=ch.days.find(z=>z.d===EDD.d);d.w=clone(EDD.w);d.reel=EDD.reel||"";try{await store.chSave(ch);if(EDD.note!=null){await store.chSetNote(EDD.d,EDD.note);CHN[String(EDD.d)]=EDD.note}CH=ch;EDD=null;modal("");toast("تم حفظ اليوم.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
+ else if(a==="chSaveDay"){if(!EDD)return;EDD.err={};RL.forEach(r=>{const v=(EDD.links[r[0]]||"").trim();EDD.links[r[0]]=v;if(v&&!linkOk(v,r))EDD.err[r[0]]=r[2]+" غير صالح. يجب أن يبدأ بـ https:// وأن يكون من "+r[5]+"."});if(Object.keys(EDD.err).length){dayModal();const bad=RL.find(r=>EDD.err[r[0]]);const i=$('[data-f="c.'+bad[0]+'"]');if(i)i.focus();return toast("تحقق من روابط الفيديو.",true)}const problems=EDD.w.filter(r=>!wordOk(r));if(problems.length)return toast("فيه كلمات غير موجودة في البيانات.",true);const ch=clone(CH),d=ch.days.find(z=>z.d===EDD.d);d.w=clone(EDD.w);RL.forEach(r=>{if(EDD.links[r[0]])d[r[0]]=EDD.links[r[0]];else delete d[r[0]]});try{await store.chSave(ch);if(EDD.note!=null){await store.chSetNote(EDD.d,EDD.note);CHN[String(EDD.d)]=EDD.note}CH=ch;EDD=null;modal("");toast("تم حفظ اليوم.");render()}catch(e){toast("تعذر الحفظ: "+(e.code||e.message),true)}}
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(t)act(t.dataset.a,t.dataset.v,t)});
 document.addEventListener("input",e=>{
@@ -307,7 +317,7 @@ document.addEventListener("input",e=>{
   if(k==="startDate"){if(CH)CH.startDate=e.target.value||null}
   else if(k==="releasedUpTo"){if(CH)CH.releasedUpTo=e.target.value===""?null:+e.target.value}
   else if(k==="addS")populateWords();
-  else if(k==="reel"&&EDD)EDD.reel=e.target.value;
+  else if(EDD&&RL.some(r=>r[0]===k))EDD.links[k]=e.target.value;
   else if(k==="note"&&EDD)EDD.note=e.target.value;
   return}
  const k=f.split(".");

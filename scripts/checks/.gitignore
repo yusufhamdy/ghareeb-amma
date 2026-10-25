@@ -1,0 +1,10 @@
+out/
+cards/
+cards2/
+sheets/
+sheets2/
+wnav/
+wcf/
+base2/
+*.json
+*.png

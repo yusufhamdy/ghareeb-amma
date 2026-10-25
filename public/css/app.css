@@ -181,8 +181,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* B4: per-theme interaction (hover / press / focus) */
 .btn{gap:8px}.btn svg{flex:none}
 .btn,.opt,.pnb,.chip,a.g,button.g{transition:transform .35s cubic-bezier(.3,1.4,.5,1),box-shadow .3s}
-@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
-:is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:scale(.96)}
+@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):not([aria-disabled="true"]):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip):not([aria-disabled="true"]):active{transform:scale(.96)}
 /* E2: quiz options never move on press, and every option reserves the ok/bad glyph slot from the start */
 .opt:active{transform:none!important}
 .ogi{display:inline-block;width:24px;height:16px;vertical-align:-2px}
@@ -191,8 +191,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
 @media(hover:hover){.so:hover:before{opacity:1;transform:scale(1.05)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
-@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
-.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
+@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):not([aria-disabled="true"]):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
+.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):not([aria-disabled="true"]):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
 .shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
 @media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
@@ -218,10 +218,18 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(min-width:801px){.cw{grid-template-columns:1fr 1fr;grid-template-areas:"c c" "p n";align-items:stretch}.cw .pnb{width:230px}.cw .pv{justify-self:end}.cw .nx{justify-self:start}.cw.snav>.list{width:calc(100% - 236px);justify-self:center}}
 /* chevron nudge: ~3px in its own direction on hover, focus-visible and press, back in 200ms; links only (disabled pills are spans) */
 .cw .pnb>svg{transition:transform .2s ease}
-/* S12: icon micro-motion, same timing and triggers as the chevron nudge; only the icon moves */
-:is([data-a="rnd"],[data-a="card"],[data-a="share"],.mib)>svg{transition:transform .2s ease}
-@media(hover:hover){[data-a="rnd"]:not(:disabled):hover>svg{transform:rotate(15deg)}[data-a="card"]:not(:disabled):hover>svg{transform:translateY(2px)}[data-a="share"]:not(:disabled):hover>svg{transform:translate(2px,-2px)}.mib:hover>svg{transform:translateY(-2px)}}
-[data-a="rnd"]:not(:disabled):is(:focus-visible,:active)>svg{transform:rotate(15deg)}[data-a="card"]:not(:disabled):is(:focus-visible,:active)>svg{transform:translateY(2px)}[data-a="share"]:not(:disabled):is(:focus-visible,:active)>svg{transform:translate(2px,-2px)}.mib:is(:focus-visible,:active)>svg{transform:translateY(-2px)}
+/* S12: meaningful icon motion. Only the named part moves and the icon at rest is unchanged: the shuffle strands redraw
+   (stroke-dashoffset over pathLength 1) as the arrowheads fade in, the download/share arrow leaves and returns, the book
+   halves open about the spine's foot, a platform icon lifts 2px. Hover (hover-capable pointers), focus-visible and press
+   each run it once; press (.imp, set by JS) uses a twin keyframe so it replays even while hovered. Disabled controls and
+   motion-off never move. */
+svg.im *{transform-box:view-box}.i-sh .s{stroke-dasharray:1 2}.i-bk :is(.bl,.br){transform-origin:12px 21px}
+@media(hover:hover){:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-sh .s{animation:i-draw .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-sh .h{animation:i-head .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-dl .ar{animation:i-drop .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-sr .ar{animation:i-rise .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-bk .bl{animation:i-bl .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-bk .br{animation:i-br .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover>svg.i-pf{animation:i-lift .35s ease-out}}
+:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-sh .s{animation:i-draw .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-sh .h{animation:i-head .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-dl .ar{animation:i-drop .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-sr .ar{animation:i-rise .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-bk .bl{animation:i-bl .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-bk .br{animation:i-br .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible>svg.i-pf{animation:i-lift .35s ease-out}
+:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-sh .s{animation:i-draw-p .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-sh .h{animation:i-head-p .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-dl .ar{animation:i-drop-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-sr .ar{animation:i-rise-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-bk .bl{animation:i-bl-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-bk .br{animation:i-br-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp>svg.i-pf{animation:i-lift-p .35s ease-out}
+@keyframes i-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes i-draw-p{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes i-head{0%,55%{opacity:0;transform:translateX(-3px)}to{opacity:1;transform:none}}@keyframes i-head-p{0%,55%{opacity:0;transform:translateX(-3px)}to{opacity:1;transform:none}}@keyframes i-drop{0%{transform:none;opacity:1}45%{transform:translateY(6px);opacity:0}46%{transform:translateY(-7px);opacity:0}to{transform:none;opacity:1}}@keyframes i-drop-p{0%{transform:none;opacity:1}45%{transform:translateY(6px);opacity:0}46%{transform:translateY(-7px);opacity:0}to{transform:none;opacity:1}}@keyframes i-rise{0%{transform:none;opacity:1}45%{transform:translateY(-7px);opacity:0}46%{transform:translateY(5px);opacity:0}to{transform:none;opacity:1}}@keyframes i-rise-p{0%{transform:none;opacity:1}45%{transform:translateY(-7px);opacity:0}46%{transform:translateY(5px);opacity:0}to{transform:none;opacity:1}}@keyframes i-bl{50%{transform:rotate(-9deg)}}@keyframes i-bl-p{50%{transform:rotate(-9deg)}}@keyframes i-br{50%{transform:rotate(9deg)}}@keyframes i-br-p{50%{transform:rotate(9deg)}}@keyframes i-lift{50%{transform:translateY(-2px)}}@keyframes i-lift-p{50%{transform:translateY(-2px)}}
+/* the locked next-day pill: its lock shakes once per tap (JS restarts .shk); never on hover */
+.pnb .ps svg.shk{animation:i-shake .4s ease-in-out}@keyframes i-shake{20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-1.5px)}80%{transform:translateX(1px)}}
 @media(hover:hover){.cw a.pv:hover>svg{transform:translateX(3px)}.cw a.nx:hover>svg{transform:translateX(-3px)}}
 .cw a.pv:is(:focus-visible,:active)>svg{transform:translateX(3px)}.cw a.nx:is(:focus-visible,:active)>svg{transform:translateX(-3px)}
 /* Tier 2 (outlined buttons): glass keeps the shared hover shadow and press scale, no opacity press; shade inverts on
@@ -321,6 +329,18 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .dw{display:flex;flex-direction:column;gap:14px}
 .dh{text-align:center}
 .cw.dnav>.dw{grid-area:c}
+/* day blocks: word cards, video card, done button (the pills follow in the grid, 22px below). The video card's glass
+   shadow (0 10px 30px -> 40px reach) ends before the done button; the day cards have no shadow at rest. */
+.dmain{gap:22px}.dmain>.vcard+.acts{margin-top:18px}
+.vcard{display:flex;flex-direction:column;gap:14px}.vcard h2{margin:0;font-size:18px;font-weight:600;text-align:center}
+.vbs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}.vbs .vb{min-width:0;padding:0 12px;white-space:nowrap}
+@media(max-width:480px){.vbs[data-n="3"] .vb{flex-direction:column;gap:4px;height:64px;border-radius:20px;padding:0 6px;font-size:14px}}
+@media(max-width:340px){.vbs[data-n="2"] .vb{flex-direction:column;gap:4px;height:64px;border-radius:20px;padding:0 6px;font-size:14px}}
+.btn.dbtn:not(.o){border:1px solid transparent}
+.dck path{stroke-dasharray:1 2;stroke-dashoffset:1;transition:stroke-dashoffset .4s ease-in}.dbtn[data-ds="u"] .dck path{stroke-dashoffset:0;transition-timing-function:ease-out}
+.dlb{display:inline-grid}.dlb>span{grid-area:1/1;text-align:center;opacity:0;transition:opacity .15s}
+.dbtn[data-ds="r"] .dlb>:not([data-l="r"]),.dbtn:not([data-ds="r"]) .dlb>[data-l="r"]{display:none}
+.dbtn[data-ds="r"] [data-l="r"],.dbtn[data-ds="d"] [data-l="d"],.dbtn[data-ds="u"] [data-l="u"]{opacity:1}
 
 
 @media(min-width:601px){}
@@ -355,13 +375,13 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    visible but static, and the nav does not slide. Sound is untouched. */
 .cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
-.cm .cw a.pnb>svg,.cm :is([data-a="rnd"],[data-a="card"],[data-a="share"],.mib)>svg{transform:none!important;transition:none}
+.cm .cw a.pnb>svg{transform:none!important;transition:none}.cm :is(svg.im,svg.im *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
 #bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
-.cw a.pnb>svg,:is([data-a="rnd"],[data-a="card"],[data-a="share"],.mib)>svg{transform:none!important;transition:none}
+.cw a.pnb>svg{transform:none!important;transition:none}:is(svg.im,svg.im *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }

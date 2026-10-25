@@ -4,7 +4,7 @@
  * applies the mode, palette, glass intensity and style (glass/shade) to
  * <html> before first paint, so a stored theme never flashes. It also mirrors
  * the app's shade variables (--tc/--sf/--sbd/--ln) and the .cm class used by
- * the reduced-motion rules. ASCII-only: it only holds hex colours and logic.
+ * the reduced-motion rules, plus the .dk dark-mode marker used by the word pages' chips. ASCII-only: it only holds hex colours and logic.
  */
 (function () {
   var GLLV = [[4, 140, 0.88, 0.26, 0.55, 0.1], [12, 160, 0.8, 0.22, 0.63, 0.13], [22, 180, 0.72, 0.18, 0.71, 0.16], [34, 200, 0.64, 0.15, 0.79, 0.19], [48, 220, 0.56, 0.12, 0.87, 0.22]];
@@ -57,6 +57,9 @@
     r.setProperty("--btf", dark ? c[0] : "#fff");
     r.setProperty("--ln", dark ? "rgba(255,255,255,.12)" : "rgba(29,43,37,.12)");
     document.documentElement.classList.toggle("cm", !!set.cm);
+    // .dk marks dark mode so the static word pages' glass chips use their higher-contrast colour in dark
+    // mode only; set here, before first paint, so the chips never show the light colour first.
+    document.documentElement.classList.toggle("dk", dark);
     var shade = set.style === "shade";
     document.documentElement.classList.toggle("shade", shade);
     if (shade) {
@@ -70,4 +73,28 @@
   }
   apply();
   try { matchMedia("(prefers-color-scheme:dark)").addEventListener("change", apply); } catch (e) {}
+
+  // Icon motion (the "all surahs" book): hover and focus-visible run it from the stylesheet; a press (pointer, Enter or
+  // Space) replays it once through .imp, the same as the app. .imp is dropped once the motion is over and the control
+  // is neither hovered nor focused.
+  var hv = matchMedia("(hover:hover)");
+  function drop(c) {
+    if (c._imt || (hv.matches && c.matches(":hover")) || c.matches(":focus-visible")) return;
+    c.classList.remove("imp");
+  }
+  function press(e) {
+    var c = e.target.closest && e.target.closest("a,button");
+    if (!c || !c.querySelector(":scope>svg.im") || c.disabled || c.getAttribute("aria-disabled") === "true") return;
+    c.classList.remove("imp"); void c.offsetWidth; c.classList.add("imp");
+    clearTimeout(c._imt);
+    c._imt = setTimeout(function () { c._imt = 0; drop(c); }, 600);
+  }
+  function out(e) {
+    var c = e.target.closest && e.target.closest(".imp");
+    if (c) setTimeout(function () { drop(c); }, 0);
+  }
+  addEventListener("pointerdown", press, true);
+  addEventListener("keydown", function (e) { if (!e.repeat && (e.key === "Enter" || e.key === " ")) press(e); }, true);
+  addEventListener("mouseout", out, true);
+  addEventListener("focusout", out, true);
 })();
