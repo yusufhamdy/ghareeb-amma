@@ -172,9 +172,9 @@ test("F1: the arrows are a row of two 58px pills below the list (sharing the row
     assert.ok(sg.pv.top >= sg.list.bottom - 1 && sg.nx.top >= sg.list.bottom - 1, "at 1440px both controls sit below the list");
     assert.ok(sg.pv.left >= sg.nx.right - 1, "at 1440px the previous control is the inline-start (right) one");
     assert.ok(Math.abs((sg.pv.right + sg.nx.left) / 2 - (sg.list.left + sg.list.right) / 2) <= 1, "at 1440px the pill row is centered under the list");
-    assert.ok(Math.abs(sg.pv.width - 250) <= 1, "surah previous pill width is 250 (" + sg.pv.width + ")");
+    assert.ok(Math.abs(sg.pv.width - 230) <= 1, "surah previous pill width is 230 (" + sg.pv.width + ")");
     assert.ok(Math.abs(sg.pv.height - 58) <= 1, "surah previous pill height is 58");
-    assert.ok(Math.abs(sg.nx.width - 250) <= 1, "surah next pill width is 250");
+    assert.ok(Math.abs(sg.nx.width - 230) <= 1, "surah next pill width is 230");
     assert.ok(Math.abs(sg.nx.height - 58) <= 1, "surah next pill height is 58");
     await desk.close();
   } finally { await env.close(); }

@@ -320,7 +320,8 @@ const BOOK =
 // surah line (open book + name) shows whenever o.surah is set.
 function navBtn(o, dir) {
   const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK + esc(o.surah) + "</span>" : "";
-  const inner = dir === "pv" ? CHEV_R + " " + o.label + ps : o.label + " " + CHEV_L + ps;
+  const lb = o.label.replace(/^(\S+) /, '<span class="pl">$1 </span>'); // first word hidden visually at <=340px
+  const inner = dir === "pv" ? CHEV_R + " " + lb + ps : lb + " " + CHEV_L + ps;
   const al = o.aria ? ' aria-label="' + esc(o.aria) + '"' : "";
   return o.href
     ? '<a class="g pnb ' + dir + '" href="' + o.href + '"' + al + ">" + inner + "</a>"
