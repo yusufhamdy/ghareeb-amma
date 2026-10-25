@@ -8,7 +8,7 @@
  * Checked on /word/al-falaq-4.html and /surah/abasa.html, glass and shade
  * (night mode), at 400px and 1440px:
  *   - no two boxes inside a card intersect each other
- *   - chip-to-button gap >= 14px and equal to the SPA value within 1px
+ *   - chip-to-button gap >= the chips' shadow reach (40px)
  *   - card bottom padding >= 20px and equal to the SPA value within 2px
  *   - nothing overflows the card box
  *   - the SPA values are unchanged versus the step 1 baseline
@@ -160,12 +160,8 @@ test("phase M: static card spacing matches the app", async (t) => {
           if (r.cardCount > 0) {
             if (r.gapChipToBtn !== null) {
               assert.ok(r.gapChipToBtn >= 14 - 0.5, label + ": chip-to-button gap " + r.gapChipToBtn);
-              if (r.spaLayerGap !== null && r.gapChipToBtn > 0) {
-                assert.ok(
-                  Math.abs(r.gapChipToBtn - r.spaLayerGap) <= 1,
-                  label + ": gap " + r.gapChipToBtn + " vs SPA " + r.spaLayerGap
-                );
-              }
+              // the chips' shadow (0 10px 30px -> 10 + 30 = 40px reach) must end before the translucent button
+              assert.ok(r.gapChipToBtn >= 40 - 0.5, label + ": chip-to-button gap " + r.gapChipToBtn + " < shadow reach 40");
             }
             assert.ok(r.cardPadBottom >= 20 - 0.5, label + ": card bottom padding " + r.cardPadBottom);
           }

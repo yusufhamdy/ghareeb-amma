@@ -65,6 +65,7 @@ const A = {
   PREV_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous surah"
   NEXT_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next word"
   NEXT_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next surah"
+  FROM_SURAH: "\u060c \u0645\u0646 \u0633\u0648\u0631\u0629 ", // ", from surah " (accessible name of a cross-surah prev/next)
   ALL_SURAS: "\u0643\u0644 \u0627\u0644\u0633\u0648\u0631", // "all surahs"
   ONE_WORD: "\u0643\u0644\u0645\u0629 \u0648\u0627\u062d\u062f\u0629", // "one word"
   TWO_WORDS: "\u0643\u0644\u0645\u062a\u0627\u0646", // "two words"
@@ -162,6 +163,9 @@ const STATIC_CSS_TAIL =
   // The more specific .cols .card rule above still wins for the word/meaning
   // cards, so the app's look is untouched.
   ".card{display:flex;flex-direction:column;gap:14px}\n" +
+  // The chips' shadow (10px + 30px blur = 40px) ends before the translucent
+  // "all words" button below them; the card's own gap is 14px.
+  ".chips+.acts{margin-top:26px}\n" +
   // P1 Tier 4: the legal pages' home link is a small text link, so it gets the
   // same subtle hover colour and light (opacity-only) press as the app's links.
   ":is(.legal>a.b,.para a){transition:color .2s,opacity .15s}\n" +
@@ -254,11 +258,13 @@ export function buildRecords(surahs) {
     });
   });
   // Surah-level links for the static surah pages (prev/next surah + the surah
-  // slug shared with the word pages). Order follows the data order.
+  // slug shared with the word pages). Prev/next follow the app's order: surah number.
   const seqOrder = [];
   records.forEach((r) => {
     if (!seqOrder.includes(r.surahSeq)) seqOrder.push(r.surahSeq);
   });
+  const noOf = (seq) => records.find((x) => x.surahSeq === seq).no;
+  seqOrder.sort((a, b) => noOf(a) - noOf(b));
   records.forEach((r) => {
     const i = seqOrder.indexOf(r.surahSeq);
     const slugOf = (seq) => {
@@ -268,6 +274,14 @@ export function buildRecords(surahs) {
     r.surahSlug = slugOf(r.surahSeq);
     r.surahPrev = i > 0 ? { no: records.find((x) => x.surahSeq === seqOrder[i - 1]).no, slug: slugOf(seqOrder[i - 1]) } : null;
     r.surahNext = i < seqOrder.length - 1 ? { no: records.find((x) => x.surahSeq === seqOrder[i + 1]).no, slug: slugOf(seqOrder[i + 1]) } : null;
+  });
+  // Word-page prev/next always lead to a word, in the app's order (surah number,
+  // then the sorted order above); crossing into another surah carries its name.
+  const flat = records.slice().sort((x, y) => x.no - y.no || x.idx - y.idx);
+  flat.forEach((r, k) => {
+    const p = flat[k - 1], n = flat[k + 1];
+    r.wordPrev = p ? { slug: p.slug, surah: p.no !== r.no ? p.surahShort : "" } : null;
+    r.wordNext = n ? { slug: n.slug, surah: n.no !== r.no ? n.surahShort : "" } : null;
   });
   return records;
 }
@@ -388,20 +402,15 @@ export function renderWordPage(r) {
   const ayah = renderAyah(r.ayah);
   const surahHref = "/surah/" + r.surahSlug + ".html";
   const appHref = "/#/word/" + r.no + "-" + r.idx;
-  const pv = r.prev
-    ? { label: A.PREV_WORD, href: "/word/" + r.prev.slug + ".html" }
-    : r.surahPrev
-      ? { label: A.PREV_SURAH, href: "/surah/" + r.surahPrev.slug + ".html" }
-      : { label: A.PREV_SURAH, href: null };
-  const nx = r.next
-    ? { label: A.NEXT_WORD, href: "/word/" + r.next.slug + ".html" }
-    : r.surahNext
-      ? { label: A.NEXT_SURAH, href: "/surah/" + r.surahNext.slug + ".html" }
-      : { label: A.NEXT_SURAH, href: null };
+  const link = (w, label) => ({ label, href: w ? "/word/" + w.slug + ".html" : null, surah: w ? w.surah : "" });
+  const pv = link(r.wordPrev, A.PREV_WORD);
+  const nx = link(r.wordNext, A.NEXT_WORD);
   const navBtn = (o, dir) => {
-    const inner = (dir === "pv" ? CHEV_R + " " : "") + o.label + (dir === "nx" ? " " + CHEV_L : "");
+    const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK + esc(o.surah) + "</span>" : "";
+    const inner = dir === "pv" ? CHEV_R + " " + o.label + ps : o.label + " " + CHEV_L + ps;
+    const al = o.surah ? ' aria-label="' + o.label + A.FROM_SURAH + esc(o.surah) + '"' : "";
     return o.href
-      ? '<a class="g pnb ' + dir + '" href="' + o.href + '">' + inner + "</a>"
+      ? '<a class="g pnb ' + dir + '" href="' + o.href + '"' + al + ">" + inner + "</a>"
       : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
   };
   const chips = r.others

@@ -7,9 +7,10 @@
  *   - the surah+verse pill links to that word's surah and matches the row text
  *   - the card split: card 1 = word + highlighted verse, card 2 = meaning
  *     (>= 20px, "enlarged") + source, and card 2 has no verse
- *   - prev/next: inside a surah -> word links; at a surah boundary -> neighbour
- *     surah links; at the very first/last word -> disabled (aria-disabled,
- *     reduced opacity, still rendered), never hidden
+ *   - prev/next: always word links; at a surah boundary -> the neighbouring
+ *     surah's last/first word, with that surah's name on a second line; at the
+ *     very first/last word -> disabled (aria-disabled, reduced opacity, still
+ *     rendered), never hidden
  *   - RTL chevrons: previous points right, next points left
  *   - the three actions in spec order: other-words link -> draw -> save
  *   - layout: below 801px the nav is a row under the cards; from 801px one
@@ -186,14 +187,15 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
           assert.ok(d.pv.chev.indexOf(CHEV_RIGHT) >= 0, "prev chevron points right");
         } else if (prevSurah) {
           assert.equal(d.pv.tag, "A");
-          assert.equal(d.pv.href, "#/surah/" + prevSurah.num, "boundary: prev = neighbouring surah");
-          assert.equal(d.pv.text, AR.prevSurah);
+          const pl = bySurah[prevSurah.num];
+          assert.equal(d.pv.href, "#/word/" + pl[pl.length - 1].id, "boundary: prev = last word of the neighbouring surah");
+          assert.equal(d.pv.text, AR.prevWord + prevSurah.name);
           assert.ok(d.pv.chev.indexOf(CHEV_RIGHT) >= 0);
         } else {
           assert.equal(d.pv.tag, "SPAN", "no previous word -> disabled, never hidden");
           assert.equal(d.pv.ad, "true");
           assert.equal(d.pv.op, "0.5");
-          assert.equal(d.pv.text, AR.prevSurah);
+          assert.equal(d.pv.text, AR.prevWord);
           assert.ok(d.pv.vis && d.pv.r.h >= 44 && d.pv.r.w > 0, "disabled control still visible, >=44px");
         }
 
@@ -206,14 +208,14 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
           assert.ok(d.nx.chev.indexOf(CHEV_LEFT) >= 0, "next chevron points left");
         } else if (nextSurah) {
           assert.equal(d.nx.tag, "A");
-          assert.equal(d.nx.href, "#/surah/" + nextSurah.num, "boundary: next = neighbouring surah");
-          assert.equal(d.nx.text, AR.nextSurah);
+          assert.equal(d.nx.href, "#/word/" + bySurah[nextSurah.num][0].id, "boundary: next = first word of the neighbouring surah");
+          assert.equal(d.nx.text, AR.nextWord + " " + nextSurah.name);
           assert.ok(d.nx.chev.indexOf(CHEV_LEFT) >= 0);
         } else {
           assert.equal(d.nx.tag, "SPAN", "no next word -> disabled, never hidden");
           assert.equal(d.nx.ad, "true");
           assert.equal(d.nx.op, "0.5");
-          assert.equal(d.nx.text, AR.nextSurah);
+          assert.equal(d.nx.text, AR.nextWord);
           assert.ok(d.nx.vis && d.nx.r.h >= 44 && d.nx.r.w > 0, "disabled control still visible, >=44px");
         }
 
