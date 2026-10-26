@@ -74,7 +74,7 @@ try {
   // and the app shows them: one button per link, the old link as its platform's button, no card without links
   const app = await ctx.newPage();
   await app.addInitScript((c) => { window.__CH__ = c; localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify({ cm: true })); }, pub);
-  const SHOW = { 1: [], 2: ["تيك توك"], 3: ["إنستغرام", "يوتيوب"], 4: ["إنستغرام", "تيك توك", "يوتيوب"], 5: ["يوتيوب"] };
+  const SHOW = { 1: [], 2: ["تيك توك"], 3: ["إنستجرام", "يوتيوب"], 4: ["إنستجرام", "تيك توك", "يوتيوب"], 5: ["يوتيوب"] };
   for (const n of [1, 2, 3, 4, 5]) {
     await app.goto("about:blank"); await app.goto(base + "/#/day/" + n); await app.waitForSelector("#dw .dcard");
     const got = await app.evaluate(() => [...document.querySelectorAll(".vcard a.vb")].map((a) => a.textContent.trim()));

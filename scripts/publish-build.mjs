@@ -605,6 +605,8 @@ export function publicChallenge(state) {
   const src = state && Array.isArray(state.days) ? state.days : [];
   out.days.forEach((day, i) => {
     const s = src[i] || {};
+    // a word reference keeps only its surah number and word, in the shape it came in: no other field can reach the file
+    day.w = day.w.map((r) => (Array.isArray(r) ? [r[0], r[1]] : { no: r && r.no, word: r && r.word }));
     for (const [key, hosts] of REEL_LINKS) {
       if (typeof s[key] !== "string" || !s[key]) continue;
       if (!reelLinkOk(s[key], hosts)) throw new Error("refusing to publish; day " + day.d + " has an invalid " + key + ": " + s[key]);

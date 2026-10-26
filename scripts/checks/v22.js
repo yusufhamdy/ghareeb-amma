@@ -42,6 +42,38 @@ const frames = (p, scope, snap, arg, minMs = 300) => p.evaluate(([scope, src, ar
   };
   tick();
 }), [scope, snap.toString(), arg, minMs]);
+// Exact motion samples, independent of frame rate: the moment animations or transitions run inside `sc`, every one of them
+// is paused and seeked to each of its keyframe times and to every 4ms of its own timeline, `f(arg)` is read at each
+// point, and then each is put back at its own current time and resumed. All of it runs in one task with every seek
+// inside the active phase (never before the delay, never at the end), so no extra animation events fire and the real
+// motion carries on unchanged: "starts exactly once" and "ends at rest" stay measured on the real frames.
+const KEYSCAN = `(sc, f, arg) => {
+  const as = sc.getAnimations({ subtree: true }).filter((a) => a.playState === "running");
+  if (!as.length) return null;
+  const T = as.map((a) => { const c = a.effect.getComputedTiming(); return { a, cur: a.currentTime, lo: c.delay || 0, hi: (c.delay || 0) + c.activeDuration - 0.01, offs: a.effect.getKeyframes().map((k) => k.computedOffset), dur: c.duration }; });
+  const pts = new Set(), end = Math.max(...T.map((x) => x.hi));
+  T.forEach((x) => x.offs.forEach((o) => pts.add(Math.min(x.lo + o * x.dur, x.hi))));
+  for (let t = 0; t <= end; t += 4) pts.add(t);
+  T.forEach((x) => x.a.pause());
+  const t = [], s = [];
+  [...pts].sort((a, b) => a - b).forEach((v) => { T.forEach((x) => { x.a.currentTime = Math.max(x.lo, Math.min(v, x.hi)); }); t.push(v); s.push(f(arg)); });
+  T.forEach((x) => { x.a.currentTime = x.cur; x.a.play(); });
+  return { t, s, names: as.map((a) => a.animationName || a.transitionProperty) };
+}`;
+// the real frames (fr), as frames() does, plus the exact samples of the motion that started (key: { t, s, names })
+const framesK = (p, scope, snap, arg, minMs = 300) => p.evaluate(([scope, src, arg, minMs, ks]) => new Promise((res) => {
+  const f = eval(src), K = eval(ks), sc = document.querySelector(scope), t0 = performance.now(), out = [];
+  let key = null;
+  const tick = () => {
+    if (!key && sc) key = K(sc, f, arg);
+    out.push(f(arg));
+    const el = performance.now() - t0, run = !!sc && sc.getAnimations({ subtree: true }).some((a) => a.playState === "running");
+    if ((run || el < minMs) && el < 3000) requestAnimationFrame(tick); else res({ fr: out, key: key || { t: [], s: [], names: [] } });
+  };
+  tick();
+}), [scope, snap.toString(), arg, minMs, KEYSCAN]);
+// wait until nothing inside `scope` animates any more (at least minMs, at most 3s), whatever the frame rate
+const settle = (p, scope, minMs = 0) => frames(p, scope, () => 0, null, minMs);
 const go = async (p, base, url, sel) => { await p.goto("about:blank"); await p.goto(base + url, { waitUntil: "load" }); await p.waitForSelector(sel, { timeout: 20000 }); await p.waitForTimeout(400); };
 
 // ------------------------------------------------------------------------------------------------------------ icons
@@ -129,8 +161,9 @@ async function iconMotion(br, base) {
       ]) {
         await p.evaluate(() => { window.__AS = []; window.__AI = 0; });
         await run();
-        // every frame until the motion ends: only the named parts may differ from rest
-        const mids = await frames(p, sel, PARTS, sel, 300);
+        // every frame until the motion ends, plus the exact keyframe samples: only the named parts may differ from rest
+        const { fr: real, key } = await framesK(p, sel, PARTS, sel, 300);
+        const mids = real.concat(key.s);
         await p.waitForTimeout(400);
         const after = await p.evaluate(PARTS, sel);
         const st = await p.evaluate(() => ({ as: window.__AS.slice(), ai: window.__AI }));
@@ -154,7 +187,7 @@ async function iconMotion(br, base) {
       // press while hovered replays exactly once more, and dropping .imp later does not replay it again
       await p.mouse.move(1, 1); await p.waitForTimeout(300);
       await h.hover(); await p.waitForTimeout(700); await p.evaluate(() => { window.__AS = []; });
-      await p.mouse.down(); await p.mouse.up(); await p.waitForTimeout(1600);
+      await p.mouse.down(); await p.mouse.up(); await p.waitForTimeout(1600); await settle(p, sel);
       const rep = await p.evaluate(() => window.__AS.length);
       const per1 = parts.reduce((s, x) => s + ({ s: 2, h: 2, ar: 1, bl: 1, br: 1, svg: 1 })[x], 0) + SWAP[cls];
       bump("iconHoverPress");
@@ -172,7 +205,7 @@ async function iconMotion(br, base) {
     for (const [label, url, sel, cls, parts] of CONTROLS) {
       await go(p, base, url, sel); await p.locator(sel).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
       await p.evaluate(() => { window.__AS = []; window.__AI = 0; });
-      await p.locator(sel).first().tap(); await p.waitForTimeout(1500);
+      await p.locator(sel).first().tap(); await p.waitForTimeout(1500); await settle(p, sel);
       const st = await p.evaluate(() => ({ as: window.__AS.slice(), ai: window.__AI, imp: document.querySelectorAll(".imp").length }));
       const per1 = parts.reduce((s, x) => s + ({ s: 2, h: 2, ar: 1, bl: 1, br: 1, svg: 1 })[x], 0) + SWAP[cls];
       bump("iconTap");
@@ -206,7 +239,8 @@ async function iconMotion(br, base) {
 // --------------------------------------------------------------------------------------------------------- coverage
 // Motion is tied to the icon, not the label: every enabled link or button on every page/state (app, static, 404) that
 // contains the book, shuffle, download, share, platform, external-link, chevron or forward-arrow icon must run that
-// icon's motion on hover, focus-visible and press, measured every frame for the whole motion and judged on its peak.
+// icon's motion on hover, focus-visible and press, measured every frame for the whole motion plus exact samples at its
+// keyframe times (KEYSCAN), and judged on its peak.
 // The small book in a prev/next pill's second line must stay still (only the pill's chevron moves). Out of scope by
 // design: the bottom nav, the gear, the social links and list rows (rows are not buttons). Prints every control found
 // per icon, plus any other icon inside a button (no motion defined for it).
@@ -235,7 +269,7 @@ const peaks = (rest, fr, i) => {
   return pk;
 };
 const atRest = (rest, f, i) => rest[i].st.every((x, j) => x.every((v, k) => Math.abs(v - f[i].st[j][k]) < 0.01));
-// what each icon's peak must reach (expected values from the spec, with room for frame spacing)
+// what each icon's peak must reach (expected values from the spec; the exact samples land on the keyframes)
 const PEAK = {
   book: (k) => k.rot >= 8 || `halves opened only ${k.rot.toFixed(2)}deg (want 9)`,
   shuffle: (k) => (k.dof >= 0.9 && k.move >= 2.7) || `strands redraw ${k.dof.toFixed(2)}, heads slid ${k.move.toFixed(2)}px`,
@@ -288,13 +322,14 @@ async function coverage(br, base) {
           if (pre) await pre();
           const rest = await p.evaluate(COV_SNAP, sel);
           await run();
-          const fr = await frames(p, sel, COV_SNAP, sel, 300);
+          const { fr, key } = await framesK(p, sel, COV_SNAP, sel, 300);
           if (after) await after();
-          bump("coverTriggers"); n.coverFrames = (n.coverFrames || 0) + fr.length;
+          bump("coverTriggers"); n.coverFrames = (n.coverFrames || 0) + fr.length; n.coverKeySamples = (n.coverKeySamples || 0) + key.s.length;
           c.icons.forEach((k, i) => {
             if (!PEAK[k]) return;
-            const pk = peaks(rest, fr, i), v = PEAK[k](pk);
-            if (v !== true) fail(`${id} ${trig}: ${k} ${v} over ${fr.length} frames`);
+            // the peak is judged on the exact keyframe samples together with the real frames
+            const pk = peaks(rest, fr.concat(key.s), i), v = PEAK[k](pk);
+            if (v !== true) fail(`${id} ${trig}: ${k} ${v} (${fr.length} frames, ${key.s.length} exact samples)`);
             if (!NUDGE.has(k) && k !== "pillbook") {
               if (!atRest(rest, fr[fr.length - 1], i)) fail(`${id} ${trig}: ${k} not back at rest at the end`);
               if (trig === "press" && ![...pk.an].some((a) => a.endsWith("-p"))) fail(`${id} press: ${k} ran ${[...pk.an].join(",")} without the press keyframes`);
@@ -327,31 +362,38 @@ async function doneUndo(br, base) {
     await p.waitForFunction(() => { const b = document.querySelector('[data-a="done"]'); return b && !b.disabled; });
     await p.waitForTimeout(1200);
     for (const step of ["done", "undo"]) {
-      const r = await p.evaluate((step) => new Promise((res) => {
-        const b = document.querySelector('[data-a="done"]'), svg = b.querySelector(".dck"), path = svg.querySelector("path");
+      const r = await p.evaluate(([step, ks]) => new Promise((res) => {
+        const K = eval(ks), b = document.querySelector('[data-a="done"]'), svg = b.querySelector(".dck"), path = svg.querySelector("path");
         const L = [...b.querySelectorAll(".dlb>span")].filter((e) => getComputedStyle(e).display !== "none");
         const R = (e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; };
         const snap = () => ({ t: performance.now(), b: R(b), svg: R(svg), lab: L.map(R), dof: parseFloat(getComputedStyle(path).strokeDashoffset), op: L.map((e) => +getComputedStyle(e).opacity), ds: b.dataset.ds });
         const out = [snap()], t0 = performance.now();
+        let key = null;
         b.click();
         out.push(snap());
-        const tick = () => { out.push(snap()); const el = performance.now() - t0; if ((el < 650 || b.getAnimations({ subtree: true }).some((a) => a.playState === "running")) && el < 3000) requestAnimationFrame(tick); else res({ out, sn: Object.assign({}, window.__SN), name: b.textContent, hidden: [...b.querySelectorAll('.dlb>span[aria-hidden="true"]')].map((e) => e.dataset.l), pressed: b.className }); };
+        // the exact samples of the draw/erase and the label crossfade (transitions), taken when they start
+        const tick = () => { if (!key) key = K(b, snap); out.push(snap()); const el = performance.now() - t0; if ((el < 650 || b.getAnimations({ subtree: true }).some((a) => a.playState === "running")) && el < 3000) requestAnimationFrame(tick); else res({ out, key: key || { t: [], s: [], names: [] }, sn: Object.assign({}, window.__SN), name: b.textContent, hidden: [...b.querySelectorAll('.dlb>span[aria-hidden="true"]')].map((e) => e.dataset.l), pressed: b.className }); };
         requestAnimationFrame(tick);
-      }), step);
+      }), [step, KEYSCAN]);
       bump("doneSteps");
       const s0 = r.out[0];
       let maxd = 0;
-      for (const s of r.out) { [["b", s.b, s0.b], ["svg", s.svg, s0.svg]].forEach(([, a, z]) => a.forEach((v, j) => { maxd = Math.max(maxd, Math.abs(v - z[j])); })); s.lab.forEach((a, i) => a.forEach((v, j) => { maxd = Math.max(maxd, Math.abs(v - s0.lab[i][j])); })); }
+      for (const s of r.out.concat(r.key.s)) { [["b", s.b, s0.b], ["svg", s.svg, s0.svg]].forEach(([, a, z]) => a.forEach((v, j) => { maxd = Math.max(maxd, Math.abs(v - z[j])); })); s.lab.forEach((a, i) => a.forEach((v, j) => { maxd = Math.max(maxd, Math.abs(v - s0.lab[i][j])); })); }
       if (maxd > 0.5) fail(`${id} ${step}: something moved ${maxd.toFixed(2)}px`);
       const end = r.out[r.out.length - 1], seq = r.out.slice(1).map((s) => s.dof);
       const wantDof = step === "done" ? 0 : 1;
       if (Math.abs(end.dof - wantDof) > 0.01) fail(`${id} ${step}: check dashoffset ends at ${end.dof}, want ${wantDof}`);
       if (mode === "normal") {
-        // draw: the dashoffset falls over several frames (erase: rises), never back, and ends exactly at its target
-        const inter = seq.filter((v) => v > 0.01 && v < 0.99), mono = seq.every((v, i) => !i || (step === "done" ? v <= seq[i - 1] + 1e-6 : v >= seq[i - 1] - 1e-6));
-        if (inter.length < 3 || !mono) fail(`${id} ${step}: the check did not ${step === "done" ? "draw" : "erase"} gradually (${seq.map((v) => v.toFixed(2)).join(",")})`);
-        if (!r.out.some((s) => s.op.some((o) => o > 0.05 && o < 0.95))) fail(`${id} ${step}: labels did not crossfade`);
-        const t150 = r.out.find((s) => s.t - r.out[0].t >= 200); if (t150 && t150.op.some((o) => o > 0.02 && o < 0.98)) fail(`${id} ${step}: crossfade still running at 200ms`);
+        // draw: the dashoffset falls along the transition's own timeline (erase: rises), never back, and the real frames
+        // end exactly at its target; judged on the exact samples, so frame spacing cannot hide or fake a step
+        const kd = r.key.s.map((s) => s.dof);
+        const inter = kd.filter((v) => v > 0.01 && v < 0.99), mono = kd.every((v, i) => !i || (step === "done" ? v <= kd[i - 1] + 1e-6 : v >= kd[i - 1] - 1e-6));
+        if (!r.key.s.length) fail(`${id} ${step}: no transition started`);
+        if (inter.length < 3 || !mono) fail(`${id} ${step}: the check did not ${step === "done" ? "draw" : "erase"} gradually (${kd.filter((_, i) => i % 10 === 0).map((v) => v.toFixed(2)).join(",")})`);
+        if (!r.key.s.some((s) => s.op.some((o) => o > 0.05 && o < 0.95))) fail(`${id} ${step}: labels did not crossfade`);
+        // the crossfade is over 200ms into its own timeline
+        const late = r.key.s.filter((_, i) => r.key.t[i] >= 200);
+        if (!late.length || late.some((s) => s.op.some((o) => o > 0.02 && o < 0.98))) fail(`${id} ${step}: crossfade still running at 200ms (${late.length} samples after 200ms)`);
       } else {
         const first = r.out[1]; if (Math.abs(first.dof - wantDof) > 0.01 || first.op.some((o) => o > 0.01 && o < 0.99)) fail(`${id} ${step}: not instant with motion off (dof ${first.dof}, op ${first.op})`);
       }
@@ -408,7 +450,8 @@ async function lockPill(br, base) {
     await p.evaluate(() => { window.__AS = []; document.querySelectorAll(".toast").forEach((t) => t.remove()); });
     const hash0 = await p.evaluate(() => location.hash);
     if (touch) await p.tap(sel, { force: true }); else if (mode === "keyboard") { await p.keyboard.press("Shift"); await p.focus(sel); await p.keyboard.press("Enter"); } else await p.click(sel, { force: true });
-    const mids = await frames(p, sel, (s) => new DOMMatrix(getComputedStyle(document.querySelector(s + " .ps svg")).transform).m41, sel, 300);
+    const { fr: realL, key: keyL } = await framesK(p, sel, (s) => new DOMMatrix(getComputedStyle(document.querySelector(s + " .ps svg")).transform).m41, sel, 300);
+    const mids = realL.concat(keyL.s);
     const r = await p.evaluate(() => ({ toast: [...document.querySelectorAll(".toast")].map((t) => t.textContent.trim()), hash: location.hash, as: window.__AS.slice() }));
     const lockText = await p.evaluate(() => lockMsg(2));
     bump("lockTap");
@@ -445,7 +488,7 @@ async function lockDots(br, base) {
     const sel = "#ldot";
     await p.locator(sel).scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(300);
     if (!touch) {
-      await p.hover(sel); const fr = await frames(p, sel, LOCK_TX, sel, 400);
+      await p.hover(sel); const hk = await framesK(p, sel, LOCK_TX, sel, 400), fr = hk.fr.concat(hk.key.s);
       bump("lockDotHover");
       if (fr.some((x) => Math.abs(x) > 0.001)) fail(`${id}: the lock moved on hover (${Math.max(...fr.map(Math.abs)).toFixed(2)}px)`);
       await p.mouse.move(1, 1);
@@ -453,10 +496,11 @@ async function lockDots(br, base) {
     await p.evaluate(() => { window.__AS = []; document.querySelectorAll(".toast").forEach((t) => t.remove()); });
     const hash0 = await p.evaluate(() => location.hash);
     if (touch) await p.tap(sel); else if (mode === "keyboard") { await p.keyboard.press("Shift"); await p.focus(sel); await p.keyboard.press("Enter"); } else await p.click(sel);
-    const fr = await frames(p, sel, LOCK_TX, sel, 300);
+    const { fr, key } = await framesK(p, sel, LOCK_TX, sel, 300);
     const r = await p.evaluate(() => ({ toast: [...document.querySelectorAll(".toast")].map((t) => t.textContent.trim()), hash: location.hash, as: window.__AS.slice() }));
     const want = await p.evaluate((n) => lockMsg(n), d);
-    const amp = Math.max(...fr.map(Math.abs));
+    // peak over the real frames and the exact keyframe samples; "back at rest" stays on the last real frame
+    const amp = Math.max(...fr.concat(key.s).map(Math.abs));
     bump("lockDotTap");
     if (r.hash !== hash0) fail(`${id}: tap navigated ${hash0} -> ${r.hash}`);
     if (r.toast.length !== 1 || r.toast[0] !== want) fail(`${id}: toast ${JSON.stringify(r.toast)} want ${want}`);
@@ -480,11 +524,14 @@ async function quizMarks(br, base) {
     await p.evaluate(() => { window.__AS = []; });
     // answer wrongly so both marks show
     await p.evaluate(() => { const q = Q.qs[Q.i], i = q.o.findIndex((x) => x !== q.w); document.querySelector(`#app .opt[data-o="${i}"]`).click(); });
-    const fr = await frames(p, "#app .opts", SNAP, null, 300);
+    const { fr, key } = await framesK(p, "#app .opts", SNAP, null, 300);
     const as = await p.evaluate(() => window.__AS.slice());
     bump("quizReveal");
     if (fr[0].dof === null || fr[0].tx === null) { fail(`${id}: marks not shown (${JSON.stringify(fr[0])})`); await ctx.close(); continue; }
-    const dofs = fr.map((x) => x.dof), end = fr[fr.length - 1], amp = Math.max(...fr.map((x) => Math.abs(x.tx)));
+    // the draw and the shake are judged on the exact samples along their own timelines (plus the real frames for the
+    // shake's peak); "at rest at the end" stays on the last real frame
+    const all = fr.concat(key.s), end = fr[fr.length - 1], amp = Math.max(...all.map((x) => Math.abs(x.tx)));
+    const dofs = cm || rm ? all.map((x) => x.dof) : key.s.map((x) => x.dof);
     if (Math.abs(end.dof) > 0.001 || Math.abs(end.tx) > 0.001) fail(`${id}: marks not at rest at the end (${JSON.stringify(end)})`);
     if (cm || rm) {
       if (dofs.some((v) => Math.abs(v) > 0.001) || amp > 0.001 || as.length) fail(`${id}: marks animated with motion off (dof ${dofs.slice(0, 5)}, shake ${amp}, ${as})`);
@@ -496,7 +543,7 @@ async function quizMarks(br, base) {
     }
     // re-render (e.g. a theme change): no replay
     await p.evaluate(() => { window.__AS = []; render(); });
-    const again = await frames(p, "#app .opts", SNAP, null, 300);
+    const ag = await framesK(p, "#app .opts", SNAP, null, 300), again = ag.fr.concat(ag.key.s);
     bump("quizRerender");
     if ((await p.evaluate(() => window.__AS.length)) || again.some((x) => Math.abs(x.dof) > 0.001 || Math.abs(x.tx) > 0.001)) fail(`${id}: marks replayed on re-render`);
     await ctx.close();
@@ -510,7 +557,7 @@ async function videoCard(br, base) {
     ["old link only", { reel: "https://www.instagram.com/reel/old/" }], ["old link, unknown host", { reel: "https://example.com/r" }],
     ["new + old", { reelYt: LINKS.reelYt, reel: "https://www.instagram.com/reel/old/" }],
   ];
-  const WANT = { "0 links": [], "1 link": ["تيك توك"], "2 links": ["إنستغرام", "يوتيوب"], "3 links": ["إنستغرام", "تيك توك", "يوتيوب"], "old link only": ["إنستغرام"], "old link, unknown host": [], "new + old": ["يوتيوب"] };
+  const WANT = { "0 links": [], "1 link": ["تيك توك"], "2 links": ["إنستجرام", "يوتيوب"], "3 links": ["إنستجرام", "تيك توك", "يوتيوب"], "old link only": ["إنستجرام"], "old link, unknown host": [], "new + old": ["يوتيوب"] };
   for (const style of ["glass", "shade"]) for (const w of [320, 390, 1440]) for (const [label, links] of CASES) for (const done of [false, true]) {
     const id = `video ${style}/${w} ${label}${done ? " (done)" : ""}`;
     const ctx = await ctxFor(br, { w, set: { style, cm: true }, ch: chWith(links), prog: { done: done ? [1] : [] } });
@@ -536,7 +583,7 @@ async function videoCard(br, base) {
       if (b.target !== "_blank" || b.rel !== "noopener") fail(`${id} ${b.t}: target ${b.target} rel ${b.rel}`);
       if (b.trunc) fail(`${id} ${b.t}: truncated or overflowing`);
       if (!b.o) fail(`${id} ${b.t}: not an outlined .btn`);
-      const pf = { "إنستغرام": "ig", "تيك توك": "tt", "يوتيوب": "yt" }[b.t];
+      const pf = { "إنستجرام": "ig", "تيك توك": "tt", "يوتيوب": "yt" }[b.t];
       if (b.icon !== r.IC[pf]) fail(`${id} ${b.t}: icon is not the footer social icon`);
     }
     if (r.vbs.length > 1) {
@@ -558,9 +605,9 @@ async function videoCard(br, base) {
     if (r.vbs.length && w !== 320) {
       const snap = () => p.evaluate(() => { const a = document.querySelector(".vcard a.vb"), c = getComputedStyle(a), r = a.getBoundingClientRect(); return { bg: c.backgroundColor, c: c.color, w: r.width.toFixed(2), h: r.height.toFixed(2) }; });
       const vars = await p.evaluate(() => { const d = document.createElement("div"); document.body.appendChild(d); const g = (v) => { d.style.background = "var(" + v + ")"; return getComputedStyle(d).backgroundColor; }; const o = { tx: g("--tx"), bg: g("--bg") }; d.remove(); return o; });
-      await p.locator(".vcard a.vb").first().scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(450); const rest = await snap();
-      await p.hover(".vcard a.vb"); await p.waitForTimeout(450); const hov = await snap(); await p.mouse.move(1, 1);
-      await p.keyboard.press("Shift"); await p.focus(".vcard a.vb"); await p.waitForTimeout(450); const foc = await snap(); await p.evaluate(() => document.activeElement.blur());
+      await p.locator(".vcard a.vb").first().scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(450); await settle(p, ".vcard a.vb"); const rest = await snap();
+      await p.hover(".vcard a.vb"); await p.waitForTimeout(450); await settle(p, ".vcard a.vb"); const hov = await snap(); await p.mouse.move(1, 1);
+      await p.keyboard.press("Shift"); await p.focus(".vcard a.vb"); await p.waitForTimeout(450); await settle(p, ".vcard a.vb"); const foc = await snap(); await p.evaluate(() => document.activeElement.blur());
       bump("videoTier");
       for (const [st, s] of [["hover", hov], ["focus", foc]]) {
         if (style === "glass" && (s.bg !== rest.bg || s.c !== rest.c)) fail(`${id} ${st}: glass colour changed`);
@@ -593,19 +640,21 @@ async function admin(br, base) {
   await p.click('[data-a="tab"][data-v="c"]'); // the challenge tab
   await p.waitForSelector('[data-a="chDay"]', { timeout: 20000 });
   const open = async (d) => { await p.click(`[data-a="chDay"][data-v="${d}"]`); await p.waitForSelector('[data-f="c.reelIg"]'); };
+  // closing a window with edits asks first ("تجاهل" discards them)
+  const closeMd = async () => { await p.click('#md [data-a="close"]'); if (await p.isVisible("#cd.open")) await p.click('#cd [data-cd="yes"]'); await p.waitForSelector("#md .mb", { state: "detached" }); };
   const fields = () => p.evaluate(() => ["reelIg", "reelTt", "reelYt"].map((k) => document.querySelector(`[data-f="c.${k}"]`).value));
   const labels = await (async () => { await open(1); return p.evaluate(() => [...document.querySelectorAll("label.lb")].map((l) => l.textContent.trim())); })();
   bump("adminFields");
-  for (const l of ["رابط إنستغرام", "رابط تيك توك", "رابط يوتيوب"]) if (!labels.some((x) => x.startsWith(l))) fail("admin: missing field " + l);
+  for (const l of ["رابط إنستجرام", "رابط تيك توك", "رابط يوتيوب"]) if (!labels.some((x) => x.startsWith(l))) fail("admin: missing field " + l);
   if (await p.$('[data-f="c.reel"]')) fail("admin: the old single link field is still shown");
-  await p.click('#md [data-a="close"]');
+  await closeMd();
   // prefill from the old single link by host
   await open(2); const pre2 = await fields(); bump("adminPrefill");
   if (JSON.stringify(pre2) !== JSON.stringify(["", "https://www.tiktok.com/@a/video/9", ""])) fail("admin: day 2 prefill " + JSON.stringify(pre2));
-  await p.click('#md [data-a="close"]');
+  await closeMd();
   await open(3); const pre3 = await fields();
   if (JSON.stringify(pre3) !== JSON.stringify(["", "", ""])) fail("admin: day 3 (unknown host) prefill " + JSON.stringify(pre3));
-  await p.click('#md [data-a="close"]');
+  await closeMd();
   // save and wait until the modal closed (saved) or shows a field error (rejected)
   const saveDay = async () => { await p.click('[data-a="chSaveDay"]'); await p.waitForFunction(() => getComputedStyle(document.getElementById("md")).display === "none" || document.querySelector('#md [aria-invalid="true"]'), null, { timeout: 5000 }).catch(() => {}); await p.waitForTimeout(50); };
   const saved = () => p.evaluate(() => JSON.parse(localStorage.getItem("gqch")).days[0]);
@@ -628,14 +677,14 @@ async function admin(br, base) {
     bump("adminInvalid");
     if (!r.open || r.invalid !== "true" || !r.err || !r.near || !/[؀-ۿ]/.test(r.err)) fail(`admin: invalid ${k} ${v} shows no error next to the field ${JSON.stringify(r)}`);
     if (JSON.stringify(after) !== JSON.stringify(before)) fail(`admin: invalid ${k} ${v} was saved`);
-    await p.click('#md [data-a="close"]');
+    await closeMd();
   }
   for (const [k, list] of Object.entries(VALID)) for (const v of list) {
     await open(1);
     await p.fill(`[data-f="c.${k}"]`, v); await saveDay();
     const after = await saved();
     bump("adminValid");
-    if (await p.$('[data-f="c.reelIg"]')) { fail(`admin: valid ${k} ${v} was rejected`); await p.click('#md [data-a="close"]'); continue; }
+    if (await p.$('[data-f="c.reelIg"]')) { fail(`admin: valid ${k} ${v} was rejected`); await closeMd(); continue; }
     if (after[k] !== v) fail(`admin: valid ${k} ${v} saved as ${after[k]}`);
     if (after.reel !== CH0.days[0].reel) fail(`admin: the old link changed (${after.reel})`);
   }

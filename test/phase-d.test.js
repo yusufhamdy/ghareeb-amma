@@ -302,9 +302,9 @@ const stubRoute = async (page) => {
   await page.route("https://www.gstatic.com/firebasejs/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript", headers: { "access-control-allow-origin": "*" }, body: FB_STUB }));
 };
 const SR = "[{surah:'Surah',no:78,words:['w0','w1'],meanings:['w0: m','w1: m'],ayahs:[{label:'1',segments:[]},{label:'2',segments:[]}],source:'s'}]";
-const T_WORD = "\u062d\u0630\u0641 \u0647\u0630\u0647 \u0627\u0644\u0643\u0644\u0645\u0629\u061f";
-const T_OTHER = "\u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0639\u0646\u0635\u0631\u061f";
-const T_BODY = "\u0644\u0627 \u064a\u0645\u0643\u0646 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0639\u0646 \u0627\u0644\u062d\u0630\u0641 \u0628\u0639\u062f \u0627\u0644\u062a\u0623\u0643\u064a\u062f.";
+const T_WORD = "\u062d\u0630\u0641 \u0627\u0644\u0643\u0644\u0645\u0629 \u00abw0\u00bb\u061f";
+const T_OTHER = "\u062d\u0630\u0641 \u0633\u0648\u0631\u0629 \u00abSurah\u00bb \u0648\u0643\u0644 \u0643\u0644\u0645\u0627\u062a\u0647\u0627\u061f";
+const T_BODY = "\u062a\u064f\u062d\u0630\u0641 \u0627\u0644\u0643\u0644\u0645\u0629 \u0648\u0645\u0639\u0646\u0627\u0647\u0627 \u0648\u0622\u064a\u062a\u0647\u0627 \u0645\u0646 \u0633\u0648\u0631\u0629 Surah. \u064a\u0645\u0643\u0646\u0643 \u0627\u0644\u062a\u0631\u0627\u062c\u0639 \u0645\u0646 \u062a\u0628\u0648\u064a\u0628 \u00ab\u0623\u062f\u0648\u0627\u062a\u00bb \u0645\u0627 \u0644\u0645 \u062a\u062d\u0641\u0638 \u062a\u0639\u062f\u064a\u0644\u064b\u0627 \u0622\u062e\u0631 \u0628\u0639\u062f\u0647\u060c \u0648\u064a\u0638\u0647\u0631 \u0627\u0644\u062d\u0630\u0641 \u0639\u0644\u0649 \u0627\u0644\u0645\u0648\u0642\u0639 \u0628\u0639\u062f \u0627\u0644\u0646\u0634\u0631 \u0627\u0644\u062a\u0627\u0644\u064a.";
 const mirrored = (tf) => /^matrix\(-1[, ]/.test(tf.replace(/\s+/g, " ").replace(/\(\s*/g, "("));
 
 test("D5: admin uses a custom delete dialog and mirrored icons, never a native confirm", { timeout: 180000 }, async (t) => {

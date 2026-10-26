@@ -3,8 +3,8 @@
 //   1. Every one of the 30 days is opened in the admin's own day editor and saved with no change: each save must go
 //      through, and the saved words must be the stored words, character for character (days 3 and 21 store ي where
 //      the word list has ئ; the admin matches them with the site search normalization and keeps the stored text).
-//   2. Links are typed into the editor for days 1-4 and saved; store.chSave is replaced by a capture of chDoc(c), the
-//      exact document the live store.chSave writes with setDoc. That document is written to public/challenge as the
+//   2. Links are typed into the editor for days 1-4 and saved; store.chUpdate is wrapped to capture chDoc() of the
+//      challenge it returns, the exact document the live store.chUpdate writes in its transaction. That document is written to public/challenge as the
 //      owner, through the Firestore rules.
 //   3. The site, through its real client data path (public/migrate.js with ?emul=1 -> the emulator, and the app's
 //      challenge load):
@@ -41,7 +41,7 @@ const L = { reelIg: "https://www.instagram.com/reel/DdGdwxkzHmg/", reelTt: "http
 const EDIT = { 1: { reelIg: L.reelIg }, 2: { reelTt: L.reelTt, reelYt: L.reelYt }, 3: { reelTt: L.reelTt }, 4: L };
 const OLD = "https://www.youtube.com/shorts/old"; // day 5: only the old single link, never opened in the editor
 const DAYS = [1, 2, 3, 4, 5, 6];
-const SHOW = { 1: [["إنستغرام", L.reelIg]], 2: [["تيك توك", L.reelTt], ["يوتيوب", L.reelYt]], 3: [["تيك توك", L.reelTt]], 4: [["إنستغرام", L.reelIg], ["تيك توك", L.reelTt], ["يوتيوب", L.reelYt]], 5: [["يوتيوب", OLD]], 6: [] };
+const SHOW = { 1: [["إنستجرام", L.reelIg]], 2: [["تيك توك", L.reelTt], ["يوتيوب", L.reelYt]], 3: [["تيك توك", L.reelTt]], 4: [["إنستجرام", L.reelIg], ["تيك توك", L.reelTt], ["يوتيوب", L.reelYt]], 5: [["يوتيوب", OLD]], 6: [] };
 
 const words = JSON.parse(fs.readFileSync(path.join(REPO, "public/words.json"), "utf8"));
 const local = JSON.parse(fs.readFileSync(path.join(REPO, "public/challenge.json"), "utf8"));
@@ -62,7 +62,7 @@ const { server, base } = await serve(undefined, { liveFirebase: true }); // ?emu
 const br = await chromium.launch();
 const env = await initializeTestEnvironment({ projectId: "demo-ghareeb", firestore: { rules: fs.readFileSync(path.join(REPO, "firestore.rules"), "utf8"), host: HOST.split(":")[0], port: +HOST.split(":")[1] } });
 const errs = [];
-// the admin in demo mode (nothing reaches Google), seeded with a challenge; store.chSave captures chDoc(c)
+// the admin in demo mode (nothing reaches Google), seeded with a challenge; store.chUpdate is wrapped to capture chDoc() of what it saves
 async function admin(seed) {
   const actx = await br.newContext({ viewport: { width: 1200, height: 900 } });
   await actx.route("**/firebase-config.js", (r) => r.fulfill({ contentType: "text/javascript", body: "window.FIREBASE_CONFIG={};" }));
@@ -71,7 +71,7 @@ async function admin(seed) {
   const a = await actx.newPage();
   a.on("pageerror", (e) => errs.push("admin: " + e.message));
   await a.goto(base + "/admin/index.html"); await a.waitForSelector('[data-a="tab"][data-v="c"]', { timeout: 20000 });
-  await a.evaluate(() => { const demo = store.chSave; store.chSave = async (c) => { window.__doc = chDoc(c); return demo(c); }; });
+  await a.evaluate(() => { const demo = store.chUpdate.bind(store); store.chUpdate = async (fn) => { const c = await demo(fn); window.__doc = chDoc(c); return c; }; });
   await a.click('[data-a="tab"][data-v="c"]'); await a.waitForSelector('[data-a="chDay"]', { timeout: 20000 });
   const save = async (d, links) => {
     await a.click(`[data-a="chDay"][data-v="${d}"]`); await a.waitForSelector('[data-f="c.reelIg"]');
@@ -79,7 +79,7 @@ async function admin(seed) {
     await a.evaluate(() => { window.__doc = null; document.querySelector("#toast").textContent = ""; });
     await a.click('[data-a="chSaveDay"]');
     const got = await a.waitForFunction(() => window.__doc, null, { timeout: 5000 }).then(() => true, () => false);
-    if (!got) { fails.push(`admin: saving day ${d} was refused: "${await a.evaluate(() => document.querySelector("#toast").textContent)}"`); await a.evaluate(() => modal("")); }
+    if (!got) { fails.push(`admin: saving day ${d} was refused: "${await a.evaluate(() => document.querySelector("#toast").textContent)}"`); await a.evaluate(() => closeWin(false)); }
     return got ? a.evaluate(() => window.__doc) : null;
   };
   return { save, close: () => actx.close() };
