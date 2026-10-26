@@ -1,8 +1,9 @@
-// One-pass checks for: icon motion (S12) and its coverage of every button with a motion icon, done/undo animation, the locked next-day pill and day dots, the quiz marks, the per-platform video card
+// One-pass checks for: icon motion (S12) and its coverage of every button with a motion icon, the bottom nav's home tab
+// and its icons' activation motions, done/undo animation, the locked next-day pill and day dots, the quiz marks, the per-platform video card
 // and the admin link fields. Serves the working tree's public/ (read-only); never touches Firebase (the admin page is
 // loaded with an empty Firebase config, so it runs on its local demo store, and gstatic is blocked).
 // Usage: node v22.js            (all sections)
-//        node v22.js icons cover done lock quiz video admin   (any subset)
+//        node v22.js icons cover done lock quiz video admin nav   (any subset)
 const pw = require("playwright");
 const fs = require("fs");
 const { serve, ROOT } = require("./lib.js");
@@ -702,6 +703,101 @@ async function admin(br, base) {
   await ctx.close();
 }
 
+// -------------------------------------------------------------------------------------------------------------- nav
+// The bottom nav: the first tab is الرئيسية with a house (same size and stroke as the others, route "#/", accessible name
+// الرئيسية, the home title unchanged). Each icon's own motion plays once when its tab becomes the active tab (click, tap,
+// keyboard, a route change, releasing a drag on it): exactly one start per named part, the exact peak at its keyframe
+// (exact samples), only the named part moves, and it ends at rest. None on page load, on the already active tab, on
+// in-page re-renders, while dragging across tabs, or with motion off / reduced motion.
+const NAVPARTS = [[".nvh"], [".nvl", ".nvr"], [".nvo"], [".nvq"]];
+const NAVANIM = { ".nvh": ["nv-hop", 400], ".nvl": ["nv-open-l", 450], ".nvr": ["nv-open-r", 450], ".nvo": ["nv-orbit", 500], ".nvq": ["nv-wig", 400] };
+// the transform of every element of a tab's icon: [selector-or-index, tx, ty, angle]
+const NAV_SNAP = (k) => { const svg = document.querySelectorAll("#nv .t")[k].querySelector("svg"); return [...svg.querySelectorAll("*")].map((e, i) => { const c = getComputedStyle(e).transform, M = new DOMMatrix(c === "none" ? undefined : c); return [e.getAttribute("class") || e.tagName + i, +M.m41.toFixed(2), +M.m42.toFixed(2), +(Math.atan2(M.m12, M.m11) * 180 / Math.PI).toFixed(2)]; }); };
+async function navMotion(br, base) {
+  const navStarts = (p) => p.evaluate(() => window.__AS.filter((x) => x.startsWith("nv-")));
+  const tab = (k) => `#nv .t:nth-of-type(${k + 1})`;
+  // ---- the home tab
+  {
+    const ctx = await ctxFor(br, { w: 390 }); const p = await ctx.newPage();
+    await go(p, base, "/#/", "#nv .t");
+    const t = await p.evaluate(() => { const a = document.querySelectorAll("#nv .t")[0], svg = a.querySelector("svg"), o = document.querySelectorAll("#nv .t")[1].querySelector("svg"); return { href: a.getAttribute("href"), text: a.textContent.trim(), name: a.querySelector("span").textContent.trim(), house: !!svg.querySelector("g.nvh path"), search: !!svg.querySelector('circle[r="7"]'), sw: svg.getAttribute("stroke-width"), size: svg.getAttribute("width") + "x" + svg.getAttribute("height"), vb: svg.getAttribute("viewBox"), other: o.getAttribute("stroke-width") + " " + o.getAttribute("width") + "x" + o.getAttribute("height") + " " + o.getAttribute("viewBox"), title: document.title, search2: !!document.querySelector("#app #q") }; });
+    const title0 = /<title>([^<]*)<\/title>/.exec(fs.readFileSync(ROOT + "/index.html", "utf8"))[1];
+    bump("navHomeTab");
+    if (t.href !== "#/" || t.name !== "الرئيسية" || !t.house || t.search) fail("nav: first tab " + JSON.stringify(t));
+    if (t.sw + " " + t.size + " " + t.vb !== t.other) fail(`nav: the house icon's size/stroke "${t.sw} ${t.size} ${t.vb}" differs from the others "${t.other}"`);
+    if (t.title !== title0) fail(`nav: the home title changed: "${t.title}" vs "${title0}"`);
+    if (!t.search2) fail("nav: the home search box is gone");
+    await ctx.close();
+  }
+  // ---- activation by click (1440) and tap (390)
+  for (const [label, w, touch] of [["mouse/1440", 1440, false], ["tap/390", 390, true]]) {
+    const ctx = await ctxFor(br, { w, touch }); const p = await ctx.newPage();
+    await go(p, base, "/#/", "#nv .t"); await p.waitForTimeout(500);
+    bump("navLoad");
+    if ((await navStarts(p)).length) fail(`nav ${label}: a motion played on page load (${await navStarts(p)})`);
+    const rest0 = await p.evaluate((src) => [0, 1, 2, 3].map((k) => eval(src)(k)), NAV_SNAP.toString());
+    for (const [how, k] of [["activate", 1], ["activate", 2], ["activate", 3], ["activate", 0], ["keyboard", 2], ["route", 3]]) {
+      await p.evaluate(() => { window.__AS = []; });
+      if (how === "keyboard") { await p.focus(tab(k)); await p.keyboard.press("Enter"); }
+      else if (how === "route") await p.evaluate(() => { location.hash = "#/quiz"; });
+      else if (touch) await p.tap(tab(k)); else await p.click(tab(k));
+      const { fr, key } = await framesK(p, tab(k), NAV_SNAP, k, 300);
+      await p.waitForTimeout(250);
+      const as = await navStarts(p);
+      const endK = await p.evaluate(([src, k]) => eval(src)(k), [NAV_SNAP.toString(), k]);
+      bump("navActivations");
+      const parts = NAVPARTS[k], want = parts.map((x) => NAVANIM[x][0] + "|" + x.slice(1)).sort();
+      if (JSON.stringify(as.slice().sort()) !== JSON.stringify(want)) fail(`nav ${label} ${how} tab ${k}: starts ${as} want ${want}`);
+      // only the named parts move; peaks at their keyframes
+      const all = fr.concat(key.s), names = parts.map((x) => x.slice(1));
+      for (const snap of all) for (const [cls, tx, ty, ang] of snap) if (!names.includes(cls) && (tx || ty || ang)) { fail(`nav ${label} ${how} tab ${k}: ${cls} moved (${tx},${ty},${ang})`); break; }
+      const peak = (cls, i) => Math.max(...all.map((sn) => Math.abs((sn.find((x) => x[0] === cls) || [0, 0, 0, 0])[i])));
+      if (k === 0 && Math.abs(peak("nvh", 2) - 3) > 0.05) fail(`nav ${label} tab 0: house hop ${peak("nvh", 2)}px (want 3)`);
+      if (k === 1 && (Math.abs(peak("nvl", 3) - 8) > 0.05 || Math.abs(peak("nvr", 3) - 8) > 0.05)) fail(`nav ${label} tab 1: halves opened ${peak("nvl", 3)} / ${peak("nvr", 3)} deg (want 8)`);
+      if (k === 2 && peak("nvo", 3) < 170) fail(`nav ${label} tab 2: the arc travelled only ${peak("nvo", 3)} deg`);
+      if (k === 3 && Math.abs(peak("nvq", 3) - 10) > 0.05) fail(`nav ${label} tab 3: wiggle ${peak("nvq", 3)} deg (want 10)`);
+      // back at rest: every element as before
+      if (JSON.stringify(endK) !== JSON.stringify(rest0[k])) fail(`nav ${label} ${how} tab ${k}: not back at rest ${JSON.stringify(endK)}`);
+    }
+    // the already active tab, and in-page re-renders: nothing
+    await p.evaluate(() => { window.__AS = []; });
+    if (touch) await p.tap(tab(3)); else await p.click(tab(3));
+    await p.evaluate(() => { render(); render(); }); await p.waitForTimeout(700);
+    bump("navNoReplay");
+    if ((await navStarts(p)).length) fail(`nav ${label}: a motion played on the active tab or on a re-render (${await navStarts(p)})`);
+    await ctx.close();
+  }
+  // ---- a touch drag across the tabs: nothing while dragging; releasing on a tab plays its motion once
+  {
+    const ctx = await ctxFor(br, { w: 390, touch: true }); const p = await ctx.newPage();
+    const cdp = await ctx.newCDPSession(p);
+    const touchEv = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y, id: 1 }] });
+    await go(p, base, "/#/", "#nv .t"); await p.waitForTimeout(500);
+    const g = await p.evaluate(() => [...document.querySelectorAll("#nv .t")].map((t) => { const r = t.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }));
+    await p.evaluate(() => { window.__AS = []; });
+    await touchEv("touchStart", g[0].x, g[0].y);
+    let during = 0;
+    for (const [a, b] of [[0, 1], [1, 2], [2, 3]]) for (let i = 1; i <= 10; i++) { await touchEv("touchMove", g[a].x + (g[b].x - g[a].x) * i / 10, g[a].y); await p.waitForTimeout(16); during += (await navStarts(p)).length; }
+    await p.waitForTimeout(300); during += (await navStarts(p)).length;
+    await touchEv("touchEnd"); await p.waitForTimeout(900);
+    const after = await navStarts(p), hash = await p.evaluate(() => location.hash);
+    bump("navDrag");
+    if (during) fail(`nav drag: ${during} motion starts while dragging`);
+    if (hash !== "#/quiz" || JSON.stringify(after) !== JSON.stringify(["nv-wig|nvq"])) fail(`nav drag: released on tab 3 -> ${hash}, starts ${after}`);
+    await ctx.close();
+  }
+  // ---- motion off (toggle) and reduced motion: never
+  for (const [label, cm, rm] of [["motion off", true, "no-preference"], ["reduced motion", false, "reduce"]]) {
+    const ctx = await ctxFor(br, { w: 390, rm, set: { cm } }); const p = await ctx.newPage();
+    await go(p, base, "/#/", "#nv .t"); await p.evaluate(() => { window.__AS = []; });
+    let moved = false;
+    for (const k of [1, 2, 3, 0]) { await p.click(tab(k)); const fr = await frames(p, tab(k), NAV_SNAP, k, 300); if (fr.some((sn) => sn.some(([, tx, ty, a]) => tx || ty || a))) moved = true; }
+    bump("navOff");
+    if (moved || (await navStarts(p)).length) fail(`nav ${label}: icons moved (${await navStarts(p)})`);
+    await ctx.close();
+  }
+}
+
 (async () => {
   fs.mkdirSync(__dirname + "/out", { recursive: true });
   const { server, base } = await serve();
@@ -713,6 +809,7 @@ async function admin(br, base) {
   if (want("quiz")) { await quizMarks(br, base); console.log("quiz done"); }
   if (want("video")) { await videoCard(br, base); console.log("video done"); }
   if (want("admin")) { await admin(br, base); console.log("admin done"); }
+  if (want("nav")) { await navMotion(br, base); console.log("nav done"); }
   await br.close(); server.close();
   console.log("counts", JSON.stringify(n));
   console.log(fails.length ? "FAILURES (" + fails.length + "):\n" + fails.join("\n") : "ALL CHECKS PASSED");

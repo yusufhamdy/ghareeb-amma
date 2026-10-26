@@ -90,7 +90,7 @@ const ok = (it, c, m) => { R[it] = R[it] || { n: 0, f: 0 }; R[it].n++; if (!c) {
     for (const [vw, vh] of [[844, 390], [667, 375], [568, 320], [932, 430]]) for (const style of ["glass", "shade"]) {
       const p = await mk(vw, style, { vp: { width: vw, height: vh }, touch: true }); await go(p, "#/word/80-0");
       const n = await p.evaluate(() => { const nv = document.getElementById("nv"), r = nv.getBoundingClientRect(), sp = nv.querySelector(".t span"), sr = sp.getBoundingClientRect(); return { cover: innerHeight - r.top, h: r.height, labelW: sr.width, labels: [...nv.querySelectorAll(".t span")].map((s) => s.textContent).join(","), H: innerHeight }; });
-      ok("6", n.cover / n.H <= 0.15 + 1e-9 && n.h === 40 && n.labelW <= 1 && n.labels === "بحث,السور,التحدي,اختبر نفسك", `${vw}x${vh}/${style} ${JSON.stringify(n)} ${(100 * n.cover / n.H).toFixed(1)}%`);
+      ok("6", n.cover / n.H <= 0.15 + 1e-9 && n.h === 40 && n.labelW <= 1 && n.labels === "الرئيسية,السور,التحدي,اختبر نفسك", `${vw}x${vh}/${style} ${JSON.stringify(n)} ${(100 * n.cover / n.H).toFixed(1)}%`);
       await p.ctx.close();
     }
     for (const [vw, vh] of [[390, 844], [320, 640]]) { const p = await mk(vw, "glass", { vp: { width: vw, height: vh }, touch: true }); const n = await p.evaluate(() => { const nv = document.getElementById("nv"), r = nv.getBoundingClientRect(); return { h: r.height, bottom: innerHeight - r.bottom, lw: nv.querySelector(".t span").getBoundingClientRect().width }; }); ok("6", n.h === 64 && n.bottom === 20 && n.lw > 10, `portrait ${vw}x${vh} ${JSON.stringify(n)}`); await p.ctx.close(); }

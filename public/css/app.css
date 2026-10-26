@@ -80,11 +80,12 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh .gsx{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s linear .2s}
 #sh .gsx.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s}
 #sh .gsi{overflow:hidden;min-height:0}
-/* segmented controls: one selected background that slides between options (the bottom nav indicator's timing) */
-.seg.sl{position:relative}
-.seg.sl .si{position:absolute;top:4px;bottom:4px;right:4px;width:calc((100% - 8px - (var(--n) - 1) * 4px) / var(--n));border-radius:18px;background:var(--ac);transform:translateX(calc(var(--k,0) * (-100% - 4px)));transition:transform .45s cubic-bezier(.34,1.4,.64,1);pointer-events:none}
-.seg.sl button{position:relative;z-index:1}.seg.sl button.on{background:none}
-.cm .seg.sl .si,.cm #sh .gsx{transition:none!important}
+/* segmented controls: one selected background that slides between options (the bottom nav's duration, a smooth ease-out
+   without overshoot, so it never runs past the option it lands on); its own class, its geometry from its own padding/gap */
+.seg.segi{position:relative;display:flex;--sp:4px;--sgp:4px;padding:var(--sp);gap:var(--sgp)}
+.seg.segi .si{position:absolute;top:var(--sp);bottom:var(--sp);right:var(--sp);width:calc((100% - 2 * var(--sp) - (var(--n) - 1) * var(--sgp)) / var(--n));border-radius:18px;background:var(--ac);transform:translateX(calc(var(--k,0) * (-100% - var(--sgp))));transition:transform .45s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.seg.segi button{position:relative;z-index:1}.seg.segi button.on{background:none}
+.cm .seg.segi .si,.cm #sh .gsx{transition:none!important}
 #sh .shn{font-size:12px;margin-top:4px}
 #sh .shd{border:0;height:1px;background:var(--ln);margin:2px 0}
 #sh .rst{align-self:center;min-height:44px;padding:0 10px;border:0;background:none;color:var(--mu);font-family:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
@@ -152,7 +153,11 @@ h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
 nav.g{display:grid;grid-template-columns:repeat(4,1fr);padding:6px;transition:transform .35s cubic-bezier(.3,.8,.3,1)}nav.g.hide{transform:translateX(-50%) translateY(120px)}
 nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12px)/4);border-radius:26px;background:var(--ac);transform:translateX(calc(var(--i,0)*-100%));transition:transform .45s cubic-bezier(.34,1.4,.64,1)}nav.g.none .ind{opacity:0}
 nav.g{touch-action:pan-y pinch-zoom}nav.g.drag .ind{transition:none;opacity:1}nav.g.drag .t:active{transform:none}nav.g.drag .t.on:not(.pv){color:inherit}nav.g.drag .t.pv{color:var(--btf)}.shade nav.g.drag .t.pv{color:var(--bg)}
-nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}nav.g .t.pop svg{animation:pop .4s}@keyframes pop{40%{transform:scale(1.2)}}
+nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}/* nav icon motions, once when the tab becomes active; only the named part moves (transform only) */
+nav.g .t svg :is(.nvh,.nvl,.nvr,.nvo,.nvq){transform-box:view-box}nav.g .t .nvl{transform-origin:11px 19px}nav.g .t .nvr{transform-origin:13px 19px}nav.g .t .nvo{transform-origin:12px 12px}nav.g .t .nvq{transform-origin:12px 13px}
+@keyframes nv-hop{35%{transform:translateY(-3px)}70%{transform:translateY(.4px)}}@keyframes nv-open-l{50%{transform:rotate(-8deg)}}@keyframes nv-open-r{50%{transform:rotate(8deg)}}@keyframes nv-orbit{to{transform:rotate(360deg)}}@keyframes nv-wig{20%{transform:rotate(-10deg)}45%{transform:rotate(8deg)}70%{transform:rotate(-4deg)}}
+nav.g .t.nvm .nvh{animation:nv-hop .4s ease-out}nav.g .t.nvm .nvl{animation:nv-open-l .45s ease-in-out}nav.g .t.nvm .nvr{animation:nv-open-r .45s ease-in-out}nav.g .t.nvm .nvo{animation:nv-orbit .5s ease-in-out}nav.g .t.nvm .nvq{animation:nv-wig .4s ease-in-out}
+.cm nav.g .t svg *{animation:none!important}@keyframes pop{40%{transform:scale(1.2)}}
 .dt{position:absolute;top:7px;right:calc(50% - 18px);width:10px;height:10px;border-radius:50%;background:#d4553f;border:2px solid var(--bg)}
 .pg>*:not(header){animation:pgin .25s ease-out}.pgs>*:not(header){animation:pgs .3s cubic-bezier(.3,.8,.3,1)}@keyframes pgin{from{transform:translateY(6px)}}@keyframes pgs{from{transform:translateX(-18px)}}
 .lg2 p{margin:0 0 12px;line-height:2}.strip{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:20px;font-size:14px}.strip>span:first-child{flex:1;line-height:1.6}.so{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:22px;font-size:13px;color:var(--ac)}.strip .so{padding:0;width:44px;height:44px;justify-content:center}.strip .so span{display:none}.strip button{width:36px;height:36px;border:0;background:none;font-size:22px;color:var(--mu);cursor:pointer}
@@ -428,7 +433,8 @@ svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-d
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
 #gear svg{animation:none!important}
-.seg.sl .si,#sh .gsx{transition:none!important}
+nav.g .t svg *{animation:none!important}
+.seg.segi .si,#sh .gsx{transition:none!important}
 #bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
 svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}

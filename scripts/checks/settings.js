@@ -5,8 +5,10 @@
 // switch row toggles from anywhere on the row, radio groups (one Tab stop each, arrow keys move the selection,
 // right-to-left aware), swatches (135deg gradient per palette at 48px, the selected one ringed in the accent 3px off the
 // circle, accent bars 14x3 or 24 when selected, name semibold, following the mode), the segmented controls' sliding
-// indicator (the bottom nav indicator's timing and easing, intermediate positions, ends on the selected option, no layout
-// shift; instant with motion off or reduced motion), the reset link (site defaults at once, a toast with "تراجع" for about
+// indicator (the bottom nav indicator's duration, an ease-out without overshoot, intermediate positions within the span
+// between the two options, ends on the selected option, no layout shift; at rest on the selected option's box within 1px
+// in all 20 theme combinations at 320/390/1440, on first open and after switching, resizing, rotating and font loading;
+// instant with motion off or reduced motion), the reset link (site defaults at once, a toast with "تراجع" for about
 // 5s that restores the previous settings), the slider's focus ring on the thumb only (pixels: the thumb changes, the track
 // and its container do not), and Esc / outside / "تم" close with focus back on the gear. Gear: one 60-degree turn of about
 // 400ms with no overshoot, never held and never turned back, on hover, focus-visible, press and phone tap; none with motion
@@ -14,7 +16,7 @@
 // Usage: node settings.js   -> OUT (default ./out/settings): settings.json and screenshots
 const fs = require("fs");
 const path = require("path");
-const { chromium, serve, context } = require("./lib.js");
+const { chromium, serve, context, PALS } = require("./lib.js");
 const OUT = process.env.OUT || path.join(__dirname, "out", "settings");
 fs.mkdirSync(OUT, { recursive: true });
 const ROT = () => { const s = document.querySelector("#gear svg"), t = getComputedStyle(s).transform; if (!t || t === "none") return 0; const m = new DOMMatrix(t); return Math.round(Math.atan2(m.b, m.a) * 1800 / Math.PI) / 10; };
@@ -107,17 +109,25 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       ok(c0.anims.join() === "grid-template-rows 200,opacity 200" && e0.anims.join() === "grid-template-rows 200,opacity 200", `390/${mode}: expand/collapse transitions ${c0.anims} / ${e0.anims}`);
       ok(c1.h === 0 && c1.vis === "hidden" && c1.inert && !gsVisibleInShade, `390/${mode}: glass strength not hidden in shade ${JSON.stringify(c1)}`);
       ok(e1.h > 40 && e1.vis === "visible" && !e1.inert && gsVisibleInGlass, `390/${mode}: glass strength not shown in glass ${JSON.stringify(e1)}`);
-      // the sliding indicator: same transition as the bottom nav indicator; it moves through intermediate positions and
-      // ends on the selected option; the buttons do not move
-      const nav = await p.evaluate(() => { const c = getComputedStyle(document.querySelector("nav .ind")); return c.transitionDuration + " " + c.transitionTimingFunction; });
-      const segSnap = () => p.evaluate(() => { const g = document.querySelector('#sh [data-sg="m"]'), i = g.querySelector(".si"); return { x: Math.round(i.getBoundingClientRect().left * 10) / 10, btns: [...g.querySelectorAll("button")].map((b) => Math.round(b.getBoundingClientRect().left) + ":" + Math.round(b.getBoundingClientRect().width)).join(), tr: getComputedStyle(i).transitionDuration + " " + getComputedStyle(i).transitionTimingFunction }; });
+      // the sliding indicator: the bottom nav indicator's duration with a smooth ease-out that never overshoots (the nav
+      // keeps its own easing); it moves through intermediate positions, never leaves the span between the option it left
+      // and the one it lands on (so it never covers a label beyond them), and ends on the selected option; the buttons do
+      // not move
+      const nav = await p.evaluate(() => { const c = getComputedStyle(document.querySelector("nav .ind")); return [c.transitionDuration, c.transitionTimingFunction]; });
+      const segSnap = () => p.evaluate(() => { const g = document.querySelector('#sh [data-sg="m"]'), i = g.querySelector(".si"); return { x: Math.round(i.getBoundingClientRect().left * 10) / 10, btns: [...g.querySelectorAll("button")].map((b) => Math.round(b.getBoundingClientRect().left) + ":" + Math.round(b.getBoundingClientRect().width)).join(), tr: [getComputedStyle(i).transitionDuration, getComputedStyle(i).transitionTimingFunction] }; });
       const s0 = await segSnap(), target = mode === "dark" ? "auto" : "dark";
+      const span = await p.evaluate(([a, b]) => { const r = [a, b].map((k) => document.querySelector(`#sh [data-m="${k}"]`).getBoundingClientRect()); return [Math.min(r[0].left, r[1].left), Math.max(r[0].right, r[1].right)]; }, [mode, target]);
       await p.click(`#sh [data-m="${target}"]`);
-      const xs = await p.evaluate(() => new Promise((res) => { const out = [], t0 = performance.now(); const tick = () => { const i = document.querySelector('#sh [data-sg="m"] .si'); out.push(i.getBoundingClientRect().left); if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res(out); }; tick(); }));
+      const xs = await p.evaluate(() => new Promise((res) => { const out = [], t0 = performance.now(); const tick = () => { const r = document.querySelector('#sh [data-sg="m"] .si').getBoundingClientRect(); out.push([r.left, r.right]); if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res(out); }; tick(); }));
       const s1 = await segSnap(), onX = await p.evaluate(() => Math.round(document.querySelector('#sh [data-sg="m"] button.on').getBoundingClientRect().left * 10) / 10);
-      const inter = new Set(xs.map((v) => Math.round(v)).filter((v) => Math.abs(v - s0.x) > 1 && Math.abs(v - s1.x) > 1)).size;
-      R[`indicator ${mode}`] = { nav, seg: s1.tr, from: s0.x, to: s1.x, selected: onX, intermediate: inter };
-      ok(s1.tr === nav, `390/${mode}: indicator transition "${s1.tr}" differs from the bottom nav "${nav}"`);
+      const inter = new Set(xs.map((v) => Math.round(v[0])).filter((v) => Math.abs(v - s0.x) > 1 && Math.abs(v - s1.x) > 1)).size;
+      const outside = xs.filter(([l, r]) => l < span[0] - 1 || r > span[1] + 1).map(([l, r]) => `${l.toFixed(1)}..${r.toFixed(1)}`);
+      const bz = /^cubic-bezier\(([^)]*)\)$/.exec(s1.tr[1]), ys = bz ? bz[1].split(",").map(Number) : null;
+      R[`indicator ${mode}`] = { nav, seg: s1.tr, from: s0.x, to: s1.x, selected: onX, intermediate: inter, span, outside };
+      ok(s1.tr[0] === nav[0], `390/${mode}: indicator duration ${s1.tr[0]} differs from the bottom nav ${nav[0]}`);
+      ok(!!ys && ys[1] >= 0 && ys[1] <= 1 && ys[3] >= 0 && ys[3] <= 1 && ys[0] < ys[2] && ys[1] > ys[0], `390/${mode}: indicator easing "${s1.tr[1]}" is not an ease-out without overshoot`);
+      ok(nav[1] === "cubic-bezier(0.34, 1.4, 0.64, 1)", `390/${mode}: the bottom nav lost its own easing (${nav[1]})`);
+      ok(!outside.length, `390/${mode}: indicator left the span ${span} during the motion: ${outside.slice(0, 5)}`);
       ok(inter >= 3 && Math.abs(s1.x - onX) < 1, `390/${mode}: indicator did not slide (${inter} intermediate positions) or ends at ${s1.x} not ${onX}`);
       ok(s0.btns === s1.btns, `390/${mode}: the segment buttons moved (${s0.btns} -> ${s1.btns})`);
       await p.click(`#sh [data-m="${mode}"]`); await p.waitForTimeout(600);
@@ -161,6 +171,36 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       }
       R[`close ${mode}`] = close;
     }
+    await ctx.close();
+  }
+  // ---- the segmented indicator at rest matches the selected option's box within 1px (right-to-left), in all 20 theme
+  // combinations at 320, 390 and 1440: on first open, after switching each option, after resizing and rotating, and
+  // after the fonts load
+  const segRest = (p) => p.evaluate(() => [...document.querySelectorAll("#sh .seg.segi")].map((g) => { const i = g.querySelector(".si").getBoundingClientRect(), o = g.querySelector("button.on").getBoundingClientRect(); return [g.dataset.sg, Math.max(...["left", "right", "top", "bottom"].map((k) => Math.abs(i[k] - o[k])))]; }));
+  const settled = (p) => p.evaluate(() => new Promise((r) => { const w = () => document.querySelectorAll("#sh .seg.segi .si").length && ![...document.querySelectorAll("#sh .seg.segi .si")].some((s) => s.getAnimations().length) ? r() : requestAnimationFrame(w); requestAnimationFrame(w); }));
+  let worst = 0, checked = 0;
+  for (const w of [320, 390, 1440]) for (const style of ["glass", "shade"]) for (const mode of ["light", "dark"]) for (const pal of PALS) {
+    const ctx = await context(br, { style, mode, pal, w }); const p = await ctx.newPage();
+    const H = (await p.viewportSize()).height;
+    await p.goto(base + "/#/"); await p.waitForSelector("#gear"); await p.click("#gear"); await p.waitForSelector("#sh.open .seg.segi");
+    const at = {};
+    at.firstOpen = await segRest(p);
+    await settled(p); at.opened = await segRest(p);
+    for (const sel of ['[data-m="auto"]', '[data-m="light"]', '[data-m="dark"]', `[data-st="${style === "glass" ? "shade" : "glass"}"]`, `[data-st="${style}"]`, `[data-m="${mode}"]`]) { await p.click("#sh " + sel); await settled(p); at["after " + sel] = await segRest(p); }
+    await p.setViewportSize({ width: w === 1440 ? 390 : 1440, height: H }); await settled(p); at.resized = await segRest(p);
+    await p.setViewportSize({ width: 844, height: 390 }); await settled(p); at.rotated = await segRest(p);
+    await p.setViewportSize({ width: w, height: H }); await settled(p); at.back = await segRest(p);
+    await p.evaluate(() => document.fonts.ready); await settled(p); at.fonts = await segRest(p);
+    for (const [k, v] of Object.entries(at)) for (const [sg, d] of v) { checked++; if (d > worst) worst = d; ok(d <= 1, `indicator ${w} ${style}/${mode}/${pal} ${k}: ${sg} is ${d.toFixed(2)}px off the selected option`); }
+    if (w === 390 && style === "glass" && pal === "gold") await p.locator("#sh .p").screenshot({ path: path.join(OUT, `segmented-390-${mode}.png`) });
+    await ctx.close();
+  }
+  R["indicator at rest"] = { worstPx: +worst.toFixed(3), checked };
+  // the bottom nav at 390 (the home tab)
+  {
+    const ctx = await context(br, { style: "glass", mode: "light", pal: "gold", w: 390 }); const p = await ctx.newPage();
+    await p.goto(base + "/#/"); await p.waitForSelector("#nv .t"); await p.waitForTimeout(600);
+    await p.locator("#nv").screenshot({ path: path.join(OUT, "nav-390-light.png") });
     await ctx.close();
   }
   // ---- motion off (toggle) and reduced motion: the indicator jumps and the glass strength opens or closes at once
