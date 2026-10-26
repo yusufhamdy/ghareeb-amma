@@ -60,6 +60,26 @@ nav a{min-height:44px;padding:0 14px;display:flex;align-items:center;border-radi
 nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh{position:fixed;inset:0;z-index:10;display:none;background:rgba(0,0,0,.25)}
 #sh.open{display:block}
+/* settings: no dark overlay (the page stays visible and its colours true); an outside tap still closes the sheet */
+#sh:has(.psw){background:none}
+#sh .p:has(.psw){gap:12px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 16px 48px rgba(0,0,0,.28),0 0 0 1px var(--ln)}
+@media(max-width:600px){#sh .p:has(.psw){left:8px;right:8px;bottom:8px;border-radius:26px}}
+#sh .sht{display:flex;justify-content:space-between;align-items:center}#sh .sht b{font-size:18px}#sh .sht .btn{height:44px;color:var(--ac)}
+#sh .grp .m{margin-bottom:6px}
+#sh .p:has(.psw) .seg button{height:44px}
+/* palettes: all five in one row from 320px; the circle is the accent of the current mode, its ring the glow */
+.psw{display:flex;gap:6px}
+.psw button{flex:1 1 0;min-width:0;min-height:44px;padding:2px 0;border:0;border-radius:14px;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--mu)}
+.psw i{width:40px;height:40px;border-radius:50%;display:block;box-sizing:border-box;border:5px solid}
+.psw .on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--tx)}.psw .on span{color:var(--tx);font-weight:500}
+/* glass strength: the sample card is real glass over the palette's glows, so it follows the slider live */
+#sh .gsw{margin-top:12px}
+#sh .gsr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}#sh .gsr .m{margin:0}
+#sh .gsm{position:relative;flex:none;width:84px;height:34px;border-radius:12px;overflow:hidden;background:var(--bg)}
+#sh .gsm i{position:absolute;width:36px;height:36px;border-radius:50%;top:-8px}
+#sh .gsm i:nth-child(1){background:var(--b1);inset-inline-start:4px}#sh .gsm i:nth-child(2){background:var(--b2);inset-inline-end:2px;top:12px}
+#sh .gsm .g{position:absolute;inset:7px 12px;border-radius:9px;box-shadow:none}
+#sh .tgs{display:flex;justify-content:space-between;gap:8px}#sh .tgs .tg{width:auto;justify-content:flex-start;gap:10px;white-space:nowrap}
 /* S1/L5: the bottom nav covers max(20px, safe area) + 64px of the viewport: focused or scrolled-to elements stop above it,
    and the page always ends with the footer clear of it. Desktop (>=1025px) puts the nav at the top. */
 @media(max-width:1024px){.gq{scroll-padding-bottom:calc(max(20px,env(safe-area-inset-bottom)) + 64px)}#app{padding-bottom:max(150px,calc(max(20px,env(safe-area-inset-bottom)) + 112px))}}
@@ -99,12 +119,12 @@ h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
 .sw button{background:none;border:0;padding:0;width:62px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--mu)}
 .sw i{width:48px;height:48px;border-radius:50%;display:block}
 .sw .on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ac)}
-.tg{display:flex;justify-content:space-between;align-items:center;font-size:15px}
-.tg button{width:48px;height:28px;border-radius:14px;border:0;background:var(--ln);position:relative;cursor:pointer}
-.tg button:after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--tx);transition:transform .2s}
-.tg button.on{background:var(--ac)}
-.tg button.on:after{transform:translateX(-20px);background:var(--btf)}
-.sh-def-d{--p0:url(assets/tiles/def-day-1.webp);--p1:url(assets/tiles/def-day-2.webp);--p2:url(assets/tiles/def-day-3.webp);--p3:url(assets/tiles/def-day-4.webp);--p4:url(assets/tiles/def-day-5.webp);--p5:url(assets/tiles/def-day-6.webp);}.sh-def-n{--p0:url(assets/tiles/def-night-1.webp);--p1:url(assets/tiles/def-night-2.webp);--p2:url(assets/tiles/def-night-3.webp);--p3:url(assets/tiles/def-night-4.webp);--p4:url(assets/tiles/def-night-5.webp);--p5:url(assets/tiles/def-night-6.webp);}.sh-lav-d{--p0:url(assets/tiles/lav-day-1.webp);--p1:url(assets/tiles/lav-day-2.webp);--p2:url(assets/tiles/lav-day-3.webp);--p3:url(assets/tiles/lav-day-4.webp);--p4:url(assets/tiles/lav-day-5.webp);--p5:url(assets/tiles/lav-day-6.webp);}.sh-lav-n{--p0:url(assets/tiles/lav-night-1.webp);--p1:url(assets/tiles/lav-night-2.webp);--p2:url(assets/tiles/lav-night-3.webp);--p3:url(assets/tiles/lav-night-4.webp);--p4:url(assets/tiles/lav-night-5.webp);--p5:url(assets/tiles/lav-night-6.webp);}.sh-sun-d{--p0:url(assets/tiles/sun-day-1.webp);--p1:url(assets/tiles/sun-day-2.webp);--p2:url(assets/tiles/sun-day-3.webp);--p3:url(assets/tiles/sun-day-4.webp);--p4:url(assets/tiles/sun-day-5.webp);--p5:url(assets/tiles/sun-day-6.webp);}.sh-sun-n{--p0:url(assets/tiles/sun-night-1.webp);--p1:url(assets/tiles/sun-night-2.webp);--p2:url(assets/tiles/sun-night-3.webp);--p3:url(assets/tiles/sun-night-4.webp);--p4:url(assets/tiles/sun-night-5.webp);--p5:url(assets/tiles/sun-night-6.webp);}.sh-neo-d{--p0:url(assets/tiles/neo-day-1.webp);--p1:url(assets/tiles/neo-day-2.webp);--p2:url(assets/tiles/neo-day-3.webp);--p3:url(assets/tiles/neo-day-4.webp);--p4:url(assets/tiles/neo-day-5.webp);--p5:url(assets/tiles/neo-day-6.webp);}.sh-neo-n{--p0:url(assets/tiles/neo-night-1.webp);--p1:url(assets/tiles/neo-night-2.webp);--p2:url(assets/tiles/neo-night-3.webp);--p3:url(assets/tiles/neo-night-4.webp);--p4:url(assets/tiles/neo-night-5.webp);--p5:url(assets/tiles/neo-night-6.webp);}.sh-min-d{--p0:url(assets/tiles/min-day-1.webp);--p1:url(assets/tiles/min-day-2.webp);--p2:url(assets/tiles/min-day-3.webp);--p3:url(assets/tiles/min-day-4.webp);--p4:url(assets/tiles/min-day-5.webp);--p5:url(assets/tiles/min-day-6.webp);}.sh-min-n{--p0:url(assets/tiles/min-night-1.webp);--p1:url(assets/tiles/min-night-2.webp);--p2:url(assets/tiles/min-night-3.webp);--p3:url(assets/tiles/min-night-4.webp);--p4:url(assets/tiles/min-night-5.webp);--p5:url(assets/tiles/min-night-6.webp);}
+.tg{display:flex;justify-content:space-between;align-items:center;font-size:15px;width:100%;min-height:44px;padding:0 4px;border:0;border-radius:14px;background:none;color:var(--tx);font-family:inherit;cursor:pointer;text-align:start}
+.tg i{width:48px;height:28px;border-radius:14px;background:var(--ln);position:relative;flex:none}
+.tg i:after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--tx);transition:transform .2s}
+.tg.on i{background:var(--ac)}
+.tg.on i:after{transform:translateX(-20px);background:var(--btf)}
+.sh-def-d{--p0:url(assets/tiles/def-day-1.webp);--p1:url(assets/tiles/def-day-2.webp);--p2:url(assets/tiles/def-day-3.webp);--p3:url(assets/tiles/def-day-4.webp);--p4:url(assets/tiles/def-day-5.webp);--p5:url(assets/tiles/def-day-6.webp);}.sh-def-n{--p0:url(assets/tiles/grn-night-1.webp);--p1:url(assets/tiles/grn-night-2.webp);--p2:url(assets/tiles/grn-night-3.webp);--p3:url(assets/tiles/grn-night-4.webp);--p4:url(assets/tiles/grn-night-5.webp);--p5:url(assets/tiles/grn-night-6.webp);}.sh-lav-d{--p0:url(assets/tiles/lav-day-1.webp);--p1:url(assets/tiles/lav-day-2.webp);--p2:url(assets/tiles/lav-day-3.webp);--p3:url(assets/tiles/lav-day-4.webp);--p4:url(assets/tiles/lav-day-5.webp);--p5:url(assets/tiles/lav-day-6.webp);}.sh-lav-n{--p0:url(assets/tiles/lav-night-1.webp);--p1:url(assets/tiles/lav-night-2.webp);--p2:url(assets/tiles/lav-night-3.webp);--p3:url(assets/tiles/lav-night-4.webp);--p4:url(assets/tiles/lav-night-5.webp);--p5:url(assets/tiles/lav-night-6.webp);}.sh-sun-d{--p0:url(assets/tiles/sun-day-1.webp);--p1:url(assets/tiles/sun-day-2.webp);--p2:url(assets/tiles/sun-day-3.webp);--p3:url(assets/tiles/sun-day-4.webp);--p4:url(assets/tiles/sun-day-5.webp);--p5:url(assets/tiles/sun-day-6.webp);}.sh-sun-n{--p0:url(assets/tiles/sun-night-1.webp);--p1:url(assets/tiles/sun-night-2.webp);--p2:url(assets/tiles/sun-night-3.webp);--p3:url(assets/tiles/sun-night-4.webp);--p4:url(assets/tiles/sun-night-5.webp);--p5:url(assets/tiles/sun-night-6.webp);}.sh-neo-d{--p0:url(assets/tiles/neo-day-1.webp);--p1:url(assets/tiles/neo-day-2.webp);--p2:url(assets/tiles/neo-day-3.webp);--p3:url(assets/tiles/neo-day-4.webp);--p4:url(assets/tiles/neo-day-5.webp);--p5:url(assets/tiles/neo-day-6.webp);}.sh-neo-n{--p0:url(assets/tiles/neo-night-1.webp);--p1:url(assets/tiles/neo-night-2.webp);--p2:url(assets/tiles/neo-night-3.webp);--p3:url(assets/tiles/neo-night-4.webp);--p4:url(assets/tiles/neo-night-5.webp);--p5:url(assets/tiles/neo-night-6.webp);}.sh-gold-d{--p0:url(assets/tiles/gold-day-1.webp);--p1:url(assets/tiles/gold-day-2.webp);--p2:url(assets/tiles/gold-day-3.webp);--p3:url(assets/tiles/gold-day-4.webp);--p4:url(assets/tiles/gold-day-5.webp);--p5:url(assets/tiles/gold-day-6.webp);}.sh-gold-n{--p0:url(assets/tiles/gold-night-1.webp);--p1:url(assets/tiles/gold-night-2.webp);--p2:url(assets/tiles/gold-night-3.webp);--p3:url(assets/tiles/gold-night-4.webp);--p4:url(assets/tiles/gold-night-5.webp);--p5:url(assets/tiles/gold-night-6.webp);}
 .dy{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
 .dy.ok{background:var(--ac);color:var(--btf);border-color:var(--ac)}
 .dy.cur{border:2px solid var(--ac);color:var(--ac);box-shadow:0 0 18px var(--ac)}
@@ -161,7 +181,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .dy.ok{background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 40%,var(--sf)))!important}.shade .dy.cur{background:var(--sf)!important;border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf)!important;filter:none;color:var(--mu)}
 .shade .dy .bg{background:var(--bg);color:var(--ac);border-color:var(--ac)}
 /* R12: shade dark, neon and mint - their bright completed-day tile needs the dark page colour for its number (AA) */
-.sh-neo-n .dy.ok,.sh-min-n .dy.ok{color:color-mix(in srgb,var(--bg) 30%,#000)}
+.sh-neo-n .dy.ok{color:color-mix(in srgb,var(--bg) 30%,#000)}
 .shade .cg{grid-template-columns:repeat(auto-fill,44px)!important;justify-content:center;gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--bad);color:var(--bad)}
 .shade #sh .p{background:var(--bg)}
 @media(min-width:601px){.shade .list.sl{grid-template-columns:repeat(3,1fr)}}
@@ -197,9 +217,15 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
 @media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
 /* B5: floating settings gear (above content, below open sheets) */
-#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
-#gear:active,#gear:focus-visible{transform:rotate(60deg)}
-@media(hover:hover){#gear:hover{transform:rotate(60deg)}}
+#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:opacity .2s ease,visibility .2s ease}
+/* the gear turns once by one tooth (60deg, the icon has 6 teeth, so it ends looking exactly like rest): ~400ms ease-out,
+   no overshoot, never held, never turned back; hover (hover devices), focus-visible, and a press (.gp, also a phone tap) */
+@keyframes gear-turn{from{transform:rotate(0)}to{transform:rotate(60deg)}}@keyframes gear-turn-p{from{transform:rotate(0)}to{transform:rotate(60deg)}}
+#gear svg{transform-origin:50% 50%}
+#gear:focus-visible svg{animation:gear-turn .4s ease-out}
+@media(hover:hover){#gear:hover svg{animation:gear-turn .4s ease-out}}
+#gear.gp svg{animation:gear-turn-p .4s ease-out}
+.cm #gear svg{animation:none!important}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
@@ -380,13 +406,14 @@ svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-d
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
 .cm svg.i-cv{transform:none!important;transition:none!important}.cm :is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#gear svg{animation:none!important}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
 svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}

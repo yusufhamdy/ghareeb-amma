@@ -20,7 +20,7 @@ function serve(root = ROOT, opts = {}) {
   return new Promise((r) => server.listen(0, () => r({ server, base: "http://127.0.0.1:" + server.address().port })));
 }
 
-const PALS = ["def", "lav", "sun", "neo", "min"];
+const PALS = ["gold", "def", "lav", "sun", "neo"];
 function combos(widths = [1440, 390]) {
   const out = [];
   for (const style of ["glass", "shade"]) for (const pal of PALS) for (const mode of ["light", "dark"]) for (const w of widths) out.push({ style, pal, mode, w, tag: `${style}/${pal}/${mode}/${w}` });

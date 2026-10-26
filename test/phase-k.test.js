@@ -387,8 +387,9 @@ test("K3: a saved stop-motion choice is used as-is instead of the device default
   try {
     const page = await off.open();
     assert.ok(!(await page.evaluate(() => document.body.classList.contains("cm"))), "no cm class when motion is on");
-    const gear = await page.$eval("#gear", (e) => getComputedStyle(e).transitionDuration);
-    assert.ok(gear.includes("0.5s"), "the gear rotation transition is present when motion is on (got " + gear + ")");
+    // the gear's motion is a one-shot 60-degree turn (an animation on its icon, ~400ms); a press (.gp) plays it
+    const gear = await page.evaluate(() => { const g = document.getElementById("gear"); g.classList.add("gp"); const c = getComputedStyle(g.querySelector("svg")); const r = c.animationName + " " + c.animationDuration; g.classList.remove("gp"); return r; });
+    assert.ok(/^gear-turn-p 0\.4s$/.test(gear), "the gear's one-shot turn is present when motion is on (got " + gear + ")");
   } finally {
     await off.close();
   }

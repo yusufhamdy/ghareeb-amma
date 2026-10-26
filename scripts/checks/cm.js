@@ -10,7 +10,7 @@ const ratio = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + 0.0
 (async () => {
   const { server, base } = await serve(); const br = await pw.chromium.launch(); const rows = []; const fails = [];
   const W = +(process.argv[2] || 390);
-  for (const style of ["glass", "shade"]) for (const pal of ["def", "lav", "sun", "neo", "min"]) for (const mode of ["light", "dark"]) {
+  for (const style of ["glass", "shade"]) for (const pal of ["gold", "def", "lav", "sun", "neo"]) for (const mode of ["light", "dark"]) {
     const ctx = await br.newContext({ viewport: { width: W, height: 900 }, deviceScaleFactor: 2 });
     await ctx.addInitScript((s) => { localStorage.setItem("gq-set", JSON.stringify(s)); localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-prog", JSON.stringify({ done: [1] })); }, { style, mode, pal, gl: 3, gv: 2, snd: false, cm: true });
     const p = await ctx.newPage(); await p.goto(base + "/", { waitUntil: "load" }); await p.waitForSelector("#app h1"); await p.evaluate(() => document.fonts.ready);

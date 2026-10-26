@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>غريب القرآن - معاني كلمات جزء عم</title>
 <meta name="description" content="غريب القرآن: معاني كلمات جزء عم (غريب عم) حسب السورة، مع الآية والمعنى.">
-<meta name="theme-color" content="#F2F0E8">
+<meta name="theme-color" content="#F4EDD8">
 <meta property="og:type" content="website">
 <meta property="og:title" content="غريب القرآن - معاني كلمات جزء عم">
 <meta property="og:description" content="غريب القرآن: معاني كلمات جزء عم (غريب عم) حسب السورة، مع الآية والمعنى.">
@@ -84,6 +84,26 @@ nav a{min-height:44px;padding:0 14px;display:flex;align-items:center;border-radi
 nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh{position:fixed;inset:0;z-index:10;display:none;background:rgba(0,0,0,.25)}
 #sh.open{display:block}
+/* settings: no dark overlay (the page stays visible and its colours true); an outside tap still closes the sheet */
+#sh:has(.psw){background:none}
+#sh .p:has(.psw){gap:12px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 16px 48px rgba(0,0,0,.28),0 0 0 1px var(--ln)}
+@media(max-width:600px){#sh .p:has(.psw){left:8px;right:8px;bottom:8px;border-radius:26px}}
+#sh .sht{display:flex;justify-content:space-between;align-items:center}#sh .sht b{font-size:18px}#sh .sht .btn{height:44px;color:var(--ac)}
+#sh .grp .m{margin-bottom:6px}
+#sh .p:has(.psw) .seg button{height:44px}
+/* palettes: all five in one row from 320px; the circle is the accent of the current mode, its ring the glow */
+.psw{display:flex;gap:6px}
+.psw button{flex:1 1 0;min-width:0;min-height:44px;padding:2px 0;border:0;border-radius:14px;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--mu)}
+.psw i{width:40px;height:40px;border-radius:50%;display:block;box-sizing:border-box;border:5px solid}
+.psw .on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--tx)}.psw .on span{color:var(--tx);font-weight:500}
+/* glass strength: the sample card is real glass over the palette's glows, so it follows the slider live */
+#sh .gsw{margin-top:12px}
+#sh .gsr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}#sh .gsr .m{margin:0}
+#sh .gsm{position:relative;flex:none;width:84px;height:34px;border-radius:12px;overflow:hidden;background:var(--bg)}
+#sh .gsm i{position:absolute;width:36px;height:36px;border-radius:50%;top:-8px}
+#sh .gsm i:nth-child(1){background:var(--b1);inset-inline-start:4px}#sh .gsm i:nth-child(2){background:var(--b2);inset-inline-end:2px;top:12px}
+#sh .gsm .g{position:absolute;inset:7px 12px;border-radius:9px;box-shadow:none}
+#sh .tgs{display:flex;justify-content:space-between;gap:8px}#sh .tgs .tg{width:auto;justify-content:flex-start;gap:10px;white-space:nowrap}
 /* S1/L5: the bottom nav covers max(20px, safe area) + 64px of the viewport: focused or scrolled-to elements stop above it,
    and the page always ends with the footer clear of it. Desktop (>=1025px) puts the nav at the top. */
 @media(max-width:1024px){.gq{scroll-padding-bottom:calc(max(20px,env(safe-area-inset-bottom)) + 64px)}#app{padding-bottom:max(150px,calc(max(20px,env(safe-area-inset-bottom)) + 112px))}}
@@ -123,12 +143,12 @@ h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
 .sw button{background:none;border:0;padding:0;width:62px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--mu)}
 .sw i{width:48px;height:48px;border-radius:50%;display:block}
 .sw .on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ac)}
-.tg{display:flex;justify-content:space-between;align-items:center;font-size:15px}
-.tg button{width:48px;height:28px;border-radius:14px;border:0;background:var(--ln);position:relative;cursor:pointer}
-.tg button:after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--tx);transition:transform .2s}
-.tg button.on{background:var(--ac)}
-.tg button.on:after{transform:translateX(-20px);background:var(--btf)}
-.sh-def-d{--p0:url(assets/tiles/def-day-1.webp);--p1:url(assets/tiles/def-day-2.webp);--p2:url(assets/tiles/def-day-3.webp);--p3:url(assets/tiles/def-day-4.webp);--p4:url(assets/tiles/def-day-5.webp);--p5:url(assets/tiles/def-day-6.webp);}.sh-def-n{--p0:url(assets/tiles/def-night-1.webp);--p1:url(assets/tiles/def-night-2.webp);--p2:url(assets/tiles/def-night-3.webp);--p3:url(assets/tiles/def-night-4.webp);--p4:url(assets/tiles/def-night-5.webp);--p5:url(assets/tiles/def-night-6.webp);}.sh-lav-d{--p0:url(assets/tiles/lav-day-1.webp);--p1:url(assets/tiles/lav-day-2.webp);--p2:url(assets/tiles/lav-day-3.webp);--p3:url(assets/tiles/lav-day-4.webp);--p4:url(assets/tiles/lav-day-5.webp);--p5:url(assets/tiles/lav-day-6.webp);}.sh-lav-n{--p0:url(assets/tiles/lav-night-1.webp);--p1:url(assets/tiles/lav-night-2.webp);--p2:url(assets/tiles/lav-night-3.webp);--p3:url(assets/tiles/lav-night-4.webp);--p4:url(assets/tiles/lav-night-5.webp);--p5:url(assets/tiles/lav-night-6.webp);}.sh-sun-d{--p0:url(assets/tiles/sun-day-1.webp);--p1:url(assets/tiles/sun-day-2.webp);--p2:url(assets/tiles/sun-day-3.webp);--p3:url(assets/tiles/sun-day-4.webp);--p4:url(assets/tiles/sun-day-5.webp);--p5:url(assets/tiles/sun-day-6.webp);}.sh-sun-n{--p0:url(assets/tiles/sun-night-1.webp);--p1:url(assets/tiles/sun-night-2.webp);--p2:url(assets/tiles/sun-night-3.webp);--p3:url(assets/tiles/sun-night-4.webp);--p4:url(assets/tiles/sun-night-5.webp);--p5:url(assets/tiles/sun-night-6.webp);}.sh-neo-d{--p0:url(assets/tiles/neo-day-1.webp);--p1:url(assets/tiles/neo-day-2.webp);--p2:url(assets/tiles/neo-day-3.webp);--p3:url(assets/tiles/neo-day-4.webp);--p4:url(assets/tiles/neo-day-5.webp);--p5:url(assets/tiles/neo-day-6.webp);}.sh-neo-n{--p0:url(assets/tiles/neo-night-1.webp);--p1:url(assets/tiles/neo-night-2.webp);--p2:url(assets/tiles/neo-night-3.webp);--p3:url(assets/tiles/neo-night-4.webp);--p4:url(assets/tiles/neo-night-5.webp);--p5:url(assets/tiles/neo-night-6.webp);}.sh-min-d{--p0:url(assets/tiles/min-day-1.webp);--p1:url(assets/tiles/min-day-2.webp);--p2:url(assets/tiles/min-day-3.webp);--p3:url(assets/tiles/min-day-4.webp);--p4:url(assets/tiles/min-day-5.webp);--p5:url(assets/tiles/min-day-6.webp);}.sh-min-n{--p0:url(assets/tiles/min-night-1.webp);--p1:url(assets/tiles/min-night-2.webp);--p2:url(assets/tiles/min-night-3.webp);--p3:url(assets/tiles/min-night-4.webp);--p4:url(assets/tiles/min-night-5.webp);--p5:url(assets/tiles/min-night-6.webp);}
+.tg{display:flex;justify-content:space-between;align-items:center;font-size:15px;width:100%;min-height:44px;padding:0 4px;border:0;border-radius:14px;background:none;color:var(--tx);font-family:inherit;cursor:pointer;text-align:start}
+.tg i{width:48px;height:28px;border-radius:14px;background:var(--ln);position:relative;flex:none}
+.tg i:after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--tx);transition:transform .2s}
+.tg.on i{background:var(--ac)}
+.tg.on i:after{transform:translateX(-20px);background:var(--btf)}
+.sh-def-d{--p0:url(assets/tiles/def-day-1.webp);--p1:url(assets/tiles/def-day-2.webp);--p2:url(assets/tiles/def-day-3.webp);--p3:url(assets/tiles/def-day-4.webp);--p4:url(assets/tiles/def-day-5.webp);--p5:url(assets/tiles/def-day-6.webp);}.sh-def-n{--p0:url(assets/tiles/grn-night-1.webp);--p1:url(assets/tiles/grn-night-2.webp);--p2:url(assets/tiles/grn-night-3.webp);--p3:url(assets/tiles/grn-night-4.webp);--p4:url(assets/tiles/grn-night-5.webp);--p5:url(assets/tiles/grn-night-6.webp);}.sh-lav-d{--p0:url(assets/tiles/lav-day-1.webp);--p1:url(assets/tiles/lav-day-2.webp);--p2:url(assets/tiles/lav-day-3.webp);--p3:url(assets/tiles/lav-day-4.webp);--p4:url(assets/tiles/lav-day-5.webp);--p5:url(assets/tiles/lav-day-6.webp);}.sh-lav-n{--p0:url(assets/tiles/lav-night-1.webp);--p1:url(assets/tiles/lav-night-2.webp);--p2:url(assets/tiles/lav-night-3.webp);--p3:url(assets/tiles/lav-night-4.webp);--p4:url(assets/tiles/lav-night-5.webp);--p5:url(assets/tiles/lav-night-6.webp);}.sh-sun-d{--p0:url(assets/tiles/sun-day-1.webp);--p1:url(assets/tiles/sun-day-2.webp);--p2:url(assets/tiles/sun-day-3.webp);--p3:url(assets/tiles/sun-day-4.webp);--p4:url(assets/tiles/sun-day-5.webp);--p5:url(assets/tiles/sun-day-6.webp);}.sh-sun-n{--p0:url(assets/tiles/sun-night-1.webp);--p1:url(assets/tiles/sun-night-2.webp);--p2:url(assets/tiles/sun-night-3.webp);--p3:url(assets/tiles/sun-night-4.webp);--p4:url(assets/tiles/sun-night-5.webp);--p5:url(assets/tiles/sun-night-6.webp);}.sh-neo-d{--p0:url(assets/tiles/neo-day-1.webp);--p1:url(assets/tiles/neo-day-2.webp);--p2:url(assets/tiles/neo-day-3.webp);--p3:url(assets/tiles/neo-day-4.webp);--p4:url(assets/tiles/neo-day-5.webp);--p5:url(assets/tiles/neo-day-6.webp);}.sh-neo-n{--p0:url(assets/tiles/neo-night-1.webp);--p1:url(assets/tiles/neo-night-2.webp);--p2:url(assets/tiles/neo-night-3.webp);--p3:url(assets/tiles/neo-night-4.webp);--p4:url(assets/tiles/neo-night-5.webp);--p5:url(assets/tiles/neo-night-6.webp);}.sh-gold-d{--p0:url(assets/tiles/gold-day-1.webp);--p1:url(assets/tiles/gold-day-2.webp);--p2:url(assets/tiles/gold-day-3.webp);--p3:url(assets/tiles/gold-day-4.webp);--p4:url(assets/tiles/gold-day-5.webp);--p5:url(assets/tiles/gold-day-6.webp);}.sh-gold-n{--p0:url(assets/tiles/gold-night-1.webp);--p1:url(assets/tiles/gold-night-2.webp);--p2:url(assets/tiles/gold-night-3.webp);--p3:url(assets/tiles/gold-night-4.webp);--p4:url(assets/tiles/gold-night-5.webp);--p5:url(assets/tiles/gold-night-6.webp);}
 .dy{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
 .dy.ok{background:var(--ac);color:var(--btf);border-color:var(--ac)}
 .dy.cur{border:2px solid var(--ac);color:var(--ac);box-shadow:0 0 18px var(--ac)}
@@ -185,7 +205,7 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .dy.ok{background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 40%,var(--sf)))!important}.shade .dy.cur{background:var(--sf)!important;border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf)!important;filter:none;color:var(--mu)}
 .shade .dy .bg{background:var(--bg);color:var(--ac);border-color:var(--ac)}
 /* R12: shade dark, neon and mint - their bright completed-day tile needs the dark page colour for its number (AA) */
-.sh-neo-n .dy.ok,.sh-min-n .dy.ok{color:color-mix(in srgb,var(--bg) 30%,#000)}
+.sh-neo-n .dy.ok{color:color-mix(in srgb,var(--bg) 30%,#000)}
 .shade .cg{grid-template-columns:repeat(auto-fill,44px)!important;justify-content:center;gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--bad);color:var(--bad)}
 .shade #sh .p{background:var(--bg)}
 @media(min-width:601px){.shade .list.sl{grid-template-columns:repeat(3,1fr)}}
@@ -221,9 +241,15 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
 @media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
 /* B5: floating settings gear (above content, below open sheets) */
-#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
-#gear:active,#gear:focus-visible{transform:rotate(60deg)}
-@media(hover:hover){#gear:hover{transform:rotate(60deg)}}
+#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:opacity .2s ease,visibility .2s ease}
+/* the gear turns once by one tooth (60deg, the icon has 6 teeth, so it ends looking exactly like rest): ~400ms ease-out,
+   no overshoot, never held, never turned back; hover (hover devices), focus-visible, and a press (.gp, also a phone tap) */
+@keyframes gear-turn{from{transform:rotate(0)}to{transform:rotate(60deg)}}@keyframes gear-turn-p{from{transform:rotate(0)}to{transform:rotate(60deg)}}
+#gear svg{transform-origin:50% 50%}
+#gear:focus-visible svg{animation:gear-turn .4s ease-out}
+@media(hover:hover){#gear:hover svg{animation:gear-turn .4s ease-out}}
+#gear.gp svg{animation:gear-turn-p .4s ease-out}
+.cm #gear svg{animation:none!important}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
@@ -404,13 +430,14 @@ svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-d
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
 .cm svg.i-cv{transform:none!important;transition:none!important}.cm :is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#gear svg{animation:none!important}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
 svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
@@ -427,17 +454,57 @@ svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,
 <div id="sh"><div class="p g" role="dialog" aria-modal="true" aria-label="الإعدادات" tabindex="-1"></div></div>
 <script>
 const LS={get(){try{return JSON.parse(localStorage.getItem('gq-set'))||{}}catch(e){return{}}},set(v){try{localStorage.setItem('gq-set',JSON.stringify(v))}catch(e){}}};
-const PAL={def:['الافتراضي',['#F2F0E8','#1E6B50','#8FCBAE','#EBC98A'],['#0A0E1F','#9FB4FF','#4B5BDB','#2FB5A8']],lav:['لافندر',['#F1F0F8','#4B3CD8','#B9B4FF','#8FA8FF'],['#0B0D22','#B7B2FF','#5B6CF0','#C6B8FF']],sun:['غروب',['#F6EFEA','#A8381F','#F2A97B','#E8B5D6'],['#140A1C','#FFB38A','#E0689B','#F2A97B']],neo:['نيون',['#EEF3F6','#0B6E8A','#7FD6EA','#F0A6D0'],['#0B0620','#7FE7FF','#19C2E8','#E64AA8']],min:['نعناع',['#F1F3E8','#1E6B50','#A5E3C4','#F2E28A'],['#08140F','#A6F0C6','#3FBF8F','#E8D56A']]};
+/* GQ_THEME:begin - the theme definitions: palettes (names, light and dark colours), picker order, default, migration of
+   saved settings, and the continuous glass mapping. Identical copies live in the public folder: index.html (inline),
+   theme-boot.js and theme.js; test/theme-copies.test.js fails if any copy differs. ASCII-only. */
+var GQ_THEME = (function () {
+  // [background, accent, glow 1, glow 2] per mode; each palette keeps one hue family in light and dark
+  var PAL = {
+    gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"] },
+    def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"] },
+    lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"] },
+    sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"] },
+    neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0B0620", "#7FE7FF", "#19C2E8", "#20B8B0"] }
+  };
+  var ORDER = ["gold", "def", "lav", "sun", "neo"], DEFAULT = "gold", GLASS_DEFAULT = 50;
+  // Glass strength 0..100 maps evenly onto the old lightest (level 1) and strongest (level 5) values:
+  // blur 4..48px, saturate 140..220%, fill alpha light .88..56 / dark .26..12, rim alpha light .55..87 / dark .10..22.
+  var G0 = [4, 140, 0.88, 0.26, 0.55, 0.1], G1 = [48, 220, 0.56, 0.12, 0.87, 0.22];
+  function glass(v, dark) {
+    var t = Math.min(100, Math.max(0, +v || 0)) / 100, at = function (i) { return G0[i] + (G1[i] - G0[i]) * t; };
+    return { bl: +at(0).toFixed(2) + "px", sat: +at(1).toFixed(1) + "%", gb: +at(dark ? 3 : 2).toFixed(3), gbr: +at(dark ? 5 : 4).toFixed(3) };
+  }
+  // Saved settings: "min" (removed) becomes the green palette, an unknown or missing palette the default; glass
+  // strength moves to 0..100 (gv 3) from the 1..5 scale (gv 2) or the older 0/1/2 scale.
+  function migrate(s) {
+    if (s.pal === "min") s.pal = "def";
+    if (!PAL[s.pal]) s.pal = DEFAULT;
+    if (s.gv !== 3) {
+      var g = s.gl;
+      if (s.gv !== 2) g = g === 0 ? 1 : g === 1 ? 3 : g === 2 ? 5 : (g >= 1 && g <= 5 ? g : 3);
+      else if (!(g >= 1 && g <= 5)) g = 3;
+      s.gl = Math.round((g - 1) * 25);
+      s.gv = 3;
+    }
+    if (!(s.gl >= 0 && s.gl <= 100)) s.gl = GLASS_DEFAULT;
+    return s;
+  }
+  return { PAL: PAL, ORDER: ORDER, DEFAULT: DEFAULT, GLASS_DEFAULT: GLASS_DEFAULT, glass: glass, migrate: migrate };
+})();
+/* GQ_THEME:end */
+const GQT=GQ_THEME,PAL=Object.fromEntries(GQT.ORDER.map(k=>[k,[GQT.PAL[k].n,GQT.PAL[k].l,GQT.PAL[k].d]]));
 const rgba=(h,a)=>{h=h.replace('#','');if(h.length===3)h=h.replace(/./g,x=>x+x);const n=parseInt(h,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`};
-// Glass-intensity levels (index.html copy; keep in sync with tools/glass-levels.js).
-// [blurPx, saturate%, fillAlphaLight, fillAlphaDark, rimAlphaLight, rimAlphaDark]
-const GLLV=[[4,140,.88,.26,.55,.10],[12,160,.80,.22,.63,.13],[22,180,.72,.18,.71,.16],[34,200,.64,.15,.79,.19],[48,220,.56,.12,.87,.22]];
-let set=Object.assign({mode:'auto',pal:'def',gl:3,cm:false,snd:true,style:'glass'},LS.get());
+// Glass strength is continuous, 0..100 (GQT.glass maps it evenly between tools/glass-levels.js levels 1 and 5).
+let set=Object.assign({mode:'auto',pal:GQT.DEFAULT,cm:false,snd:true,style:'glass'},LS.get());
+if(LS.get().gl===undefined){set.gl=GQT.GLASS_DEFAULT;set.gv=3}
 // K3: on the FIRST visit (no saved choice) stop-motion defaults to the device's
 // prefers-reduced-motion; once the user toggles it, that saved choice always wins.
 if(LS.get().cm===undefined)set.cm=matchMedia('(prefers-reduced-motion:reduce)').matches;
-if(set.gv!==2){const g=set.gl;set.gl=g===0?1:g===1?3:g===2?5:(g>=1&&g<=5?g:3);set.gv=2}
-function applySet(){const dark=set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);const p=PAL[set.pal]||PAL.def;const c=dark?p[2]:p[1];const r=document.documentElement.style;r.setProperty('--bg',c[0]);r.setProperty('--ac',c[1]);r.setProperty('--b1',c[2]);r.setProperty('--b2',c[3]);r.setProperty('--tx',dark?'#ECEFFA':'#1D2B25');r.setProperty('--mu',dark?'#A3ABC9':'#55645D');r.setProperty('--gb',rgba('#ffffff',GLLV[Math.min(4,Math.max(0,set.gl-1))][dark?3:2]));r.setProperty('--gbr',rgba('#ffffff',GLLV[Math.min(4,Math.max(0,set.gl-1))][dark?5:4]));r.setProperty('--sat',GLLV[Math.min(4,Math.max(0,set.gl-1))][1]+'%');r.setProperty('--ln',dark?'rgba(255,255,255,.12)':'rgba(29,43,37,.12)');r.setProperty('--btf',dark?c[0]:'#fff');r.setProperty('--bl',GLLV[Math.min(4,Math.max(0,set.gl-1))][0]+'px');document.body.classList.toggle('cm',!!set.cm);const t=document.querySelector('meta[name=theme-color]');if(t)t.content=c[0];}
+GQT.migrate(set);
+const isDark=()=>set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);
+// the four glass variables alone: written on every settings change, and at most once per frame while the slider is dragged
+function glassVars(v,dark){const g=GQT.glass(v,dark),r=document.documentElement.style;r.setProperty('--gb',rgba('#ffffff',g.gb));r.setProperty('--gbr',rgba('#ffffff',g.gbr));r.setProperty('--sat',g.sat);r.setProperty('--bl',g.bl)}
+function applySet(){const dark=isDark();const p=PAL[set.pal]||PAL[GQT.DEFAULT];const c=dark?p[2]:p[1];const r=document.documentElement.style;r.setProperty('--bg',c[0]);r.setProperty('--ac',c[1]);r.setProperty('--b1',c[2]);r.setProperty('--b2',c[3]);r.setProperty('--tx',dark?'#ECEFFA':'#1D2B25');r.setProperty('--mu',dark?'#A3ABC9':'#55645D');glassVars(set.gl,dark);r.setProperty('--ln',dark?'rgba(255,255,255,.12)':'rgba(29,43,37,.12)');r.setProperty('--btf',dark?c[0]:'#fff');document.body.classList.toggle('cm',!!set.cm);const t=document.querySelector('meta[name=theme-color]');if(t)t.content=c[0];}
 applySet();
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applySet);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -539,15 +606,35 @@ function rouOpen(pool,onPick){
 }
 function drawWord(){const r=route();const cur=r[0]==='word'?r[1]:null;rouOpen(W.filter(w=>w.id!==cur),w=>{if(w)location.hash='#/word/'+w.id})}
 let STYLES=['glass','shade'];const STN={glass:'زجاج',shade:'ظلال'};
-function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass';p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">الإعدادات</b><button class="btn o" data-a="close" style="height:44px;color:var(--ac)">تم</button></div>${STYLES.length>1?`<div><div class="m" style="margin-bottom:8px">النمط</div><div class="seg g">${STYLES.map(x=>`<button data-st="${x}" class="${st===x?'on':''}" aria-pressed="${st===x?'true':'false'}">${STN[x]}</button>`).join('')}</div></div>`:''}<div><div class="m" style="margin-bottom:8px">المظهر</div><div class="seg g">${[['auto','تلقائي'],['light','نهار'],['dark','ليل']].map(x=>`<button data-m="${x[0]}" class="${set.mode===x[0]?'on':''}" aria-pressed="${set.mode===x[0]?'true':'false'}">${x[1]}</button>`).join('')}</div></div>${`<div><div class="m" style="margin-bottom:10px">ألوان التوهج</div><div class="sw">${Object.keys(PAL).map(k=>`<button data-p="${k}" class="${set.pal===k?'on':''}" aria-pressed="${set.pal===k?'true':'false'}"><i style="background:radial-gradient(circle at 30% 30%,${PAL[k][2][3]},${PAL[k][2][2]})"></i>${PAL[k][0]}</button>`).join('')}</div></div>`}${st==='glass'?`<div><div class="m" style="margin-bottom:8px">شدة الزجاج</div><label class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="1" max="5" step="1" value="${set.gl}" aria-label="شدة الزجاج"><span class="lbl">قوي</span></label></div>`:''}<div class="tg"><span>إيقاف الحركة</span><button data-c="1" class="${set.cm?'on':''}" aria-pressed="${set.cm?'true':'false'}" aria-label="إيقاف الحركة"></button></div>`}
+// Settings: المظهر, اللون, النمط (with شدة الزجاج under it, glass only), then the switches. Each choice row is a radio group
+// (one Tab stop, arrow keys move the selection); each switch is one button the size of its row.
+const glassText=v=>v<34?'خفيف':v<67?'متوسط':'قوي';
+const radio=(attr,v,on,html)=>`<button role="radio" data-${attr}="${v}" class="${on?'on':''}" aria-checked="${on?'true':'false'}" tabindex="${on?0:-1}">${html}</button>`;
+const tgRow=(attr,on,label)=>`<button class="tg${on?' on':''}" data-${attr}="1" role="switch" aria-checked="${on?'true':'false'}"><span>${label}</span><i aria-hidden="true"></i></button>`;
+function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass',dark=isDark();p.innerHTML=`<div class="sht"><b>الإعدادات</b><button class="btn o" data-a="close">تم</button></div>` +
+ `<div class="grp"><div class="m" id="lbm">المظهر</div><div class="seg g" role="radiogroup" aria-labelledby="lbm">${[['auto','تلقائي'],['light','نهار'],['dark','ليل']].map(x=>radio('m',x[0],set.mode===x[0],x[1])).join('')}</div></div>` +
+ `<div class="grp"><div class="m" id="lbp">اللون</div><div class="psw" role="radiogroup" aria-labelledby="lbp">${GQT.ORDER.map(k=>{const c=dark?PAL[k][2]:PAL[k][1];return radio('p',k,set.pal===k,`<i style="background:${c[1]};border-color:${c[2]}"></i><span>${PAL[k][0]}</span>`)}).join('')}</div></div>` +
+ (STYLES.length>1?`<div class="grp"><div class="m" id="lbs">النمط</div><div class="seg g" role="radiogroup" aria-labelledby="lbs">${STYLES.map(x=>radio('st',x,st===x,STN[x])).join('')}</div>` +
+  (st==='glass'?`<div class="gsw"><div class="gsr"><div class="m" id="lbg">شدة الزجاج</div><div class="gsm" aria-hidden="true"><i></i><i></i><div class="g"></div></div></div><div class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="0" max="100" step="1" value="${set.gl}" aria-labelledby="lbg" aria-label="شدة الزجاج" aria-valuetext="${glassText(set.gl)}"><span class="lbl">قوي</span></div></div>`:'')+'</div>':'') +
+ `<div class="tgs">${tgRow('c',set.cm,'إيقاف الحركة')}</div>`}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();openSh('الإعدادات',t);return}if(d.a==='close'||t.id==='sh'&&e.target===t){closeSh();return}if(d.a==='rnd'){drawWord();return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
-document.addEventListener('input',e=>{if(e.target&&e.target.id==='gs'){set.gl=+e.target.value;set.gv=2;LS.set(set);applySet()}});
+let gsRaf=0;
+document.addEventListener('input',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;g.setAttribute('aria-valuetext',glassText(set.gl));if(!gsRaf)gsRaf=requestAnimationFrame(()=>{gsRaf=0;glassVars(set.gl,isDark())})});
+document.addEventListener('change',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;set.gv=3;LS.set(set);if(!gsRaf)glassVars(set.gl,isDark())});
+// radio groups in the settings sheet: arrow keys (mirrored for right-to-left), Home and End move the selection
+document.addEventListener('keydown',e=>{const r=e.target.closest&&e.target.closest('#sh [role="radio"]');if(!r||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();const g=[...r.parentElement.querySelectorAll('[role="radio"]')],i=g.indexOf(r),rtl=getComputedStyle(r).direction==='rtl',k=e.key;let n=k==='Home'?0:k==='End'?g.length-1:(i+((k==='ArrowDown'||k===(rtl?'ArrowLeft':'ArrowRight'))?1:-1)+g.length)%g.length;if(n===i)return;g[n].focus();g[n].click()});
+// the gear's press motion: one 60-degree turn per press (pointer, tap, Enter, Space); hover and focus-visible run it
+// from the stylesheet. .gp stays until the gear is neither hovered nor focused, so dropping it never replays the turn.
+(()=>{const gp=b=>{if(b._gt||(matchMedia('(hover:hover)').matches&&b.matches(':hover'))||b.matches(':focus-visible'))return;b.classList.remove('gp')};
+const press=e=>{const b=e.target.closest&&e.target.closest('#gear');if(!b)return;b.classList.remove('gp');void b.offsetWidth;b.classList.add('gp');clearTimeout(b._gt);b._gt=setTimeout(()=>{b._gt=0;gp(b)},450)};
+addEventListener('pointerdown',press,true);addEventListener('keydown',e=>{if(!e.repeat&&(e.key==='Enter'||e.key===' '))press(e)},true);
+const out=e=>{const b=e.target.closest&&e.target.closest('#gear.gp');if(b)setTimeout(()=>gp(b),0)};addEventListener('mouseout',out,true);addEventListener('focusout',out,true)})();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('sh').classList.contains('open')){closeSh();return}const q=$('q');if(q&&q.value){q.value='';q.dispatchEvent(new Event('input',{bubbles:true}));q.focus();return;}}});
 // S2: the settings and save sheets are modal: focus moves into the panel on open, Tab stays inside, and closing returns focus to the opener.
 let shOp=null;
 function openSh(label,opener){const sh=$('sh'),p=sh.querySelector('.p');p.setAttribute('aria-label',label);if(!sh.classList.contains('open'))shOp=opener||(document.activeElement!==document.body?document.activeElement:null);sh.classList.add('open');p.focus({preventScroll:true})}
 function closeSh(back){const sh=$('sh');if(!sh.classList.contains('open'))return;sh.classList.remove('open');const o=shOp;shOp=null;if(back!==false&&o&&o.isConnected)o.focus({preventScroll:true})}
-document.addEventListener('keydown',e=>{const sh=$('sh');if(e.key!=='Tab'||!sh.classList.contains('open'))return;const p=sh.querySelector('.p'),f=[...p.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.getClientRects().length);if(!f.length){e.preventDefault();p.focus();return}const a=document.activeElement,i=f.indexOf(a);if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===-1||i===f.length-1)){e.preventDefault();f[0].focus()}});
+document.addEventListener('keydown',e=>{const sh=$('sh');if(e.key!=='Tab'||!sh.classList.contains('open'))return;const p=sh.querySelector('.p'),f=[...p.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.tabIndex>=0&&x.getClientRects().length);if(!f.length){e.preventDefault();p.focus();return}const a=document.activeElement,i=f.indexOf(a);if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===-1||i===f.length-1)){e.preventDefault();f[0].focus()}});
 // M5: each history entry keeps its own scroll position (history.state.sp -> y); back/forward restore it, new navigations start at the top.
 try{history.scrollRestoration='manual'}catch(e){}
 const SP={m:(()=>{try{return JSON.parse(sessionStorage.getItem('gq-sp'))||{}}catch(e){return{}}})(),save(){try{sessionStorage.setItem('gq-sp',JSON.stringify(SP.m))}catch(e){}}};
@@ -716,7 +803,7 @@ function d2b(u){const s=u.slice(u.indexOf(',')+1),bin=atob(s),a=new Uint8Array(b
 function card(w,size){size=size==='s'?'s':'n';const name='ghareeb-'+w.id+'-'+(size==='s'?'story':'card')+'.png';const fire=()=>{const c=renderCard(w,size);if(cardMobile()){const b=d2b(c.toDataURL('image/png')),f=new File([b],name,{type:'image/png'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){navigator.share({files:[f]}).catch(err=>{if(!err||err.name!=='AbortError')downloadBlob(b,name)});return}downloadBlob(b,name);return}if(c.toBlob)c.toBlob(b=>{if(b)downloadBlob(b,name)},'image/png');else downloadBlob(d2b(c.toDataURL('image/png')),name)};let ready=true;try{ready=!document.fonts||!document.fonts.check||CARD_FONTS.every(([f,t])=>document.fonts.check(f,t))}catch(e){ready=true}ready?fire():cardFonts().then(fire)}
 const _view=view;view=function(r){const p=r[0];if(p==='challenge')return chView();if(p==='day')return dayView(r[1]);if(p==='quiz')return qView();let h=_view(r);if(p==='home')h=h.replace('<div id="res"></div>','<div id="res"></div>'+ringCard());return h};
 const _render=render;render=function(){_render();if(route()[0]==='day'){const a=document.querySelectorAll('#nv a');if(a[2])a[2].classList.add('on')}};
-const _sheet=sheet;sheet=function(){_sheet();document.querySelector('#sh .p').insertAdjacentHTML('beforeend','<div class="tg"><span>الصوت</span><button data-s="1" class="'+(set.snd?'on':'')+'" aria-pressed="'+(set.snd?'true':'false')+'" aria-label="الصوت"></button></div>')};
+const _sheet=sheet;sheet=function(){_sheet();if(document.querySelector('#sh .psw'))document.querySelector('#sh .tgs').insertAdjacentHTML('beforeend',tgRow('s',set.snd,'الصوت'))};
 // rebuilding the settings panel keeps focus on the same control
 const _sheetF=sheet;sheet=function(){const p=$('sh').querySelector('.p'),a=document.activeElement,k=a&&a!==p&&p.contains(a)?['data-st','data-m','data-p','data-c','data-s','data-a','id'].find(x=>a.hasAttribute(x)):null,v=k&&a.getAttribute(k);_sheetF();if(k){const n=[...p.querySelectorAll('['+k+']')].find(x=>x.getAttribute(k)===v);(n||p).focus({preventScroll:true})}};
 const rr=()=>{const y=scrollY;render();scrollTo(0,y)};
@@ -793,11 +880,11 @@ document.addEventListener('click',e=>{if(!syn&&performance.now()-endT<450&&e.tar
 const _apply=applySet;
 applySet=function(){_apply();const st=set.style||'glass',b=document.body,r=document.documentElement.style,keys=['--tc','--sf','--sbd'];[...b.classList].filter(c=>c.startsWith('sh-')).forEach(c=>b.classList.remove(c));
 if(st!=='shade'){b.classList.remove('shade');keys.forEach(k=>r.removeProperty(k));return}
-const dark=set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches),k=PAL[set.pal]?set.pal:'def',c=dark?PAL[k][2]:PAL[k][1];
+const dark=set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches),k=PAL[set.pal]?set.pal:GQT.DEFAULT,c=dark?PAL[k][2]:PAL[k][1];
 const mx=(a,z,t)=>'#'+[1,3,5].map(i=>Math.round(parseInt(a.substr(i,2),16)*(1-t)+parseInt(z.substr(i,2),16)*t).toString(16).padStart(2,'0')).join('');
 b.classList.add('shade','sh-'+k+'-'+(dark?'n':'d'));
 r.setProperty('--tc',c[2]);r.setProperty('--sf',dark?mx(c[0],'#ffffff',.07):mx(c[0],'#ffffff',.55));r.setProperty('--sbd',dark?'rgba(255,255,255,.08)':'rgba(29,43,37,.1)');r.setProperty('--ln',dark?'rgba(255,255,255,.14)':'rgba(29,43,37,.14)');r.setProperty('--bdbg',dark?'rgba(0,0,0,.35)':'rgba(255,255,255,.65)');r.setProperty('--bdc',dark?'#fff':'#1D2B25')};
-matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applySet());
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{applySet();if($('sh').classList.contains('open')&&$('sh').querySelector('#sh .psw'))sheet()});
 applySet();
 document.documentElement.classList.add('gq');
 $('app').insertAdjacentHTML('beforebegin','<button class="g ib" id="gear" data-a="set" aria-label="الإعدادات">'+ICO.g+'</button>');

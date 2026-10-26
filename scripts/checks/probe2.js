@@ -35,7 +35,7 @@ const KILL = "*,*:before,*:after{transition:none!important;animation:none!import
   const br = await chromium.launch();
   const fails = [];
   const n = { btnGlass: 0, btnShade: 0, rowsPressed: 0, slRows: 0, pills: 0, nudges: 0, motion: 0 };
-  for (const style of ["glass", "shade"]) for (const pal of ["def", "lav", "sun", "neo", "min"]) for (const mode of ["light", "dark"]) for (const w of [1440, 390]) {
+  for (const style of ["glass", "shade"]) for (const pal of ["gold", "def", "lav", "sun", "neo"]) for (const mode of ["light", "dark"]) for (const w of [1440, 390]) {
     const tag = `${style}/${pal}/${mode}/${w}`;
     const ctx = await br.newContext({ viewport: { width: w, height: 900 }, reducedMotion: "no-preference" });
     await ctx.addInitScript((s) => {

@@ -2,12 +2,13 @@
  * glass-slider.test.js - Phase A STEP 3 acceptance.
  *
  * Pure unit part: legacy 3-step value -> 5-step level migration.
- * DOM part: loads the real public/index.html in Chromium, moves the glass
- * slider through every level, and asserts (a) the page writes the exact CSS
- * variables from tools/glass-levels.js, (b) each level writes a different
- * blur, (c) the slider exposes the required a11y attributes, (d) the setting
- * persists across a reload, and (e) the control is shown only for the glass
- * style. The DOM test skips cleanly when Chromium is unavailable.
+ * DOM part: loads the real public/index.html in Chromium, moves the continuous
+ * glass slider (0..100) across its range, and asserts (a) the page writes CSS
+ * variables mapped evenly between tools/glass-levels.js levels 1 and 5, (b)
+ * every point writes a different blur, (c) the slider exposes the required
+ * a11y attributes, (d) the setting persists across a reload, and (e) the
+ * control is shown only for the glass style. The DOM test skips cleanly when
+ * Chromium is unavailable.
  */
 "use strict";
 
@@ -38,6 +39,29 @@ test("glass levels: legacy 0/1/2 migrate to 1/3/5; 1..5 pass through", async () 
   assert.equal(normalizeLevel(9, true), 3);
 });
 
+// The settings migration (the GQ_THEME definitions block): the removed palette "min"
+// becomes the green palette, a missing palette the default (gold), and the glass strength moves to 0..100.
+test("settings migration: palettes and the continuous glass scale", () => {
+  const vm = require("vm");
+  // the definitions block (identical in index.html, theme-boot.js and theme.js: test/theme-copies.test.js)
+  const src = fs.readFileSync(path.join(PUBLIC, "theme-boot.js"), "utf8");
+  const ctx = {};
+  vm.runInNewContext(src.slice(src.indexOf("/* GQ_THEME:begin"), src.indexOf("/* GQ_THEME:end */")) + ";this.T = GQ_THEME;", ctx);
+  const T = ctx.T;
+  assert.deepEqual(T.ORDER, ["gold", "def", "lav", "sun", "neo"]);
+  assert.equal(T.DEFAULT, "gold");
+  const m = (s) => T.migrate(Object.assign({}, s));
+  assert.equal(m({ pal: "min", gl: 3, gv: 2 }).pal, "def", "min becomes the green palette");
+  assert.equal(m({ pal: "def", gl: 3, gv: 2 }).pal, "def", "a saved def stays green");
+  assert.equal(m({}).pal, "gold", "no saved palette: gold");
+  assert.equal(m({ pal: "nope" }).pal, "gold", "unknown palette: gold");
+  // 1..5 (gv 2) -> 0..100; the older 0/1/2 scale goes through 1/3/5
+  assert.deepEqual([1, 2, 3, 4, 5].map((g) => m({ gl: g, gv: 2 }).gl), [0, 25, 50, 75, 100]);
+  assert.deepEqual([0, 1, 2].map((g) => m({ gl: g }).gl), [0, 50, 100]);
+  assert.equal(m({ gl: 1, gv: 2 }).gv, 3);
+  assert.equal(m({ gl: 37, gv: 3 }).gl, 37, "0..100 values pass through");
+});
+
 function staticServer(root) {
   const types = {
     ".html": "text/html; charset=utf-8",
@@ -64,7 +88,7 @@ function staticServer(root) {
   });
 }
 
-test("glass slider: levels, a11y, persistence, glass-only", { timeout: 90000 }, async (t) => {
+test("glass slider: continuous range, a11y, persistence, glass-only", { timeout: 90000 }, async (t) => {
   let chromium;
   try {
     ({ chromium } = require("playwright"));
@@ -98,8 +122,8 @@ test("glass slider: levels, a11y, persistence, glass-only", { timeout: 90000 }, 
 
     await page.goto(base + "/index.html", { waitUntil: "load" });
     await page.waitForSelector("#app .acts", { timeout: 20000 });
-    // default level is 3 (blur 22px, the previous "medium")
-    assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue("--bl")), "22px");
+    // the stored level 3 (1..5 scale) migrates to 50: blur 26px, halfway between levels 1 and 5
+    assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue("--bl")), "26px");
 
     await page.click('[data-a="set"]');
     await page.waitForSelector("#gs");
@@ -107,53 +131,58 @@ test("glass slider: levels, a11y, persistence, glass-only", { timeout: 90000 }, 
     // (a) attributes / a11y
     const gs = await page.$eval("#gs", (el) => ({
       tag: el.tagName, type: el.type, min: el.min, max: el.max, step: el.step,
-      value: el.value, aria: el.getAttribute("aria-label"),
+      value: el.value, aria: el.getAttribute("aria-label"), text: el.getAttribute("aria-valuetext"),
     }));
     assert.equal(gs.tag, "INPUT");
     assert.equal(gs.type, "range");
-    assert.equal(gs.min, "1");
-    assert.equal(gs.max, "5");
+    assert.equal(gs.min, "0");
+    assert.equal(gs.max, "100");
     assert.equal(gs.step, "1");
+    assert.equal(gs.value, "50");
     assert.equal(gs.aria, "شدة الزجاج");
+    assert.equal(gs.text, "متوسط", "value text names the range");
 
-    // (b) every level writes the exact expected CSS variables
+    // (b) every point writes the CSS variables mapped evenly between level 1 (0) and level 5 (100)
+    const lo = LEVELS[0], hi = LEVELS[4], at = (a, b, t) => a + (b - a) * t;
     const bls = [];
     const sats = [];
-    for (let lvl = 1; lvl <= 5; lvl++) {
+    for (const val of [0, 25, 50, 75, 100]) {
       await page.$eval(
         "#gs",
-        (el, v) => { el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); },
-        lvl
+        (el, v) => { el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); },
+        val
       );
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const v = await page.evaluate(() => {
         const r = document.documentElement.style;
         return { bl: r.getPropertyValue("--bl"), sat: r.getPropertyValue("--sat"), gb: r.getPropertyValue("--gb"), gbr: r.getPropertyValue("--gbr") };
       });
-      assert.equal(v.bl, LEVELS[lvl - 1].bl + "px", "blur at level " + lvl);
-      assert.equal(v.sat, LEVELS[lvl - 1].sat + "%", "saturate at level " + lvl);
-      assert.equal(v.gb, "rgba(255,255,255," + LEVELS[lvl - 1].bg.light + ")", "fill alpha at level " + lvl);
-      assert.equal(v.gbr, "rgba(255,255,255," + LEVELS[lvl - 1].rim.light + ")", "rim alpha at level " + lvl);
+      const t = val / 100;
+      assert.equal(v.bl, +at(lo.bl, hi.bl, t).toFixed(2) + "px", "blur at " + val);
+      assert.equal(v.sat, +at(lo.sat, hi.sat, t).toFixed(1) + "%", "saturate at " + val);
+      assert.equal(v.gb, "rgba(255,255,255," + +at(lo.bg.light, hi.bg.light, t).toFixed(3) + ")", "fill alpha at " + val);
+      assert.equal(v.gbr, "rgba(255,255,255," + +at(lo.rim.light, hi.rim.light, t).toFixed(3) + ")", "rim alpha at " + val);
       bls.push(v.bl);
       sats.push(v.sat);
     }
-    assert.equal(new Set(bls).size, 5, "each level writes a different blur");
-    assert.equal(new Set(sats).size, 5, "each level writes a different saturate");
-    assert.deepEqual(bls, ["4px", "12px", "22px", "34px", "48px"]);
+    assert.equal(new Set(bls).size, 5, "each point writes a different blur");
+    assert.equal(new Set(sats).size, 5, "each point writes a different saturate");
+    assert.deepEqual(bls, ["4px", "15px", "26px", "37px", "48px"], "the blur moves evenly");
 
     // (c) theme order: auto first
     const modes = await page.$$eval("#sh [data-m]", (els) => els.map((e) => e.getAttribute("data-m")));
     assert.deepEqual(modes, ["auto", "light", "dark"]);
 
-    // (d) persistence: level 5 survives a reload, slider reopens on 5
+    // (d) persistence: 100 is saved on release and survives a reload, slider reopens on 100
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("gq-set")));
-    assert.equal(stored.gl, 5);
-    assert.equal(stored.gv, 2);
+    assert.equal(stored.gl, 100);
+    assert.equal(stored.gv, 3);
     await page.reload({ waitUntil: "load" });
     await page.waitForSelector("#app .acts", { timeout: 20000 });
     assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue("--bl")), "48px");
     await page.click('[data-a="set"]');
     await page.waitForSelector("#gs");
-    assert.equal(await page.$eval("#gs", (el) => el.value), "5");
+    assert.equal(await page.$eval("#gs", (el) => el.value), "100");
 
     // (e) shown only for the glass style
     await page.click('[data-st="shade"]');

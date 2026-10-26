@@ -4,7 +4,7 @@ const { chromium } = require("playwright");
 const { serve, PALS } = require("./lib.js");
 const fs = require("fs"), path = require("path");
 const DIR = __dirname, OUT = path.join(DIR, "sheets2"); fs.mkdirSync(OUT, { recursive: true });
-const PN = { def: "def (الافتراضي)", lav: "lav (لافندر)", sun: "sun (غروب)", neo: "neo (نيون)", min: "min (نعناع)" };
+const PN = { gold: "gold (ذهبي)", def: "def (زمردي)", lav: "lav (بنفسجي)", sun: "sun (غروب)", neo: "neo (فيروزي)" };
 const ROWS = [["glass", "light"], ["glass", "dark"], ["shade", "light"], ["shade", "dark"]];
 const css = `body{margin:0;background:#fff;font:600 22px system-ui,sans-serif;color:#111}.g{display:grid;gap:18px;padding:24px}
 .c{display:flex;flex-direction:column;gap:6px}.c img{width:100%;display:block;border:1px solid #ccc}.h{font-size:28px;padding:24px 24px 0}.r{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center}`;

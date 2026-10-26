@@ -1,20 +1,53 @@
 /* Shared synchronous theme bootstrap for the static pages.
  *
- * Mirrors the app's own applySet(): it reads the saved "gq-set" record and
- * applies the mode, palette, glass intensity and style (glass/shade) to
- * <html> before first paint, so a stored theme never flashes. It also mirrors
- * the app's shade variables (--tc/--sf/--sbd/--ln) and the .cm class used by
- * the reduced-motion rules, plus the .dk dark-mode marker used by the word pages' chips. ASCII-only: it only holds hex colours and logic.
+ * GQ_THEME holds the theme definitions (palettes, picker order, default, migration, glass mapping); the same block is
+ * copied verbatim into index.html and theme.js and test/theme-copies.test.js keeps the copies identical. The bootstrap
+ * mirrors the app's own applySet(): it reads the saved "gq-set" record and applies the mode, palette, glass strength
+ * and style (glass/shade) to <html> before first paint, so a stored theme never flashes. It also mirrors the app's
+ * shade variables (--tc/--sf/--sbd/--ln) and the .cm class used by the reduced-motion rules, plus the .dk dark-mode
+ * marker used by the word pages' chips. ASCII-only: it holds hex colours and logic; the palette names are escapes.
  */
 (function () {
-  var GLLV = [[4, 140, 0.88, 0.26, 0.55, 0.1], [12, 160, 0.8, 0.22, 0.63, 0.13], [22, 180, 0.72, 0.18, 0.71, 0.16], [34, 200, 0.64, 0.15, 0.79, 0.19], [48, 220, 0.56, 0.12, 0.87, 0.22]];
-  var PAL = {
-    def: [["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], ["#0A0E1F", "#9FB4FF", "#4B5BDB", "#2FB5A8"]],
-    lav: [["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"]],
-    sun: [["#F6F0EA", "#A8381F", "#F2A97B", "#E8B5D6"], ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"]],
-    neo: [["#EEF3F6", "#0B6E8A", "#7FD6EA", "#F0A6D0"], ["#0B0620", "#7FE7FF", "#19C2E8", "#E64AA8"]],
-    min: [["#F1F3E8", "#1E6B50", "#A5E3C4", "#F2E28A"], ["#08140F", "#A6F0C6", "#3FBF8F", "#E8D56A"]]
-  };
+  /* GQ_THEME:begin - the theme definitions: palettes (names, light and dark colours), picker order, default, migration of
+     saved settings, and the continuous glass mapping. Identical copies live in the public folder: index.html (inline),
+     theme-boot.js and theme.js; test/theme-copies.test.js fails if any copy differs. ASCII-only. */
+  var GQ_THEME = (function () {
+    // [background, accent, glow 1, glow 2] per mode; each palette keeps one hue family in light and dark
+    var PAL = {
+      gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"] },
+      def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"] },
+      lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"] },
+      sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"] },
+      neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0B0620", "#7FE7FF", "#19C2E8", "#20B8B0"] }
+    };
+    var ORDER = ["gold", "def", "lav", "sun", "neo"], DEFAULT = "gold", GLASS_DEFAULT = 50;
+    // Glass strength 0..100 maps evenly onto the old lightest (level 1) and strongest (level 5) values:
+    // blur 4..48px, saturate 140..220%, fill alpha light .88..56 / dark .26..12, rim alpha light .55..87 / dark .10..22.
+    var G0 = [4, 140, 0.88, 0.26, 0.55, 0.1], G1 = [48, 220, 0.56, 0.12, 0.87, 0.22];
+    function glass(v, dark) {
+      var t = Math.min(100, Math.max(0, +v || 0)) / 100, at = function (i) { return G0[i] + (G1[i] - G0[i]) * t; };
+      return { bl: +at(0).toFixed(2) + "px", sat: +at(1).toFixed(1) + "%", gb: +at(dark ? 3 : 2).toFixed(3), gbr: +at(dark ? 5 : 4).toFixed(3) };
+    }
+    // Saved settings: "min" (removed) becomes the green palette, an unknown or missing palette the default; glass
+    // strength moves to 0..100 (gv 3) from the 1..5 scale (gv 2) or the older 0/1/2 scale.
+    function migrate(s) {
+      if (s.pal === "min") s.pal = "def";
+      if (!PAL[s.pal]) s.pal = DEFAULT;
+      if (s.gv !== 3) {
+        var g = s.gl;
+        if (s.gv !== 2) g = g === 0 ? 1 : g === 1 ? 3 : g === 2 ? 5 : (g >= 1 && g <= 5 ? g : 3);
+        else if (!(g >= 1 && g <= 5)) g = 3;
+        s.gl = Math.round((g - 1) * 25);
+        s.gv = 3;
+      }
+      if (!(s.gl >= 0 && s.gl <= 100)) s.gl = GLASS_DEFAULT;
+      return s;
+    }
+    return { PAL: PAL, ORDER: ORDER, DEFAULT: DEFAULT, GLASS_DEFAULT: GLASS_DEFAULT, glass: glass, migrate: migrate };
+  })();
+  /* GQ_THEME:end */
+  var PAL = GQ_THEME.PAL, DEFAULT = GQ_THEME.DEFAULT, GLASS_DEFAULT = GQ_THEME.GLASS_DEFAULT, glass = GQ_THEME.glass, migrate = GQ_THEME.migrate;
+
   function rgba(h, a) {
     h = h.replace("#", "");
     if (h.length === 3) h = h.replace(/./g, function (x) { return x + x; });
@@ -30,30 +63,32 @@
     }
     return "#" + out;
   }
-  var set = { mode: "auto", pal: "def", gl: 3, cm: false, style: "glass" };
-  var hasCm = false;
+  var set = { mode: "auto", pal: DEFAULT, gl: GLASS_DEFAULT, gv: 3, cm: false, style: "glass" };
+  var hasCm = false, hasGl = false;
   try {
     var saved = JSON.parse(localStorage.getItem("gq-set") || "{}");
     for (var k in saved) { if (saved[k] !== undefined) set[k] = saved[k]; }
     hasCm = saved.cm !== undefined;
+    hasGl = saved.gl !== undefined;
+    if (!hasGl) set.gv = 3;
   } catch (e) {}
   // K3: on the first visit (no saved choice) stop-motion follows the device's
   // prefers-reduced-motion; once toggled, the saved choice always wins.
   if (!hasCm) set.cm = matchMedia("(prefers-reduced-motion:reduce)").matches;
-  if (set.gv !== 2) { var g = set.gl; set.gl = g === 0 ? 1 : g === 1 ? 3 : g === 2 ? 5 : (g >= 1 && g <= 5 ? g : 3); set.gv = 2; }
+  migrate(set);
   function apply() {
     var dark = set.mode === "dark" || (set.mode === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
-    var p = PAL[set.pal] || PAL.def;
-    var c = dark ? p[1] : p[0];
-    var lv = GLLV[Math.min(4, Math.max(0, set.gl - 1))];
+    var p = PAL[set.pal] || PAL[DEFAULT];
+    var c = dark ? p.d : p.l;
+    var gl = glass(set.gl, dark);
     var r = document.documentElement.style;
     r.setProperty("--bg", c[0]); r.setProperty("--ac", c[1]); r.setProperty("--b1", c[2]); r.setProperty("--b2", c[3]);
     r.setProperty("--tx", dark ? "#ECEFFA" : "#1D2B25");
     r.setProperty("--mu", dark ? "#A3ABC9" : "#55645D");
-    r.setProperty("--gb", rgba("#ffffff", dark ? lv[3] : lv[2]));
-    r.setProperty("--gbr", rgba("#ffffff", dark ? lv[5] : lv[4]));
-    r.setProperty("--sat", lv[1] + "%");
-    r.setProperty("--bl", lv[0] + "px");
+    r.setProperty("--gb", rgba("#ffffff", gl.gb));
+    r.setProperty("--gbr", rgba("#ffffff", gl.gbr));
+    r.setProperty("--sat", gl.sat);
+    r.setProperty("--bl", gl.bl);
     r.setProperty("--btf", dark ? c[0] : "#fff");
     r.setProperty("--ln", dark ? "rgba(255,255,255,.12)" : "rgba(29,43,37,.12)");
     document.documentElement.classList.toggle("cm", !!set.cm);

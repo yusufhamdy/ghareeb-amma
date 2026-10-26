@@ -10,7 +10,7 @@ const PAGES = [
   ["/#/challenge", null, [["day dot done", "#app .dy.ok:not(.sw)"], ["day dot today", "#app .dy.cur:not(.sw)"], ["day dot locked", "#app .dy.lk:not(.sw)"], ["legend text", "#app .lg .li"]]],
   ["/#/quiz", async (p) => { await p.click("#app .opt"); }, [["quiz option", "#app .opt:not(.ok):not(.bad)"], ["quiz option correct", "#app .opt.ok"], ["quiz option wrong", "#app .opt.bad"], ["quiz counter (.m)", "#app>div>span.m"]]],
   ["/#/day/2", null, [["day word (.dword)", "#app .dword"], ["day count", "#app .dcount"], ["day h1 'من 30'", "#app .dh h1 .m"]]],
-  ["/#/", async (p) => { await p.click("#gear"); await p.waitForTimeout(500); }, [["settings label (.m)", "#sh .m"], ["segmented (unselected)", "#sh .seg button:not(.on)"], ["segmented (selected)", "#sh .seg button.on"], ["palette name", "#sh .sw button:not(.on)"], ["sheet 'تم' button", '#sh [data-a="close"]']]],
+  ["/#/", async (p) => { await p.click("#gear"); await p.waitForTimeout(500); }, [["settings label (.m)", "#sh .m"], ["segmented (unselected)", "#sh .seg button:not(.on)"], ["segmented (selected)", "#sh .seg button.on"], ["palette name", "#sh .psw button:not(.on)"], ["palette name (selected)", "#sh .psw button.on"], ["switch label", "#sh .tg span"], ["sheet 'تم' button", '#sh [data-a="close"]']]],
   ["/privacy/", null, [["legal paragraph", "main .para"], ["legal home link", "main a.b"]]],
 ];
 module.exports.PAGES = PAGES;
