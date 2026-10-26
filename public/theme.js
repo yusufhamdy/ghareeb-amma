@@ -1,14 +1,15 @@
-/* GQ_THEME:begin - the theme definitions: palettes (names, light and dark colours), picker order, default, migration of
+/* GQ_THEME:begin - the theme definitions: palettes (names, light/dark colours, swatch gradient), picker order, default, migration of
    saved settings, and the continuous glass mapping. Identical copies live in the public folder: index.html (inline),
    theme-boot.js and theme.js; test/theme-copies.test.js fails if any copy differs. ASCII-only. */
 var GQ_THEME = (function () {
-  // [background, accent, glow 1, glow 2] per mode; each palette keeps one hue family in light and dark
+  // [background, accent, glow 1, glow 2] per mode (each palette keeps one hue family in light and dark); sw: the
+  // picker swatch, a 135deg gradient [start, end], the same in light and dark
   var PAL = {
-    gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"] },
-    def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"] },
-    lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"] },
-    sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"] },
-    neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0B0620", "#7FE7FF", "#19C2E8", "#20B8B0"] }
+    gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"], sw: ["#B59045", "#F0CD78"] },
+    def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"], sw: ["#56A882", "#8EE6B4"] },
+    lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"], sw: ["#8177EC", "#B7B2FF"] },
+    sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"], sw: ["#D47654", "#FFB38A"] },
+    neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0B0620", "#7FE7FF", "#19C2E8", "#20B8B0"], sw: ["#45AAC4", "#7FE7FF"] }
   };
   var ORDER = ["gold", "def", "lav", "sun", "neo"], DEFAULT = "gold", GLASS_DEFAULT = 50;
   // Glass strength 0..100 maps evenly onto the old lightest (level 1) and strongest (level 5) values:

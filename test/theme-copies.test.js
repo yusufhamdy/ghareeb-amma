@@ -1,5 +1,5 @@
 /*
- * theme-copies.test.js - the theme definitions (GQ_THEME: palette names and light/dark colours, picker order, default,
+ * theme-copies.test.js - the theme definitions (GQ_THEME: palette names, light/dark colours and swatch gradients, picker order, default,
  * glass default, migration of saved settings, continuous glass mapping) exist in three copies: inline in
  * public/index.html (the app may not load the static pages' bootstrap), public/theme-boot.js (static pages) and
  * public/theme.js (admin). This test fails if any copy differs from the others, as text and in behaviour.
@@ -48,10 +48,12 @@ test("theme definitions: names, colours, order, default, migration and glass map
   assert.strictEqual(ref.GLASS_DEFAULT, 50);
   assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].n)), JSON.stringify(["ذهبي", "زمردي", "بنفسجي", "غروب", "فيروزي"]));
   assert.strictEqual(ref.PAL.sun.l[0], "#F6EFEA", "the sun light background is the app's value");
+  // the picker swatches: a 135deg gradient [start, end] per palette, the same in light and dark
+  assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].sw)), JSON.stringify([["#B59045", "#F0CD78"], ["#56A882", "#8EE6B4"], ["#8177EC", "#B7B2FF"], ["#D47654", "#FFB38A"], ["#45AAC4", "#7FE7FF"]]));
   const inputs = [];
   for (const pal of ["gold", "def", "lav", "sun", "neo", "min", "nope", undefined]) for (const [gl, gv] of [[undefined, undefined], [0, undefined], [1, undefined], [2, undefined], [1, 2], [3, 2], [5, 2], [9, 2], [37, 3], [101, 3]]) inputs.push({ pal, gl, gv });
   const behaviour = (t) => ({
-    pal: JSON.stringify(t.ORDER.map((k) => [k, t.PAL[k].n, t.PAL[k].l, t.PAL[k].d])),
+    pal: JSON.stringify(t.ORDER.map((k) => [k, t.PAL[k].n, t.PAL[k].l, t.PAL[k].d, t.PAL[k].sw])),
     keys: Object.keys(t.PAL).join(),
     order: t.ORDER.join(), def: t.DEFAULT, glassDefault: t.GLASS_DEFAULT,
     migrate: JSON.stringify(inputs.map((s) => t.migrate(Object.assign({}, s)))),

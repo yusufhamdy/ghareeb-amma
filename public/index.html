@@ -31,17 +31,17 @@ button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .q{font-family:'Amiri Quran',serif}
 .m{font-size:13px;color:var(--mu)}
-#bg i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
-#bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
-#bg i:nth-child(2){bottom:60px;left:-90px;width:300px;height:300px;background:var(--b2);opacity:.7;animation:dr 30s ease-in-out infinite alternate-reverse}
+#bg i,.gst i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
+#bg i:nth-child(1),.gst i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
+#bg i:nth-child(2),.gst i:nth-child(2){bottom:60px;left:-90px;width:300px;height:300px;background:var(--b2);opacity:.7;animation:dr 30s ease-in-out infinite alternate-reverse}
 @keyframes dr{to{transform:translate(30px,40px)}}
 /* R11: glass glow veil - each blob is faded toward the page colour (the same as lowering its opacity)
    just enough for AA on the text above it: 31% on light pages, 60% on dark ones, picked from the page
    background's own lightness. Shade's blobs override this; without relative colours the glow is unchanged. */
 @supports (color:oklch(from red l c h)){
 :root{--veil:oklch(from var(--bg) l c h / calc(.6 - .29 * clamp(0,(l - .5) * 1000,1)))}
-#bg i:nth-child(1){background:linear-gradient(var(--veil),var(--veil)),var(--b1)}
-#bg i:nth-child(2){background:linear-gradient(var(--veil),var(--veil)),var(--b2)}
+#bg i:nth-child(1),.gst i:nth-child(1){background:linear-gradient(var(--veil),var(--veil)),var(--b1)}
+#bg i:nth-child(2),.gst i:nth-child(2){background:linear-gradient(var(--veil),var(--veil)),var(--b2)}
 }
 .g{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));-webkit-backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 30px rgba(0,0,0,.15)}
 @media(prefers-reduced-transparency:reduce){.g{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}}
@@ -91,18 +91,20 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh .sht{display:flex;justify-content:space-between;align-items:center}#sh .sht b{font-size:18px}#sh .sht .btn{height:44px;color:var(--ac)}
 #sh .grp .m{margin-bottom:6px}
 #sh .p:has(.psw) .seg button{height:44px}
-/* palettes: all five in one row from 320px; the circle is the accent of the current mode, its ring the glow */
+/* palettes: all five in one row from 320px; the circle is the palette's gradient (the same in light and dark), the bar
+   under its name its real accent in the current mode; the selected one gets a ring in the accent, 3px off the circle */
 .psw{display:flex;gap:6px}
-.psw button{flex:1 1 0;min-width:0;min-height:44px;padding:2px 0;border:0;border-radius:14px;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--mu)}
-.psw i{width:40px;height:40px;border-radius:50%;display:block;box-sizing:border-box;border:5px solid}
-.psw .on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--tx)}.psw .on span{color:var(--tx);font-weight:500}
+.psw button{flex:1 1 0;min-width:0;min-height:44px;padding:5px 0 2px;border:0;border-radius:14px;background:none;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--mu)}
+.psw i{width:48px;height:48px;border-radius:50%;display:block;flex:none}
+.psw .on i{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ac)}.psw .on span{color:var(--tx);font-weight:600}
+.psw .pbar{display:block;width:14px;height:3px;border-radius:2px}.psw .on .pbar{width:24px}
 /* glass strength: the sample card is real glass over the palette's glows, so it follows the slider live */
 #sh .gsw{margin-top:12px}
-#sh .gsr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}#sh .gsr .m{margin:0}
-#sh .gsm{position:relative;flex:none;width:84px;height:34px;border-radius:12px;overflow:hidden;background:var(--bg)}
-#sh .gsm i{position:absolute;width:36px;height:36px;border-radius:50%;top:-8px}
-#sh .gsm i:nth-child(1){background:var(--b1);inset-inline-start:4px}#sh .gsm i:nth-child(2){background:var(--b2);inset-inline-end:2px;top:12px}
-#sh .gsm .g{position:absolute;inset:7px 12px;border-radius:9px;box-shadow:none}
+#sh .gsm{position:relative;margin-top:8px;height:76px;border-radius:16px;overflow:hidden;background:var(--bg)}
+#sh .gst{position:absolute;width:100vw;height:100vh;contain:layout paint;pointer-events:none}
+#sh .gsm .gsc{position:absolute;inset:8px 10px;padding:0 14px;display:flex;align-items:center;overflow:hidden}
+#sh .gsm .gsc .row{min-height:0;padding:0;width:100%;border:0;gap:12px}#sh .gsm .gsc .w{min-width:0;font-size:24px}
+#sh .gsm .gsc .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
 #sh .tgs{display:flex;justify-content:space-between;gap:8px}#sh .tgs .tg{width:auto;justify-content:flex-start;gap:10px;white-space:nowrap}
 /* S1/L5: the bottom nav covers max(20px, safe area) + 64px of the viewport: focused or scrolled-to elements stop above it,
    and the page always ends with the footer clear of it. Desktop (>=1025px) puts the nav at the top. */
@@ -191,8 +193,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade nav.g{background:var(--sf);box-shadow:0 12px 30px rgba(0,0,0,.35)}
 .shade nav.g .ind{background:var(--tx)}.shade nav.g .t.on{color:var(--bg)}.shade .dt{border-color:var(--sf)}
 .shade .btn{background:var(--tx);color:var(--bg)}.shade .btn.o{background:transparent;color:var(--tx);border:1px solid var(--ln)}
-.shade #bg i:nth-child(1){top:-24%;right:-20%;width:140%;height:46%;border-radius:50%;background:radial-gradient(ellipse at center,var(--tc) 0%,transparent 68%);filter:blur(46px);opacity:1;animation:none}
-.shade #bg i:nth-child(2){bottom:6%;left:-18%;width:300px;height:300px;background:radial-gradient(circle,var(--tc) 0%,transparent 68%);filter:blur(50px);opacity:.55;animation:none}
+.shade #bg i:nth-child(1),.shade .gst i:nth-child(1){top:-24%;right:-20%;width:140%;height:46%;border-radius:50%;background:radial-gradient(ellipse at center,var(--tc) 0%,transparent 68%);filter:blur(46px);opacity:1;animation:none}
+.shade #bg i:nth-child(2),.shade .gst i:nth-child(2){bottom:6%;left:-18%;width:300px;height:300px;background:radial-gradient(circle,var(--tc) 0%,transparent 68%);filter:blur(50px);opacity:.55;animation:none}
 .shade .wd{color:var(--ac)}.shade .row .w{color:var(--ac)}
 .shade .cols .card:first-child{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--tc) 0,color-mix(in srgb,var(--tc) 38%,var(--sf)) 42px,var(--sf) 90px) no-repeat border-box var(--sf);padding:96px 22px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
 .shade .list.sl{background:none;border:0;padding:0;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -430,14 +432,14 @@ svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-d
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou,.cm .gst i{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
 .cm svg.i-cv{transform:none!important;transition:none!important}.cm :is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
 #gear svg{animation:none!important}
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou{animation:none;transition:none}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou,.gst i{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
 svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
@@ -454,17 +456,18 @@ svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,
 <div id="sh"><div class="p g" role="dialog" aria-modal="true" aria-label="الإعدادات" tabindex="-1"></div></div>
 <script>
 const LS={get(){try{return JSON.parse(localStorage.getItem('gq-set'))||{}}catch(e){return{}}},set(v){try{localStorage.setItem('gq-set',JSON.stringify(v))}catch(e){}}};
-/* GQ_THEME:begin - the theme definitions: palettes (names, light and dark colours), picker order, default, migration of
+/* GQ_THEME:begin - the theme definitions: palettes (names, light/dark colours, swatch gradient), picker order, default, migration of
    saved settings, and the continuous glass mapping. Identical copies live in the public folder: index.html (inline),
    theme-boot.js and theme.js; test/theme-copies.test.js fails if any copy differs. ASCII-only. */
 var GQ_THEME = (function () {
-  // [background, accent, glow 1, glow 2] per mode; each palette keeps one hue family in light and dark
+  // [background, accent, glow 1, glow 2] per mode (each palette keeps one hue family in light and dark); sw: the
+  // picker swatch, a 135deg gradient [start, end], the same in light and dark
   var PAL = {
-    gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"] },
-    def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"] },
-    lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"] },
-    sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"] },
-    neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0B0620", "#7FE7FF", "#19C2E8", "#20B8B0"] }
+    gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"], sw: ["#B59045", "#F0CD78"] },
+    def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"], sw: ["#56A882", "#8EE6B4"] },
+    lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"], sw: ["#8177EC", "#B7B2FF"] },
+    sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"], sw: ["#D47654", "#FFB38A"] },
+    neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0B0620", "#7FE7FF", "#19C2E8", "#20B8B0"], sw: ["#45AAC4", "#7FE7FF"] }
   };
   var ORDER = ["gold", "def", "lav", "sun", "neo"], DEFAULT = "gold", GLASS_DEFAULT = 50;
   // Glass strength 0..100 maps evenly onto the old lightest (level 1) and strongest (level 5) values:
@@ -609,13 +612,19 @@ let STYLES=['glass','shade'];const STN={glass:'زجاج',shade:'ظلال'};
 // Settings: المظهر, اللون, النمط (with شدة الزجاج under it, glass only), then the switches. Each choice row is a radio group
 // (one Tab stop, arrow keys move the selection); each switch is one button the size of its row.
 const glassText=v=>v<34?'خفيف':v<67?'متوسط':'قوي';
+// the glass sample: the word «سَجَى» and its meaning, as stored in the data, in the site's own word-row markup
+const gsmHtml=()=>{const w=W.find(x=>x.word==='سَجَى')||W[0];return w?`<div class="gsm" aria-hidden="true"><div class="gst"><i></i><i></i></div><div class="g card gsc"><div class="row"><span class="w q">${esc(w.word)}</span><span class="t"><div>${esc(w.mean)}</div></span></div></div></div>`:''};
+// The sample's background is the page's own (viewport-sized stage with the same glows), shifted so the sample card sits
+// over the same piece of background as a real card on the page (the first visible .card.g; else a point near the top),
+// and the glows' drift is kept in step with the page's.
+function gsmAlign(){const m=document.querySelector('#sh .gsm');if(!m)return;const st=m.querySelector('.gst'),c=m.querySelector('.gsc'),mr=m.getBoundingClientRect(),cr=c.getBoundingClientRect();const ref=[...document.querySelectorAll('#app .card.g')].map(e=>e.getBoundingClientRect()).find(r=>r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight);const rx=ref?ref.left+ref.width/2:innerWidth/2,ry=ref?ref.top+ref.height/2:innerHeight*.3;st.style.left=(cr.left-mr.left+cr.width/2-rx)+'px';st.style.top=(cr.top-mr.top+cr.height/2-ry)+'px';const pg=document.querySelectorAll('#bg i');st.querySelectorAll('i').forEach((b,i)=>{const pa=pg[i]&&pg[i].getAnimations()[0],sa=b.getAnimations()[0];if(pa&&sa)sa.currentTime=pa.currentTime})}
 const radio=(attr,v,on,html)=>`<button role="radio" data-${attr}="${v}" class="${on?'on':''}" aria-checked="${on?'true':'false'}" tabindex="${on?0:-1}">${html}</button>`;
 const tgRow=(attr,on,label)=>`<button class="tg${on?' on':''}" data-${attr}="1" role="switch" aria-checked="${on?'true':'false'}"><span>${label}</span><i aria-hidden="true"></i></button>`;
 function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass',dark=isDark();p.innerHTML=`<div class="sht"><b>الإعدادات</b><button class="btn o" data-a="close">تم</button></div>` +
  `<div class="grp"><div class="m" id="lbm">المظهر</div><div class="seg g" role="radiogroup" aria-labelledby="lbm">${[['auto','تلقائي'],['light','نهار'],['dark','ليل']].map(x=>radio('m',x[0],set.mode===x[0],x[1])).join('')}</div></div>` +
- `<div class="grp"><div class="m" id="lbp">اللون</div><div class="psw" role="radiogroup" aria-labelledby="lbp">${GQT.ORDER.map(k=>{const c=dark?PAL[k][2]:PAL[k][1];return radio('p',k,set.pal===k,`<i style="background:${c[1]};border-color:${c[2]}"></i><span>${PAL[k][0]}</span>`)}).join('')}</div></div>` +
+ `<div class="grp"><div class="m" id="lbp">اللون</div><div class="psw" role="radiogroup" aria-labelledby="lbp">${GQT.ORDER.map(k=>{const c=dark?PAL[k][2]:PAL[k][1];const g=GQT.PAL[k].sw;return radio('p',k,set.pal===k,`<i style="background:linear-gradient(135deg,${g[0]},${g[1]})"></i><span>${PAL[k][0]}</span><b class="pbar" style="background:${c[1]}"></b>`)}).join('')}</div></div>` +
  (STYLES.length>1?`<div class="grp"><div class="m" id="lbs">النمط</div><div class="seg g" role="radiogroup" aria-labelledby="lbs">${STYLES.map(x=>radio('st',x,st===x,STN[x])).join('')}</div>` +
-  (st==='glass'?`<div class="gsw"><div class="gsr"><div class="m" id="lbg">شدة الزجاج</div><div class="gsm" aria-hidden="true"><i></i><i></i><div class="g"></div></div></div><div class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="0" max="100" step="1" value="${set.gl}" aria-labelledby="lbg" aria-label="شدة الزجاج" aria-valuetext="${glassText(set.gl)}"><span class="lbl">قوي</span></div></div>`:'')+'</div>':'') +
+  (st==='glass'?`<div class="gsw"><div class="m" id="lbg">شدة الزجاج</div><div class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="0" max="100" step="1" value="${set.gl}" aria-labelledby="lbg" aria-label="شدة الزجاج" aria-valuetext="${glassText(set.gl)}"><span class="lbl">قوي</span></div></div>`:'')+gsmHtml()+'</div>':'') +
  `<div class="tgs">${tgRow('c',set.cm,'إيقاف الحركة')}</div>`}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();openSh('الإعدادات',t);return}if(d.a==='close'||t.id==='sh'&&e.target===t){closeSh();return}if(d.a==='rnd'){drawWord();return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
 let gsRaf=0;
@@ -806,6 +815,8 @@ const _render=render;render=function(){_render();if(route()[0]==='day'){const a=
 const _sheet=sheet;sheet=function(){_sheet();if(document.querySelector('#sh .psw'))document.querySelector('#sh .tgs').insertAdjacentHTML('beforeend',tgRow('s',set.snd,'الصوت'))};
 // rebuilding the settings panel keeps focus on the same control
 const _sheetF=sheet;sheet=function(){const p=$('sh').querySelector('.p'),a=document.activeElement,k=a&&a!==p&&p.contains(a)?['data-st','data-m','data-p','data-c','data-s','data-a','id'].find(x=>a.hasAttribute(x)):null,v=k&&a.getAttribute(k);_sheetF();if(k){const n=[...p.querySelectorAll('['+k+']')].find(x=>x.getAttribute(k)===v);(n||p).focus({preventScroll:true})}};
+const _sheetG=sheet;sheet=function(){_sheetG();gsmAlign()};
+addEventListener('resize',()=>{if($('sh').classList.contains('open'))gsmAlign()});addEventListener('scroll',()=>{if($('sh').classList.contains('open'))gsmAlign()},{passive:true});
 const rr=()=>{const y=scrollY;render();scrollTo(0,y)};
 document.addEventListener('click',e=>{const t=e.target.closest('[data-o],[data-a],[data-s],[data-st],[data-sc]');if(!t)return;const d=t.dataset;
 if(d.st){if(!t.closest('#sh'))return;set.style=d.st;LS.set(set);applySet();sheet();return}

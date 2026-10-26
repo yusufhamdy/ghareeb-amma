@@ -1,8 +1,10 @@
 // Settings sheet and gear (read-only). Checks: section order (المظهر, اللون, النمط, شدة الزجاج under النمط and only for
 // glass), no overlay and an outside tap still closes, how much of the page stays visible, five swatches in one row
 // (320/390/1440), every control >= 44px tall, each switch row toggles from anywhere on the row, radio groups (one Tab
-// stop each, arrow keys move the selection, right-to-left aware), swatches = the current mode's accent with the glow as
-// a ring and redrawn when the mode changes, Esc / "تم" close with focus back on the gear. Gear: one 60-degree turn of
+// stop each, arrow keys move the selection, right-to-left aware), swatches: a 135deg gradient per palette (48px, the same
+// in both modes), the selected one ringed 2px in the accent 3px off the circle, an accent bar under each name in the
+// palette's accent of the current mode (wider and the name semibold when selected), redrawn when the mode changes; the
+// glass sample (a real card over the page's background) in both styles, Esc / "تم" close with focus back on the gear. Gear: one 60-degree turn of
 // about 400ms with no overshoot, never held and never turned back, on hover, focus-visible, press and phone tap; none
 // with motion off or reduced motion.
 // Usage: node settings.js   -> OUT (default ./out/settings): settings.json and screenshots
@@ -26,26 +28,38 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
     const p = await ctx.newPage();
     await p.goto(base + "/#/"); await p.waitForSelector("#gear"); await p.waitForTimeout(600);
     await p.click("#gear"); await p.waitForSelector("#sh.open .psw"); await p.waitForTimeout(300);
-    await p.screenshot({ path: path.join(OUT, `sheet-${w}-${mode}.png`) });
+    await p.screenshot({ path: path.join(OUT, `sheet-${w}-${mode}-glass.png`) });
+    if (w !== 320) { await p.click('#sh [data-st="shade"]'); await p.waitForTimeout(300); await p.screenshot({ path: path.join(OUT, `sheet-${w}-${mode}-shade.png`) }); await p.click('#sh [data-st="glass"]'); await p.waitForTimeout(300); }
     const L = await p.evaluate(() => {
       const P = document.querySelector("#sh .p"), r = P.getBoundingClientRect(), css = getComputedStyle(document.documentElement);
       const sw = [...P.querySelectorAll(".psw button")];
       return {
-        heads: [...P.querySelectorAll(".grp > .m, .gsr > .m")].map((e) => e.textContent.trim()),
+        heads: [...P.querySelectorAll(".grp > .m, .gsw > .m")].map((e) => e.textContent.trim()),
         glassUnderStyle: !!P.querySelector('.grp [role="radiogroup"][aria-labelledby="lbs"] ~ .gsw'),
         overlay: getComputedStyle(document.getElementById("sh")).backgroundColor,
         pageVisiblePct: Math.round(100 * Math.max(0, r.top) / innerHeight),
         swatchRows: new Set(sw.map((b) => Math.round(b.getBoundingClientRect().top))).size,
-        swatches: sw.map((b) => { const i = b.querySelector("i"), c = getComputedStyle(i); return { k: b.dataset.p, fill: c.backgroundColor, ring: c.borderTopColor }; }),
+        swatches: sw.map((b) => { const i = b.querySelector("i"), c = getComputedStyle(i), bar = b.querySelector(".pbar"), bc = getComputedStyle(bar), r = bar.getBoundingClientRect(); return { k: b.dataset.p, on: b.classList.contains("on"), img: c.backgroundImage, size: [Math.round(i.getBoundingClientRect().width), Math.round(i.getBoundingClientRect().height)], ring: c.boxShadow, bar: bc.backgroundColor, barW: Math.round(r.width), barH: Math.round(r.height), weight: getComputedStyle(b.querySelector("span")).fontWeight }; }),
+        sample: !!P.querySelector(".gsm .gst i + i") && !!P.querySelector(".gsm .card.g .row .w"),
+        sheetBg: getComputedStyle(P).backgroundColor,
         accent: css.getPropertyValue("--ac").trim(), glow: css.getPropertyValue("--b1").trim(),
         under44: [...P.querySelectorAll("button, input")].filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 44).map((e) => (e.dataset.m || e.dataset.p || e.dataset.st || e.id || e.className) + ":" + Math.round(e.getBoundingClientRect().height)),
         groups: [...P.querySelectorAll('[role="radiogroup"]')].map((g) => ({ label: document.getElementById(g.getAttribute("aria-labelledby")).textContent, radios: g.querySelectorAll('[role="radio"]').length, tabStops: [...g.querySelectorAll('[role="radio"]')].filter((x) => x.tabIndex >= 0).length, checked: g.querySelectorAll('[aria-checked="true"]').length })),
       };
     });
-    // the selected palette's swatch must be the applied accent with the applied glow as its ring
+    // swatches: the exact gradient per palette, 48px; the selected one ringed in the applied accent with a 3px gap in the
+    // sheet's colour; bars in each palette's accent of this mode, 14x3 (24 wide when selected, name semibold)
     const hexToRgb = (h) => "rgb(" + [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16)).join(", ") + ")";
-    const mine = L.swatches.find((s) => s.k === "gold");
-    ok(mine.fill === hexToRgb(L.accent) && mine.ring === hexToRgb(L.glow), `${w}/${mode}: swatch ${mine.fill}/${mine.ring} vs accent ${L.accent}, glow ${L.glow}`);
+    const SW = { gold: ["#B59045", "#F0CD78"], def: ["#56A882", "#8EE6B4"], lav: ["#8177EC", "#B7B2FF"], sun: ["#D47654", "#FFB38A"], neo: ["#45AAC4", "#7FE7FF"] };
+    const ACC = await p.evaluate((dark) => Object.fromEntries(Object.keys(PAL).map((k) => [k, (dark ? PAL[k][2] : PAL[k][1])[1]])), mode === "dark");
+    for (const x of L.swatches) {
+      ok(x.img === `linear-gradient(135deg, ${hexToRgb(SW[x.k][0])}, ${hexToRgb(SW[x.k][1])})`, `${w}/${mode}: swatch ${x.k} is ${x.img}`);
+      ok(x.size[0] === 48 && x.size[1] === 48, `${w}/${mode}: swatch ${x.k} size ${x.size}`);
+      ok(x.bar === hexToRgb(ACC[x.k]) && x.barH === 3 && x.barW === (x.on ? 24 : 14), `${w}/${mode}: bar ${x.k} ${x.bar} ${x.barW}x${x.barH} (accent ${ACC[x.k]})`);
+      ok(x.on ? +x.weight === 600 && x.ring === `${L.sheetBg} 0px 0px 0px 3px, ${hexToRgb(L.accent)} 0px 0px 0px 5px` : x.ring === "none" && +x.weight < 600, `${w}/${mode}: ${x.k} selected=${x.on} ring "${x.ring}" weight ${x.weight}`);
+    }
+    ok(L.swatches.filter((x) => x.on).length === 1, `${w}/${mode}: selected swatches ${L.swatches.filter((x) => x.on).length}`);
+    ok(L.sample, `${w}/${mode}: the glass sample (real card over the page background) is missing`);
     ok(JSON.stringify(L.heads) === JSON.stringify(["المظهر", "اللون", "النمط", "شدة الزجاج"]), `${w}/${mode}: order ${L.heads}`);
     ok(L.glassUnderStyle, `${w}/${mode}: glass strength not under النمط`);
     ok(L.overlay === "rgba(0, 0, 0, 0)", `${w}/${mode}: overlay ${L.overlay}`);
@@ -69,16 +83,18 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       const a1 = await p.evaluate(() => ({ focus: document.activeElement.dataset.m, saved: JSON.parse(localStorage.getItem("gq-set")).mode, checked: document.querySelector('#sh [data-m][aria-checked="true"]').dataset.m }));
       const want = { auto: "light", light: "dark", dark: "auto" }[mode];
       ok(a1.focus === want && a1.saved === want && a1.checked === want, `390/${mode}: ArrowLeft from ${mode} -> ${JSON.stringify(a1)} want ${want}`);
-      // the swatches follow the mode: after the arrow changed it, each fill is that palette's accent in the new mode
-      const sw2 = await p.evaluate(() => { const dark = set.mode === "dark" || (set.mode === "auto" && matchMedia("(prefers-color-scheme:dark)").matches); return [...document.querySelectorAll("#sh .psw button")].map((b) => ({ k: b.dataset.p, fill: getComputedStyle(b.querySelector("i")).backgroundColor, want: (dark ? PAL[b.dataset.p][2] : PAL[b.dataset.p][1])[1] })); });
-      ok(sw2.every((s) => s.fill === hexToRgb(s.want)), `390/${mode}: swatches did not follow the mode ${JSON.stringify(sw2)}`);
+      // the swatches follow the mode: after the arrow changed it, each bar is that palette's accent in the new mode (the
+      // gradients stay the same)
+      const sw2 = await p.evaluate(() => { const dark = set.mode === "dark" || (set.mode === "auto" && matchMedia("(prefers-color-scheme:dark)").matches); return [...document.querySelectorAll("#sh .psw button")].map((b) => ({ k: b.dataset.p, bar: getComputedStyle(b.querySelector(".pbar")).backgroundColor, want: (dark ? PAL[b.dataset.p][2] : PAL[b.dataset.p][1])[1] })); });
+      ok(sw2.every((s) => s.bar === hexToRgb(s.want)), `390/${mode}: swatch bars did not follow the mode ${JSON.stringify(sw2)}`);
       await p.keyboard.press("ArrowRight");
       // pick palettes with the arrows from the selected one
       await p.focus('#sh [data-p="gold"]'); await p.keyboard.press("ArrowLeft");
       ok(await p.evaluate(() => JSON.parse(localStorage.getItem("gq-set")).pal === "def" && document.activeElement.dataset.p === "def"), `390/${mode}: ArrowLeft on the palettes did not select زمردي`);
       await p.keyboard.press("Home"); ok(await p.evaluate(() => JSON.parse(localStorage.getItem("gq-set")).pal === "gold"), `390/${mode}: Home did not select the first palette`);
       // shade hides the glass strength; glass brings it back
-      await p.click('#sh [data-st="shade"]'); const noGs = !(await p.$("#gs")); await p.click('#sh [data-st="glass"]'); const gs = !!(await p.$("#gs"));
+      await p.click('#sh [data-st="shade"]'); const noGs = !(await p.$("#gs")), shadeSample = !!(await p.$("#sh .gsm .card.g")); await p.click('#sh [data-st="glass"]'); const gs = !!(await p.$("#gs"));
+      ok(shadeSample, `390/${mode}: no glass sample in shade`);
       ok(noGs && gs, `390/${mode}: glass strength shown for shade (${noGs}) or missing for glass (${gs})`);
       // closing: outside tap, Esc, "تم"; focus back on the gear
       const close = {};

@@ -6,7 +6,7 @@
 //   glow1/2   the two background glows, sampled at their centres with the content hidden
 //   card      the first card's surface on the home page
 //   highlight an ayah highlight (mark), on a word page
-//   swatch    the palette's circle in the settings sheet (median of its centre, plus its fill and ring colours)
+//   swatch    the palette's circle in the settings sheet (median of its centre, plus the gradient it is drawn with)
 // Then CIEDE2000 between every pair of palettes per mode and style, swatch-vs-applied differences, and one comparison
 // image (5 palettes in columns; light/dark x glass/shade in rows; home page top with the swatch beside it).
 // Usage: node palettes.js            -> OUT (default ./out/palettes): palettes.json, palettes-compare.png
@@ -92,7 +92,7 @@ const hueName = (c) => { if (chroma(c) < 10) return "neutral"; const h = hue(c);
     for (const k of PALS) {
       const el = p.locator(`#sh .psw button[data-p="${k}"] i`);
       const bb = await el.boundingBox(), shot = await p.screenshot({ clip: { x: bb.x + bb.width * 0.2, y: bb.y + bb.height * 0.2, width: bb.width * 0.6, height: bb.height * 0.6 } });
-      r.swatches[k] = { median: await median(ana, shot), ...(await el.evaluate((e) => ({ fill: getComputedStyle(e).backgroundColor, ring: getComputedStyle(e).borderTopColor }))) };
+      r.swatches[k] = { median: await median(ana, shot), ...(await el.evaluate((e) => ({ img: getComputedStyle(e).backgroundImage }))) };
     }
     if (mode === "light" && style === "glass") tiles["sheet/" + pal] = await p.screenshot({ clip: await p.locator("#sh .p").boundingBox() });
     res[id] = r;
@@ -123,7 +123,7 @@ const hueName = (c) => { if (chroma(c) < 10) return "neutral"; const h = hue(c);
 
   // ---- comparison image: rows light/dark x glass/shade, columns the 5 palettes
   const rows = [["light", "glass"], ["light", "shade"], ["dark", "glass"], ["dark", "shade"]];
-  const cell = (mode, style, pal) => { const r = res[`${mode}/${style}/${pal}`], s = r.swatches[pal]; return `<td><div class="c"><img src="data:image/png;base64,${tiles[`${mode}/${style}/${pal}`].toString("base64")}"><div class="side"><div class="sw" style="background:${s.fill};border:5px solid ${s.ring};box-sizing:border-box"></div><div class="lb">swatch</div>${[["accent", r.accent], ["glow 1", r.glow1], ["glow 2", r.glow2], ["card", r.card], ["highlight", r.highlight]].map(([n, c]) => `<div class="chip" style="background:${c ? hex(c) : "#0000"}"></div><div class="lb">${n}<br>${c ? hex(c) : "-"}</div>`).join("")}</div></div></td>`; };
+  const cell = (mode, style, pal) => { const r = res[`${mode}/${style}/${pal}`], s = r.swatches[pal]; return `<td><div class="c"><img src="data:image/png;base64,${tiles[`${mode}/${style}/${pal}`].toString("base64")}"><div class="side"><div class="sw" style="background:${s.img}"></div><div class="lb">swatch</div>${[["accent", r.accent], ["glow 1", r.glow1], ["glow 2", r.glow2], ["card", r.card], ["highlight", r.highlight]].map(([n, c]) => `<div class="chip" style="background:${c ? hex(c) : "#0000"}"></div><div class="lb">${n}<br>${c ? hex(c) : "-"}</div>`).join("")}</div></div></td>`; };
   const html = `<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#fff;font:12px system-ui;color:#222}table{border-collapse:collapse}td,th{padding:8px;vertical-align:top}th{font-size:16px}.c{display:flex;gap:6px}.c img{width:260px;height:373px;border-radius:10px;box-shadow:0 0 0 1px #ccc}.side{width:70px;display:flex;flex-direction:column;align-items:center;gap:2px}.sw{width:48px;height:48px;border-radius:50%;box-shadow:0 0 0 1px #0002}.chip{width:40px;height:22px;border-radius:6px;box-shadow:0 0 0 1px #0003;margin-top:6px}.lb{font-size:10px;text-align:center;line-height:1.2}.rh{writing-mode:vertical-rl;transform:rotate(180deg);font-size:16px;font-weight:600}</style>
 <table><tr><th></th>${PALS.map((k) => `<th>${k}</th>`).join("")}</tr>${rows.map(([m, s]) => `<tr><td class="rh">${m} · ${s}</td>${PALS.map((k) => cell(m, s, k)).join("")}</tr>`).join("")}</table>`;
   const cp = await br.newPage({ viewport: { width: 1900, height: 1000 } });
