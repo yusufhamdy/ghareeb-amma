@@ -310,22 +310,24 @@ function staticHead(o) {
   );
 }
 
-const CHEV_R = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
-const CHEV_L = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+const CHEV_R = '<svg class="i-cv i-cr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+const CHEV_L = '<svg class="i-cv i-cl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+// list rows keep a plain chevron: they are rows, not buttons, and do not nudge
+const ROW_CHEV = CHEV_L.replace(' class="i-cv i-cl"', "");
 const EXT =
-  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
+  '<svg class="im i-ex" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
+// The open book, split into its halves so they open on hover/focus/press wherever it sits in a button (S12).
 const BOOK =
-  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
-
-// The same book split into its two halves, for the "all surahs" button whose halves open on hover/focus/press (S12).
-const BOOK_M =
   '<svg class="im i-bk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/><path class="pt bl" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path class="pt br" d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+
+// The small book in a pill's second line stays still (only the pill's chevron moves).
+const BOOK_P = BOOK.replace(' class="im i-bk"', "").replace(/<path class="pt[^>]*>/g, "").replace(' class="w"', "");
 
 // The prev/next pill shared by the word and surah pages (same markup as the
 // app's pnBtn): o = { label, href, surah, aria }; no href -> disabled. The
 // surah line (open book + name) shows whenever o.surah is set.
 function navBtn(o, dir) {
-  const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK + esc(o.surah) + "</span>" : "";
+  const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK_P + esc(o.surah) + "</span>" : "";
   const lb = o.label.replace(/^(\S+) /, '<span class="pl">$1 </span>'); // first word hidden visually at <=340px
   const inner = dir === "pv" ? CHEV_R + " " + lb + ps : lb + " " + CHEV_L + ps;
   const al = o.aria ? ' aria-label="' + esc(o.aria) + '"' : "";
@@ -475,7 +477,7 @@ export function renderSurahPage(s) {
       (w) =>
         '<a class="row" href="/word/' + w.slug + '.html">' +
         '<span class="q w" style="flex:1;font-size:25px">' + esc(w.word) + "</span>" +
-        '<span class="m">' + A.AYAH + esc(w.label) + "</span>" + CHEV_L + "</a>"
+        '<span class="m">' + A.AYAH + esc(w.label) + "</span>" + ROW_CHEV + "</a>"
     )
     .join("");
   const year = new Date().getFullYear();
@@ -489,7 +491,7 @@ export function renderSurahPage(s) {
     '<div class="cw snav">' +
     '<div class="list g rs">' + rows + "</div>" +
     sbtn(s.prev, "pv") + sbtn(s.next, "nx") + "</div></div>\n" +
-    '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK_M + A.ALL_SURAS + "</a></div>\n" +
+    '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</div></body></html>"

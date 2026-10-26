@@ -84,7 +84,7 @@
   }
   function press(e) {
     var c = e.target.closest && e.target.closest("a,button");
-    if (!c || !c.querySelector(":scope>svg.im") || c.disabled || c.getAttribute("aria-disabled") === "true") return;
+    if (!c || !c.querySelector("svg.im") || c.disabled || c.getAttribute("aria-disabled") === "true") return;
     c.classList.remove("imp"); void c.offsetWidth; c.classList.add("imp");
     clearTimeout(c._imt);
     c._imt = setTimeout(function () { c._imt = 0; drop(c); }, 600);

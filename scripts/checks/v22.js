@@ -1,8 +1,8 @@
-// One-pass checks for: icon motion (S12), done/undo animation, the locked next-day pill, the per-platform video card
+// One-pass checks for: icon motion (S12) and its coverage of every button with a motion icon, done/undo animation, the locked next-day pill and day dots, the quiz marks, the per-platform video card
 // and the admin link fields. Serves the working tree's public/ (read-only); never touches Firebase (the admin page is
 // loaded with an empty Firebase config, so it runs on its local demo store, and gstatic is blocked).
 // Usage: node v22.js            (all sections)
-//        node v22.js icons done lock video admin   (any subset)
+//        node v22.js icons cover done lock quiz video admin   (any subset)
 const pw = require("playwright");
 const fs = require("fs");
 const { serve, ROOT } = require("./lib.js");
@@ -14,6 +14,7 @@ const bump = (k) => { n[k] = (n[k] || 0) + 1; };
 const fail = (m) => fails.push(m);
 const CH0 = JSON.parse(fs.readFileSync(ROOT + "/challenge.json", "utf8"));
 const firstSurah = fs.readdirSync(ROOT + "/surah").find((x) => x.endsWith(".html"));
+const firstWord = fs.readdirSync(ROOT + "/word").find((x) => x.endsWith(".html"));
 const settings = (o) => Object.assign({ style: "glass", mode: "light", pal: "def", gl: 3, gv: 2, snd: false, cm: false }, o);
 const LINKS = { reelIg: "https://www.instagram.com/reel/abc/", reelTt: "https://www.tiktok.com/@x/video/1", reelYt: "https://youtu.be/xyz" };
 // challenge with day 1 links set as asked (null = leave the day untouched)
@@ -31,6 +32,16 @@ async function ctxFor(br, o) {
   }, { set: settings(o.set || {}), prog: o.prog || { done: [] }, ch: o.ch || null });
   return ctx;
 }
+// every animation frame from now until nothing inside `scope` is animating (at least minMs, at most 3s): [snap(arg), ...]
+const frames = (p, scope, snap, arg, minMs = 300) => p.evaluate(([scope, src, arg, minMs]) => new Promise((res) => {
+  const f = eval(src), sc = document.querySelector(scope), t0 = performance.now(), out = [];
+  const tick = () => {
+    out.push(f(arg));
+    const el = performance.now() - t0, run = !!sc && sc.getAnimations({ subtree: true }).some((a) => a.playState === "running");
+    if ((run || el < minMs) && el < 3000) requestAnimationFrame(tick); else res(out);
+  };
+  tick();
+}), [scope, snap.toString(), arg, minMs]);
 const go = async (p, base, url, sel) => { await p.goto("about:blank"); await p.goto(base + url, { waitUntil: "load" }); await p.waitForSelector(sel, { timeout: 20000 }); await p.waitForTimeout(400); };
 
 // ------------------------------------------------------------------------------------------------------------ icons
@@ -52,6 +63,8 @@ const CONTROLS = [
   ["surah book", "/#/surah/90", "#app a.mib", "i-bk", ["bl", "br"], []],
   ["surah share", "/#/surah/90", '#app [data-a="share"]', "i-sr", ["ar"], ["box"]],
   ["static surah book", "/surah/" + encodeURIComponent(firstSurah), "main a.mib", "i-bk", ["bl", "br"], []],
+  ["home browse book", "/#/", '#app .hacts a[href="#/surahs"]', "i-bk", ["bl", "br"], []],
+  ["static word book", "/word/" + encodeURIComponent(firstWord), "main .acts a.btn", "i-bk", ["bl", "br"], []],
   ["day platform", "/#/day/1", "#app a.vb", "i-pf", ["svg"], []],
 ];
 
@@ -60,7 +73,7 @@ async function iconRestShape(br) {
   const p = await br.newPage({ viewport: { width: 400, height: 200 }, deviceScaleFactor: 4 });
   const { base, server } = await serve();
   await p.goto(base + "/#/word/79-3"); await p.waitForSelector('#app [data-a="share"]');
-  const NEW = await p.evaluate(() => ({ "i-sh": BI.sh, "i-dl": BI.dl, "i-sr": BI.sr, "i-bk": BKM }));
+  const NEW = await p.evaluate(() => ({ "i-sh": BI.sh, "i-dl": BI.dl, "i-sr": BI.sr, "i-bk": BI.bk }));
   // the static page's book is the same markup
   const st = fs.readFileSync(ROOT + "/surah/" + firstSurah, "utf8"), m = /<svg class="im i-bk"[^]*?<\/svg>/.exec(st);
   NEW["i-bk static"] = m ? m[0] : "";
@@ -116,10 +129,9 @@ async function iconMotion(br, base) {
       ]) {
         await p.evaluate(() => { window.__AS = []; window.__AI = 0; });
         await run();
-        // sample mid-animation: only the named parts may differ from rest
-        const mids = [];
-        for (const t of [60, 120, 200, 280]) { await p.waitForTimeout(t === 60 ? 60 : t - [60, 120, 200, 280][[60, 120, 200, 280].indexOf(t) - 1]); mids.push(await p.evaluate(PARTS, sel)); }
-        await p.waitForTimeout(900);
+        // every frame until the motion ends: only the named parts may differ from rest
+        const mids = await frames(p, sel, PARTS, sel, 300);
+        await p.waitForTimeout(400);
         const after = await p.evaluate(PARTS, sel);
         const st = await p.evaluate(() => ({ as: window.__AS.slice(), ai: window.__AI }));
         bump("iconTriggers");
@@ -191,6 +203,118 @@ async function iconMotion(br, base) {
   }
 }
 
+// --------------------------------------------------------------------------------------------------------- coverage
+// Motion is tied to the icon, not the label: every enabled link or button on every page/state (app, static, 404) that
+// contains the book, shuffle, download, share, platform, external-link, chevron or forward-arrow icon must run that
+// icon's motion on hover, focus-visible and press, measured every frame for the whole motion and judged on its peak.
+// The small book in a prev/next pill's second line must stay still (only the pill's chevron moves). Out of scope by
+// design: the bottom nav, the gear, the social links and list rows (rows are not buttons). Prints every control found
+// per icon, plus any other icon inside a button (no motion defined for it).
+const ICON_KIND = (svg) => {
+  const d = [...svg.querySelectorAll("path")].map((x) => x.getAttribute("d")).join("|");
+  if (svg.classList.contains("i-pf")) return "platform";
+  if (d.startsWith("M2 4h7")) return svg.closest(".ps") ? "pillbook" : "book";
+  return d.startsWith("M16 3h5") ? "shuffle" : d.startsWith("M12 3v12") ? "download" : d.startsWith("M12 15V3") ? "share" : d.startsWith("M14 4h6v6") ? "external"
+    : d === "M9 5l7 7-7 7" ? "chevR" : d === "M15 5l-7 7 7 7" ? "chevL" : d === "M19 12H5M11 6l-6 6 6 6" ? "arrowL" : d === "M5 12h14M13 6l6 6-6 6" ? "arrowR"
+    : "other:" + (d || svg.innerHTML).slice(0, 22);
+};
+// per svg in the control: [svg, ...its parts] as [tx, ty, rotation deg, opacity, dashoffset], plus running animation names
+const COV_SNAP = (s) => [...document.querySelector(s).querySelectorAll("svg")].map((v) => {
+  const m = (x) => { const c = getComputedStyle(x), M = new DOMMatrix(c.transform === "none" ? undefined : c.transform); return [M.m41, M.m42, Math.atan2(M.m12, M.m11) * 180 / Math.PI, +c.opacity, parseFloat(c.strokeDashoffset) || 0]; };
+  return { st: [m(v), ...[...v.querySelectorAll("path,rect,circle")].map(m)], an: v.getAnimations({ subtree: true }).filter((a) => a.playState === "running").map((a) => a.animationName) };
+});
+// peaks of one svg over the frames, relative to rest
+const peaks = (rest, fr, i) => {
+  const r = rest[i].st, pk = { svgTx: 0, svgTy: 0, move: 0, rot: 0, dof: 0, op: 0, an: new Set() };
+  for (const f of fr) {
+    const s = f[i].st; f[i].an.forEach((a) => pk.an.add(a));
+    if (Math.abs(s[0][0]) > Math.abs(pk.svgTx)) pk.svgTx = s[0][0];
+    if (Math.abs(s[0][1]) > Math.abs(pk.svgTy)) pk.svgTy = s[0][1];
+    s.forEach((x, j) => { pk.move = Math.max(pk.move, Math.abs(x[0] - r[j][0]), Math.abs(x[1] - r[j][1])); pk.rot = Math.max(pk.rot, Math.abs(x[2] - r[j][2])); pk.op = Math.max(pk.op, Math.abs(x[3] - r[j][3])); pk.dof = Math.max(pk.dof, Math.abs(x[4] - r[j][4])); });
+  }
+  return pk;
+};
+const atRest = (rest, f, i) => rest[i].st.every((x, j) => x.every((v, k) => Math.abs(v - f[i].st[j][k]) < 0.01));
+// what each icon's peak must reach (expected values from the spec, with room for frame spacing)
+const PEAK = {
+  book: (k) => k.rot >= 8 || `halves opened only ${k.rot.toFixed(2)}deg (want 9)`,
+  shuffle: (k) => (k.dof >= 0.9 && k.move >= 2.7) || `strands redraw ${k.dof.toFixed(2)}, heads slid ${k.move.toFixed(2)}px`,
+  download: (k) => k.move >= 6.3 || `arrow moved only ${k.move.toFixed(2)}px (want 6 down, 7 above)`,
+  share: (k) => k.move >= 6.3 || `arrow moved only ${k.move.toFixed(2)}px (want 7 up, 5 below)`,
+  platform: (k) => (k.svgTy <= -1.8 && k.svgTy >= -2.01) || `lift ${k.svgTy.toFixed(2)}px (want -2)`,
+  external: (k) => (k.svgTx >= 1.8 && k.svgTx <= 2.01 && k.svgTy <= -1.8 && k.svgTy >= -2.01) || `moved ${k.svgTx.toFixed(2)},${k.svgTy.toFixed(2)} (want 2,-2)`,
+  chevR: (k) => Math.abs(k.svgTx - 3) < 0.05 || `nudge peak ${k.svgTx.toFixed(2)}px (want 3)`,
+  arrowR: (k) => Math.abs(k.svgTx - 3) < 0.05 || `nudge peak ${k.svgTx.toFixed(2)}px (want 3)`,
+  chevL: (k) => Math.abs(k.svgTx + 3) < 0.05 || `nudge peak ${k.svgTx.toFixed(2)}px (want -3)`,
+  arrowL: (k) => Math.abs(k.svgTx + 3) < 0.05 || `nudge peak ${k.svgTx.toFixed(2)}px (want -3)`,
+  pillbook: (k) => (k.move < 0.01 && k.rot < 0.01 && k.op < 0.01 && !k.an.size) || `the pill's small book moved (${k.move.toFixed(2)}px, ${k.rot.toFixed(2)}deg, op ${k.op.toFixed(2)})`,
+};
+const NUDGE = new Set(["chevR", "chevL", "arrowR", "arrowL"]);
+async function coverage(br, base) {
+  const PAGES = require("./pages.js");
+  const found = {}, other = {};
+  for (const [style, w] of [["glass", 1440], ["shade", 390]]) {
+    const ctx = await ctxFor(br, { w, set: { style }, ch: chWith(LINKS), prog: { done: [1] } });
+    const p = await ctx.newPage();
+    await p.addInitScript(() => addEventListener("click", (e) => { if (window.__noClick && e.target.closest("a,button")) { e.preventDefault(); e.stopPropagation(); } }, true));
+    for (const [name, url, setup] of PAGES) {
+      await p.goto("about:blank"); await p.goto(base + url, { waitUntil: "load" }); await p.waitForTimeout(700);
+      if (setup) await setup(p);
+      await p.waitForTimeout(400);
+      await p.evaluate(() => { window.__noClick = true; });
+      const list = await p.evaluate((kindSrc) => {
+        const kind = eval(kindSrc);
+        return [...document.querySelectorAll("a,button")].filter((c) => !c.closest("nav") && c.id !== "gear" && !c.classList.contains("so") && !c.classList.contains("row") && c.querySelector("svg") && c.getClientRects().length)
+          .map((c, i) => { c.dataset.cov = i; return { i, label: c.textContent.trim().replace(/\s+/g, " ").slice(0, 40), dis: !!(c.disabled || c.getAttribute("aria-disabled") === "true"), icons: [...c.querySelectorAll("svg")].map(kind) }; });
+      }, ICON_KIND.toString());
+      for (const c of list) {
+        const id = `cover ${style}/${w} ${name} "${c.label}"`;
+        const mine = c.icons.filter((k) => !k.startsWith("other:"));
+        c.icons.filter((k) => k.startsWith("other:")).forEach((k) => { (other[k] = other[k] || new Set()).add(name + ' "' + c.label + '"' + (c.dis ? " (disabled)" : "")); });
+        if (!mine.length) continue;
+        mine.forEach((k) => { (found[k] = found[k] || new Set()).add((url.startsWith("/#") ? "app " : "static ") + name + ' "' + c.label + '"' + (c.dis ? " (disabled: no motion)" : "")); });
+        if (c.dis) continue;
+        const sel = `[data-cov="${c.i}"]`, h = p.locator(sel);
+        await h.scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(250);
+        // a control under an open sheet cannot be reached: it is checked on the page without the sheet
+        const top = await p.evaluate((s) => { const e = document.querySelector(s), r = e.getBoundingClientRect(), x = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return !!x && x.closest("a,button") === e; }, sel);
+        if (!top) { bump("coverCovered"); continue; }
+        const centre = async () => { const b = await h.boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2); };
+        for (const [trig, pre, run, after] of [
+          ["hover", null, centre, null],
+          ["focus", null, async () => { await p.keyboard.press("Shift"); await h.evaluate((e) => e.focus({ preventScroll: true })); }, null],
+          ["press", async () => { await centre(); await frames(p, sel, () => 0, null, 300); }, async () => { await p.mouse.down(); }, async () => { await p.mouse.up(); }],
+        ]) {
+          if (pre) await pre();
+          const rest = await p.evaluate(COV_SNAP, sel);
+          await run();
+          const fr = await frames(p, sel, COV_SNAP, sel, 300);
+          if (after) await after();
+          bump("coverTriggers"); n.coverFrames = (n.coverFrames || 0) + fr.length;
+          c.icons.forEach((k, i) => {
+            if (!PEAK[k]) return;
+            const pk = peaks(rest, fr, i), v = PEAK[k](pk);
+            if (v !== true) fail(`${id} ${trig}: ${k} ${v} over ${fr.length} frames`);
+            if (!NUDGE.has(k) && k !== "pillbook") {
+              if (!atRest(rest, fr[fr.length - 1], i)) fail(`${id} ${trig}: ${k} not back at rest at the end`);
+              if (trig === "press" && ![...pk.an].some((a) => a.endsWith("-p"))) fail(`${id} press: ${k} ran ${[...pk.an].join(",")} without the press keyframes`);
+            }
+          });
+          await h.evaluate((e) => e.blur()); await p.mouse.move(1, 1); await frames(p, sel, () => 0, null, 250);
+        }
+      }
+    }
+    await ctx.close();
+    process.stdout.write(".");
+  }
+  console.log("\n  controls with each motion icon:");
+  for (const [k, v] of Object.entries(found)) { console.log("   " + k + ":"); [...v].sort().forEach((x) => console.log("     " + x)); }
+  console.log("  other icons inside buttons (no hover motion defined):");
+  for (const [k, v] of Object.entries(other)) console.log("   " + k + ": " + [...v].sort().join(" | "));
+  // the back arrow is defined but not used in any button today
+  for (const k of Object.keys(PEAK).filter((x) => x !== "arrowR")) if (!found[k]) fail("cover: no control with the " + k + " icon was found (the scan is broken)");
+}
+
 // ------------------------------------------------------------------------------------------------------------- done
 async function doneUndo(br, base) {
   for (const style of ["glass", "shade"]) for (const w of [320, 390, 1440]) for (const [mode, cm, rm] of [["normal", false, "no-preference"], ["cm", true, "no-preference"], ["reduced", false, "reduce"]]) {
@@ -211,7 +335,7 @@ async function doneUndo(br, base) {
         const out = [snap()], t0 = performance.now();
         b.click();
         out.push(snap());
-        const tick = () => { out.push(snap()); if (performance.now() - t0 < 650) requestAnimationFrame(tick); else res({ out, sn: Object.assign({}, window.__SN), name: b.textContent, hidden: [...b.querySelectorAll('.dlb>span[aria-hidden="true"]')].map((e) => e.dataset.l), pressed: b.className }); };
+        const tick = () => { out.push(snap()); const el = performance.now() - t0; if ((el < 650 || b.getAnimations({ subtree: true }).some((a) => a.playState === "running")) && el < 3000) requestAnimationFrame(tick); else res({ out, sn: Object.assign({}, window.__SN), name: b.textContent, hidden: [...b.querySelectorAll('.dlb>span[aria-hidden="true"]')].map((e) => e.dataset.l), pressed: b.className }); };
         requestAnimationFrame(tick);
       }), step);
       bump("doneSteps");
@@ -219,11 +343,13 @@ async function doneUndo(br, base) {
       let maxd = 0;
       for (const s of r.out) { [["b", s.b, s0.b], ["svg", s.svg, s0.svg]].forEach(([, a, z]) => a.forEach((v, j) => { maxd = Math.max(maxd, Math.abs(v - z[j])); })); s.lab.forEach((a, i) => a.forEach((v, j) => { maxd = Math.max(maxd, Math.abs(v - s0.lab[i][j])); })); }
       if (maxd > 0.5) fail(`${id} ${step}: something moved ${maxd.toFixed(2)}px`);
-      const end = r.out[r.out.length - 1], mid = r.out.filter((s) => s.t - r.out[0].t > 80 && s.t - r.out[0].t < 300);
+      const end = r.out[r.out.length - 1], seq = r.out.slice(1).map((s) => s.dof);
       const wantDof = step === "done" ? 0 : 1;
       if (Math.abs(end.dof - wantDof) > 0.01) fail(`${id} ${step}: check dashoffset ends at ${end.dof}, want ${wantDof}`);
       if (mode === "normal") {
-        if (!mid.some((s) => s.dof > 0.05 && s.dof < 0.95)) fail(`${id} ${step}: the check did not draw gradually (${r.out.map((s) => s.dof.toFixed(2)).join(",")})`);
+        // draw: the dashoffset falls over several frames (erase: rises), never back, and ends exactly at its target
+        const inter = seq.filter((v) => v > 0.01 && v < 0.99), mono = seq.every((v, i) => !i || (step === "done" ? v <= seq[i - 1] + 1e-6 : v >= seq[i - 1] - 1e-6));
+        if (inter.length < 3 || !mono) fail(`${id} ${step}: the check did not ${step === "done" ? "draw" : "erase"} gradually (${seq.map((v) => v.toFixed(2)).join(",")})`);
         if (!r.out.some((s) => s.op.some((o) => o > 0.05 && o < 0.95))) fail(`${id} ${step}: labels did not crossfade`);
         const t150 = r.out.find((s) => s.t - r.out[0].t >= 200); if (t150 && t150.op.some((o) => o > 0.02 && o < 0.98)) fail(`${id} ${step}: crossfade still running at 200ms`);
       } else {
@@ -282,9 +408,7 @@ async function lockPill(br, base) {
     await p.evaluate(() => { window.__AS = []; document.querySelectorAll(".toast").forEach((t) => t.remove()); });
     const hash0 = await p.evaluate(() => location.hash);
     if (touch) await p.tap(sel, { force: true }); else if (mode === "keyboard") { await p.keyboard.press("Shift"); await p.focus(sel); await p.keyboard.press("Enter"); } else await p.click(sel, { force: true });
-    const mids = [];
-    for (let i = 0; i < 8; i++) { await p.waitForTimeout(40); mids.push(await p.evaluate((s) => new DOMMatrix(getComputedStyle(document.querySelector(s + " .ps svg")).transform).m41, sel)); }
-    await p.waitForTimeout(500);
+    const mids = await frames(p, sel, (s) => new DOMMatrix(getComputedStyle(document.querySelector(s + " .ps svg")).transform).m41, sel, 300);
     const r = await p.evaluate(() => ({ toast: [...document.querySelectorAll(".toast")].map((t) => t.textContent.trim()), hash: location.hash, as: window.__AS.slice() }));
     const lockText = await p.evaluate(() => lockMsg(2));
     bump("lockTap");
@@ -293,7 +417,7 @@ async function lockPill(br, base) {
     const amp = Math.max(...mids.map(Math.abs));
     if (mode === "cm") { if (amp || r.as.length) fail(`${id}: shook with motion off (${mids})`); }
     else {
-      if (!(amp >= 1 && amp <= 2.01) || r.as.filter((x) => x.startsWith("i-shake")).length !== 1) fail(`${id}: shake amplitude ${amp} (${mids.map((x) => x.toFixed(2))}), starts ${r.as}`);
+      if (!(amp >= 1.8 && amp <= 2.01) || r.as.filter((x) => x.startsWith("i-shake")).length !== 1) fail(`${id}: shake amplitude ${amp} (${mids.map((x) => x.toFixed(2))}), starts ${r.as}`);
     }
     const end = await snap(); if (end.ktr !== "none") fail(`${id}: lock not back at rest (${end.ktr})`);
     await ctx.close();
@@ -306,6 +430,77 @@ async function lockPill(br, base) {
   bump("lockReduced");
   if (r.as || r.toast !== 1) fail(`lock reduced: ${r.as} animations, ${r.toast} toasts`);
   await ctx.close();
+}
+
+// locked day dots on the challenge page: a tap (mouse, touch, Enter) shows the lock toast and shakes the lock once
+// (peak +-2px, measured every frame); hover does nothing; motion off (toggle or OS) shows the toast without the shake
+async function lockDots(br, base) {
+  const LOCK_TX = (s) => new DOMMatrix(getComputedStyle(document.querySelector(s + " svg.i-lk")).transform).m41;
+  for (const style of ["glass", "shade"]) for (const w of [390, 1440]) for (const [mode, cm, touch, rm] of [["mouse", false, false], ["touch", false, true], ["keyboard", false, false], ["cm", true, false], ["reduced", false, false, "reduce"]]) {
+    const id = `lockdot ${mode} ${style}/${w}`;
+    const ctx = await ctxFor(br, { w, touch, rm, set: { style, cm }, prog: { done: [] } });
+    const p = await ctx.newPage();
+    await go(p, base, "/#/challenge", "#app .dy.lk");
+    const d = await p.evaluate(() => { const e = document.querySelector("#app .dy.lk"); e.id = "ldot"; return +e.dataset.d; });
+    const sel = "#ldot";
+    await p.locator(sel).scrollIntoViewIfNeeded(); await p.mouse.move(1, 1); await p.waitForTimeout(300);
+    if (!touch) {
+      await p.hover(sel); const fr = await frames(p, sel, LOCK_TX, sel, 400);
+      bump("lockDotHover");
+      if (fr.some((x) => Math.abs(x) > 0.001)) fail(`${id}: the lock moved on hover (${Math.max(...fr.map(Math.abs)).toFixed(2)}px)`);
+      await p.mouse.move(1, 1);
+    }
+    await p.evaluate(() => { window.__AS = []; document.querySelectorAll(".toast").forEach((t) => t.remove()); });
+    const hash0 = await p.evaluate(() => location.hash);
+    if (touch) await p.tap(sel); else if (mode === "keyboard") { await p.keyboard.press("Shift"); await p.focus(sel); await p.keyboard.press("Enter"); } else await p.click(sel);
+    const fr = await frames(p, sel, LOCK_TX, sel, 300);
+    const r = await p.evaluate(() => ({ toast: [...document.querySelectorAll(".toast")].map((t) => t.textContent.trim()), hash: location.hash, as: window.__AS.slice() }));
+    const want = await p.evaluate((n) => lockMsg(n), d);
+    const amp = Math.max(...fr.map(Math.abs));
+    bump("lockDotTap");
+    if (r.hash !== hash0) fail(`${id}: tap navigated ${hash0} -> ${r.hash}`);
+    if (r.toast.length !== 1 || r.toast[0] !== want) fail(`${id}: toast ${JSON.stringify(r.toast)} want ${want}`);
+    if (cm || rm) { if (amp || r.as.length) fail(`${id}: shook with motion off (${amp.toFixed(2)}px, ${r.as})`); }
+    else if (!(amp >= 1.8 && amp <= 2.01) || r.as.filter((x) => x.startsWith("i-shake")).length !== 1) fail(`${id}: shake peak ${amp.toFixed(2)}px over ${fr.length} frames (want 2), starts ${r.as}`);
+    if (Math.abs(fr[fr.length - 1]) > 0.001) fail(`${id}: lock not back at rest`);
+    await ctx.close();
+  }
+}
+
+// ------------------------------------------------------------------------------------------------------------- quiz
+// Quiz marks, when an answer is revealed: the correct mark draws (dashoffset falls over several frames to 0), the wrong
+// mark shakes once (peak +-2px). Motion off (toggle or OS) shows both at once. A later re-render does not replay them.
+async function quizMarks(br, base) {
+  const SNAP = () => { const k = document.querySelector("#app .opt svg.qk path"), x = document.querySelector("#app .opt svg.qx"); return { dof: k ? parseFloat(getComputedStyle(k).strokeDashoffset) || 0 : null, tx: x ? new DOMMatrix(getComputedStyle(x).transform).m41 : null }; };
+  for (const style of ["glass", "shade"]) for (const w of [390, 1440]) for (const [mode, cm, rm] of [["normal", false], ["cm", true], ["reduced", false, "reduce"]]) {
+    const id = `quiz ${mode} ${style}/${w}`;
+    const ctx = await ctxFor(br, { w, rm, set: { style, cm } });
+    const p = await ctx.newPage();
+    await go(p, base, "/#/quiz", "#app .opt");
+    await p.evaluate(() => { window.__AS = []; });
+    // answer wrongly so both marks show
+    await p.evaluate(() => { const q = Q.qs[Q.i], i = q.o.findIndex((x) => x !== q.w); document.querySelector(`#app .opt[data-o="${i}"]`).click(); });
+    const fr = await frames(p, "#app .opts", SNAP, null, 300);
+    const as = await p.evaluate(() => window.__AS.slice());
+    bump("quizReveal");
+    if (fr[0].dof === null || fr[0].tx === null) { fail(`${id}: marks not shown (${JSON.stringify(fr[0])})`); await ctx.close(); continue; }
+    const dofs = fr.map((x) => x.dof), end = fr[fr.length - 1], amp = Math.max(...fr.map((x) => Math.abs(x.tx)));
+    if (Math.abs(end.dof) > 0.001 || Math.abs(end.tx) > 0.001) fail(`${id}: marks not at rest at the end (${JSON.stringify(end)})`);
+    if (cm || rm) {
+      if (dofs.some((v) => Math.abs(v) > 0.001) || amp > 0.001 || as.length) fail(`${id}: marks animated with motion off (dof ${dofs.slice(0, 5)}, shake ${amp}, ${as})`);
+    } else {
+      const inter = dofs.filter((v) => v > 0.01 && v < 0.99), mono = dofs.every((v, i) => !i || v <= dofs[i - 1] + 1e-6);
+      if (inter.length < 3 || !mono) fail(`${id}: the correct mark did not draw (${dofs.map((v) => v.toFixed(2)).join(",")})`);
+      if (!(amp >= 1.8 && amp <= 2.01)) fail(`${id}: the wrong mark shook ${amp.toFixed(2)}px over ${fr.length} frames (want 2)`);
+      if (as.filter((x) => x.startsWith("i-shake")).length !== 1 || as.filter((x) => x.startsWith("i-draw")).length !== 1) fail(`${id}: animation starts ${as}`);
+    }
+    // re-render (e.g. a theme change): no replay
+    await p.evaluate(() => { window.__AS = []; render(); });
+    const again = await frames(p, "#app .opts", SNAP, null, 300);
+    bump("quizRerender");
+    if ((await p.evaluate(() => window.__AS.length)) || again.some((x) => Math.abs(x.dof) > 0.001 || Math.abs(x.tx) > 0.001)) fail(`${id}: marks replayed on re-render`);
+    await ctx.close();
+  }
 }
 
 // ------------------------------------------------------------------------------------------------------------ video
@@ -463,8 +658,10 @@ async function admin(br, base) {
   const { server, base } = await serve();
   const br = await pw.chromium.launch();
   if (want("icons")) { await iconRestShape(br); await iconMotion(br, base); console.log("\nicons done"); }
+  if (want("cover")) { await coverage(br, base); console.log("\ncoverage done"); }
   if (want("done")) { await doneUndo(br, base); console.log("done/undo done"); }
-  if (want("lock")) { await lockPill(br, base); console.log("lock done"); }
+  if (want("lock")) { await lockPill(br, base); await lockDots(br, base); console.log("lock done"); }
+  if (want("quiz")) { await quizMarks(br, base); console.log("quiz done"); }
   if (want("video")) { await videoCard(br, base); console.log("video done"); }
   if (want("admin")) { await admin(br, base); console.log("admin done"); }
   await br.close(); server.close();
