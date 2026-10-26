@@ -7,17 +7,17 @@ button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .q{font-family:'Amiri Quran',serif}
 .m{font-size:13px;color:var(--mu)}
-#bg i,.gst i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
-#bg i:nth-child(1),.gst i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
-#bg i:nth-child(2),.gst i:nth-child(2){bottom:60px;left:-90px;width:300px;height:300px;background:var(--b2);opacity:.7;animation:dr 30s ease-in-out infinite alternate-reverse}
+#bg i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
+#bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
+#bg i:nth-child(2){bottom:60px;left:-90px;width:300px;height:300px;background:var(--b2);opacity:.7;animation:dr 30s ease-in-out infinite alternate-reverse}
 @keyframes dr{to{transform:translate(30px,40px)}}
 /* R11: glass glow veil - each blob is faded toward the page colour (the same as lowering its opacity)
    just enough for AA on the text above it: 31% on light pages, 60% on dark ones, picked from the page
    background's own lightness. Shade's blobs override this; without relative colours the glow is unchanged. */
 @supports (color:oklch(from red l c h)){
 :root{--veil:oklch(from var(--bg) l c h / calc(.6 - .29 * clamp(0,(l - .5) * 1000,1)))}
-#bg i:nth-child(1),.gst i:nth-child(1){background:linear-gradient(var(--veil),var(--veil)),var(--b1)}
-#bg i:nth-child(2),.gst i:nth-child(2){background:linear-gradient(var(--veil),var(--veil)),var(--b2)}
+#bg i:nth-child(1){background:linear-gradient(var(--veil),var(--veil)),var(--b1)}
+#bg i:nth-child(2){background:linear-gradient(var(--veil),var(--veil)),var(--b2)}
 }
 .g{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));-webkit-backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 30px rgba(0,0,0,.15)}
 @media(prefers-reduced-transparency:reduce){.g{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}}
@@ -63,7 +63,7 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 /* settings: no dark overlay (the page stays visible and its colours true); an outside tap still closes the sheet */
 #sh:has(.psw){background:none}
 #sh .p:has(.psw){gap:12px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 16px 48px rgba(0,0,0,.28),0 0 0 1px var(--ln)}
-@media(max-width:600px){#sh .p:has(.psw){left:8px;right:8px;bottom:8px;border-radius:26px}}
+@media(max-width:600px){#sh .p:has(.psw){left:8px;right:8px;bottom:8px;border-radius:26px;gap:10px;padding-top:12px}#sh .grp .m{margin-bottom:5px}#sh .shn{margin-top:3px}}
 #sh .sht{display:flex;justify-content:space-between;align-items:center}#sh .sht b{font-size:18px}#sh .sht .btn{height:44px;color:var(--ac)}
 #sh .grp .m{margin-bottom:6px}
 #sh .p:has(.psw) .seg button{height:44px}
@@ -75,12 +75,22 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 .psw .on i{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ac)}.psw .on span{color:var(--tx);font-weight:600}
 .psw .pbar{display:block;width:14px;height:3px;border-radius:2px}.psw .on .pbar{width:24px}
 /* glass strength: the sample card is real glass over the palette's glows, so it follows the slider live */
-#sh .gsw{margin-top:12px}
-#sh .gsm{position:relative;margin-top:8px;height:76px;border-radius:16px;overflow:hidden;background:var(--bg)}
-#sh .gst{position:absolute;width:100vw;height:100vh;contain:layout paint;pointer-events:none}
-#sh .gsm .gsc{position:absolute;inset:8px 10px;padding:0 14px;display:flex;align-items:center;overflow:hidden}
-#sh .gsm .gsc .row{min-height:0;padding:0;width:100%;border:0;gap:12px}#sh .gsm .gsc .w{min-width:0;font-size:24px}
-#sh .gsm .gsc .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+#sh .gsw{padding-top:10px}
+/* the glass strength expands and collapses under النمط (height and opacity, ~200ms); hidden and inert when collapsed */
+#sh .gsx{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s linear .2s}
+#sh .gsx.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s}
+#sh .gsi{overflow:hidden;min-height:0}
+/* segmented controls: one selected background that slides between options (the bottom nav indicator's timing) */
+.seg.sl{position:relative}
+.seg.sl .si{position:absolute;top:4px;bottom:4px;right:4px;width:calc((100% - 8px - (var(--n) - 1) * 4px) / var(--n));border-radius:18px;background:var(--ac);transform:translateX(calc(var(--k,0) * (-100% - 4px)));transition:transform .45s cubic-bezier(.34,1.4,.64,1);pointer-events:none}
+.seg.sl button{position:relative;z-index:1}.seg.sl button.on{background:none}
+.cm .seg.sl .si,.cm #sh .gsx{transition:none!important}
+#sh .shn{font-size:12px;margin-top:4px}
+#sh .shd{border:0;height:1px;background:var(--ln);margin:2px 0}
+#sh .rst{align-self:center;min-height:44px;padding:0 10px;border:0;background:none;color:var(--mu);font-family:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* with the settings sheet open, toasts show at the top so they never cover its controls */
+body:has(#sh.open .psw) .toast{top:calc(16px + env(safe-area-inset-top,0px));bottom:auto}
+.toast .tub{min-height:36px;padding:0 6px;border:0;background:none;color:var(--ac);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
 #sh .tgs{display:flex;justify-content:space-between;gap:8px}#sh .tgs .tg{width:auto;justify-content:flex-start;gap:10px;white-space:nowrap}
 /* S1/L5: the bottom nav covers max(20px, safe area) + 64px of the viewport: focused or scrolled-to elements stop above it,
    and the page always ends with the footer clear of it. Desktop (>=1025px) puts the nav at the top. */
@@ -115,7 +125,10 @@ h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
 .gs input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--ln)}
 .gs input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ac);border:2px solid var(--bg);margin-top:-9px}
 .gs input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--ac);border:2px solid var(--bg)}
-.gs input[type=range]:focus-visible{outline:2px solid var(--ac);outline-offset:4px;border-radius:12px}
+/* keyboard focus: the site's ring (2px accent, 2px off) around the thumb only; the thumb's own 2px border is the gap */
+.gs input[type=range]:focus-visible{outline:none}
+.gs input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--ac)}
+.gs input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px var(--ac)}
 .gs .lbl{font-size:14px;color:var(--mu);min-width:38px;text-align:center}
 .sw{display:flex;flex-wrap:wrap;gap:14px 6px;justify-content:space-between}
 .sw button{background:none;border:0;padding:0;width:62px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--mu)}
@@ -169,8 +182,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade nav.g{background:var(--sf);box-shadow:0 12px 30px rgba(0,0,0,.35)}
 .shade nav.g .ind{background:var(--tx)}.shade nav.g .t.on{color:var(--bg)}.shade .dt{border-color:var(--sf)}
 .shade .btn{background:var(--tx);color:var(--bg)}.shade .btn.o{background:transparent;color:var(--tx);border:1px solid var(--ln)}
-.shade #bg i:nth-child(1),.shade .gst i:nth-child(1){top:-24%;right:-20%;width:140%;height:46%;border-radius:50%;background:radial-gradient(ellipse at center,var(--tc) 0%,transparent 68%);filter:blur(46px);opacity:1;animation:none}
-.shade #bg i:nth-child(2),.shade .gst i:nth-child(2){bottom:6%;left:-18%;width:300px;height:300px;background:radial-gradient(circle,var(--tc) 0%,transparent 68%);filter:blur(50px);opacity:.55;animation:none}
+.shade #bg i:nth-child(1){top:-24%;right:-20%;width:140%;height:46%;border-radius:50%;background:radial-gradient(ellipse at center,var(--tc) 0%,transparent 68%);filter:blur(46px);opacity:1;animation:none}
+.shade #bg i:nth-child(2){bottom:6%;left:-18%;width:300px;height:300px;background:radial-gradient(circle,var(--tc) 0%,transparent 68%);filter:blur(50px);opacity:.55;animation:none}
 .shade .wd{color:var(--ac)}.shade .row .w{color:var(--ac)}
 .shade .cols .card:first-child{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--tc) 0,color-mix(in srgb,var(--tc) 38%,var(--sf)) 42px,var(--sf) 90px) no-repeat border-box var(--sf);padding:96px 22px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
 .shade .list.sl{background:none;border:0;padding:0;border-radius:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -408,14 +421,15 @@ svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-d
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou,.cm .gst i{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
 .cm svg.i-cv{transform:none!important;transition:none!important}.cm :is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
 #gear svg{animation:none!important}
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou,.gst i{animation:none;transition:none}
+.seg.sl .si,#sh .gsx{transition:none!important}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
 svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}

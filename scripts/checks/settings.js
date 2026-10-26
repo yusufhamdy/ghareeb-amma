@@ -1,12 +1,16 @@
-// Settings sheet and gear (read-only). Checks: section order (المظهر, اللون, النمط, شدة الزجاج under النمط and only for
-// glass), no overlay and an outside tap still closes, how much of the page stays visible, five swatches in one row
-// (320/390/1440), every control >= 44px tall, each switch row toggles from anywhere on the row, radio groups (one Tab
-// stop each, arrow keys move the selection, right-to-left aware), swatches: a 135deg gradient per palette (48px, the same
-// in both modes), the selected one ringed 2px in the accent 3px off the circle, an accent bar under each name in the
-// palette's accent of the current mode (wider and the name semibold when selected), redrawn when the mode changes; the
-// glass sample (a real card over the page's background) in both styles, Esc / "تم" close with focus back on the gear. Gear: one 60-degree turn of
-// about 400ms with no overshoot, never held and never turned back, on hover, focus-visible, press and phone tap; none
-// with motion off or reduced motion.
+// Settings sheet and gear (read-only). Checks: order and grouping (المظهر with the note "يتبع إعداد جهازك", النمط with
+// شدة الزجاج inside it (shown only for glass: it collapses to hidden and inert in shade and expands again, ~200ms height
+// and opacity), اللون, a divider, the motion and sound switches, the reset link), no overlay and an outside tap still
+// closes, how much of the page stays visible, five swatches in one row (320/390/1440), every control >= 44px tall, each
+// switch row toggles from anywhere on the row, radio groups (one Tab stop each, arrow keys move the selection,
+// right-to-left aware), swatches (135deg gradient per palette at 48px, the selected one ringed in the accent 3px off the
+// circle, accent bars 14x3 or 24 when selected, name semibold, following the mode), the segmented controls' sliding
+// indicator (the bottom nav indicator's timing and easing, intermediate positions, ends on the selected option, no layout
+// shift; instant with motion off or reduced motion), the reset link (site defaults at once, a toast with "تراجع" for about
+// 5s that restores the previous settings), the slider's focus ring on the thumb only (pixels: the thumb changes, the track
+// and its container do not), and Esc / outside / "تم" close with focus back on the gear. Gear: one 60-degree turn of about
+// 400ms with no overshoot, never held and never turned back, on hover, focus-visible, press and phone tap; none with motion
+// off or reduced motion.
 // Usage: node settings.js   -> OUT (default ./out/settings): settings.json and screenshots
 const fs = require("fs");
 const path = require("path");
@@ -34,13 +38,15 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       const P = document.querySelector("#sh .p"), r = P.getBoundingClientRect(), css = getComputedStyle(document.documentElement);
       const sw = [...P.querySelectorAll(".psw button")];
       return {
-        heads: [...P.querySelectorAll(".grp > .m, .gsw > .m")].map((e) => e.textContent.trim()),
-        glassUnderStyle: !!P.querySelector('.grp [role="radiogroup"][aria-labelledby="lbs"] ~ .gsw'),
+        heads: [...P.querySelectorAll(".grp > .m:not(.shn), .gsw > .m")].map((e) => e.textContent.trim()),
+        glassUnderStyle: !!P.querySelector('.grp [role="radiogroup"][aria-labelledby="lbs"] ~ .gsx .gsw #gs'),
+        note: (() => { const n = P.querySelector(".shn"); return n && n.previousElementSibling && n.previousElementSibling.matches('[data-sg="m"]') ? n.textContent.trim() : null; })(),
+        tail: (() => { const g = [...P.children]; const i = g.findIndex((e) => e.matches("hr.shd")); return i < 0 ? null : g.slice(i).map((e) => e.tagName.toLowerCase() + "." + e.className.split(" ")[0]).join(" "); })(),
+        colourBeforeDivider: (() => { const d = P.querySelector("hr.shd"); return !!d && !!d.previousElementSibling && !!d.previousElementSibling.querySelector(".psw"); })(),
         overlay: getComputedStyle(document.getElementById("sh")).backgroundColor,
         pageVisiblePct: Math.round(100 * Math.max(0, r.top) / innerHeight),
         swatchRows: new Set(sw.map((b) => Math.round(b.getBoundingClientRect().top))).size,
         swatches: sw.map((b) => { const i = b.querySelector("i"), c = getComputedStyle(i), bar = b.querySelector(".pbar"), bc = getComputedStyle(bar), r = bar.getBoundingClientRect(); return { k: b.dataset.p, on: b.classList.contains("on"), img: c.backgroundImage, size: [Math.round(i.getBoundingClientRect().width), Math.round(i.getBoundingClientRect().height)], ring: c.boxShadow, bar: bc.backgroundColor, barW: Math.round(r.width), barH: Math.round(r.height), weight: getComputedStyle(b.querySelector("span")).fontWeight }; }),
-        sample: !!P.querySelector(".gsm .gst i + i") && !!P.querySelector(".gsm .card.g .row .w"),
         sheetBg: getComputedStyle(P).backgroundColor,
         accent: css.getPropertyValue("--ac").trim(), glow: css.getPropertyValue("--b1").trim(),
         under44: [...P.querySelectorAll("button, input")].filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 44).map((e) => (e.dataset.m || e.dataset.p || e.dataset.st || e.id || e.className) + ":" + Math.round(e.getBoundingClientRect().height)),
@@ -59,8 +65,9 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       ok(x.on ? +x.weight === 600 && x.ring === `${L.sheetBg} 0px 0px 0px 3px, ${hexToRgb(L.accent)} 0px 0px 0px 5px` : x.ring === "none" && +x.weight < 600, `${w}/${mode}: ${x.k} selected=${x.on} ring "${x.ring}" weight ${x.weight}`);
     }
     ok(L.swatches.filter((x) => x.on).length === 1, `${w}/${mode}: selected swatches ${L.swatches.filter((x) => x.on).length}`);
-    ok(L.sample, `${w}/${mode}: the glass sample (real card over the page background) is missing`);
-    ok(JSON.stringify(L.heads) === JSON.stringify(["المظهر", "اللون", "النمط", "شدة الزجاج"]), `${w}/${mode}: order ${L.heads}`);
+    ok(JSON.stringify(L.heads) === JSON.stringify(["المظهر", "النمط", "شدة الزجاج", "اللون"]), `${w}/${mode}: order ${L.heads}`);
+    ok(L.note === "يتبع إعداد جهازك", `${w}/${mode}: the note under المظهر is "${L.note}"`);
+    ok(L.colourBeforeDivider && L.tail === "hr.shd div.tgs button.rst", `${w}/${mode}: after the colours: ${L.tail}`);
     ok(L.glassUnderStyle, `${w}/${mode}: glass strength not under النمط`);
     ok(L.overlay === "rgba(0, 0, 0, 0)", `${w}/${mode}: overlay ${L.overlay}`);
     ok(L.swatchRows === 1, `${w}/${mode}: swatches in ${L.swatchRows} rows`);
@@ -76,7 +83,7 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       await p.focus('#sh [data-a="close"]');
       const order = []; for (let i = 0; i < 9; i++) { await p.keyboard.press("Tab"); order.push(await p.evaluate(() => { const a = document.activeElement; return a.dataset.m ? "mode:" + a.dataset.m : a.dataset.p ? "pal:" + a.dataset.p : a.dataset.st ? "style:" + a.dataset.st : a.dataset.c ? "motion" : a.dataset.s ? "sound" : a.id ? "#" + a.id : a.dataset.a || a.tagName; })); }
       R[`tab order ${mode}`] = order;
-      ok(order.slice(0, 7).join() === `mode:auto,pal:gold,style:glass,#gs,motion,sound,close`.replace("mode:auto", "mode:" + mode), `390/${mode}: Tab order ${order}`);
+      ok(order.slice(0, 8).join() === `mode:auto,style:glass,#gs,pal:gold,motion,sound,reset,close`.replace("mode:auto", "mode:" + mode), `390/${mode}: Tab order ${order}`);
       // arrows: the next mode in reading order (right-to-left: ArrowLeft), focus and selection move together
       await p.focus(`#sh [data-m="${mode}"]`);
       await p.keyboard.press("ArrowLeft");
@@ -92,10 +99,58 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       await p.focus('#sh [data-p="gold"]'); await p.keyboard.press("ArrowLeft");
       ok(await p.evaluate(() => JSON.parse(localStorage.getItem("gq-set")).pal === "def" && document.activeElement.dataset.p === "def"), `390/${mode}: ArrowLeft on the palettes did not select زمردي`);
       await p.keyboard.press("Home"); ok(await p.evaluate(() => JSON.parse(localStorage.getItem("gq-set")).pal === "gold"), `390/${mode}: Home did not select the first palette`);
-      // shade hides the glass strength; glass brings it back
-      await p.click('#sh [data-st="shade"]'); const noGs = !(await p.$("#gs")), shadeSample = !!(await p.$("#sh .gsm .card.g")); await p.click('#sh [data-st="glass"]'); const gs = !!(await p.$("#gs"));
-      ok(shadeSample, `390/${mode}: no glass sample in shade`);
-      ok(noGs && gs, `390/${mode}: glass strength shown for shade (${noGs}) or missing for glass (${gs})`);
+      // shade collapses the glass strength (height and opacity, ~200ms) to hidden and inert; glass expands it again
+      const gx = () => p.evaluate(() => { const x = document.querySelector("#sh .gsx"); return { h: Math.round(x.getBoundingClientRect().height), vis: getComputedStyle(x).visibility, inert: x.inert, open: x.classList.contains("open"), anims: x.getAnimations().filter((a) => a.transitionProperty !== "visibility").map((a) => a.transitionProperty + " " + Math.round(a.effect.getComputedTiming().duration)).sort() }; });
+      await p.click('#sh [data-st="shade"]'); const c0 = await gx(); await p.waitForTimeout(450); const c1 = await gx(); const gsVisibleInShade = await p.isVisible("#gs");
+      await p.click('#sh [data-st="glass"]'); const e0 = await gx(); await p.waitForTimeout(450); const e1 = await gx(); const gsVisibleInGlass = await p.isVisible("#gs");
+      R[`glass strength ${mode}`] = { collapse: [c0, c1], expand: [e0, e1] };
+      ok(c0.anims.join() === "grid-template-rows 200,opacity 200" && e0.anims.join() === "grid-template-rows 200,opacity 200", `390/${mode}: expand/collapse transitions ${c0.anims} / ${e0.anims}`);
+      ok(c1.h === 0 && c1.vis === "hidden" && c1.inert && !gsVisibleInShade, `390/${mode}: glass strength not hidden in shade ${JSON.stringify(c1)}`);
+      ok(e1.h > 40 && e1.vis === "visible" && !e1.inert && gsVisibleInGlass, `390/${mode}: glass strength not shown in glass ${JSON.stringify(e1)}`);
+      // the sliding indicator: same transition as the bottom nav indicator; it moves through intermediate positions and
+      // ends on the selected option; the buttons do not move
+      const nav = await p.evaluate(() => { const c = getComputedStyle(document.querySelector("nav .ind")); return c.transitionDuration + " " + c.transitionTimingFunction; });
+      const segSnap = () => p.evaluate(() => { const g = document.querySelector('#sh [data-sg="m"]'), i = g.querySelector(".si"); return { x: Math.round(i.getBoundingClientRect().left * 10) / 10, btns: [...g.querySelectorAll("button")].map((b) => Math.round(b.getBoundingClientRect().left) + ":" + Math.round(b.getBoundingClientRect().width)).join(), tr: getComputedStyle(i).transitionDuration + " " + getComputedStyle(i).transitionTimingFunction }; });
+      const s0 = await segSnap(), target = mode === "dark" ? "auto" : "dark";
+      await p.click(`#sh [data-m="${target}"]`);
+      const xs = await p.evaluate(() => new Promise((res) => { const out = [], t0 = performance.now(); const tick = () => { const i = document.querySelector('#sh [data-sg="m"] .si'); out.push(i.getBoundingClientRect().left); if (performance.now() - t0 < 700) requestAnimationFrame(tick); else res(out); }; tick(); }));
+      const s1 = await segSnap(), onX = await p.evaluate(() => Math.round(document.querySelector('#sh [data-sg="m"] button.on').getBoundingClientRect().left * 10) / 10);
+      const inter = new Set(xs.map((v) => Math.round(v)).filter((v) => Math.abs(v - s0.x) > 1 && Math.abs(v - s1.x) > 1)).size;
+      R[`indicator ${mode}`] = { nav, seg: s1.tr, from: s0.x, to: s1.x, selected: onX, intermediate: inter };
+      ok(s1.tr === nav, `390/${mode}: indicator transition "${s1.tr}" differs from the bottom nav "${nav}"`);
+      ok(inter >= 3 && Math.abs(s1.x - onX) < 1, `390/${mode}: indicator did not slide (${inter} intermediate positions) or ends at ${s1.x} not ${onX}`);
+      ok(s0.btns === s1.btns, `390/${mode}: the segment buttons moved (${s0.btns} -> ${s1.btns})`);
+      await p.click(`#sh [data-m="${mode}"]`); await p.waitForTimeout(600);
+      // reset: the site defaults at once, a toast with "تراجع" (~5s); undo restores the previous settings exactly
+      await p.click('#sh [data-p="neo"]'); await p.click('#sh [data-st="shade"]'); await p.waitForTimeout(300);
+      const before = await p.evaluate(() => localStorage.getItem("gq-set"));
+      await p.click("#sh .rst"); await p.waitForTimeout(200);
+      const rs = await p.evaluate(() => { const t = document.querySelector(".toast.tu"); return { saved: JSON.parse(localStorage.getItem("gq-set")), text: t && t.firstChild.textContent.trim(), btn: t && t.querySelector("button").textContent, top: t && t.getBoundingClientRect().top, sheetTop: document.querySelector("#sh .p").getBoundingClientRect().top }; });
+      const defaults = await p.evaluate(() => ({ mode: "auto", pal: GQT.DEFAULT, gl: GQT.GLASS_DEFAULT, gv: 3, style: "glass", cm: matchMedia("(prefers-reduced-motion:reduce)").matches, snd: true }));
+      ok(JSON.stringify(rs.saved) === JSON.stringify(defaults), `390/${mode}: reset saved ${JSON.stringify(rs.saved)} want ${JSON.stringify(defaults)}`);
+      ok(rs.text === "تمت استعادة الإعدادات الافتراضية" && rs.btn === "تراجع", `390/${mode}: reset toast "${rs.text}" / "${rs.btn}"`);
+      ok(rs.top < rs.sheetTop, `390/${mode}: the toast covers the sheet (toast top ${rs.top}, sheet top ${rs.sheetTop})`);
+      await p.screenshot({ path: path.join(OUT, `reset-toast-390-${mode}.png`) });
+      await p.click(".toast.tu .tub"); await p.waitForTimeout(300);
+      ok((await p.evaluate(() => localStorage.getItem("gq-set"))) === before && !(await p.$(".toast.tu")), `390/${mode}: undo did not restore the previous settings`);
+      await p.click("#sh .rst"); await p.waitForTimeout(5300);
+      ok(!(await p.$(".toast.tu")), `390/${mode}: the reset toast is still there after 5.3s`);
+      await p.evaluate((b) => { localStorage.setItem("gq-set", b); }, before);
+      // the slider's focus ring: around the thumb only (keyboard focus; the track and its container stay the same)
+      await p.click('#sh [data-st="glass"]'); await p.waitForTimeout(450);
+      const gb = await p.locator("#gs").boundingBox(), cb = await p.locator("#sh .gs").boundingBox();
+      const thumbX = await p.evaluate(() => { const g = document.getElementById("gs"), r = g.getBoundingClientRect(), t = (g.value - g.min) / (g.max - g.min); return r.right - 12 - t * (r.width - 24); });
+      const thumbClip = { x: thumbX - 20, y: gb.y + gb.height / 2 - 20, width: 40, height: 40 }, trackClip = { x: cb.x, y: cb.y - 6, width: cb.width, height: cb.height + 12 };
+      await p.mouse.move(1, 1); await p.evaluate(() => document.activeElement.blur());
+      const th0 = await p.screenshot({ clip: thumbClip }), tr0 = await p.screenshot({ clip: trackClip });
+      await p.keyboard.press("Shift"); await p.focus("#gs"); await p.waitForTimeout(150);
+      const th1 = await p.screenshot({ clip: thumbClip }), tr1 = await p.screenshot({ clip: trackClip });
+      const diff = (x, y, tx, ty) => p.evaluate(async ([x, y, tx, ty]) => { const ld = (s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = "data:image/png;base64," + s; }); const [i, j] = await Promise.all([ld(x), ld(y)]); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; const g = c.getContext("2d"); g.drawImage(i, 0, 0); const d1 = g.getImageData(0, 0, c.width, c.height).data; g.drawImage(j, 0, 0); const d2 = g.getImageData(0, 0, c.width, c.height).data; let n = 0, far = 0; const cx = tx == null ? c.width / 2 : tx, cy = ty == null ? c.height / 2 : ty; for (let k = 0; k < d1.length; k += 4) { const dd = Math.abs(d1[k] - d2[k]) + Math.abs(d1[k + 1] - d2[k + 1]) + Math.abs(d1[k + 2] - d2[k + 2]); if (dd > 40) { n++; const px = (k / 4) % c.width, py = Math.floor(k / 4 / c.width); if (Math.hypot(px - cx, py - cy) > 22) far++; } } return { changed: n, outsideThumb: far }; }, [x.toString("base64"), y.toString("base64"), tx, ty]);
+      const dThumb = await diff(th0, th1), dTrack = await diff(tr0, tr1, thumbX - trackClip.x, gb.y + gb.height / 2 - trackClip.y);
+      const outline = await p.evaluate(() => getComputedStyle(document.getElementById("gs")).outlineStyle);
+      R[`focus ring ${mode}`] = { thumb: dThumb, track: dTrack, outline };
+      await p.screenshot({ path: path.join(OUT, `slider-focus-390-${mode}.png`), clip: trackClip });
+      ok(dThumb.changed > 20 && dTrack.outsideThumb === 0 && outline === "none", `390/${mode}: focus ring thumb ${JSON.stringify(dThumb)}, track ${JSON.stringify(dTrack)}, outline ${outline}`);
       // closing: outside tap, Esc, "تم"; focus back on the gear
       const close = {};
       for (const [k, act] of [["outside", () => p.mouse.click(200, 30)], ["esc", () => p.keyboard.press("Escape")], ["done", () => p.click('#sh [data-a="close"]')]]) {
@@ -106,6 +161,20 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
       }
       R[`close ${mode}`] = close;
     }
+    await ctx.close();
+  }
+  // ---- motion off (toggle) and reduced motion: the indicator jumps and the glass strength opens or closes at once
+  for (const [label, cm, rm] of [["motion off (toggle)", true, "no-preference"], ["motion off (OS)", false, "reduce"]]) {
+    const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: rm });
+    await ctx.addInitScript((cm) => { localStorage.setItem("gq-set", JSON.stringify({ style: "glass", mode: "light", pal: "gold", gl: 50, gv: 3, snd: false, cm })); localStorage.setItem("gq-ld", "1"); }, cm);
+    const p = await ctx.newPage(); await p.goto(base + "/#/"); await p.waitForSelector("#gear"); await p.waitForTimeout(500);
+    await p.click("#gear"); await p.waitForSelector("#sh.open .psw"); await p.waitForTimeout(200);
+    await p.click('#sh [data-m="dark"]');
+    const m = await p.evaluate(() => { const g = document.querySelector('#sh [data-sg="m"]'), i = g.querySelector(".si"); return { anims: i.getAnimations().length, x: Math.round(i.getBoundingClientRect().left), on: Math.round(g.querySelector("button.on").getBoundingClientRect().left) }; });
+    await p.click('#sh [data-st="shade"]');
+    const x = await p.evaluate(() => { const e = document.querySelector("#sh .gsx"); return { anims: e.getAnimations().length, h: Math.round(e.getBoundingClientRect().height), vis: getComputedStyle(e).visibility }; });
+    R["instant " + label] = { indicator: m, glassStrength: x };
+    ok(!m.anims && Math.abs(m.x - m.on) <= 1 && !x.anims && x.h === 0 && x.vis === "hidden", `${label}: not instant ${JSON.stringify({ m, x })}`);
     await ctx.close();
   }
   // ---- gear
@@ -140,7 +209,7 @@ const turn = (s) => { const v = s.map((x) => x[1]), pk = Math.max(...v), at = v.
     await ctx.close();
   }
   fs.writeFileSync(path.join(OUT, "settings.json"), JSON.stringify(R, null, 1));
-  for (const [k, v] of Object.entries(R)) if (/gear|tab order|close/.test(k)) console.log(k, JSON.stringify(v));
+  for (const [k, v] of Object.entries(R)) if (/gear|tab order|close|indicator|instant|focus ring|glass strength/.test(k)) console.log(k, JSON.stringify(v).slice(0, 400));
   for (const w of [320, 390, 1440]) console.log(`layout ${w} light: page visible ${R[`layout ${w} light`].pageVisiblePct}%, swatch rows ${R[`layout ${w} light`].swatchRows}`);
   console.log(fails.length ? "FAILURES (" + fails.length + "):\n" + fails.join("\n") : "ALL SETTINGS CHECKS PASSED");
   await br.close(); server.close();

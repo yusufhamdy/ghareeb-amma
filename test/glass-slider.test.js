@@ -185,12 +185,14 @@ test("glass slider: continuous range, a11y, persistence, glass-only", { timeout:
     assert.equal(await page.$eval("#gs", (el) => el.value), "100");
 
     // (e) shown only for the glass style
+    // the glass strength collapses (hidden, inert) in shade and expands again in glass (~200ms)
     await page.click('[data-st="shade"]');
-    await page.waitForTimeout(60);
-    assert.equal(await page.$("#gs"), null, "slider hidden for shade");
+    await page.waitForSelector("#gs", { state: "hidden", timeout: 2000 });
+    assert.equal(await page.isVisible("#gs"), false, "slider hidden for shade");
+    assert.equal(await page.$eval("#sh .gsx", (e) => e.inert), true, "the collapsed slider is inert");
     await page.click('[data-st="glass"]');
-    await page.waitForTimeout(60);
-    assert.ok(await page.$("#gs"), "slider shown for glass");
+    await page.waitForSelector("#gs", { state: "visible", timeout: 2000 });
+    assert.ok(await page.isVisible("#gs"), "slider shown for glass");
   } finally {
     await browser.close();
     await new Promise((r) => server.close(r));
