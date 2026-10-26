@@ -3,8 +3,9 @@
 Browser checks used to verify UI work before committing. They are not part of `npm test`. Each one serves the working
 tree's `public/` on a random local port with Playwright (Chromium unless noted), reads it only, and prints
 `ALL CHECKS PASSED` or a list of failures. Run them from this folder (`cd scripts/checks`): output files (screenshots,
-JSON) land here and are git-ignored. Nothing here writes to Firebase; the admin checks load the admin page with an
-empty Firebase config and block every Google request.
+JSON) land here and are git-ignored. Nothing here writes to Firebase, and nothing reads production: `lib.js` serves an empty Firebase config, so every page runs on
+the local JSON (the two emulator checks opt into the real config and point it at the emulator); the admin checks also
+block every Google request.
 
 Shared helpers: `lib.js` (static server, theme combinations, pixel analysis), `pages.js` (every reviewable page/state),
 `shadowrule.js` (the shadow-on-buttons measurement, also used by `probe2.js` and `v22.js`).
@@ -14,6 +15,7 @@ Shared helpers: `lib.js` (static server, theme combinations, pixel analysis), `p
 | `probe2.js` | Full-site interaction probe: button tiers in all 20 combinations (5 palettes x light/dark x glass/shade) at 1440 and 390, prev/next pills, chevron nudge and its timing, motion off, row/card press feedback, and the shadow rule on every page at 320/390/1440 | `node probe2.js` (long) |
 | `v22.js` | Icon motion (rest shape, only the named part moves, once per trigger, hover/focus/press/tap, motion off, disabled), motion coverage (every enabled button or pill on every page that contains the book, shuffle, download, share, platform or chevron icon runs that icon's motion; lists them all and any other icon inside a button), done/undo animation (no movement within 0.5px, sounds, already-done day), the locked next-day pill, the video card (0-3 links, old link, order, truncation, tiers, shadow rule) and the admin link fields | `node v22.js` or any of `icons cover done lock video admin` |
 | `reel-links-emulator.mjs` | Video links saved and read through the Firestore **emulator** (0, 1, 2, 3 links and the old link only), rules, the published file and the app | from the repo root: `npx firebase emulators:exec --project demo-ghareeb --only firestore "node scripts/checks/reel-links-emulator.mjs"` |
+| `reel-links-client.mjs` | The full path, **emulator** only: all 30 days opened and saved in the admin's own day editor with their words unchanged (days 3 and 21 store ي where the word list has ئ); links typed into the editor and saved through its save handler (`store.chSave` captured as the `chDoc()` document the live store writes), written through the rules; then `#/day/N` through `migrate.js` (`?emul=1`): every link field mapped, links shown from the published `challenge.json` (`publicChallenge()` of the stored document), and a Firestore answer after first render changing nothing on the page | from the repo root: `npx firebase emulators:exec --project demo-ghareeb --only firestore "node scripts/checks/reel-links-client.mjs"` |
 | `v21.js` | Nav animation, day pills, landscape nav, the previous icon motion (superseded by `v22.js` icons) | `node v21.js` |
 | `v20.js` | Sharing, titles, scroll restore, a11y, search (Chromium, plus WebKit iPhone) | `node v20.js` |
 | `shadowrule.js` | Shadow rule alone | `node shadowrule.js [widths] [full]`, e.g. `node shadowrule.js 320,390,1440` |

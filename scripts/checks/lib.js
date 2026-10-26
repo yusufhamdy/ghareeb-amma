@@ -5,9 +5,12 @@ const http = require("http"), fs = require("fs"), path = require("path");
 const ROOT = REPO + "/public";
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".webp": "image/webp" };
 
-function serve(root = ROOT) {
+// Pages get an empty Firebase config, so they run on the local JSON and never read production Firestore; pass
+// { liveFirebase: true } to serve the real config (only for the emulator checks, which point it at the emulator).
+function serve(root = ROOT, opts = {}) {
   const server = http.createServer((req, res) => {
     let p = decodeURIComponent(req.url.split("?")[0]);
+    if (p === "/firebase-config.js" && !opts.liveFirebase) { res.writeHead(200, { "Content-Type": "text/javascript" }); return res.end("window.FIREBASE_CONFIG={};"); }
     if (p.endsWith("/")) p += "index.html";
     const f = path.join(root, p);
     if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end("nf"); }

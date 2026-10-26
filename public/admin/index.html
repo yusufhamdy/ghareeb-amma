@@ -179,8 +179,11 @@ function withLinks(days,src){return days.map((d,i)=>{const o=(src||[])[i]||{};RL
 function chFromDoc(x){return {startDate:x.startDate==null?null:x.startDate,releasedUpTo:x.releasedUpTo==null?null:x.releasedUpTo,days:withLinks(CL.toTuples(x.days||[]),x.days)}}
 function chDoc(c){return {startDate:c.startDate==null?null:c.startDate,releasedUpTo:c.releasedUpTo==null?null:c.releasedUpTo,days:withLinks(CL.toObjects(c.days),c.days)}}
 function linkNames(d){return RL.filter(r=>d[r[0]]).map(r=>r[3])}
-function existSet(){const s=new Set();D.surahs.forEach(e=>e.words.forEach(w=>s.add((e.no||0)+"::"+N(w))));return s}
-function wordOk(ref){return existSet().has(ref[0]+"::"+N(ref[1]))}
+/* Matching only (never stored): the site search normalization, so a day word stored with ي/و still finds a word written
+   with ئ/ؤ (days 3 and 21). The stored day words keep their text; N() above still builds what is saved. */
+const NM=s=>N(s).replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/\s+/g," ");
+function existSet(){const s=new Set();D.surahs.forEach(e=>e.words.forEach(w=>s.add((e.no||0)+"::"+NM(w))));return s}
+function wordOk(ref){return existSet().has(ref[0]+"::"+NM(ref[1]))}
 function suraNameByNo(no){const e=D.surahs.find(x=>x.no===no);return e?nm(e):"سورة "+no}
 function populateWords(){
  const ss=document.querySelector('[data-f="c.addS"]'),ws=document.querySelector('[data-f="c.addW"]');
