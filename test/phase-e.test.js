@@ -149,7 +149,7 @@ test("E1: day card badge/word/chevron layout and even vertical gaps (pixel test)
         assert.equal(Math.round(info.chev.h), 36, tag + ": chevron circle is 36px tall");
         assert.ok(info.word.fs >= 24 && info.word.fs <= 26, tag + ": word font-size 24-26 (" + info.word.fs + ")");
         assert.ok(info.word.lh / info.word.fs >= 1.9, tag + ": word line-height >= 1.9 (" + (info.word.lh / info.word.fs) + ")");
-        assert.ok(/Amiri Quran/i.test(info.word.ff), tag + ": word uses Amiri Quran (" + info.word.ff + ")");
+        assert.ok(/^"?KFGQPC Uthmanic Hafs"?,/.test(info.word.ff), tag + ": word uses the Quran face KFGQPC Uthmanic Hafs (" + info.word.ff + ")");
         assert.equal(info.dir, "rtl", tag + ": card is RTL");
 
         const buf = await page.locator("#dw .dcard").first().screenshot();

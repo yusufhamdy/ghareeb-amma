@@ -8,10 +8,14 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/site.css">
+<link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>
+<script src="/qfont.js"></script>
 <style>
 :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 #app{max-width:760px}
 .in{width:100%;min-height:46px;border-radius:14px;padding:10px 14px;border:1px solid var(--gbr);background:var(--gb);color:var(--tx);font:inherit;font-size:16px}
+/* Quran text fields (word, ayah, its parts, surah name) use the visitors' Quran face (site.css .q) */
+.in.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif;font-size:20px}
 textarea.in{min-height:84px;resize:vertical;line-height:1.7}
 select.in{appearance:auto}
 .in[aria-invalid="true"]{border-color:var(--dg,#b8402c);box-shadow:0 0 0 1px var(--dg,#b8402c)}
@@ -340,7 +344,7 @@ function wordHtml(){
 <label class="lb" for="e-w">الكلمة</label><input class="in q" id="e-w" data-f="e.w" value="${esc(x.w)}"${fe(er,"w","w")}>${fd(er,"w","w")}
 <label class="lb" for="e-m">المعنى</label><textarea class="in" id="e-m" data-f="e.m"${fe(er,"m","m")}>${esc(x.m)}</textarea>${fd(er,"m","m")}
 <label class="lb" for="e-l">رقم الآية</label><input class="in" id="e-l" data-f="e.label" value="${esc(x.label)}"${fe(er,"label","l")}>${fd(er,"label","l")}
-<label class="lb" for="e-af">نص الآية</label><textarea class="in" id="e-af" data-f="e.af">${esc(x.af)}</textarea>
+<label class="lb" for="e-af">نص الآية</label><textarea class="in q" id="e-af" data-f="e.af">${esc(x.af)}</textarea>
 <label class="lb" for="e-ah">الجزء المظلل</label><input class="in q" id="e-ah" data-f="e.ah" value="${esc(x.ah)}"${fe(er,"ah","ah")}>${fd(er,"ah","ah")}
 <button class="g sm2" data-a="split" style="margin:8px 0">تقسيم تلقائي</button>
 ${x.segs.map((g,i)=>`<div class="sg"><input class="in" data-f="g.${i}.num" aria-label="رقم آية الجزء ${i+1}" value="${esc(g.num)}"><input class="in q" data-f="g.${i}.before" aria-label="النص قبل المظلل في الجزء ${i+1}" value="${esc(g.before)}"><input class="in q" data-f="g.${i}.hl" aria-label="النص المظلل في الجزء ${i+1}" value="${esc(g.hl)}"${fe(er,"g"+i,"g"+i)}><input class="in q" data-f="g.${i}.after" aria-label="النص بعد المظلل في الجزء ${i+1}" value="${esc(g.after)}"></div>${fd(er,"g"+i,"g"+i)}`).join("")}

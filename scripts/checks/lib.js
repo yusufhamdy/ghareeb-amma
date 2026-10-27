@@ -3,7 +3,7 @@ const REPO = require("path").resolve(__dirname, "../..").split(require("path").s
 const { chromium } = require("playwright");
 const http = require("http"), fs = require("fs"), path = require("path");
 const ROOT = REPO + "/public";
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".webp": "image/webp" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".json": "application/json", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ttf": "font/ttf", ".webp": "image/webp" };
 
 // Pages get an empty Firebase config, so they run on the local JSON and never read production Firestore; pass
 // { liveFirebase: true } to serve the real config (only for the emulator checks, which point it at the emulator).

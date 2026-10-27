@@ -812,3 +812,29 @@ Applied the final design to the app and publisher:
   PASSED (100); `tools/contrast.mjs` ALL PASS.
 
 
+
+## Quran font: KFGQPC Uthmanic Hafs v22 - 2026-10-27 (owner decision)
+
+- Decision (owner): Quran text uses the King Fahd Glorious Quran Printing Complex's unmodified official font file,
+  KFGQPC Uthmanic Hafs v22 (`public/fonts/kfgqpc-uthmanic-hafs-v22.ttf`, version 2.2, SHA-256
+  `a6e59510dcaf3ec99db49427321a035ed94af555ffc7d27e7f430b5fd5e179f8`), downloaded from the Complex's own site
+  (`https://qurancomplex.gov.sa/wp-content/uploads/kfgqpc-assets/fonts/uthmanic_hafs_v22.ttf`, the file its
+  developer page uses). It replaces the Phase 5B choice of Amiri Quran for Quran text, which was made because the
+  font's notice asks for written approval to reproduce or modify it.
+- The font remains the Complex's property. It is served exactly as published: no WOFF2 conversion, no subsetting,
+  no renaming inside the file, no edits. Its terms are in `public/fonts/LICENSE-KFGQPC.txt`, verbatim from the file.
+  The size and line metrics are matched to Amiri Quran with `@font-face` descriptors only (`size-adjust`,
+  `ascent-override`, `descent-override`, `line-gap-override`), which do not touch the file.
+- Why: the stored ayah text is in the KFGQPC Hafs encoding (U+06E1 sukun; open tanween U+0657 / U+065E / U+0656).
+  Amiri Quran draws U+065E as an empty box and U+0657 / U+0656 as other marks; KFGQPC v22 draws all of them.
+- Scope: KFGQPC is for Quran text only (class `.q`: ayat, headwords, surah names) on the site, the static pages
+  and the admin's ayah fields and preview. Amiri Quran stays for the logo, the favicon, the OG image and non-Quran
+  headings (class `.aq`). KFGQPC has no glyphs for the ornate parentheses U+FD3E / U+FD3F, so the browser draws
+  those two characters in Amiri Quran, the next face in the `.q` stack.
+- If the font cannot load (blocked, or offline on a first visit), `/qfont.js` adds `qf` to `<html>` and shows `.q`
+  text in Amiri Quran with the open tanween mapped to the standard code points (U+0657 -> U+08F0, U+065E -> U+08F1,
+  U+0656 -> U+08F2) at display time only; stored data is never changed.
+- The Complex's current developer download is a newer version, `kfgqpc_hafs_v30.zip` (2026-09-30), whose text
+  uses the standard open-tanween code points (U+08F0-U+08F2) and a different font file. Moving to it would mean
+  re-encoding every stored ayah; not done. The official Hafs text used for checks (`data/quran/`) is the Complex's
+  `UthmanicHafs_v2-0.zip` package, which has the same encoding as the v22 font.

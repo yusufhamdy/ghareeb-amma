@@ -22,6 +22,8 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646","url":"https://ghareebalquran.com/","inLanguage":"ar"}</script>
 <link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/firebase-config.js"></script><script src="/migrate.js"></script><script src="/quiz-core.js"></script><script src="/word-gap.js" defer></script>
 <link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>
+<script src="/qfont.js"></script>
 <style>
 :root{--bad:color-mix(in srgb,#E53935 50%,var(--tx));--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--b1:#8FCBAE;--b2:#EBC98A;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px}
 *{box-sizing:border-box}
@@ -29,7 +31,8 @@ body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Ar
 a{color:inherit;text-decoration:none}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.q{font-family:'Amiri Quran',serif}
+.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}
+.aq{font-family:'Amiri Quran',serif}
 .m{font-size:13px;color:var(--mu)}
 #bg i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
 #bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
@@ -205,6 +208,7 @@ nav.g .t.nvm .nvh{animation:nv-hop .4s ease-out}nav.g .t.nvm .nvl{animation:nv-o
 @media(min-width:801px){.cw{grid-template-columns:auto 1fr auto;grid-template-areas:"p c n";align-items:center}.pnb{flex-direction:column;width:104px;min-height:112px;padding:14px 8px;text-align:center;justify-content:center}}
 .cw.snav>.list{grid-area:c}
 .shade h1{font-family:'Amiri Quran',serif;font-weight:400;font-size:clamp(34px,7vw,60px);line-height:1.35}
+.shade h1.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}
 .shade .bd,.shade .lg{font-family:'IBM Plex Mono','IBM Plex Sans Arabic',monospace}
 .shade .g,.shade .card,.shade .sb,.shade .strip,.shade .toast,.shade .seg,.shade .list,.shade .ib{background:var(--sf);border:1px solid var(--sbd);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .shade .card,.shade .list,.shade .strip{border-radius:26px}
@@ -468,7 +472,7 @@ svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,
 </style>
 </head>
 <body>
-<div id="ld" class="ld"><div class="logo q">غريب القرآن</div><div class="lb"><i></i></div></div>
+<div id="ld" class="ld"><div class="logo aq">غريب القرآن</div><div class="lb"><i></i></div></div>
 <script>try{if(localStorage.getItem("gq-ld"))document.getElementById("ld").remove();else localStorage.setItem("gq-ld","1")}catch(e){}</script>
 <div id="bg"><i></i><i></i></div>
 <main class="wrap" id="app"></main>
@@ -541,7 +545,7 @@ function build(d){S=d.map(e=>{const name=e.surah.replace(/^سورة\s*/,'');cons
 const byId=id=>W.find(w=>w.id===id);
 const ICO={s:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',g:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',c:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>'};
 const BI={lk:'<svg class="i-lk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',sr:'<svg class="im i-sr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M12 15V3m0 0L8 7m4-4 4 4M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/><path class="pt ar" d="M12 15V3m0 0L8 7m4-4 4 4"/><path class="pt st" d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>',sh:'<svg class="im i-sh" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/><path class="pt s" pathLength="1" d="M4 20 21 3"/><path class="pt s" pathLength="1" d="M4 4l5 5M15 15l6 6"/><path class="pt h" d="M16 3h5v5"/><path class="pt h" d="M21 16v5h-5"/></svg>',bk:'<svg class="im i-bk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/><path class="pt bl" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path class="pt br" d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>',dl:'<svg class="im i-dl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/><path class="pt ar" d="M12 3v12m0 0-4-4m4 4 4-4"/><path class="pt st" d="M4 21h16"/></svg>',fw:'<svg class="i-cv i-cl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',bw:'<svg class="i-cv i-cr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
-const head=()=>`<header><a class="logo q" href="#/">غريب القرآن</a></header>`;
+const head=()=>`<header><a class="logo aq" href="#/">غريب القرآن</a></header>`;
 const wrow=w=>`<a class="row" href="#/word/${w.id}"><div class="w q">${esc(w.word)}</div><div class="t"><div>${esc(w.mean)}</div><div class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div></div></a>`;
 function rank(q){const n=norm(q);if(!n)return[];return W.map(w=>{let r=0;if(w.k===n)r=4;else if(w.k.startsWith(n))r=3;else if(w.k.includes(n))r=2;else if(w.km.includes(n))r=1;return[r,w]}).filter(x=>x[0]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);}
 const AY=a=>a.segments.map(g=>`﴿${esc(g.before)}<mark>${esc(g.hl)}</mark>${esc(g.after)}﴾`).join(' ');
@@ -596,7 +600,7 @@ const press=e=>{const c=e.target.closest&&e.target.closest('a,button');if(!c||!c
 const out=e=>{const c=e.target.closest&&e.target.closest('.imp');if(c)setTimeout(()=>drop(c),0)};
 addEventListener('pointerdown',press,true);addEventListener('keydown',e=>{if(!e.repeat&&(e.key==='Enter'||e.key===' '))press(e)},true);addEventListener('mouseout',out,true);addEventListener('focusout',out,true)})();
 function sfx(n){try{if(typeof SND!=='undefined'&&SND&&SND[n])SND[n]()}catch(e){}}
-try{if(document.fonts)['100px "Amiri Quran"','40px "IBM Plex Sans Arabic"','40px "IBM Plex Mono"'].forEach(f=>document.fonts.load(f).catch(()=>{}))}catch(e){}
+try{if(document.fonts)['100px "KFGQPC Uthmanic Hafs"','100px "Amiri Quran"','40px "IBM Plex Sans Arabic"','40px "IBM Plex Mono"'].forEach(f=>document.fonts.load(f).catch(()=>{}))}catch(e){}
 let rouAbort=null,qT=0;
 function rouOpen(pool,onPick){
   const list=(pool&&pool.length?pool:W).filter(w=>w&&w.word);
@@ -750,17 +754,18 @@ return{ok:()=>play('ok'),bad:()=>play('bad'),tick:()=>play('tick'),land:()=>play
 // quiz-core.js can fail to load (network); show a retry view instead of throwing, and report it once.
 function qStart(){if(!window.QCORE){if(!qStart.rep&&window.Sentry&&Sentry.captureMessage){qStart.rep=1;try{Sentry.captureMessage('quiz: QCORE missing (quiz-core.js did not load)')}catch(e){}}return false}const sh=a=>QCORE.shuffle(a);Q={i:0,s:0,a:null,qs:sh(W).slice(0,Math.min(10,W.length)).map(w=>({w,o:sh(QCORE.pickDistractors(w,W,3).concat([w]))}))}}
 function qView(){if(!Q&&qStart()===false)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;gap:10px"><div style="font-size:52px;color:var(--ac);line-height:1.2" aria-hidden="true">⚠</div><h1 style="font-size:24px">تعذّر تحميل الاختبار</h1><div class="sub">تأكد من اتصالك بالإنترنت ثم أعد المحاولة.</div></div><div class="acts"><button class="btn" data-a="reload">إعادة المحاولة</button><a class="btn o g" href="#/">الرئيسية</a></div>`;if(!Q)qStart();const n=Q.qs.length;if(Q.i>=n)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px"><h1>نتيجتك</h1>${ring(Q.s,n,96)}<div class="sub">${Q.s} من ${n}</div><div class="acts"><button class="btn" data-a="qre">اختبار جديد</button><a class="btn o" href="#/">الرئيسية</a></div></div>`;const q=Q.qs[Q.i],a=Q.a;return `${head()}<div style="display:flex;justify-content:space-between;align-items:center"><h1>اختبر نفسك</h1><span class="m">${Q.i+1} من ${n}</span></div><div class="bar"><i style="width:${Q.i/n*100}%"></i></div><div class="g card"><div class="m">ما معنى الكلمة المظللة؟</div><div class="ay q">${AY(q.w.ay)}</div></div><div class="opts">${q.o.map((x,i)=>`<button class="g opt${a!==null?(x===q.w?' ok':i===a?' bad':''):''}" data-o="${i}"${a!==null?' disabled':''}><span class="ogi" aria-hidden="true">${a!==null?(x===q.w?OKI:i===a?BADI:'').replace('<svg class="q',Q.rv?'<svg class="rv q':'<svg class="q'):''}</span>${esc(x.mean)}</button>`).join('')}</div>${`<div class="acts"${a===null?' style="visibility:hidden"':''}><button class="btn" data-a="qn">${Q.i+1<n?'التالي'+BI.fw:'النتيجة'}</button><a class="btn o" href="#/word/${q.w.id}">افتح الكلمة</a></div>`}`}
-function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');const art=(sc,cls,lbl,on)=>`<button class="opt2${on?' on':''}" data-sc="${sc}" aria-pressed="${on?'true':'false'}"><div class="artw"><div class="art ${cls}"><div class="lg3 q">غريب القرآن</div><div class="pl">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div class="aw q">${esc(w.word)}</div><div class="av q">${AY(w.ay)}</div><div class="am">${esc(w.mean)}</div></div></div><span>${lbl}</span></button>`;p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:44px">إلغاء</button></div><div class="m">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="arts">${art('n','rg','عادية · <bdi dir="ltr">1080×1350</bdi>',false)}${art('s','st','ستوري · <bdi dir="ltr">1080×1920</bdi>',true)}</div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="s" style="align-self:stretch">${BI.dl}حفظ على جهازي</button>`;cardFonts().then(()=>p.querySelectorAll('.artw').forEach(wr=>{const im=wr.firstElementChild;im.style.padding='0';const c=renderCard(w,im.classList.contains('st')?'s':'n');const put=u=>{const i=document.createElement('img');i.alt='';i.src=u;i.style.cssText='width:100%;height:100%;object-fit:cover;display:block';im.textContent='';im.appendChild(i)};if(c.toBlob)c.toBlob(b=>put(URL.createObjectURL(b)),'image/png');else put(c.toDataURL('image/png'))}))}
+function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');const art=(sc,cls,lbl,on)=>`<button class="opt2${on?' on':''}" data-sc="${sc}" aria-pressed="${on?'true':'false'}"><div class="artw"><div class="art ${cls}"><div class="lg3 aq">غريب القرآن</div><div class="pl">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div class="aw q">${esc(w.word)}</div><div class="av q">${AY(w.ay)}</div><div class="am">${esc(w.mean)}</div></div></div><span>${lbl}</span></button>`;p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:44px">إلغاء</button></div><div class="m">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="arts">${art('n','rg','عادية · <bdi dir="ltr">1080×1350</bdi>',false)}${art('s','st','ستوري · <bdi dir="ltr">1080×1920</bdi>',true)}</div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="s" style="align-self:stretch">${BI.dl}حفظ على جهازي</button>`;cardFonts().then(()=>p.querySelectorAll('.artw').forEach(wr=>{const im=wr.firstElementChild;im.style.padding='0';const c=renderCard(w,im.classList.contains('st')?'s':'n');const put=u=>{const i=document.createElement('img');i.alt='';i.src=u;i.style.cssText='width:100%;height:100%;object-fit:cover;display:block';im.textContent='';im.appendChild(i)};if(c.toBlob)c.toBlob(b=>put(URL.createObjectURL(b)),'image/png');else put(c.toDataURL('image/png'))}))}
 function cardFonts(){if(!document.fonts||!document.fonts.load)return Promise.resolve();return Promise.all(CARD_FONTS.map(([f,t])=>document.fonts.load(f,t).catch(()=>{}))).then(()=>document.fonts.ready).catch(()=>{})}
 function cardMobile(){try{if(matchMedia('(hover: none) and (pointer: coarse)').matches)return true}catch(e){}return /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle|Opera Mini/i.test(navigator.userAgent||'')}
 function downloadBlob(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 // Save-as-image card: mirrors the word page at a fixed size; content auto-fits instead of growing the canvas.
-const CARD_FONTS=[['40px "Amiri Quran"','غريب ﴿﴾'],['40px "Amiri Quran"','a'],['400 40px "IBM Plex Sans Arabic"','المعنى'],['400 40px "IBM Plex Sans Arabic"','a'],['500 40px "IBM Plex Sans Arabic"','المعنى'],['500 40px "IBM Plex Sans Arabic"','a'],['600 40px "IBM Plex Sans Arabic"','المعنى'],['600 40px "IBM Plex Sans Arabic"','a']];
+const CARD_FONTS=[['40px "KFGQPC Uthmanic Hafs"','بِسۡمِ'],['40px "Amiri Quran"','غريب ﴿﴾'],['40px "Amiri Quran"','a'],['400 40px "IBM Plex Sans Arabic"','المعنى'],['400 40px "IBM Plex Sans Arabic"','a'],['500 40px "IBM Plex Sans Arabic"','المعنى'],['500 40px "IBM Plex Sans Arabic"','a'],['600 40px "IBM Plex Sans Arabic"','المعنى'],['600 40px "IBM Plex Sans Arabic"','a']];
 function renderCard(w,size){size=size==='s'?'s':'n';
 const st=size==='s',W=1080,H=st?1920:1350,K=st?1.1:1,S=W/390,B=170/64*K,M=72,P=60*K,PM=54*K,GAP=st?44:36,TOP=st?250:72,BOT=st?360:72,IW=W-2*M-2*P,XR=W-M-P,
 c=document.createElement('canvas'),x=c.getContext('2d'),cs=getComputedStyle(document.documentElement),v=k=>cs.getPropertyValue(k).trim(),shade=document.body.classList.contains('shade');
 c.width=W;c.height=H;x.direction='rtl';x.textAlign='right';
-const AQ=s=>s+'px "Amiri Quran"',PX=(wt,s)=>wt+' '+s+'px "IBM Plex Sans Arabic"';
+// Quran text (word, ayah) is drawn in KFGQPC, the logo in Amiri Quran; QT applies the display mapping of /qfont.js when KFGQPC could not load.
+const AQ=s=>s+'px "Amiri Quran"',QF=s=>s+'px "KFGQPC Uthmanic Hafs","Amiri Quran"',QT=s=>window.qText?window.qText(s):String(s),PX=(wt,s)=>wt+' '+s+'px "IBM Plex Sans Arabic"';
 const rgb=s=>{x.fillStyle='#000';x.fillStyle=s||'#000';const f=x.fillStyle;if(f[0]==='#')return[1,3,5].map(i=>parseInt(f.substr(i,2),16)).concat(1);const m=f.match(/[\d.]+/g).map(Number);return[m[0],m[1],m[2],m[3]==null?1:m[3]]};
 const rgba=(k,a)=>`rgba(${k[0]},${k[1]},${k[2]},${a==null?k[3]:a})`,mix=(a,b,t)=>[0,1,2].map(i=>Math.round(a[i]*(1-t)+b[i]*t)).concat(1);
 const met=(font,t)=>{x.font=font;const m=x.measureText(t),s=parseFloat(font.replace(/^\d00 /,''));return{w:m.width,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,fa:m.fontBoundingBoxAscent!=null?m.fontBoundingBoxAscent:s*.9,fd:m.fontBoundingBoxDescent!=null?m.fontBoundingBoxDescent:s*.3}};
@@ -772,17 +777,17 @@ const pill=w.s.name+' · آية '+w.ay.label,LG=66*K,PF=32*K,PH=76*K,PPX=35*K;
 // Ayah as glue groups (split at spaces); each <mark> is one unbreakable piece, like the site's inline-block mark.
 const G=[];let cur=null;const nw=()=>{cur=[];G.push(cur)};
 const addT=t=>t.split(' ').forEach((p,i)=>{if(i>0||!cur)nw();if(p)cur.push({t:p,mk:false})});
-w.ay.segments.forEach((g,i)=>{if(i>0)nw();addT('﴿'+g.before);if(g.hl){if(!cur)nw();cur.push({t:g.hl,mk:true})}addT(g.after+'﴾')});
+w.ay.segments.forEach((g,i)=>{if(i>0)nw();addT('﴿'+QT(g.before));if(g.hl){if(!cur)nw();cur.push({t:QT(g.hl),mk:true})}addT(QT(g.after)+'﴾')});
 const GR=G.filter(g=>g.length);
 const lay=f=>{const o={f,ok:true};
 const lg=met(AQ(LG),'غريب القرآن');o.HH=Math.max(PH,lg.asc+lg.desc);o.lg=lg;o.pw=met(PX(600,PF),pill).w+2*PPX;
-let ws=170*K*f,wl;for(;;){wl=wrap(AQ(ws),w.word,IW);if((wl.ls.length<=2&&wl.ok)||ws<24)break;ws*=.96}
+let ws=170*K*f,wl;for(;;){wl=wrap(QF(ws),QT(w.word),IW);if((wl.ls.length<=2&&wl.ok)||ws<24)break;ws*=.96}
 if(!wl.ok||wl.ls.length>2)o.ok=false;
-const wm=wl.ls.map(t=>met(AQ(ws),t));const wb=[wm[0].asc];for(let i=1;i<wm.length;i++)wb.push(wb[i-1]+Math.max(1.5*ws,wm[i-1].desc+wm[i].asc+.08*ws));
+const wm=wl.ls.map(t=>met(QF(ws),t));const wb=[wm[0].asc];for(let i=1;i<wm.length;i++)wb.push(wb[i-1]+Math.max(1.5*ws,wm[i-1].desc+wm[i].asc+.08*ws));
 o.ws=ws;o.wl=wl.ls;o.wb=wb;o.wInk=wb[wb.length-1]+wm[wm.length-1].desc;o.div=o.wInk+28;
-const as=58*K*f,am=met(AQ(as),'﴿'),hl=(1.6*as-(am.fa+am.fd))/2,mT=am.fa+hl+.08*as,mB=am.fd+hl+.14*as,mX=.32*as;
-x.font=AQ(as);const sp=x.measureText(' ').width;
-const gs=GR.map(g=>{const ps=g.map(p=>{const k=met(AQ(as),p.t);return{t:p.t,mk:p.mk,w:k.w+(p.mk?2*mX:0),top:p.mk?Math.max(mT,k.asc):k.asc,bot:p.mk?Math.max(mB,k.desc):k.desc}});return{ps,w:ps.reduce((a,p)=>a+p.w,0)}});
+const as=58*K*f,am=met(QF(as),'﴿'),hl=(1.6*as-(am.fa+am.fd))/2,mT=am.fa+hl+.08*as,mB=am.fd+hl+.14*as,mX=.32*as;
+x.font=QF(as);const sp=x.measureText(' ').width;
+const gs=GR.map(g=>{const ps=g.map(p=>{const k=met(QF(as),p.t);return{t:p.t,mk:p.mk,w:k.w+(p.mk?2*mX:0),top:p.mk?Math.max(mT,k.asc):k.asc,bot:p.mk?Math.max(mB,k.desc):k.desc}});return{ps,w:ps.reduce((a,p)=>a+p.w,0)}});
 const al=[];let ln=null;for(const g of gs){if(g.w>IW)o.ok=false;if(ln&&ln.w+sp+g.w<=IW){ln.gs.push(g);ln.w+=sp+g.w}else{ln={gs:[g],w:g.w};al.push(ln)}}
 al.forEach(l=>{l.top=Math.max(...l.gs.flatMap(g=>g.ps.map(p=>p.top)));l.bot=Math.max(...l.gs.flatMap(g=>g.ps.map(p=>p.bot)))});
 const ab=al.length?[o.div+30+al[0].top]:[];for(let i=1;i<al.length;i++)ab.push(ab[i-1]+Math.max(2.1*as,al[i-1].bot+al[i].top+.1*as));
@@ -811,9 +816,9 @@ const T=(t,X,Y,font,col,card,al,role)=>{al=al||'right';x.font=font;x.textAlign=a
 const hy=y;y+=o.HH+GAP;cards.word={x:M,y,w:W-2*M,h:o.WH};const wy=y+P;y+=o.WH+GAP;cards.mean={x:M,y,w:W-2*M,h:o.MH};const my=y;y+=o.MH+GAP;const fy=y;
 const lgB=hy+o.HH/2+(o.lg.asc-o.lg.desc)/2;T('غريب القرآن',W-M,lgB,AQ(LG),rgba(C.ac,1),null,'right','logo');
 const pl={x:M,y:hy+(o.HH-PH)/2,w:o.pw,h:PH},pb=lbox(PX(600,PF),PH/PF,PF);
-o.wl.forEach((t,i)=>T(t,XR,wy+o.wb[i],AQ(o.ws),rgba(C.ac,1),'word','right','word'));
+o.wl.forEach((t,i)=>T(t,XR,wy+o.wb[i],QF(o.ws),rgba(C.ac,1),'word','right','word'));
 const divY=o.al.length?wy+o.div:null,marks=[];
-o.al.forEach((l,i)=>{const b=wy+o.ab[i];let xr=XR;l.gs.forEach(g=>{g.ps.forEach(p=>{if(p.mk){x.font=AQ(o.as);x.textAlign='right';const q=x.measureText(p.t),hp=.12*o.as,rx=xr-o.mX,ik=(window.rasterInk&&rasterInk(AQ(o.as),o.as,p.t,1))||(q.actualBoundingBoxLeft!=null?{left:q.actualBoundingBoxLeft,right:q.actualBoundingBoxRight,asc:q.actualBoundingBoxAscent,desc:q.actualBoundingBoxDescent}:null);marks.push(ik?{x:rx-ik.left-hp,y:b-ik.asc-hp,w:ik.left+ik.right+2*hp,h:ik.asc+ik.desc+2*hp,card:'word'}:{x:xr-p.w,y:b-o.mT,w:p.w,h:o.mT+o.mB,card:'word'});T(p.t,xr-o.mX,b,AQ(o.as),C.tx,'word','right','ayah')}else T(p.t,xr,b,AQ(o.as),C.tx,'word','right','ayah');xr-=p.w});xr-=o.sp})});
+o.al.forEach((l,i)=>{const b=wy+o.ab[i];let xr=XR;l.gs.forEach(g=>{g.ps.forEach(p=>{if(p.mk){x.font=QF(o.as);x.textAlign='right';const q=x.measureText(p.t),hp=.12*o.as,rx=xr-o.mX,ik=(window.rasterInk&&rasterInk(QF(o.as),o.as,p.t,1))||(q.actualBoundingBoxLeft!=null?{left:q.actualBoundingBoxLeft,right:q.actualBoundingBoxRight,asc:q.actualBoundingBoxAscent,desc:q.actualBoundingBoxDescent}:null);marks.push(ik?{x:rx-ik.left-hp,y:b-ik.asc-hp,w:ik.left+ik.right+2*hp,h:ik.asc+ik.desc+2*hp,card:'word'}:{x:xr-p.w,y:b-o.mT,w:p.w,h:o.mT+o.mB,card:'word'});T(p.t,xr-o.mX,b,QF(o.as),C.tx,'word','right','ayah')}else T(p.t,xr,b,QF(o.as),C.tx,'word','right','ayah');xr-=p.w});xr-=o.sp})});
 let my2=my+PM;T('المعنى',XR,my2+o.L1.base,PX(400,30*K),C.mu,'mean','right','label');my2+=o.L1.h+o.g2;
 o.ml.forEach(t=>{T(t,XR,my2+o.L2.base,PX(500,o.ms),C.tx,'mean','right','meaning');my2+=o.L2.h});
 if(o.sl.length){my2+=o.g2;o.sl.forEach(t=>{T(t,XR,my2+o.L3.base,PX(400,27*K),C.mu,'mean','right','source');my2+=o.L3.h})}
@@ -870,7 +875,7 @@ const SOC=[['ig','https://instagram.com/yusuf.hamdy','@yusuf.hamdy','إنستج�
 const socA=()=>SOC.map(s=>`<a class="so" href="${s[1]}" target="_blank" rel="noopener" aria-label="${s[3]}: ${s[2]}">${IC[s[0]]}<span>${s[2]}</span></a>`).join('');
 const foot=()=>`<footer class="ft"><div class="fl"><a href="#/about">عن الموقع</a><a href="#/privacy">الخصوصية</a><a href="#/terms">الشروط</a><a href="#/rights">الحقوق والمصادر</a></div><div class="m">© ${new Date().getFullYear()} غريب القرآن</div></footer>`;
 const strip=()=>`<div class="g strip"><span>لمشاهدة شروح الكلمات في مقاطع قصيرة، تابعنا</span>${socA()}</div>`;
-const nf404=()=>`${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px"><div class="q" style="font-size:96px;color:var(--ac);line-height:1.3">404</div><h1>الصفحة غير موجودة</h1><div class="sub">ربما تغيّر الرابط أو لم تعد الصفحة متاحة.</div><div class="acts" style="justify-content:center"><a class="btn" href="#/">الرئيسية</a><button class="btn o" data-a="rnd">${BI.sh}اسحب كلمة</button></div></div>`;
+const nf404=()=>`${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px"><div class="aq" style="font-size:96px;color:var(--ac);line-height:1.3">404</div><h1>الصفحة غير موجودة</h1><div class="sub">ربما تغيّر الرابط أو لم تعد الصفحة متاحة.</div><div class="acts" style="justify-content:center"><a class="btn" href="#/">الرئيسية</a><button class="btn o" data-a="rnd">${BI.sh}اسحب كلمة</button></div></div>`;
 const failView=()=>`${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;gap:10px"><div style="font-size:52px;color:var(--ac);line-height:1.2" aria-hidden="true">⚠</div><h1 style="font-size:24px">تعذّر تحميل البيانات</h1><div class="sub">تأكد من اتصالك بالإنترنت ثم أعد المحاولة.</div></div><div class="list g">${['قاعدة البيانات','النسخة الاحتياطية'].map(s=>`<div class="row"><b style="flex:1">${s}</b><span class="m">✕ تعذّر الوصول</span></div>`).join('')}</div><div class="acts"><button class="btn" data-a="reload">إعادة المحاولة</button><a class="btn o g" href="#/">الرئيسية</a></div>`;
 // nav icons: each moving part is named (nvh house, nvl/nvr the book's halves, nvo the challenge arc, nvq the question
 // mark) for the motion that plays once when its tab becomes the active tab

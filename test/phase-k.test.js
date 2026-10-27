@@ -107,7 +107,15 @@ test("K1: every static page links the shared stylesheet and the synchronous them
     // Word pages may add exactly one deferred /word-gap.js; every check below runs on the rest of the page.
     if (p.startsWith("word/")) assert.strictEqual(full.split(WORD_GAP).length - 1, 1, p + " must load /word-gap.js once, deferred");
     else assert.ok(!full.includes("/word-gap.js"), p + " must not load /word-gap.js");
-    const html = p.startsWith("word/") ? full.replace(WORD_GAP, "") : full;
+    // Pages with Quran text (word and surah pages) also load the Quran-face guard once, synchronously in <head>
+    // (KFGQPC, 2026-10-27); the legal pages show no Quran text and do not.
+    const QFONT = '<script src="/qfont.js"></script>';
+    const quranPage = p.startsWith("word/") || p.startsWith("surah/");
+    if (quranPage) {
+      assert.strictEqual(full.split(QFONT).length - 1, 1, p + " must load /qfont.js once");
+      assert.ok(full.indexOf(QFONT) < full.indexOf("</head>"), p + " /qfont.js must be in <head>");
+    } else assert.ok(!full.includes("/qfont.js"), p + " must not load /qfont.js");
+    const html = (p.startsWith("word/") ? full.replace(WORD_GAP, "") : full).replace(quranPage ? QFONT : "\u0000", "");
     assert.ok(html.includes('<link rel="stylesheet" href="/css/app.css">'), p + " must link the shared stylesheet");
     assert.ok(html.includes('<script src="/theme-boot.js"></script>'), p + " must include the theme bootstrap");
     assert.ok(html.indexOf('<script src="/theme-boot.js"></script>') < html.indexOf("</head>"), p + " theme bootstrap must be in <head>");

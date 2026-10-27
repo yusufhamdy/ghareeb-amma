@@ -54,7 +54,7 @@ const WORDS = { short: "سَجَى", long: "الْخُنَّسِ الْجَوَ�
           // Layout boxes from the same renderer, for the report.
           const info = await page.evaluate(([id, size]) => {
             const w = W.find((x) => x.id === id), c = renderCard(w, size);
-            return { w: c.width, h: c.height, fonts: { amiri: document.fonts.check('120px "Amiri Quran"'), plex: document.fonts.check('28px "IBM Plex Sans Arabic"') } };
+            return { w: c.width, h: c.height, fonts: { quran: document.fonts.check('120px "KFGQPC Uthmanic Hafs"'), logo: document.fonts.check('120px "Amiri Quran"'), plex: document.fonts.check('28px "IBM Plex Sans Arabic"') } };
           }, [id, size]);
           meta.push({ kind, size, style, pal, mode, id, file, suggested: dl.suggestedFilename(), png: [pw, ph], chk, w: info.w, h: info.h, fonts: info.fonts });
           await page.waitForTimeout(150);

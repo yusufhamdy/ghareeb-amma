@@ -38,7 +38,8 @@
     var wd = document.querySelector('.cols .card .wd'), vr = wd && wd.parentElement.querySelector('.vr');
     if (!wd || !vr || !document.fonts || !document.fonts.load) return;
     var cs = getComputedStyle(wd);
-    document.fonts.load(parseFloat(cs.fontSize) + 'px "Amiri Quran"', wd.textContent).then(function () {
+    // the face the headword is actually drawn in (KFGQPC, or Amiri Quran when qfont.js fell back)
+    document.fonts.load(cs.fontWeight + ' ' + parseFloat(cs.fontSize) + 'px ' + cs.fontFamily, wd.textContent).then(function () {
       if (!wd.isConnected) return;
       var s = measure(wd, vr);
       if (s == null) return;
@@ -136,5 +137,7 @@
   window.wordGap = fit;
   window.markInk = inkMarks;
   addEventListener('resize', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(function () { fit(); inkMarks(); }); });
+  // qfont.js switched the Quran face (fallback or restore): measure again
+  document.addEventListener('qfont', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(function () { fit(); inkMarks(); }); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { fit(); inkMarks(); }); else { fit(); inkMarks(); }
 })();

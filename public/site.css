@@ -3,7 +3,8 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;background:var(--bg,#F2F0E8);color:var(--tx,#1D2B25);min-height:100vh}
-.q{font-family:'Amiri Quran','Traditional Arabic',serif}
+.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran','Traditional Arabic',serif}
+.aq{font-family:'Amiri Quran',serif}
 #bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}
 #bg i{position:absolute;border-radius:50%;filter:blur(70px)}
 .b1{top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8}
