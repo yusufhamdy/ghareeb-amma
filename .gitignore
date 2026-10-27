@@ -91,3 +91,6 @@ build/
 
 # Resume checkpoint (keep out of git)
 CHECKPOINT.md
+
+# production snapshots written by scripts/fix-ayat-firestore.mjs
+backup/firestore/

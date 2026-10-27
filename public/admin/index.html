@@ -79,6 +79,7 @@ button[aria-busy="true"]{opacity:.8;cursor:progress}
 <script src="/theme.js"></script>
 <script src="/firebase-config.js"></script>
 <script src="/admin/challenge-logic.js"></script>
+<script src="/admin/ayah-check.js"></script>
 <script>
 
 const OWNER="yusufhamdy20@gmail.com";
@@ -120,6 +121,7 @@ function errMsg(e,what){const c=String(e&&(e.code||e.message)||""),w=what||"ال
  if(/^(offline|unavailable|timeout|deadline-exceeded)$/.test(c)||/offline|network/i.test(String(e&&e.message)))return"تعذّر "+w+": لا يوجد اتصال بالإنترنت أو أن الخادم لا يستجيب.";
  if(c==="permission-denied"||c==="unauthenticated")return"تعذّر "+w+": ليست لديك صلاحية، أو انتهت جلسة الدخول. سجّل الدخول بحساب مشرف ثم أعد المحاولة.";
  if(c==="big")return"تعذّر "+w+": حجم البيانات تجاوز الحد المسموح.";
+ if(c==="ref")return"تعذّر "+w+": لم يُحمَّل النص الرسمي للقرآن الكريم، وهو مطلوب للتحقق من نص الآية. تحقّق من الاتصال ثم أعد المحاولة.";
  return"تعذّر "+w+" بسبب خطأ غير متوقع ("+c+").";}
 function chkSize(s){if(new Blob([JSON.stringify(s)]).size>950000)throw errOf("big")}
 
@@ -360,6 +362,12 @@ function openW(si,wi,btn){
   x.base={sName:nm(e),no:e.no,w:e.words[wi],m:e.meanings[wi],ay:e.ayahs[wi],mShown:x.m,label0:String(a.label),segs0:JSON.stringify(x.segs),key:JSON.stringify([e.words[wi],e.meanings[wi],e.ayahs[wi]])}}
  ED=x;openWin("word",wordHtml,btn);
 }
+/* The ayah text rule (ayah-check.js, the same rule the tests apply to words.json): each part must be one contiguous piece
+   of its ayah in the official text of the King Fahd Complex. That text is loaded only here, on the first save. */
+let QREF=null;
+function quranRef(){if(!QREF)QREF=fetch("/admin/quran-hafs.json").then(r=>{if(!r.ok)throw errOf("ref");return r.json()}).then(d=>AyahCheck.fromTable(d)).catch(()=>{QREF=null;throw errOf(offline()?"offline":"ref")});return QREF}
+function ayahErrors(segs,no,sName,ref){const r={};if(!(no>=1&&no<=114)){r.g0="لا يمكن التحقق من نص الآية لأن رقم سورة "+sName+" في المصحف غير معروف. صحّح رقمها من «تعديل سورة» ثم احفظ.";return r}
+ AyahCheck.check(segs,no,ref).forEach(p=>{r["g"+p.i]=p.why==="num"?"لا توجد آية رقمها "+(String(p.num==null?"":p.num).trim()||"(فارغ)")+" في سورة "+sName+". صحّح رقم الآية لهذا الجزء.":"نص هذا الجزء لا يطابق نص الآية "+p.num+" من سورة "+sName+" في النص الرسمي لمجمّع الملك فهد لطباعة المصحف الشريف. انسخ النص منه كما هو، دون تعديل."});return r}
 function wordErrors(x){const r={};if(!x.w.trim())r.w="اكتب الكلمة.";if(!x.m.trim())r.m="اكتب المعنى.";if(!String(x.label).trim())r.label="اكتب رقم الآية.";x.segs.forEach((g,i)=>{if(!g.hl.trim())r["g"+i]="اكتب النص المظلل لهذا الجزء."});return r}
 async function saveW(btn,force){
  const x=ED;if(!x)return;
@@ -368,6 +376,9 @@ async function saveW(btn,force){
  const w=b&&!isNew&&x.w.trim()===String(b.w).trim()?b.w:x.w.trim();
  const m=b&&!isNew&&x.m.trim()===String(b.mShown).trim()?b.m:x.m.trim();
  const a=b&&!isNew&&String(x.label).trim()===b.label0.trim()&&JSON.stringify(x.segs)===b.segs0?b.ay:{label:String(x.label).trim(),segments:x.segs.map(g=>({num:+g.num||+x.label||0,before:g.before,hl:g.hl.trim(),after:g.after}))};
+ // the ayah text must match the official text before anything is written
+ let ref;try{ref=await quranRef()}catch(e){return winFail(e,"الحفظ",bb=>saveW(bb,force))}
+ const ae=ayahErrors(a.segments,+(D.surahs[x.si]||{}).no,tName,ref);if(Object.keys(ae).length){x.err=ae;MD.err="";repaint(FIRSTERR);return}
  if(!isNew&&!x.warned){const used=daysUsing(b.no,b.w),moved=tName!==b.sName,renamed=NM(w)!==NM(b.w);
   if(used.length&&(moved||renamed))return ask({title:"الكلمة «"+b.w+"» مستخدمة في التحدي",body:"تستخدمها: "+DAYS(used)+". بعد تغيير "+(moved?"سورتها":"نصها")+" لن تجدها هذه الأيام، ولن تظهر فيها على الموقع حتى تعدّلها من تبويب «التحدي».",yes:"حفظ رغم ذلك",no:"رجوع",noIcon:IC_PEN,trig:btn,onYes:()=>{x.warned=true;saveW($('#md [data-a="saveW"]'),force)}})}
  await saving(btn,async()=>{
