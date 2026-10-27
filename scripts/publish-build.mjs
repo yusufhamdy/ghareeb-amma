@@ -22,7 +22,7 @@
  * Output (written only under --out; never over the committed public/ tree):
  *   words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
  *   plus the static legal pages about/index.html, privacy/index.html,
- *   terms/index.html, rights/index.html (copy verbatim from functions/legal.js).
+ *   terms/index.html, rights/index.html (copy verbatim from shared/legal.js).
  *
  * Safety: the whole site is built in memory, validated, and only then written.
  * It aborts with a non-zero exit and no output on empty data, fewer than 73
@@ -30,8 +30,8 @@
  *
  * ASCII-ONLY: every Arabic fragment is a \u escape (see
  * test/arabic-guard.test.js, which treats literal Arabic in new files as
- * protected content). The canonical slug scheme comes from functions/seo.js and
- * the public challenge payload from functions/challenge.js, so both stay single
+ * protected content). The canonical slug scheme comes from shared/seo.js and
+ * the public challenge payload from shared/challenge.js, so both stay single
  * sources of truth. The rendered HTML mirrors the committed static pages
  * byte-for-byte (the older committed format, which is the one Google indexed).
  */
@@ -42,9 +42,9 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const seo = require("../functions/seo.js");
-const challenge = require("../functions/challenge.js");
-const { LEGAL } = require("../functions/legal.js");
+const seo = require("../shared/seo.js");
+const challenge = require("../shared/challenge.js");
+const { LEGAL } = require("../shared/legal.js");
 // How Quran text is shown (shared with the app): the headword in the mushaf's spelling, the highlight on whole words.
 const QText = require("../public/qtext.js");
 
@@ -227,7 +227,7 @@ export function buildRecords(surahs) {
         i,
         label,
         labelNum: Number(String(label).split("-")[0]) || i + 1,
-        slug: slugs[si++], // slugs are assigned in data order (see functions/seo.js)
+        slug: slugs[si++], // slugs are assigned in data order (see shared/seo.js)
         word: words[i],
         dw: QText.displayWord(a) || words[i],
         raw: meanings[i] || "",
@@ -504,7 +504,7 @@ export function renderSurahPage(s) {
 }
 
 // Static legal pages: /about, /privacy, /terms, /rights. Text is verbatim from
-// functions/legal.js (never retyped here). Same bare sheet as the word pages.
+// shared/legal.js (never retyped here). Same bare sheet as the word pages.
 export function renderLegalPage(entry) {
   const title = esc(entry.title) + " | " + A.LOGO;
   // The contact email becomes a mailto link; the paragraph text itself is unchanged.

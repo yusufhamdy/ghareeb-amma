@@ -1,5 +1,5 @@
 /*
- * seo.js - canonical slug resolution for the `seo` Cloud Function.
+ * seo.js - canonical slug resolution (shared by the publish build and the tests).
  *
  * Canonical URLs are defined by existing project artefacts (never invented):
  *   - the 73 static pages under public/word/
@@ -54,8 +54,8 @@ function slugFor(surah, no, label, count) {
   return prefix + "-" + label + (count > 1 ? "-" + count : "");
 }
 
-// Pure slug computation over the raw surah list. Mirrors exactly what
-// functions/index.js assigns per word; exposed for test/seo.test.js.
+// Pure slug computation over the raw surah list: the slugs of the static word
+// pages (scripts/publish-build.mjs); exposed for test/seo.test.js.
 function buildSlugs(list) {
   const out = [];
   (list || []).forEach((e) => {

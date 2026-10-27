@@ -4,6 +4,7 @@
  *
  *   npm run csp:update        recompute the inline-script hashes and write firebase.json
  *   node scripts/csp-update.mjs --check    exit 1 if firebase.json is not what this script would write
+ *   node scripts/csp-update.mjs --check-root DIR    exit 1 if an inline script under DIR is not allowed by the CSP
  *
  * The policy allows only what the pages load, as observed on the preview with scripts/checks/csp.js (2026-10-27):
  *   - scripts: the site itself, the inline scripts by their sha256 hash (no 'unsafe-inline'), the Sentry loader
@@ -60,15 +61,26 @@ export function inlineScripts(html) {
   return out;
 }
 
-export function hashes() {
+// the sha256 sources of every inline script under dir (default public/)
+export function hashes(dir = PUBLIC) {
+  return [...hashMap(dir).keys()].sort();
+}
+function hashMap(dir) {
   const set = new Map();
-  for (const f of htmlFiles()) {
+  for (const f of htmlFiles(dir)) {
     for (const s of inlineScripts(fs.readFileSync(f, "utf8"))) {
       const h = "'sha256-" + crypto.createHash("sha256").update(s, "utf8").digest("base64") + "'";
-      if (!set.has(h)) set.set(h, path.relative(PUBLIC, f).split(path.sep).join("/"));
+      if (!set.has(h)) set.set(h, path.relative(dir, f).split(path.sep).join("/"));
     }
   }
-  return [...set.keys()].sort();
+  return set;
+}
+
+// Inline scripts under dir whose hash the committed policy does not allow: [{ hash, file }]
+export function missingFromPolicy(dir) {
+  const j = JSON.parse(fs.readFileSync(FIREBASE_JSON, "utf8"));
+  const csp = ((((j.hosting.headers || []).find((h) => h.source === "**") || {}).headers || []).find((h) => h.key === "Content-Security-Policy") || {}).value || "";
+  return [...hashMap(dir)].filter(([h]) => !csp.includes(h)).map(([hash, file]) => ({ hash, file }));
 }
 
 export function policy() {
@@ -110,7 +122,15 @@ export function updatedFirebaseJson() {
 }
 
 const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (invokedDirectly) {
+if (invokedDirectly && process.argv.includes("--check-root")) {
+  // a hosting root about to be deployed (e.g. publish.yml's build/hosting): every inline script must be allowed
+  const dir = path.resolve(process.argv[process.argv.indexOf("--check-root") + 1] || "");
+  if (!fs.existsSync(dir)) { console.error("csp-update: no such folder: " + dir); process.exit(2); }
+  const miss = missingFromPolicy(dir);
+  miss.forEach((m) => console.error("csp-update: inline script in " + m.file + " is not in the CSP (" + m.hash + ")"));
+  if (miss.length) process.exit(1);
+  console.log("csp-update: every inline script under " + path.relative(ROOT, dir) + " is allowed by the CSP");
+} else if (invokedDirectly) {
   const next = updatedFirebaseJson();
   const cur = fs.readFileSync(FIREBASE_JSON, "utf8");
   if (process.argv.includes("--check")) {

@@ -1,9 +1,8 @@
 /*
- * normalize.js - canonical Arabic normalization for the Cloud Functions code.
+ * normalize.js - canonical Arabic normalization, the shared copy (shared/).
  *
- * This mirrors src/utils/normalize.js exactly (the functions bundle cannot
- * require files outside its own folder at deploy time). test/normalize-parity
- * asserts the two stay identical, so change both together.
+ * This mirrors src/utils/normalize.js exactly. test/normalize-parity asserts
+ * the two stay identical, so change both together.
  */
 function normalizeArabic(str) {
   if (!str) return '';

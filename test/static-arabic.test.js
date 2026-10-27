@@ -5,7 +5,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
-const seo = require("../functions/seo.js");
+const seo = require("../shared/seo.js");
 // The visible headword is the mushaf's spelling taken from the ayah (qtext.js displayWord); the stored word stays in
 // the page's data (JSON-LD), titles and URLs.
 const QText = require("../public/qtext.js");

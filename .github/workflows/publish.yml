@@ -79,17 +79,16 @@ jobs:
           mkdir -p build/hosting
           cp -R public/. build/hosting/
           cp -R build/site/. build/hosting/
-          # Hosting-only config for the throwaway root. Phase 7B removes the
-          # /word/** and /sitemap.xml rewrites from the tracked firebase.json;
-          # this build root already has no functions.
-          cat > build/hosting/firebase.json <<'JSON'
-          {
-            "hosting": {
-              "public": ".",
-              "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "_shade-cards-proposal.html"]
-            }
-          }
-          JSON
+          # The throwaway root's config is the tracked hosting block (security headers with the CSP, cache
+          # headers, redirects) served from "." - a config without them would drop every header on deploy.
+          node -e 'const j=require("./firebase.json");j.hosting.public=".";require("fs").writeFileSync("build/hosting/firebase.json",JSON.stringify({hosting:j.hosting},null,2))'
+
+      - name: Check the CSP allows every inline script being deployed
+        if: steps.gen.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          node scripts/csp-update.mjs --check
+          node scripts/csp-update.mjs --check-root build/hosting
 
       - name: Deploy Hosting
         if: steps.gen.outputs.changed == 'true'

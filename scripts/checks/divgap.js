@@ -26,7 +26,7 @@ const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
   }, [a.toString("base64"), b.toString("base64")]);
 
   const words = JSON.parse(fs.readFileSync(REPO + "/public/words.json", "utf8"));
-  const slugs = require(REPO + "/functions/seo").buildSlugs(words);
+  const slugs = require(REPO + "/shared/seo").buildSlugs(words);
   const results = [];
   for (const style of ["glass", "shade"]) for (const width of [390, 768, 1440]) {
     const ctx = await br.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });

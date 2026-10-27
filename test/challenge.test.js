@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const C = require('../functions/challenge');
+const C = require('../shared/challenge');
 
 const state = {
   startDate: null,

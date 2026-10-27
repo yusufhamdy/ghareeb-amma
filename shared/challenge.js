@@ -2,7 +2,7 @@
  * challenge.js - single source of truth for challenge release logic.
  *
  * Pure module (no Firebase dependency) so it can be unit-tested in Node and
- * required by the Cloud Functions entry point.
+ * used by the publish build (scripts/publish-build.mjs).
  *
  * RELEASE MODEL
  * -------------

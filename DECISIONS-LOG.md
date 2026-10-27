@@ -838,3 +838,13 @@ Applied the final design to the app and publisher:
   uses the standard open-tanween code points (U+08F0-U+08F2) and a different font file. Moving to it would mean
   re-encoding every stored ayah; not done. The official Hafs text used for checks (`data/quran/`) is the Complex's
   `UthmanicHafs_v2-0.zip` package, which has the same encoding as the v22 font.
+
+## No Cloud Functions; shared modules in shared/ - 2026-10-27 (owner decision)
+
+- The project is on the free Spark plan: Cloud Functions are not used and cannot be deployed. Nothing on the site
+  or in the admin calls a Function (no httpsCallable, no cloudfunctions URLs, no Hosting rewrite to a function).
+- firebase.json has no "functions" entry, so a plain `firebase deploy` never tries to deploy Functions; the
+  release workflow deploys hosting only, and the Firestore rules are deployed by hand with the owner's approval.
+- The unused Function entry points (functions/index.js, admin-challenge.js, package.json) and their test were
+  deleted, with the firebase-functions dependency. The modules the build and the tests share (legal.js, seo.js,
+  normalize.js, challenge.js) live in shared/. The static pages built after the move are byte-identical.

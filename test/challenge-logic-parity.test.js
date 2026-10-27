@@ -2,7 +2,7 @@
  * challenge-logic-parity.test.js
  *
  * The browser mirror of the challenge logic (public/admin/challenge-logic.js)
- * must behave identically to functions/challenge.js. On the free plan the admin
+ * must behave identically to shared/challenge.js. On the free plan the admin
  * page runs the roulette and day validation in the browser; this test guards
  * against the two copies drifting (same pattern as normalize-parity.test.js).
  *
@@ -11,7 +11,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 
-const fn = require("../functions/challenge");
+const fn = require("../shared/challenge");
 const client = require("../public/admin/challenge-logic");
 
 const POOLS = [

@@ -333,7 +333,7 @@ const DAYREAD = () => ({
 // ---------------------------------------------------------------------------
 function coreAndPool() {
   const QCORE = require(path.join(PUBLIC, "quiz-core.js"));
-  const seo = require(path.join(ROOT, "functions", "seo.js"));
+  const seo = require(path.join(ROOT, "shared", "seo.js"));
   const data = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
   const numOf = (s) => QCORE.SURAH_NO[seo.SURAH_SLUG[String(s).split(/\s+/).pop()]] || 0;
   return { QCORE: QCORE, pool: QCORE.buildPool(data, numOf) };

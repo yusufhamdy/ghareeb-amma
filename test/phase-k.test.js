@@ -153,8 +153,8 @@ test("K1: word pages are rebuilt like the app (source line, browse-the-site pill
   }
 });
 
-test("K1: the 28 static surah pages exist with the slug stems from functions/seo.js", () => {
-  const seo = require("../functions/seo.js");
+test("K1: the 28 static surah pages exist with the slug stems from shared/seo.js", () => {
+  const seo = require("../shared/seo.js");
   const slugs = Object.values(seo.SURAH_SLUG);
   assert.strictEqual(slugs.length, 28);
   const files = surahFiles().map((f) => f.replace(/\.html$/, ""));
@@ -170,8 +170,8 @@ test("K1: the 28 static surah pages exist with the slug stems from functions/seo
 });
 
 test("K1: the sitemap lists the home, 73 word pages, 28 surah pages and the legal pages", () => {
-  const seo = require("../functions/seo.js");
-  const legal = require("../functions/legal.js");
+  const seo = require("../shared/seo.js");
+  const legal = require("../shared/legal.js");
   const xml = read("sitemap.xml");
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   assert.strictEqual(locs.length, 1 + 73 + Object.keys(seo.SURAH_SLUG).length + legal.LEGAL.length);

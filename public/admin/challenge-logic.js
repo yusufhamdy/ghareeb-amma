@@ -1,13 +1,13 @@
 /*
  * challenge-logic.js - browser-side mirror of the pure challenge logic in
- * functions/challenge.js (rouletteSelect + validateDayReferences).
+ * shared/challenge.js (rouletteSelect + validateDayReferences).
  *
  * The free (Spark) plan runs no Cloud Functions, so the admin Challenge tab
  * does its own work in the browser and writes Firestore directly (admin-only
- * rules). This module keeps that browser logic identical to the function copy;
+ * rules). This module keeps that browser logic identical to shared/challenge.js;
  * test/challenge-logic-parity.test.js asserts the two never drift.
  *
- * Same pattern as src/utils/normalize.js + functions/normalize.js: the shared
+ * Same pattern as src/utils/normalize.js + shared/normalize.js: the shared
  * logic is duplicated deliberately, and a parity test guards against drift.
  *
  * ASCII-ONLY (see test/arabic-guard.test.js): Arabic UI strings are \u escapes.
@@ -29,7 +29,7 @@
   }
 
   /**
-   * Client-side roulette selection. Mirrors functions/challenge.js exactly:
+   * Client-side roulette selection. Mirrors shared/challenge.js exactly:
    * pure, injectable random, never mutates the pool, empty pool returns null.
    */
   function rouletteSelect(pool, opts) {
@@ -60,7 +60,7 @@
 
   /**
    * Validate that every word reference in every day resolves against the data.
-   * Mirrors functions/challenge.js validateDayReferences (replaces the old
+   * Mirrors shared/challenge.js validateDayReferences (replaces the old
    * server-side check now that the admin writes Firestore directly).
    */
   function validateDayReferences(state, resolve) {

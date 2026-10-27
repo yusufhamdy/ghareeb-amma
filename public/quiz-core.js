@@ -4,7 +4,7 @@
  * require() it as a CommonJS module).
  *
  * ASCII-only on purpose: test/arabic-guard.test.js treats any file containing
- * Arabic code points as protected content (see the note in functions/seo.js),
+ * Arabic code points as protected content (see the note in shared/seo.js),
  * so keeping this file ASCII lets it evolve without touching protected runs.
  */
 (function (root, factory) {
@@ -42,7 +42,7 @@
 
   // ASCII surah slug -> surah number, limited to the surahs that actually
   // appear in public/words.json. Derived from the app's NAMES order
-  // (index.html) and the slug table in functions/seo.js.
+  // (index.html) and the slug table in shared/seo.js.
   var SURAH_NO = {
     "an-naba": 78,
     "an-naziat": 79,

@@ -12,10 +12,12 @@ name: Preview
 # Deployment policy: GitHub Actions is the single official deployment path from
 # this point on. Do not run `firebase deploy` locally in parallel with a run.
 
+# DISABLED (2026-10-27): this workflow can no longer deploy. It authenticates with the repository secret
+# FIREBASE_SERVICE_ACCOUNT, which does not exist, and the project's Workload Identity provider now accepts only
+# refs/heads/main, so a branch or pull-request run cannot get a deploy identity either. Previews are deployed by
+# hand (firebase hosting:channel:deploy preview). The trigger is manual only, so it never runs on its own.
 on:
-  push:
-    branches: [rebuild]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

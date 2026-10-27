@@ -25,6 +25,7 @@ Shared helpers: `lib.js` (static server, theme combinations, pixel analysis), `p
 | `kfgqpc-shots.js` | Screenshots for a before/after review from any public/ tree: word-card contact sheets (glass-dark-gold, shade-light-gold, 400px), surah list, surah page, open day card, quiz, save-image PNGs, legal pages, settings sheet at each glass strength, the admin word editor (Firebase stubbed) | `node kfgqpc-shots.js <publicRoot> <before|after>` |
 | `wrap-table.js` | Which headwords wrap on the word page at 360/400/768/1440 and on the save-image card, with the words on each line | `node wrap-table.js [out.md]` |
 | `round2-shots.js` | Screenshots for the F-H review (headword spelling, whole-word highlight, balanced lines): nine word cards, a surah list, an open day card and a quiz question in glass-dark-gold and shade-light-gold at 400px, and three save-image PNGs | `node round2-shots.js <publicRoot> <before|after>` |
+| `round3-shots.js` | Screenshots for the K review: 81-3 and every word whose ayah wraps, at 360 and 400px in glass-dark-gold and shade-light-gold, and the 81-3 save-image cards | `node round3-shots.js <publicRoot> <before|after>` |
 | `v21.js` | Nav animation, day pills, landscape nav, the previous icon motion (superseded by `v22.js` icons) | `node v21.js` |
 | `v20.js` | Sharing, titles, scroll restore, a11y, search (Chromium, plus WebKit iPhone) | `node v20.js` |
 | `shadowrule.js` | Shadow rule alone | `node shadowrule.js [widths] [full]`, e.g. `node shadowrule.js 320,390,1440` |

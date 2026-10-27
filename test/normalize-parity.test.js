@@ -1,6 +1,6 @@
 /*
  * normalize-parity.test.js
- *  - the Cloud Functions copy of the Arabic normalizer must behave identically
+ *  - the shared copy (shared/normalize.js) of the Arabic normalizer must behave identically
  *    to the shared src/utils/normalize.js (guards against drift);
  *  - every word reference stored in challenge.json must resolve to a real word
  *    in words.json, using the same matching the client uses.
@@ -12,7 +12,7 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const src = require('../src/utils/normalize');
-const fn = require('../functions/normalize');
+const fn = require('../shared/normalize');
 
 const NAMES =
   'النبأ النازعات عبس التكوير الانفطار المطففين الانشقاق البروج الطارق الأعلى الغاشية الفجر البلد الشمس الليل الضحى الشرح التين العلق القدر البينة الزلزلة العاديات القارعة التكاثر العصر الهمزة الفيل قريش الماعون الكوثر الكافرون النصر المسد الإخلاص الفلق الناس'.split(

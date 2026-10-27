@@ -2,7 +2,7 @@
 /*
  * legal-copies.test.js - the legal pages (about, privacy, terms, rights) say the same thing everywhere:
  *   - the app view (LEG in public/index.html, with the contact email as a mailto link),
- *   - functions/legal.js (the source the publish generator renders), and
+ *   - shared/legal.js (the source the publish generator renders), and
  *   - the committed static pages /about/ /privacy/ /terms/ /rights/ (byte-identical to the generator's output).
  * Plus the shape of the 2026-10-27 text: privacy has eight paragraphs with the Sentry, hosting and external-links
  * paragraphs in place, terms has five, rights has five and names the interface fonts and their licence.
@@ -17,7 +17,7 @@ const vm = require("vm");
 
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC = path.join(ROOT, "public");
-const { LEGAL } = require("../functions/legal.js");
+const { LEGAL } = require("../shared/legal.js");
 
 const unlink = (s) => s.replace(/<a href="mailto:([^"]+)">\1<\/a>/g, "$1");
 const unesc = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
@@ -32,7 +32,7 @@ function appLeg() {
   return JSON.parse(JSON.stringify(ctx.LEG)); // plain arrays of this realm
 }
 
-test("the app view, functions/legal.js and the static pages carry the same text", async () => {
+test("the app view, shared/legal.js and the static pages carry the same text", async () => {
   const leg = appLeg();
   assert.deepStrictEqual(Object.keys(leg).sort(), LEGAL.map((e) => e.slug).sort(), "same pages");
   const { renderLegalPage } = await import("../scripts/publish-build.mjs");
