@@ -80,6 +80,7 @@ button[aria-busy="true"]{opacity:.8;cursor:progress}
 <script src="/firebase-config.js"></script>
 <script src="/admin/challenge-logic.js"></script>
 <script src="/admin/ayah-check.js"></script>
+<script src="/qtext.js"></script>
 <script>
 
 const OWNER="yusufhamdy20@gmail.com";
@@ -351,7 +352,7 @@ function wordHtml(){
 <button class="g sm2" data-a="split" style="margin:8px 0">تقسيم تلقائي</button>
 ${x.segs.map((g,i)=>`<div class="sg"><input class="in" data-f="g.${i}.num" aria-label="رقم آية الجزء ${i+1}" value="${esc(g.num)}"><input class="in q" data-f="g.${i}.before" aria-label="النص قبل المظلل في الجزء ${i+1}" value="${esc(g.before)}"><input class="in q" data-f="g.${i}.hl" aria-label="النص المظلل في الجزء ${i+1}" value="${esc(g.hl)}"${fe(er,"g"+i,"g"+i)}><input class="in q" data-f="g.${i}.after" aria-label="النص بعد المظلل في الجزء ${i+1}" value="${esc(g.after)}"></div>${fd(er,"g"+i,"g"+i)}`).join("")}
 <div class="bar"><button class="g sm2" data-a="addG">إضافة جزء</button>${x.segs.length>1?'<button class="g sm2 dg" data-a="delG">حذف آخر جزء</button>':""}</div>
-<div class="g c2" style="margin-top:10px"><div class="sm">معاينة</div><div class="q ay" id="pv">${ayHtml(x.segs)}</div></div>`,
+<div class="g c2" style="margin-top:10px"><div class="sm">معاينة</div><div class="q" id="pw" style="font-size:32px;line-height:1.6;color:var(--ac)">${esc(QText.displayWord({segments:x.segs}))}</div><div class="q ay" id="pv">${ayHtml(x.segs)}</div></div>`,
 `<button class="pill btn" data-a="saveW">${IC_CHECK}حفظ</button><button class="g pill" data-a="close">إلغاء</button>`);
 }
 function openW(si,wi,btn){
@@ -508,7 +509,7 @@ document.addEventListener("input",e=>{
  const k=f.split(".");
  if(k[0]==="e"){ED[k[1]]=k[1]==="si"?+t.value:t.value}
  else if(k[0]==="g")ED.segs[+k[1]][k[2]]=t.value;
- const pv=$("#pv");if(pv)pv.innerHTML=ayHtml(ED.segs);
+ const pv=$("#pv");if(pv)pv.innerHTML=ayHtml(ED.segs);const pw=$("#pw");if(pw)pw.textContent=QText.displayWord({segments:ED.segs});
 });
 document.addEventListener("change",async e=>{
  if(e.target.dataset.f!=="imp"||!e.target.files[0])return;

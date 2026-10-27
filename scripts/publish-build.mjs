@@ -45,6 +45,8 @@ const require = createRequire(import.meta.url);
 const seo = require("../functions/seo.js");
 const challenge = require("../functions/challenge.js");
 const { LEGAL } = require("../functions/legal.js");
+// How Quran text is shown (shared with the app): the headword in the mushaf's spelling, the highlight on whole words.
+const QText = require("../public/qtext.js");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -228,6 +230,7 @@ export function buildRecords(surahs) {
         labelNum: Number(String(label).split("-")[0]) || i + 1,
         slug: slugs[si++], // slugs are assigned in data order (see functions/seo.js)
         word: words[i],
+        dw: QText.displayWord(a) || words[i],
         raw: meanings[i] || "",
         ayah: a,
       });
@@ -243,6 +246,7 @@ export function buildRecords(surahs) {
         surahShort: short,
         source: e.source,
         word: it.word,
+        dw: it.dw,
         rawMeaning: it.raw,
         meaning: strippedMeaning(it.word, it.raw),
         label: it.label,
@@ -252,9 +256,9 @@ export function buildRecords(surahs) {
         idx,
         ayah: it.ayah,
         others: sorted
-          .map((o, j) => ({ word: o.word, slug: o.slug, j }))
+          .map((o, j) => ({ word: o.word, dw: o.dw, slug: o.slug, j }))
           .filter((o) => o.j !== idx)
-          .map((o) => ({ word: o.word, slug: o.slug })),
+          .map((o) => ({ word: o.word, dw: o.dw, slug: o.slug })),
         prev: idx > 0 ? { word: sorted[idx - 1].word, slug: sorted[idx - 1].slug } : null,
         next: sorted[idx + 1] ? { word: sorted[idx + 1].word, slug: sorted[idx + 1].slug } : null,
       });
@@ -396,7 +400,7 @@ export function buildSurahs(records) {
       s = { seq: r.surahSeq, no: r.no, slug: r.surahSlug, name: r.surahShort, prev: r.surahPrev, next: r.surahNext, words: [] };
       out.push(s);
     }
-    s.words.push({ word: r.word, slug: r.slug, label: r.label });
+    s.words.push({ word: r.word, dw: r.dw, slug: r.slug, label: r.label });
   });
   return out;
 }
@@ -432,7 +436,7 @@ export function renderWordPage(r) {
   const pv = link(r.wordPrev, A.PREV_WORD);
   const nx = link(r.wordNext, A.NEXT_WORD);
   const chips = r.others
-    .map((o) => '<a class="g chip q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a>")
+    .map((o) => '<a class="g chip q" href="/word/' + o.slug + '.html">' + esc(o.dw) + "</a>")
     .join("");
   const others =
     '<div class="g card"><h2>' + A.OTHER_SAME + "</h2>" +
@@ -448,7 +452,7 @@ export function renderWordPage(r) {
     '<a class="pill" href="/surah/' + r.surahSlug + '.html">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + CHEV_L + "</a>\n" +
     '<div class="cw">' + navBtn(pv, "pv") +
     '<div class="cols">' +
-    '<div class="g card"><h1 class="wd q">' + esc(r.word) + '</h1><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
+    '<div class="g card"><h1 class="wd q">' + esc(r.dw) + '</h1><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
     '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + '</div><div class="m">' + esc(r.source || "") + "</div></div>" +
     "</div>" + navBtn(nx, "nx") + "</div>\n" +
     others +
@@ -478,7 +482,7 @@ export function renderSurahPage(s) {
     .map(
       (w) =>
         '<a class="row" href="/word/' + w.slug + '.html">' +
-        '<span class="q w" style="flex:1;font-size:25px">' + esc(w.word) + "</span>" +
+        '<span class="q w" style="flex:1;font-size:25px">' + esc(w.dw) + "</span>" +
         '<span class="m">' + A.AYAH + esc(w.label) + "</span>" + ROW_CHEV + "</a>"
     )
     .join("");

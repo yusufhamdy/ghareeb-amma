@@ -13,7 +13,7 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'sha256-9R4xCBLY8JMll2parSH79CB4vA9sNZ1Rhfp3OZ8cJ5g=' 'sha256-VZ12cNuvw9sjaP15RgbMTqM7uYjSJWY/TT/xDCDVxA8=' 'sha256-xKya1vZc0rcFZEk0AYERESum2q2mR3J+uewav+UtYns=' https://js-de.sentry-cdn.com https://browser.sentry-cdn.com https://www.gstatic.com/firebasejs/ https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google.com; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://o4512305775443968.ingest.de.sentry.io; frame-src https://ghareebalquran-d9ae5.firebaseapp.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+            "value": "default-src 'self'; script-src 'self' 'sha256-9R4xCBLY8JMll2parSH79CB4vA9sNZ1Rhfp3OZ8cJ5g=' 'sha256-FeiseONdwLo3egclwaDaBZn+9gE15WU6w2R1tjvXLfw=' 'sha256-HocDig2J70dfSzVXghCHMvl7Rp1R4cZhsC5CQXHMIck=' https://js-de.sentry-cdn.com https://browser.sentry-cdn.com https://www.gstatic.com/firebasejs/ https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google.com; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://o4512305775443968.ingest.de.sentry.io; frame-src https://ghareebalquran-d9ae5.firebaseapp.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
           },
           {
             "key": "X-Content-Type-Options",

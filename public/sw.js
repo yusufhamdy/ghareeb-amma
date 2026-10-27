@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v31';
+const CACHE_NAME = 'ghareeb-pwa-v32';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -13,6 +13,7 @@ const assetsToCache = [
     '/firebase-config.js',
     '/word-gap.js',
     '/qfont.js',
+    '/qtext.js',
     '/fonts/fonts.css',
     '/fonts/kfgqpc-uthmanic-hafs-v22.ttf',
     '/words.json',
