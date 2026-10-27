@@ -474,8 +474,15 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
       return { pv: ctl("#app .cw.dnav .pv"), nx: ctl("#app .cw.dnav .nx"), dw: dr ? { top: dr.top, bottom: dr.bottom } : null };
     })()`);
 
-    await nav(page, "#/day/5");
-    await page.waitForSelector("#app .cw.dnav .pv", { timeout: 20000 });
+    // arrive(h): the route is h, its pills are rendered, and every finite animation (page enter, card rise) has
+    // finished, so positions are final - no timing race under load
+    const arrive = async (h) => {
+      await nav(page, h);
+      await page.waitForFunction((x) => location.hash === x && !!document.querySelector("#app .cw.dnav .pv") && !!document.querySelector("#dw"), h, { timeout: 20000 });
+      await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => { const c = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming() : null; return c && isFinite(c.endTime); }).map((a) => a.finished.catch(() => {}))));
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    };
+    await arrive("#/day/5");
     const d5 = await read();
     assert.ok(d5.pv && d5.nx, "the day page shows both pills");
     assert.equal(d5.pv.tag, "A", "day 5 previous is a link");
@@ -488,8 +495,7 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
     assert.ok(d5.pv.pe !== "none", "an enabled control is clickable");
     assert.ok(d5.dw && d5.pv.top >= d5.dw.bottom && d5.nx.top >= d5.dw.bottom, "the pills sit below the word cards");
 
-    await nav(page, "#/day/1");
-    await page.waitForSelector("#app .cw.dnav .pv", { timeout: 20000 });
+    await arrive("#/day/1");
     const d1 = await read();
     assert.equal(d1.pv.tag, "SPAN", "day 1 previous is not a link");
     assert.equal(d1.pv.dis, "true", "day 1 previous is aria-disabled");
@@ -499,8 +505,7 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
     assert.equal(d1.nx.tag, "A", "day 1 next stays a link");
     assert.equal(d1.nx.href, "#/day/2", "day 1 next goes to day 2");
 
-    await nav(page, "#/day/" + (await page.evaluate(() => CH.length)));
-    await page.waitForSelector("#app .cw.dnav .pv", { timeout: 20000 });
+    await arrive("#/day/" + (await page.evaluate(() => CH.length)));
     const dN = await read();
     const lastDay = await page.evaluate(() => CH.length);
     assert.equal(dN.nx.tag, "SPAN", "the last day next is not a link");
