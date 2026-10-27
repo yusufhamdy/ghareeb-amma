@@ -73,7 +73,7 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .row .t div:first-child{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .bd{width:38px;height:38px;border-radius:50%;border:1px solid var(--ac);color:var(--ac);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;flex:none}
 .wd{font-size:clamp(44px,9vw,64px);line-height:1.5;color:var(--ac)}
-h1.wd{font-weight:400}
+h1.wd{font-weight:400;text-wrap:balance}
 .shade h1.wd{font-size:clamp(44px,9vw,64px);line-height:1.5}
 .ay{font-size:clamp(22px,4vw,28px);line-height:2.1}
 mark{display:inline-block;line-height:1.6;padding:.08em .32em .14em;border-radius:10px;background:none;color:inherit;text-decoration:none;position:relative;isolation:isolate}
@@ -778,6 +778,8 @@ const AQ=s=>s+'px "Amiri Quran"',QF=s=>s+'px "KFGQPC Uthmanic Hafs","Amiri Quran
 const rgb=s=>{x.fillStyle='#000';x.fillStyle=s||'#000';const f=x.fillStyle;if(f[0]==='#')return[1,3,5].map(i=>parseInt(f.substr(i,2),16)).concat(1);const m=f.match(/[\d.]+/g).map(Number);return[m[0],m[1],m[2],m[3]==null?1:m[3]]};
 const rgba=(k,a)=>`rgba(${k[0]},${k[1]},${k[2]},${a==null?k[3]:a})`,mix=(a,b,t)=>[0,1,2].map(i=>Math.round(a[i]*(1-t)+b[i]*t)).concat(1);
 const met=(font,t)=>{x.font=font;const m=x.measureText(t),s=parseFloat(font.replace(/^\d00 /,''));return{w:m.width,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,fa:m.fontBoundingBoxAscent!=null?m.fontBoundingBoxAscent:s*.9,fd:m.fontBoundingBoxDescent!=null?m.fontBoundingBoxDescent:s*.3}};
+// two lines as close in width as possible (like text-wrap: balance), or null when no split fits
+const balance2=(font,t,max)=>{x.font=font;const ws=String(t).split(' ');let best=null;for(let i=1;i<ws.length;i++){const a=ws.slice(0,i).join(' '),b=ws.slice(i).join(' '),wa=x.measureText(a).width,wb=x.measureText(b).width;if(wa<=max&&wb<=max&&(!best||Math.abs(wa-wb)<best.d))best={d:Math.abs(wa-wb),ls:[a,b]}}return best&&best.ls};
 const wrap=(font,t,max)=>{x.font=font;const out=[];let cur='',ok=true;for(const wd of String(t).split(' ')){const n=cur?cur+' '+wd:wd;if(cur&&x.measureText(n).width>max){out.push(cur);cur=wd}else cur=n;if(x.measureText(wd).width>max)ok=false}out.push(cur);return{ls:out,ok:ok&&out.every(l=>x.measureText(l).width<=max)}};
 // CSS-like line box: baseline sits half-leading below the box top.
 const lbox=(font,lh,s)=>{const k=met(font,'المعنى a');return{h:lh*s,base:(lh*s-(k.fa+k.fd))/2+k.fa}};
@@ -791,6 +793,7 @@ const GR=G.filter(g=>g.length);
 const lay=f=>{const o={f,ok:true};
 const lg=met(AQ(LG),'غريب القرآن');o.HH=Math.max(PH,lg.asc+lg.desc);o.lg=lg;o.pw=met(PX(600,PF),pill).w+2*PPX;
 let ws=170*K*f,wl;for(;;){wl=wrap(QF(ws),QT(w.dw),IW);if((wl.ls.length<=2&&wl.ok)||ws<24)break;ws*=.96}
+if(wl.ls.length===2)wl.ls=balance2(QF(ws),QT(w.dw),IW)||wl.ls;
 if(!wl.ok||wl.ls.length>2)o.ok=false;
 const wm=wl.ls.map(t=>met(QF(ws),t));const wb=[wm[0].asc];for(let i=1;i<wm.length;i++)wb.push(wb[i-1]+Math.max(1.5*ws,wm[i-1].desc+wm[i].asc+.08*ws));
 o.ws=ws;o.wl=wl.ls;o.wb=wb;o.wInk=wb[wb.length-1]+wm[wm.length-1].desc;o.div=o.wInk+28;
