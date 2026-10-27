@@ -97,7 +97,7 @@ test('owner has full public + admin + config/admins control', async () => {
   await assertSucceeds(o.firestore().doc('public/data').set(publicData));
   const snap = await assertSucceeds(o.firestore().doc('public/data').get());
   assert.strictEqual(snap.data().surahs[0].no, 114, 'owner-written public data round-trips with no field');
-  await assertSucceeds(o.firestore().doc('admin/challengeNotes').set({ day1: 'private' }));
+  await assertSucceeds(o.firestore().doc('admin/challengeNotes').set({ 1: 'private' }));
   await assertSucceeds(o.firestore().doc('admin/challengeNotes').get());
   await assertSucceeds(o.firestore().doc('admin/challengeNotes').delete());
   await assertSucceeds(o.firestore().doc('config/admins').set({ emails: [OWNER.email, ADMIN2.email] }));
@@ -113,7 +113,7 @@ test('granted admin manages public + notes but cannot write config/admins', asyn
   await assertSucceeds(a.firestore().doc('public/data').get());
   await assertSucceeds(a.firestore().doc('public/data').set({ rev: 2, surahs: [] }));
   await assertSucceeds(a.firestore().doc('admin/challengeNotes').get());
-  await assertSucceeds(a.firestore().doc('admin/challengeNotes').set({ day2: 'allowed' }));
+  await assertSucceeds(a.firestore().doc('admin/challengeNotes').set({ 2: 'allowed' }));
   await assertFails(a.firestore().doc('config/admins').set({ emails: [ADMIN2.email] }));
   await assertSucceeds(a.firestore().doc('config/admins').get());
 });

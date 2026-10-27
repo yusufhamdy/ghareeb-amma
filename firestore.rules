@@ -2,9 +2,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // The signed-in address in lowercase, only when Google has verified it; null otherwise. Addresses are compared
+    // case-insensitively: the token's address is lowercased here and config/admins stores lowercase addresses
+    // (the admin page lowercases on save, and the rules below refuse anything else).
     function mail() {
       return request.auth != null && request.auth.token.email_verified == true
-        ? request.auth.token.email : null;
+        && request.auth.token.email is string ? request.auth.token.email.lower() : null;
     }
     function isOwner() {
       return mail() == 'yusufhamdy20@gmail.com';
@@ -15,19 +18,64 @@ service cloud.firestore {
         && mail() in get(/databases/$(database)/documents/config/admins).data.emails);
     }
 
+    // --- document shapes (what the admin page writes; Firestore itself caps a document at 1 MiB) ---
+    // public/data: the words list, written with its revision, time and author
+    function validWords(d) {
+      return d.keys().hasAll(['rev', 'surahs']) && d.keys().hasOnly(['rev', 'surahs', 'updatedAt', 'by'])
+        && d.rev is int && d.rev >= 0
+        && d.surahs is list && d.surahs.size() <= 114
+        && (!('updatedAt' in d) || d.updatedAt is timestamp)
+        && (!('by' in d) || (d.by is string && d.by.lower() == mail()));
+    }
+    // public/prev: the previous words list (one undo step)
+    function validPrev(d) {
+      return d.keys().hasAll(['rev', 'surahs']) && d.keys().hasOnly(['rev', 'surahs', 'savedAt'])
+        && d.rev is int && d.rev >= 0
+        && d.surahs is list && d.surahs.size() <= 114
+        && (!('savedAt' in d) || d.savedAt is timestamp);
+    }
+    // public/challenge: start date, released day and the days
+    function validChallenge(d) {
+      return d.keys().hasAll(['days']) && d.keys().hasOnly(['startDate', 'releasedUpTo', 'days'])
+        && (!('startDate' in d) || d.startDate == null || (d.startDate is string && d.startDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')))
+        && (!('releasedUpTo' in d) || d.releasedUpTo == null || (d.releasedUpTo is int && d.releasedUpTo >= 0 && d.releasedUpTo <= 366))
+        && d.days is list && d.days.size() <= 366;
+    }
+    // admin/challengeNotes: day number -> note text (join fails, and so denies, on any non-string value)
+    function validNotes(d) {
+      return d.keys().size() <= 366
+        && (d.keys().size() == 0 || d.keys().join(',').matches('[0-9]{1,3}(,[0-9]{1,3})*'))
+        && d.values().join('').size() <= 200000;
+    }
+    // config/admins: lowercase e-mail addresses only
+    function validAdmins(d) {
+      return d.keys().hasOnly(['emails']) && d.emails is list && d.emails.size() <= 50
+        && d.emails.join(' ') == d.emails.join(' ').lower()
+        && (d.emails.size() == 0 || d.emails.join(' ').matches('[^@ ]+@[^@ ]+[.][^@ ]+( [^@ ]+@[^@ ]+[.][^@ ]+)*'));
+    }
+
+    // Public documents: anyone reads; admins write only the three known documents, in their shapes; nobody deletes.
     match /public/{doc} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin() && (
+        (doc == 'data' && validWords(request.resource.data))
+        || (doc == 'prev' && validPrev(request.resource.data))
+        || (doc == 'challenge' && validChallenge(request.resource.data)));
+      allow delete: if false;
     }
+    // The admins list: admins read it; only the owner changes it.
     match /config/admins {
       allow read: if isAdmin();
-      allow write: if isOwner();
+      allow create, update: if isOwner() && validAdmins(request.resource.data);
+      allow delete: if isOwner();
     }
 
     // Private per-day challenge notes. Admin-only: readable and writable by
     // admins, never exposed to the public site or visitors.
     match /admin/challengeNotes {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() && validNotes(request.resource.data);
+      allow delete: if isOwner();
     }
     match /{document=**} {
       allow read, write: if false;
