@@ -77,8 +77,9 @@ async function settle(p) {
         const mk = m.marks[i]; if (!mk.pill) { fails.push(`${tag} ${id}: mark ${i} not measured`); continue; }
         const pad = 30, clip = { x: Math.max(0, mk.pill.l - pad), y: Math.max(0, mk.pill.t - pad), width: mk.pill.w + 2 * pad, height: mk.pill.h + 2 * pad };
         const css = (on) => `(() => { let s = document.getElementById("__k"); if (!s) { s = document.createElement("style"); s.id = "__k"; document.head.appendChild(s); }
-          s.textContent = "mark::before{opacity:0!important} #app, #app *{color:transparent!important;text-shadow:none!important} #app .cols .card mark:nth-of-type(${i + 1}){color:${on ? "#000" : "transparent"}!important}"; })()`;
-        await p.evaluate(() => scrollTo(0, 0));
+          s.textContent = "mark::before{opacity:0!important} #app, #app *{color:transparent!important;text-shadow:none!important} #app .cols .card mark[data-kq=k${i}]{color:${on ? "#000" : "transparent"}!important}"; })()`;
+        // tag the marks by index (they may sit in different parents, so :nth-of-type cannot pick one)
+        await p.evaluate(() => { document.querySelectorAll("#app .cols .card mark").forEach((m, k) => m.setAttribute("data-kq", "k" + k)); scrollTo(0, 0); });
         const ink = await inkBox(p, clip, css(true), css(false));
         await p.evaluate(() => { const s = document.getElementById("__k"); if (s) s.remove(); });
         if (!ink) { fails.push(`${tag} ${id}: no ink found for mark ${i}`); continue; }

@@ -55,7 +55,8 @@ test("static word pages: no mark inside a word, text unchanged", () => {
   let n = 0;
   const texts = new Set(all.map(segsOf));
   for (const f of fs.readdirSync(path.join(PUBLIC, "word")).filter((x) => x.endsWith(".html"))) {
-    const ay = (fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1];
+    // the no-break wrappers around the parentheses (K) are layout only
+    const ay = ((fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "").replace(/<span class="nb">|<\/span>/g, "");
     const runs = ay.split(/(<mark>[\s\S]*?<\/mark>)/).filter((x) => x !== "").map((x) => (x.startsWith("<mark>") ? { mark: true, text: unesc(x.slice(6, -7)) } : { mark: false, text: unesc(x) }));
     bad.push(...checkRuns(runs, f));
     assert.ok(texts.has(runs.map((r) => r.text).join("")), f + ": the ayah text is before + hl + after");
@@ -93,7 +94,9 @@ test("the app (word pages, day cards, quiz) and the save-image layout: no mark i
     const got = await page.evaluate(async () => {
       const wait = () => new Promise((r) => setTimeout(r, 40));
       const ayahs = [];
-      const grab = (where) => document.querySelectorAll("#app .ay, #sh .av").forEach((el) => ayahs.push({ where, runs: [...el.childNodes].map((n) => ({ mark: n.nodeName === "MARK", text: n.textContent })) }));
+      // text and marks in document order, through the parentheses' no-break wrappers
+      const runsOf = (el) => { const out = []; const walk = (n) => n.childNodes.forEach((c) => { if (c.nodeName === "MARK") out.push({ mark: true, text: c.textContent }); else if (c.nodeType === 3) { const l = out[out.length - 1]; if (l && !l.mark) l.text += c.data; else out.push({ mark: false, text: c.data }); } else walk(c); }); walk(el); return out; };
+      const grab = (where) => document.querySelectorAll("#app .ay, #sh .av").forEach((el) => ayahs.push({ where, runs: runsOf(el) }));
       for (const w of W) { location.hash = "#/word/" + w.id; await wait(); grab("word " + w.id); }
       for (let d = 1; d <= 30; d++) {
         location.hash = "#/day/" + d; await wait();

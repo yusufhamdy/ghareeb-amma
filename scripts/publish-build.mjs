@@ -205,13 +205,8 @@ function strippedMeaning(word, raw) {
 
 function renderAyah(ayah) {
   const segs = ayah && Array.isArray(ayah.segments) ? ayah.segments : [];
-  return segs
-    .map((sg) => {
-      // the mark covers whole written words, like the app (qtext.js markParts)
-      const k = QText.markParts(sg);
-      return A.OL + esc(k.pre) + "<mark>" + esc(k.mark) + "</mark>" + esc(k.post) + A.OR;
-    })
-    .join(" ");
+  // the mark covers whole written words and the parentheses stay with their words, like the app (qtext.js)
+  return QText.ayahHtml({ segments: segs }, esc);
 }
 
 // Flatten the raw surah list into one record per word, in canonical order.

@@ -12,6 +12,8 @@
  *                      the letters of `after` written onto it move into the mark, so a word is never split by the
  *                      mark (an inline-block breaks letter joining). Returns { pre, mark, post }, which concatenate
  *                      to before + hl + after.
+ *   ayahHtml(ayah,esc) the ayah's segments as HTML, each in ornate parentheses kept on the line of their first
+ *                      and last word (no parenthesis alone at a line end or start).
  *   searchNorm(s)      the search key: diacritics and Quranic marks removed (ٰ and ٱ read as alef), letter forms
  *                      unified, so the modern and the Uthmani spelling of a word can both be typed.
  *
@@ -46,6 +48,23 @@
     };
   }
 
+  // One ayah as HTML: each segment in ornate parentheses with its mark (markParts). The opening parenthesis is kept on
+  // the line of the segment's first word (or of the mark, when the segment starts with it) and the closing one on the
+  // line of its last word or mark, inside a white-space: nowrap span (class "nb"), so a parenthesis never ends or
+  // starts a line on its own. esc escapes text for HTML.
+  function ayahHtml(ayah, esc) {
+    var OL = "﴿", OR = "﴾", nb = function (h) { return '<span class="nb">' + h + "</span>"; };
+    var segs = ayah && Array.isArray(ayah.segments) ? ayah.segments : [];
+    return segs.map(function (g) {
+      var k = markParts(g), first = k.pre.match(/^\S+/), last = k.post.match(/\S+$/);
+      var mark = k.mark ? "<mark>" + esc(k.mark) + "</mark>" : "";
+      var head = first ? nb(OL + esc(first[0])) + esc(k.pre.slice(first[0].length)) : "";
+      var tail = last ? esc(k.post.slice(0, k.post.length - last[0].length)) + nb(esc(last[0]) + OR) : "";
+      var mid = (first ? "" : OL + esc(k.pre)) + mark + (last ? "" : esc(k.post) + OR);
+      return head + (first && last ? mid : nb(mid)) + tail;
+    }).join(" ");
+  }
+
   function searchNorm(s) {
     return String(s == null ? "" : s)
       .replace(/[ٰٱ]/g, "ا")
@@ -55,5 +74,5 @@
       .replace(/\s+/g, " ").trim();
   }
 
-  return { displayWord: displayWord, markParts: markParts, searchNorm: searchNorm };
+  return { displayWord: displayWord, markParts: markParts, ayahHtml: ayahHtml, searchNorm: searchNorm };
 });

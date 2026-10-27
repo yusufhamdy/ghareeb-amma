@@ -85,7 +85,7 @@ test("the static word pages show the same segments, and they pass", async () => 
   let pages = 0;
   for (const r of buildRecords(WORDS)) {
     const html = fs.readFileSync(path.join(PUBLIC, "word", r.slug + ".html"), "utf8");
-    const ay = (html.match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1];
+    const ay = ((html.match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "").replace(/<span class="nb">|<\/span>/g, ""); // no-break wrappers (K) are layout only
     assert.ok(ay != null, r.slug + ": has the ayah block");
     const shown = [...ay.matchAll(/﴿([\s\S]*?)<mark>([\s\S]*?)<\/mark>([\s\S]*?)﴾/g)].map((m) => ({ before: unesc(m[1]), hl: unesc(m[2]), after: unesc(m[3]) }));
     const segs = r.ayah.segments;
