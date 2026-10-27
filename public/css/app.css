@@ -81,6 +81,8 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh .gsx{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s linear .2s}
 #sh .gsx.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s}
 #sh .gsi{overflow:hidden;min-height:0}
+/* the row clips only while it opens or closes; at rest (open) the pill's glass, rim and shadow are drawn in full */
+#sh .gsx.open.rest .gsi{overflow:visible}
 /* segmented controls: one selected background that slides between options (the bottom nav's duration, a smooth ease-out
    without overshoot, so it never runs past the option it lands on); its own class, its geometry from its own padding/gap */
 .seg.segi{position:relative;display:flex;--sp:4px;--sgp:4px;padding:var(--sp);gap:var(--sgp)}

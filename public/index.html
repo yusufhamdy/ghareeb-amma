@@ -107,6 +107,8 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh .gsx{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s linear .2s}
 #sh .gsx.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s}
 #sh .gsi{overflow:hidden;min-height:0}
+/* the row clips only while it opens or closes; at rest (open) the pill's glass, rim and shadow are drawn in full */
+#sh .gsx.open.rest .gsi{overflow:visible}
 /* segmented controls: one selected background that slides between options (the bottom nav's duration, a smooth ease-out
    without overshoot, so it never runs past the option it lands on); its own class, its geometry from its own padding/gap */
 .seg.segi{position:relative;display:flex;--sp:4px;--sgp:4px;padding:var(--sp);gap:var(--sgp)}
@@ -653,7 +655,12 @@ function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass',
  `<hr class="shd"><div class="tgs">${tgRow('c',set.cm,'إيقاف الحركة')}</div><button class="rst" data-a="reset">استعادة الإعدادات الافتراضية</button>`;
  const mk=MODES.findIndex(x=>x[0]===set.mode),sk=STS.findIndex(x=>x[0]===st),sm=p.querySelector('[data-sg="m"]'),ss=p.querySelector('[data-sg="st"]'),gx=p.querySelector('.gsx');
  if(prev){sm.style.setProperty('--k',prev.m);if(ss)ss.style.setProperty('--k',prev.st);if(gx)gx.classList.toggle('open',prev.glass);void p.offsetWidth;sm.style.setProperty('--k',mk);if(ss)ss.style.setProperty('--k',sk);if(gx)gx.classList.toggle('open',glass)}
+ if(gx)gxRest(gx,glass,prev);
  SHP={m:mk,st:sk,glass}}
+// The glass row rests unclipped (.rest) once it is open: right away when it did not move (the sheet opened on glass, or
+// motion is off), else when its opening transition ends. Closing removes .rest first, so the collapse is clipped.
+function gxRest(gx,open,prev){gx.classList.remove('rest');if(!open)return;const done=()=>{if(gx.isConnected&&gx.classList.contains('open'))gx.classList.add('rest')};
+ if(prev&&!prev.glass&&parseFloat(getComputedStyle(gx).transitionDuration)>0){const tm=setTimeout(done,400);gx.addEventListener('transitionend',e=>{if(e.target===gx&&e.propertyName==='grid-template-rows'){clearTimeout(tm);done()}})}else done()}
 // a toast with an undo action (about 5 seconds)
 function toastUndo(m,undo){document.querySelectorAll('.toast.tu').forEach(t=>t.remove());const t=document.createElement('div');t.className='g toast tu';t.setAttribute('role','status');t.innerHTML=esc(m)+' <button class="tub" type="button">تراجع</button>';document.body.appendChild(t);const tm=setTimeout(()=>t.remove(),5000);t.querySelector('.tub').addEventListener('click',()=>{clearTimeout(tm);t.remove();undo()})}
 // the site defaults (as for a first visit: stop-motion follows the device)
