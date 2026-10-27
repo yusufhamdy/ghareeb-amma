@@ -551,7 +551,8 @@ const head=()=>`<header><a class="logo aq" href="#/">غريب القرآن</a></
 const wrow=w=>`<a class="row" href="#/word/${w.id}"><div class="w q">${esc(w.dw)}</div><div class="t"><div>${esc(w.mean)}</div><div class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div></div></a>`;
 // search: the stored (modern) spelling and the shown (Uthmani) headword are both indexed; w.k stays the challenge key
 function rank(q){const n=QText.searchNorm(q);if(!n)return[];return W.map(w=>{let r=0;if(w.sk===n||w.sd===n)r=4;else if(w.sk.startsWith(n)||w.sd.startsWith(n))r=3;else if(w.sk.includes(n)||w.sd.includes(n))r=2;else if(w.skm.includes(n))r=1;return[r,w]}).filter(x=>x[0]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);}
-const AY=a=>a.segments.map(g=>`﴿${esc(g.before)}<mark>${esc(g.hl)}</mark>${esc(g.after)}﴾`).join(' ');
+// the mark covers whole written words (an inline-block mark would break the letters' joining): see qtext.js
+const AY=a=>a.segments.map(g=>{const k=QText.markParts(g);return `﴿${esc(k.pre)}<mark>${esc(k.mark)}</mark>${esc(k.post)}﴾`}).join(' ');
 const BKP='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
 const CIc='<svg class="i-cv i-cr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
 const CIcL='<svg class="i-cv i-cl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -785,7 +786,7 @@ const pill=w.s.name+' · آية '+w.ay.label,LG=66*K,PF=32*K,PH=76*K,PPX=35*K;
 // Ayah as glue groups (split at spaces); each <mark> is one unbreakable piece, like the site's inline-block mark.
 const G=[];let cur=null;const nw=()=>{cur=[];G.push(cur)};
 const addT=t=>t.split(' ').forEach((p,i)=>{if(i>0||!cur)nw();if(p)cur.push({t:p,mk:false})});
-w.ay.segments.forEach((g,i)=>{if(i>0)nw();addT('﴿'+QT(g.before));if(g.hl){if(!cur)nw();cur.push({t:QT(g.hl),mk:true})}addT(QT(g.after)+'﴾')});
+w.ay.segments.forEach((g,i)=>{if(i>0)nw();const k=QText.markParts(g);addT('﴿'+QT(k.pre));if(k.mark){if(!cur)nw();cur.push({t:QT(k.mark),mk:true})}addT(QT(k.post)+'﴾')});
 const GR=G.filter(g=>g.length);
 const lay=f=>{const o={f,ok:true};
 const lg=met(AQ(LG),'غريب القرآن');o.HH=Math.max(PH,lg.asc+lg.desc);o.lg=lg;o.pw=met(PX(600,PF),pill).w+2*PPX;

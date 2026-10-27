@@ -26,6 +26,7 @@ const PUBLIC = path.join(ROOT, "public");
 const quran = require("../data/quran/index.js");
 const AyahCheck = require("../public/admin/ayah-check.js");
 const { fixSegment } = require("../data/quran/fix.js");
+const QText = require("../public/qtext.js");
 
 const OFFICIAL_SHA256 = "d2960b3217962e7e4252abdcece67bea3d6b48271e4cd3af45bbbb2dd5c872ca";
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
@@ -90,7 +91,9 @@ test("the static word pages show the same segments, and they pass", async () => 
     const segs = r.ayah.segments;
     assert.strictEqual(shown.length, segs.length, r.slug + ": segment count");
     shown.forEach((g, i) => {
-      assert.deepStrictEqual(g, { before: segs[i].before, hl: segs[i].hl, after: segs[i].after }, r.slug + ": segment " + i + " is the data");
+      // the page shows the mark widened to whole written words (qtext.js markParts); the text is the data
+      const k = QText.markParts(segs[i]);
+      assert.deepStrictEqual(g, { before: k.pre, hl: k.mark, after: k.post }, r.slug + ": segment " + i + " is the data");
       assert.deepStrictEqual(AyahCheck.check([Object.assign({ num: segs[i].num }, g)], r.no, quran.ayah), [], r.slug + ": segment " + i + " passes");
     });
     pages++;

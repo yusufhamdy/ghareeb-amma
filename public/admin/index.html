@@ -340,7 +340,7 @@ function tabT(){
 <div class="acts"><button class="g pill" data-a="exp">تصدير ملف الكلمات</button><label class="g pill" style="cursor:pointer" tabindex="0">استيراد من ملف<input type="file" accept=".json" data-f="imp" hidden></label><button class="g pill dg" data-a="undo" data-busy="جارٍ الاستعادة…">تراجع عن آخر تعديل</button></div>
 <div class="sm">يستبدل الاستيراد كل البيانات الحالية، وتُحفظ النسخة السابقة فيمكنك الرجوع إليها بزر «تراجع عن آخر تعديل».</div></div>`;
 }
-function ayHtml(s){return"﴿"+s.map(g=>`${esc(g.before)}<mark>${esc(g.hl)}</mark>${esc(g.after)}`).join(" … ")+"﴾"}
+function ayHtml(s){return"﴿"+s.map(g=>{const k=QText.markParts(g);return`${esc(k.pre)}<mark>${esc(k.mark)}</mark>${esc(k.post)}`}).join(" … ")+"﴾"}
 function wordHtml(){
  const x=ED,er=x.err||{};
  return winHtml(x.wi<0?"إضافة كلمة":"تعديل كلمة",`<label class="lb" for="e-si">السورة</label><select class="in" id="e-si" data-f="e.si">${rows().map(r=>`<option value="${r.i}" ${r.i===x.si?"selected":""}>${esc(r.name)}</option>`).join("")}</select>
