@@ -52,7 +52,7 @@ const LINES = `(() => {
   walk(ay);
   return lines.map((l) => l.text);
 })()`;
-const badLines = (lines) => lines.filter((l) => l.startsWith("﴾") || l.endsWith("﴿"));
+const badLines = (lines) => lines.filter((l) => l.startsWith("\ufd3e") || l.endsWith("\ufd3f"));
 
 test("no ornate parenthesis alone at a line end or start, in the page and on the card", { timeout: 900000 }, async (t) => {
   let chromium;

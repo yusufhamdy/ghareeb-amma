@@ -44,7 +44,7 @@ test("the official text: unmodified file, 114 surahs, 6236 ayat", () => {
   assert.strictEqual(quran.ayahCount(114), 6);
   for (let s = 1; s <= 114; s++) for (let a = 1; a <= quran.ayahCount(s); a++) {
     const t = quran.ayah(s, a);
-    assert.ok(!/[ﭐ-﷿ﹰ-﻿ ]/.test(t) && t === t.trim(), "ayah " + s + ":" + a + " has no ayah-number glyph or no-break space");
+    assert.ok(!/[\ufb50-\ufdff\ufe70-\ufeff\u00a0]/.test(t) && t === t.trim(), "ayah " + s + ":" + a + " has no ayah-number glyph or no-break space");
   }
 });
 
@@ -73,7 +73,7 @@ test("the rule: NFC on both sides, a wrong number or an extra mark fails", () =>
   assert.deepStrictEqual(AyahCheck.check([nfd], 114, quran.ayah), []);
   assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { num: 5 })], 114, quran.ayah).map((p) => p.why), ["text"]);
   assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { num: 7 })], 114, quran.ayah).map((p) => p.why), ["num"]);
-  assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { hl: ok.hl + "ـ" })], 114, quran.ayah).map((p) => p.why), ["text"]);
+  assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { hl: ok.hl + "\u0640" })], 114, quran.ayah).map((p) => p.why), ["text"]);
   // the admin's table form gives the same answers
   const table = JSON.parse(fs.readFileSync(path.join(PUBLIC, "admin", "quran-hafs.json"), "utf8"));
   assert.deepStrictEqual(AyahCheck.check([ok, Object.assign({}, ok, { num: 5 })], 114, AyahCheck.fromTable(table)).map((p) => p.i), [1]);
@@ -87,7 +87,7 @@ test("the static word pages show the same segments, and they pass", async () => 
     const html = fs.readFileSync(path.join(PUBLIC, "word", r.slug + ".html"), "utf8");
     const ay = ((html.match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "").replace(/<span class="nb">|<\/span>/g, ""); // no-break wrappers (K) are layout only
     assert.ok(ay != null, r.slug + ": has the ayah block");
-    const shown = [...ay.matchAll(/﴿([\s\S]*?)<mark>([\s\S]*?)<\/mark>([\s\S]*?)﴾/g)].map((m) => ({ before: unesc(m[1]), hl: unesc(m[2]), after: unesc(m[3]) }));
+    const shown = [...ay.matchAll(/\ufd3f([\s\S]*?)<mark>([\s\S]*?)<\/mark>([\s\S]*?)\ufd3e/g)].map((m) => ({ before: unesc(m[1]), hl: unesc(m[2]), after: unesc(m[3]) }));
     const segs = r.ayah.segments;
     assert.strictEqual(shown.length, segs.length, r.slug + ": segment count");
     shown.forEach((g, i) => {

@@ -37,7 +37,7 @@ test("the guard covers every field of words.json and challenge.json", () => {
 test("a changed field is reported by its path", () => {
   const W = JSON.parse(fs.readFileSync(path.join(B.ROOT, "public", "words.json"), "utf8"));
   const a = B.leaves(W, "", {});
-  W[0].ayahs[0].segments[0].hl = W[0].ayahs[0].segments[0].hl.normalize("NFD") + "ـ";
+  W[0].ayahs[0].segments[0].hl = W[0].ayahs[0].segments[0].hl.normalize("NFD") + "\u0640";
   const b = B.leaves(W, "", {});
   const changed = Object.keys(a).filter((k) => a[k] !== b[k]);
   assert.deepStrictEqual(changed, ["[0].ayahs[0].segments[0].hl"]);

@@ -21,9 +21,9 @@ const path = require("path");
 
 const PUBLIC = path.resolve(__dirname, "..", "public");
 const WORDS = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
-const NOT_MATCH = "لا يطابق"; // "does not match"
-const NO_AYAH = "لا توجد آية"; // "there is no ayah"
-const SAVED = "تم الحفظ"; // "saved"
+const NOT_MATCH = "\u0644\u0627 \u064a\u0637\u0627\u0628\u0642"; // "does not match"
+const NO_AYAH = "\u0644\u0627 \u062a\u0648\u062c\u062f \u0622\u064a\u0629"; // "there is no ayah"
+const SAVED = "\u062a\u0645 \u0627\u0644\u062d\u0641\u0638"; // "saved"
 
 const FB_STUB = [
   "export function initializeApp(cfg){return {cfg}}",
@@ -89,7 +89,7 @@ test("the admin blocks a word whose ayah text is not the official text", async (
 
     // a tatweel added inside the highlighted text
     await openEditor();
-    await page.fill('[data-f="g.0.hl"]', g.hl.slice(0, 2) + "ـ" + g.hl.slice(2));
+    await page.fill('[data-f="g.0.hl"]', g.hl.slice(0, 2) + "\u0640" + g.hl.slice(2));
     await save();
     let md = await page.textContent("#md");
     assert.ok(log.some((p) => p.includes("quran-hafs.json")), "the first save loads the reference text");

@@ -9,8 +9,8 @@
    document follows every switch, so measurements (word-gap.js) can be redone. */
 (function () {
   var FAMILY = 'KFGQPC Uthmanic Hafs', BLOCK_MS = 3000;
-  var TO = { 'ٗ': 'ࣰ', 'ٞ': 'ࣱ', 'ٖ': 'ࣲ' }, FROM = { 'ࣰ': 'ٗ', 'ࣱ': 'ٞ', 'ࣲ': 'ٖ' };
-  var RE_TO = /[ٖٗٞ]/g, RE_FROM = /[ࣰ-ࣲ]/g, off = false, mo = null, settled = false;
+  var TO = { '\u0657': '\u08f0', '\u065e': '\u08f1', '\u0656': '\u08f2' }, FROM = { '\u08f0': '\u0657', '\u08f1': '\u065e', '\u08f2': '\u0656' };
+  var RE_TO = /[\u0657\u065e\u0656]/g, RE_FROM = /[\u08f0-\u08f2]/g, off = false, mo = null, settled = false;
 
   function qText(s) { return off ? String(s).replace(RE_TO, function (c) { return TO[c]; }) : String(s); }
   window.qText = qText;

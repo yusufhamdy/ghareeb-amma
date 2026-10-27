@@ -83,9 +83,9 @@ function dataQText() {
   const W = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
   const out = [];
   for (const e of W) {
-    out.push(String(e.surah).replace(/^سورة\s*/, ""));
+    out.push(String(e.surah).replace(/^\u0633\u0648\u0631\u0629\s*/, ""));
     (e.words || []).forEach((w) => out.push(w));
-    (e.ayahs || []).forEach((a) => (a.segments || []).forEach((g) => out.push("﴿" + g.before + g.hl + g.after + "﴾")));
+    (e.ayahs || []).forEach((a) => (a.segments || []).forEach((g) => out.push("\ufd3f" + g.before + g.hl + g.after + "\ufd3e")));
   }
   return out;
 }
@@ -219,7 +219,7 @@ test("browser: the face loads, the app's .q text is covered, and U+0622 draws li
     // U+0622 and U+0627 U+0653 give the same pixels in the face (HarfBuzz decomposes it), in a word and alone
     const same = await page.evaluate((fam) => {
       const draw = (s) => { const c = document.createElement("canvas"); c.width = 600; c.height = 300; const x = c.getContext("2d"); x.font = '120px "' + fam + '"'; x.direction = "rtl"; x.textAlign = "right"; x.fillText(s, 560, 200); return c.toDataURL(); };
-      const pairs = [["آ", "آ"], ["مَآ", "مَآ"]];
+      const pairs = [["\u0622", "\u0627\u0653"], ["\u0645\u064e\u0622", "\u0645\u064e\u0627\u0653"]];
       return pairs.map(([a, b]) => draw(a) === draw(b) && draw(a) !== draw(""));
     }, FAMILY);
     assert.deepStrictEqual(same, [true, true], "U+0622 draws exactly like U+0627 U+0653");
@@ -238,19 +238,19 @@ test("browser: with the font blocked, .q text falls back to Amiri Quran with the
     assert.strictEqual(after, before, "the data is unchanged (display only)");
     const all = texts.join("");
     for (const [from, to] of Object.entries(OPEN_TANWEEN)) assert.ok(!all.includes(String.fromCodePoint(+from)), hex(+from) + " is not shown in the fallback");
-    assert.ok(/[ࣰ-ࣲ]/.test(all), "the fallback shows the standard open tanween");
+    assert.ok(/[\u08f0-\u08f2]/.test(all), "the fallback shows the standard open tanween");
     const missing = [...new Set([...all].map((c) => c.codePointAt(0)))].filter((cp) => cp !== 0x20 && !AMIRI.has(cp)).map(hex);
     assert.deepStrictEqual(missing, [], "Amiri Quran has a glyph for every code point shown (no boxes)");
     const logo = await page.evaluate(() => ({ font: getComputedStyle(document.querySelector("#app header .logo")).fontFamily, qf: document.documentElement.classList.contains("qf") }));
     assert.ok(logo.qf && /^"?Amiri Quran"?,/.test(logo.font), "the logo is unaffected");
     // the save-image card draws mapped text too
-    const card = await page.evaluate(() => { const c = renderCard(W[0], "n"); return { w: c.width, h: c.height, mapped: window.qText("ٞ") }; });
-    assert.deepStrictEqual(card, { w: 1080, h: 1350, mapped: "ࣱ" });
+    const card = await page.evaluate(() => { const c = renderCard(W[0], "n"); return { w: c.width, h: c.height, mapped: window.qText("\u065e") }; });
+    assert.deepStrictEqual(card, { w: 1080, h: 1350, mapped: "\u08f1" });
     // a static word page
     await page.goto(base + "/word/al-qariah-9.html", { waitUntil: "load" });
     await page.waitForFunction(() => document.documentElement.classList.contains("qf"), null, { timeout: 20000 });
     const st = await page.evaluate(() => [...document.querySelectorAll(".q")].map((e) => e.textContent).join(""));
-    assert.ok(!/[ٖٗٞ]/.test(st) && /ࣱ/.test(st), "the static page shows the mapped text");
+    assert.ok(!/[\u0656\u0657\u065e]/.test(st) && /\u08f1/.test(st), "the static page shows the mapped text");
     await ctx.close();
   });
 });

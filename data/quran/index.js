@@ -26,20 +26,20 @@ let cache = null;
 // Strip the trailing ayah-number glyph (and the space before it), and turn no-break spaces into spaces.
 function clean(raw) {
   return String(raw)
-    .replace(/[  ]*[ﭐ-﷿ﹰ-﻿]$/, "")
-    .replace(/ /g, " ")
+    .replace(/[ \u00a0]*[\ufb50-\ufdff\ufe70-\ufeff]$/, "")
+    .replace(/\u00a0/g, " ")
     .trim();
 }
 
-// Surah names are compared without diacritics and with the alef/yeh/teh marbuta forms unified, so "سورة ..."
+// Surah names are compared without diacritics and with the alef/yeh/teh marbuta forms unified, so "\u0633\u0648\u0631\u0629 ..."
 // names in words.json match the official sura_name_ar.
 function normName(s) {
   return String(s == null ? "" : s)
-    .replace(/^سورة\s*/, "")
-    .replace(/[ـً-ٰٟۖ-ۭ]/g, "")
-    .replace(/[أإآٱ]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/ة/g, "ه")
+    .replace(/^\u0633\u0648\u0631\u0629\s*/, "")
+    .replace(/[\u0640\u064b-\u065f\u0670\u06d6-\u06ed]/g, "")
+    .replace(/[\u0623\u0625\u0622\u0671]/g, "\u0627")
+    .replace(/\u0649/g, "\u064a")
+    .replace(/\u0629/g, "\u0647")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -80,7 +80,7 @@ function ayahCount(surah) {
   return t ? t.length - 1 : 0;
 }
 
-// Surah number from a name as words.json writes it ("سورة <name>" or the bare name), or 0.
+// Surah number from a name as words.json writes it ("\u0633\u0648\u0631\u0629 <name>" or the bare name), or 0.
 function surahNumber(name) {
   return load().names[normName(name)] || 0;
 }

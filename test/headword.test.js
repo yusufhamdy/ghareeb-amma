@@ -23,7 +23,7 @@ const PUBLIC = path.resolve(__dirname, "..", "public");
 const QText = require("../public/qtext.js");
 const WORDS = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
 const CH = JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"));
-const ALIF_WASLA = "ٱ", LAM = "ل", SUKUN = "ۡ";
+const ALIF_WASLA = "\u0671", LAM = "\u0644", SUKUN = "\u06e1";
 
 // the rule, written out independently of qtext.js
 function expected(ayah) {
@@ -37,7 +37,7 @@ function expected(ayah) {
 }
 const all = [];
 WORDS.forEach((e) => e.words.forEach((w, i) => all.push({ surah: e.surah, word: w, ayah: e.ayahs[i], dw: QText.displayWord(e.ayahs[i]) })));
-const isMark = (c) => /[ؐ-ًؚ-ٰٟۖ-ࣰۭ-ࣿ]/.test(c);
+const isMark = (c) => /[\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed\u08f0-\u08ff]/.test(c);
 
 test("dw follows the rule for all 73 words, marks included", () => {
   assert.strictEqual(all.length, 73);
@@ -53,13 +53,13 @@ test("dw follows the rule for all 73 words, marks included", () => {
     assert.strictEqual(x.dw.slice(extra), hls, x.word + ": dw ends with the highlighted text itself");
     assert.strictEqual(marks(x.dw.slice(extra)), marks(hls));
     // no other attached particle is put in front
-    assert.ok(!/^[وفبكل][َِ]/.test(x.dw) || /^[وفبكل][َِ]/.test(hls), x.word + ": no particle added");
+    assert.ok(!/^[\u0648\u0641\u0628\u0643\u0644][\u064e\u0650]/.test(x.dw) || /^[\u0648\u0641\u0628\u0643\u0644][\u064e\u0650]/.test(hls), x.word + ": no particle added");
   }
   assert.strictEqual(articles, 1, "only al-Fajr 19 has an attached article");
   // the open-tanween form of the mushaf survives: sijjin (al-Mutaffifin 7) shows U+0656, not U+064D
-  const sijjin = all.find((x) => x.surah.endsWith("المطففين") && x.ayah.label === "7");
-  assert.ok(sijjin.dw.includes("ٖ") && !sijjin.dw.includes("ٍ"), "83-0 keeps U+0656");
-  assert.ok(sijjin.word.includes("ٍ"), "the stored word keeps its own spelling");
+  const sijjin = all.find((x) => x.surah.endsWith("\u0627\u0644\u0645\u0637\u0641\u0641\u064a\u0646") && x.ayah.label === "7");
+  assert.ok(sijjin.dw.includes("\u0656") && !sijjin.dw.includes("\u064d"), "83-0 keeps U+0656");
+  assert.ok(sijjin.word.includes("\u064d"), "the stored word keeps its own spelling");
 });
 
 test("static pages: visible headwords in the mushaf spelling, the stored word in titles and data", () => {
@@ -73,7 +73,7 @@ test("static pages: visible headwords in the mushaf spelling, the stored word in
     for (const s of shown) { n++; assert.ok(dws.has(s), d + "/" + f + ": shows a headword that is not dw: " + s); assert.ok(!modern.has(s), d + "/" + f + ": modern spelling shown: " + s); }
     if (d === "word") {
       const title = unesc((html.match(/<title>([^<]*)<\/title>/) || [])[1] || "");
-      assert.ok(!/[ً-ٰٟۖ-ۭ]/.test(title), f + ": the title stays the plain stored word");
+      assert.ok(!/[\u064b-\u065f\u0670\u06d6-\u06ed]/.test(title), f + ": the title stays the plain stored word");
     }
   }
   assert.ok(n > 200, "headwords checked: " + n);
@@ -94,7 +94,7 @@ function staticServer(root) {
 }
 
 // the normalization the app used before (and still uses for the challenge), copied verbatim
-const oldNorm = (s) => String(s).replace(/[ـً-ٰٟۖ-ۭ]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/\s+/g, " ").trim();
+const oldNorm = (s) => String(s).replace(/[\u0640\u064b-\u065f\u0670\u06d6-\u06ed]/g, "").replace(/[\u0623\u0625\u0622\u0671]/g, "\u0627").replace(/\u0649/g, "\u064a").replace(/\u0629/g, "\u0647").replace(/\u0624/g, "\u0648").replace(/\u0626/g, "\u064a").replace(/\s+/g, " ").trim();
 
 test("the app: visible headwords, search from both spellings, the challenge, meanings", async (t) => {
   let chromium;

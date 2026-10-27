@@ -17,11 +17,11 @@
 const quran = require("./index.js");
 const AyahCheck = require("../../public/admin/ayah-check.js");
 
-const MARKS = /[ؐ-ًؚ-ٰٟۖ-ࣰۭ-ࣲـ]/g;
-const SEATS = /[ءآأإاٱ]/g;
+const MARKS = /[\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed\u08f0-\u08f2\u0640]/g;
+const SEATS = /[\u0621\u0622\u0623\u0625\u0627\u0671]/g;
 
 function skeleton(word) {
-  return String(word).normalize("NFD").replace(MARKS, "").replace(SEATS, "").replace(/ى/g, "ي").replace(/ة/g, "ه");
+  return String(word).normalize("NFD").replace(MARKS, "").replace(SEATS, "").replace(/\u0649/g, "\u064a").replace(/\u0629/g, "\u0647");
 }
 
 const words = (s) => String(s).trim().split(/\s+/).filter(Boolean);

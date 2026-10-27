@@ -18,7 +18,7 @@ const path = require("path");
 const PUBLIC = path.resolve(__dirname, "..", "public");
 const QText = require("../public/qtext.js");
 const WORDS = JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
-const OL = "﴿", OR = "﴾";
+const OL = "\ufd3f", OR = "\ufd3e";
 const okBefore = (c) => c === undefined || c === " " || c === OL;
 const okAfter = (c) => c === undefined || c === " " || c === OR;
 

@@ -194,7 +194,7 @@ backed by a numeric % plus a DOM/box diff, not by eye.
   resilience fallback, not a silent substitute for the migration: `window.__DATA_SRC__`
   reports the actual source and the verifier asserts `'firestore'`.
 - Local fallback smoke (Playwright, static server, no emulator): `data_src=json`,
-  28 surah rows, summary "73 ÙƒÙ„Ù…Ø© ÙÙŠ 28 Ø³ÙˆØ±Ø©", 0 page errors. The Firestore read path
+  28 surah rows, summary "73 كلمة في 28 سورة", 0 page errors. The Firestore read path
   (T4d) still needs the emulator and is blocked by the T3 JDK blocker.
 
 ### T3 unblocked - portable JDK 21 (no system install)
