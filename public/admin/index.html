@@ -539,7 +539,7 @@ async function resolveUser(x){
    if(!x&&MD){if(dirty())askDiscard(()=>closeWin(false));else closeWin(false)}
    await resolveUser(x);render();
   });
- }catch(e){READY=true;$("#app").innerHTML='<div class="g card" role="alert" style="padding:22px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">تعذّر تحميل خدمة تسجيل الدخول. تحقّق من الاتصال بالإنترنت.<button class="pill btn" onclick="location.reload()">'+IC_RETRY+'إعادة المحاولة</button></div>'}
+ }catch(e){READY=true;$("#app").innerHTML='<div class="g card" role="alert" style="padding:22px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">تعذّر تحميل خدمة تسجيل الدخول. تحقّق من الاتصال بالإنترنت.<button class="pill btn" type="button" id="reload">'+IC_RETRY+'إعادة المحاولة</button></div>';$("#reload").addEventListener("click",()=>location.reload())}
 })();
 </script>
 </body>
