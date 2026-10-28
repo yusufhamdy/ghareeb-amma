@@ -152,13 +152,13 @@ test("card image: the measured layout never overlaps and never clips", { timeout
     await page.evaluate(() => cardFonts());
     const fontsReady = await page.evaluate(() => ({
       quran: document.fonts.check('120px "KFGQPC Uthmanic Hafs"'),
-      logo: document.fonts.check('120px "Amiri Quran"'),
+      logo: document.fonts.check('700 120px "Amiri"'),
       ui: document.fonts.check('28px "IBM Plex Sans Arabic"'),
       ui500: document.fonts.check('500 28px "IBM Plex Sans Arabic"'),
       ui600: document.fonts.check('600 28px "IBM Plex Sans Arabic"'),
     }));
     assert.ok(fontsReady.quran, "the Quran face (KFGQPC Uthmanic Hafs) is loaded before measuring");
-    assert.ok(fontsReady.logo, "the logo face (Amiri Quran) is loaded before measuring");
+    assert.ok(fontsReady.logo, "the site-name face (Amiri Bold) is loaded before measuring");
     assert.ok(fontsReady.ui && fontsReady.ui500 && fontsReady.ui600, "the UI font (400/500/600) is loaded before measuring");
 
     for (const c of CASES) {

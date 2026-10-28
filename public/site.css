@@ -15,6 +15,7 @@ a{text-decoration:none;color:inherit}button{font:inherit;color:inherit;border:0;
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
 .logo{font-family:'Amiri Quran',serif;font-size:28px;color:var(--ac)}
+.sn{font-family:'Amiri',serif;font-weight:700}
 .ib{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ac)}
 h1{font-size:28px;font-weight:600;margin:0 0 6px;line-height:1.3}
 .sm{font-size:13px;color:var(--mu)}

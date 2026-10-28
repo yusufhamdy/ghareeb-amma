@@ -134,7 +134,7 @@ const LEGACY_CSS =
   ":root{--bg:#EEF3F6;--tx:#1D2B25;--mu:#55645D;--ac:#0B6E8A;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
   "@media(prefers-color-scheme:dark){:root{--bg:#0A0E1F;--tx:#ECEFFA;--mu:#A3ABC9;--ac:#9FB4FF;--ln:rgba(255,255,255,.13);--gb:rgba(255,255,255,.07)}}\n" +
   "*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.8}\n" +
-  "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}.aq{font-family:'Amiri Quran',serif}\n" +
+  "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}.aq{font-family:'Amiri Quran',serif}.sn{font-family:'Amiri',serif;font-weight:700}\n" +
   ".m{color:var(--mu);font-size:14px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}\n" +
   ".logo{font-size:27px}h1{font-size:44px;margin:8px 0;color:var(--ac);line-height:1.5}\n" +
   // room for Amiri Quran's descenders under the heading: (ascent 1.815em + descent 0.634em - line-height) / 2 (see index.html, N2)
@@ -447,7 +447,7 @@ export function renderWordPage(r) {
   return (
     staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
-    '<header><a class="logo aq" href="/">' + A.LOGO + "</a>" +
+    '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<a class="pill" href="/surah/' + r.surahSlug + '.html">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + CHEV_L + "</a>\n" +
@@ -491,7 +491,7 @@ export function renderSurahPage(s) {
   return (
     staticHead({ title, desc, canonical: SITE + "/surah/" + s.slug + ".html", ogTitle: title, ogDesc: desc, type: "website", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
-    '<header><a class="logo aq" href="/">' + A.LOGO + "</a>" +
+    '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<div class="shd"><h1 class="q">' + esc(s.name) + '</h1><div class="sub">' + count + "</div>" +
@@ -523,7 +523,7 @@ export function renderLegalPage(entry) {
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     "<style>" + LEGACY_CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style>\n" +
     '<script src="/theme-boot.js"></script></head>\n' +
-    '<body><main class="legal"><a href="/" class="aq" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
+    '<body><main class="legal"><a href="/" class="sn" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
     '<h1 class="aq" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
     paras + "\n" +
     '<a class="b" href="/">' + A.HOME + "</a>\n" +

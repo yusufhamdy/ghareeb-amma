@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v35';
+const CACHE_NAME = 'ghareeb-pwa-v36';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -16,6 +16,7 @@ const assetsToCache = [
     '/qtext.js',
     '/fonts/fonts.css',
     '/fonts/kfgqpc-uthmanic-hafs-v22.ttf',
+    '/fonts/amiri-arabic-700-normal.woff2',
     '/words.json',
     '/challenge.json'
 ];

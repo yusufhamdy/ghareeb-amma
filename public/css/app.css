@@ -6,7 +6,7 @@ a{color:inherit;text-decoration:none}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}
-.aq{font-family:'Amiri Quran',serif}
+.aq{font-family:'Amiri Quran',serif}.sn{font-family:'Amiri',serif;font-weight:700}
 .m{font-size:13px;color:var(--mu)}
 #bg i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
 #bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}

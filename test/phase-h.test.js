@@ -506,7 +506,7 @@ test("H4: the surah heading is a name line over a 15px count line, then the word
           assert.equal(m.nameText, row.name, id + " surah " + num + ": the name text is unchanged");
           assert.equal(m.subText, row.count + SUFFIX, id + " surah " + num + ": the count text is unchanged");
           assert.ok(/^"?KFGQPC Uthmanic Hafs"?,/.test(m.font), id + " surah " + num + ": the name uses the Quran face KFGQPC Uthmanic Hafs (" + m.font + ")");
-          assert.ok(/^"?Amiri Quran"?,/.test(m.logoFont), id + " surah " + num + ": the logo keeps Amiri Quran (" + m.logoFont + ")");
+          assert.ok(/^"?Amiri"?,/.test(m.logoFont), id + " surah " + num + ": the logo is the site name in Amiri Bold (" + m.logoFont + ")");
           assert.ok(m.lh >= 1.699, id + " surah " + num + ": the name line-height is >= 1.7 (got " + m.lh.toFixed(2) + ")");
           assert.ok(m.nameFont >= 26 && m.nameFont <= 60, id + " surah " + num + ": the name keeps the h1 size (" + m.nameFont + "px)");
           assert.ok(Math.abs(m.subFont - 15) <= 0.5, id + " surah " + num + ": the count is 15px (got " + m.subFont + ")");

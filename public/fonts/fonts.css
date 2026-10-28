@@ -9,9 +9,18 @@
  *   site's ayah text without marks) the same size as Amiri Quran's at the same font-size, and the ascent / descent /
  *   line-gap overrides give it Amiri Quran's own line metrics (1.815 / 0.634 / 0 em after size-adjust), so line
  *   boxes and baselines do not move.
- * Interface: IBM Plex Sans Arabic (400/500/600), IBM Plex Mono (400/500) and Amiri Quran (400, the logo and
- *   non-Quran headings), from @fontsource - all SIL OFL 1.1, licenses in this folder. font-display: swap.
+ * Interface: IBM Plex Sans Arabic (400/500/600), IBM Plex Mono (400/500) and Amiri Quran (400, non-Quran
+ *   headings), from @fontsource - all SIL OFL 1.1, licenses in this folder. font-display: swap.
+ * Site name: Amiri Bold (700, Arabic subset, @fontsource/amiri, SIL OFL 1.1, LICENSE-Amiri-OFL.txt), for the site
+ *   name only (class .sn). font-display: swap.
  */
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('amiri-arabic-700-normal.woff2') format('woff2');
+}
 @font-face {
   font-family: 'IBM Plex Sans Arabic';
   font-style: normal;

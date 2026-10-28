@@ -230,8 +230,8 @@ test("browser: with the font blocked, .q text falls back to Amiri Quran with the
     assert.ok(/[\u08f0-\u08f2]/.test(all), "the fallback shows the standard open tanween");
     const missing = [...new Set([...all].map((c) => c.codePointAt(0)))].filter((cp) => cp !== 0x20 && !AMIRI.has(cp)).map(hex);
     assert.deepStrictEqual(missing, [], "Amiri Quran has a glyph for every code point shown (no boxes)");
-    const logo = await page.evaluate(() => ({ font: getComputedStyle(document.querySelector("#app header .logo")).fontFamily, qf: document.documentElement.classList.contains("qf") }));
-    assert.ok(logo.qf && /^"?Amiri Quran"?,/.test(logo.font), "the logo is unaffected");
+    const logo = await page.evaluate(() => { const s = getComputedStyle(document.querySelector("#app header .logo")); return { font: s.fontFamily, weight: s.fontWeight, qf: document.documentElement.classList.contains("qf") }; });
+    assert.ok(logo.qf && /^"?Amiri"?,/.test(logo.font) && logo.weight === "700", "the logo (the site name, Amiri Bold) is unaffected");
     // the save-image card draws mapped text too
     const card = await page.evaluate(() => { const c = renderCard(W[0], "n"); return { w: c.width, h: c.height, mapped: window.qText("\u065e") }; });
     assert.deepStrictEqual(card, { w: 1080, h: 1350, mapped: "\u08f1" });
