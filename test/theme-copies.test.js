@@ -43,19 +43,24 @@ test("theme definitions: names, colours, order, default, migration and glass map
   const T = FILES.map(load);
   const ref = T[0];
   // the values themselves (so a change has to be made on purpose, in every copy)
-  assert.strictEqual(JSON.stringify(ref.ORDER), JSON.stringify(["gold", "def", "lav", "sun", "neo"]));
-  assert.strictEqual(ref.DEFAULT, "gold");
+  assert.strictEqual(JSON.stringify(ref.ORDER), JSON.stringify(["neo", "gold", "def", "lav", "sun"]));
+  assert.strictEqual(ref.DEFAULT, "neo");
+  assert.strictEqual(ref.SV, 2);
   assert.strictEqual(ref.GLASS_DEFAULT, 50);
-  assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].n)), JSON.stringify(["ذهبي", "زمردي", "بنفسجي", "غروب", "فيروزي"]));
+  assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].n)), JSON.stringify(["فيروزي", "ذهبي", "زمردي", "بنفسجي", "غروب"]));
   assert.strictEqual(ref.PAL.sun.l[0], "#F6EFEA", "the sun light background is the app's value");
+  // neo: light unchanged; night is the old site's default night (palette "def" in main d4405a7)
+  assert.strictEqual(JSON.stringify(ref.PAL.neo.l), JSON.stringify(["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"]));
+  assert.strictEqual(JSON.stringify(ref.PAL.neo.d), JSON.stringify(["#0A0E1F", "#9FB4FF", "#4B5BDB", "#2FB5A8"]));
   // the picker swatches: a 135deg gradient [start, end] per palette, the same in light and dark
-  assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].sw)), JSON.stringify([["#B59045", "#F0CD78"], ["#56A882", "#8EE6B4"], ["#8177EC", "#B7B2FF"], ["#D47654", "#FFB38A"], ["#45AAC4", "#7FE7FF"]]));
+  assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].sw)), JSON.stringify([["#0B6E8A", "#9FB4FF"], ["#B59045", "#F0CD78"], ["#56A882", "#8EE6B4"], ["#8177EC", "#B7B2FF"], ["#D47654", "#FFB38A"]]));
   const inputs = [];
-  for (const pal of ["gold", "def", "lav", "sun", "neo", "min", "nope", undefined]) for (const [gl, gv] of [[undefined, undefined], [0, undefined], [1, undefined], [2, undefined], [1, 2], [3, 2], [5, 2], [9, 2], [37, 3], [101, 3]]) inputs.push({ pal, gl, gv });
+  for (const pal of ["gold", "def", "lav", "sun", "neo", "min", "nope", undefined]) for (const sv of [undefined, 1, 2]) for (const [gl, gv] of [[undefined, undefined], [0, undefined], [1, undefined], [2, undefined], [1, 2], [3, 2], [5, 2], [9, 2], [37, 3], [101, 3]]) inputs.push({ pal, sv, gl, gv });
   const behaviour = (t) => ({
     pal: JSON.stringify(t.ORDER.map((k) => [k, t.PAL[k].n, t.PAL[k].l, t.PAL[k].d, t.PAL[k].sw])),
     keys: Object.keys(t.PAL).join(),
-    order: t.ORDER.join(), def: t.DEFAULT, glassDefault: t.GLASS_DEFAULT,
+    order: t.ORDER.join(), def: t.DEFAULT, glassDefault: t.GLASS_DEFAULT, sv: t.SV,
+    upgrade: JSON.stringify(inputs.concat([{}]).map((s) => t.upgrade(Object.assign({}, s)))),
     migrate: JSON.stringify(inputs.map((s) => t.migrate(Object.assign({}, s)))),
     glass: JSON.stringify([...Array(101).keys()].map((v) => [t.glass(v, false), t.glass(v, true)])),
   });

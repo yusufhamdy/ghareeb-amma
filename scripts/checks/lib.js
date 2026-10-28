@@ -31,7 +31,7 @@ async function context(br, c, extra = {}) {
   await ctx.addInitScript((s) => {
     localStorage.setItem("gq-set", JSON.stringify(s.set)); localStorage.setItem("gq-ld", "1");
     if (s.prog) localStorage.setItem("gq-prog", JSON.stringify(s.prog));
-  }, { set: { style: c.style, mode: c.mode, pal: c.pal, gl: 3, gv: 2, snd: false, cm: false }, prog: extra.prog });
+  }, { set: { style: c.style, mode: c.mode, pal: c.pal, gl: 50, gv: 3, sv: 2, snd: false, cm: false }, prog: extra.prog });
   return ctx;
 }
 

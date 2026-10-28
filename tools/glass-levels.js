@@ -2,10 +2,11 @@
  * glass-levels.js - single source of truth for the glass-intensity slider
  * (Phase A STEP 3).
  *
- * The app is a single self-contained HTML file, so it inlines an identical copy
- * of LEVELS inside public/index.html (constant `GLLV`). test/glass-slider.test.js
- * drives the real page in a browser and asserts the applied CSS variables match
- * this table exactly, so the two copies cannot silently drift.
+ * These are the old site's five levels (main d4405a7, GLLV). The app's continuous
+ * 0..100 slider goes piecewise-linear through them (the GQ_THEME block, table GL,
+ * in public/index.html, theme-boot.js and theme.js): 0, 25, 50, 75 and 100 are
+ * levels 1..5 exactly. test/glass-slider.test.js checks the table and the CSS
+ * variables the real page writes, so the copies cannot silently drift.
  *
  * Each level = { bl: blur px, sat: saturate %, bg: glass-fill alpha, rim: border alpha }.
  * Level 1 is "barely-there" (least blur, thinnest fill); level 5 is the strongest
