@@ -7,11 +7,10 @@
  * Its aya_text is in the KFGQPC Hafs encoding the site stores (U+06E1 sukun, open tanween U+0657 / U+065E / U+0656)
  * and is the text of the KFGQPC Uthmanic Hafs v22 font.
  *
- * Two display-only details of the file are removed when reading, never in the file itself:
- *   - each aya_text ends with a space (U+00A0 or U+0020) and the ayah-number glyph (one code point in the Arabic
- *     presentation forms block); both are stripped;
- *   - the file puts U+00A0 (no-break space) after the hizb mark U+06DE; it becomes an ordinary space, as everywhere
- *     else in the text.
+ * The ayah text is returned byte for byte as in the file, with no Unicode normalization, except for the verse-number
+ * mark: each aya_text ends with a space (U+00A0 or U+0020) and the ayah-number glyph (one code point in the Arabic
+ * presentation forms block); both are stripped, and the outer white space trimmed (2:6 starts with a space). Everything
+ * else is kept, including the U+00A0 (no-break space) the file puts after the hizb mark U+06DE.
  *
  * ASCII-only, like the other modules that handle Arabic (see test/arabic-guard.test.js).
  */
@@ -23,11 +22,10 @@ const AYAT = 6236;
 
 let cache = null;
 
-// Strip the trailing ayah-number glyph (and the space before it), and turn no-break spaces into spaces.
+// Strip the trailing ayah-number glyph (and the space before it); nothing else changes.
 function clean(raw) {
   return String(raw)
     .replace(/[ \u00a0]*[\ufb50-\ufdff\ufe70-\ufeff]$/, "")
-    .replace(/\u00a0/g, " ")
     .trim();
 }
 

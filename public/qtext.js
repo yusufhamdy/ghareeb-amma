@@ -3,7 +3,7 @@
  * (scripts/publish-build.mjs) and the tests. Display only: the stored data is never changed.
  *
  *   displayWord(ayah)  the headword as the mushaf writes it: the highlighted text (hl) of the word's ayah segments,
- *                      NFC, joined with one space; when a segment's `before` ends with the article \u0671\u0644 (with or
+ *                      as stored (the official bytes, no normalization), joined with one space; when a segment's `before` ends with the article \u0671\u0644 (with or
  *                      without its sukun) written onto hl with no space, that \u0671\u0644 is part of the written word and is
  *                      put back in front. Other one-letter particles written onto hl (\u0648\u064e \u0641\u064e \u0628\u0650 \u0643\u064e \u0644\u0650) are not.
  *                      The stored headword (modern spelling) stays the key for search, the challenge, URLs and
@@ -28,12 +28,10 @@
 
   var AL = /\u0671\u0644\u06e1?$/; // alef wasla + lam, optional small high dotless head of khah (the mushaf's sukun)
 
-  function nfc(s) { return String(s == null ? "" : s).normalize("NFC"); }
-
   function displayWord(ayah) {
     var segs = ayah && Array.isArray(ayah.segments) ? ayah.segments : [];
     return segs.map(function (g) {
-      var hl = nfc(g && g.hl).replace(/^\s+|\s+$/g, ""), b = nfc(g && g.before), m = b.match(AL);
+      var hl = String(g && g.hl || "").replace(/^\s+|\s+$/g, ""), b = String(g && g.before || ""), m = b.match(AL);
       return (m && hl ? m[0] : "") + hl;
     }).filter(Boolean).join(" ");
   }

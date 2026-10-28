@@ -1,8 +1,8 @@
 /*
  * ayah-check.js - the ayah text rule, shared by the admin (blocks a save) and the tests (words.json and the static
- * pages): each segment's before + hl + after must be one contiguous piece of its official ayah, and the segment's
- * num must be that ayah's number. Both sides are compared in Unicode NFC (the site stores its text in NFC mark
- * order), so a canonical-equivalence-only difference is not an error.
+ * pages): each segment's before + hl + after must be one contiguous piece of its official ayah, byte for byte, and the
+ * segment's num must be that ayah's number. There is no Unicode normalization: the site stores the official bytes
+ * (a precomposed letter or a different mark order is a difference, because Safari draws them differently).
  *
  * The reference text comes from data/quran/ (the Complex's official Hafs text). The admin loads its copy,
  * /admin/quran-hafs.json (built by scripts/build-quran-ref.mjs), lazily on the first save; the public site never
@@ -17,13 +17,9 @@
 })(typeof window !== "undefined" ? window : null, function () {
   "use strict";
 
-  function nfc(s) {
-    return String(s == null ? "" : s).normalize("NFC");
-  }
-
   // The text a segment shows, as compared: before + hl + after, outer spaces removed.
   function segmentText(g) {
-    return nfc((g && g.before || "") + (g && g.hl || "") + (g && g.after || "")).replace(/^\s+|\s+$/g, "");
+    return String((g && g.before || "") + (g && g.hl || "") + (g && g.after || "")).replace(/^\s+|\s+$/g, "");
   }
 
   /**
@@ -31,7 +27,7 @@
    * segments: [{ num, before, hl, after }]; surah: the surah's number; ayahOf(surah, num) returns the official
    * ayah text or null.
    * Returns [] when every segment passes, else one problem per failing segment:
-   * { i (segment index), num, why: "num" (no such ayah) | "text" (not a contiguous piece of ayah num) }.
+   * { i (segment index), num, why: "num" (no such ayah) | "text" (not a contiguous byte-exact piece of ayah num) }.
    */
   function check(segments, surah, ayahOf) {
     var out = [];
@@ -40,7 +36,7 @@
       var ref = Number.isInteger(num) && num > 0 ? ayahOf(surah, num) : null;
       if (typeof ref !== "string") { out.push({ i: i, num: g && g.num, why: "num" }); return; }
       var t = segmentText(g);
-      if (!t || nfc(ref).indexOf(t) < 0) out.push({ i: i, num: num, why: "text" });
+      if (!t || ref.indexOf(t) < 0) out.push({ i: i, num: num, why: "text" });
     });
     return out;
   }
@@ -53,5 +49,5 @@
     };
   }
 
-  return { check: check, segmentText: segmentText, fromTable: fromTable, nfc: nfc };
+  return { check: check, segmentText: segmentText, fromTable: fromTable };
 });

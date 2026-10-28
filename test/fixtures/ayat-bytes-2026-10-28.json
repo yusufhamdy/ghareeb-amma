@@ -1,0 +1,682 @@
+{
+ "note": "2026-10-28: ayah segments rewritten to the official bytes (no Unicode normalization). Each entry is a changed field and its previous (NFC) value; putting them back gives the previous words.json byte for byte (beforeSha256).",
+ "beforeSha256": "d958aa0c087015c62f459698d524dfc2fcf885ae53925cbb28c320c4cef1339b",
+ "afterSha256": "06928b7bc6dc700c2e546340411caf44cd12affa00b11c074bc761d3e709b475",
+ "fields": [
+  {
+   "si": 0,
+   "ai": 0,
+   "gi": 0,
+   "surah": 114,
+   "num": 4,
+   "field": "before",
+   "from": "مِن شَرِّ ٱلۡوَسۡوَاسِ "
+  },
+  {
+   "si": 0,
+   "ai": 0,
+   "gi": 0,
+   "surah": 114,
+   "num": 4,
+   "field": "hl",
+   "from": "ٱلۡخَنَّاسِ"
+  },
+  {
+   "si": 1,
+   "ai": 0,
+   "gi": 0,
+   "surah": 113,
+   "num": 3,
+   "field": "before",
+   "from": "وَمِن شَرِّ "
+  },
+  {
+   "si": 1,
+   "ai": 1,
+   "gi": 0,
+   "surah": 113,
+   "num": 4,
+   "field": "before",
+   "from": "وَمِن شَرِّ "
+  },
+  {
+   "si": 1,
+   "ai": 1,
+   "gi": 0,
+   "surah": 113,
+   "num": 4,
+   "field": "hl",
+   "from": "ٱلنَّفَّٰثَٰتِ فِي ٱلۡعُقَدِ"
+  },
+  {
+   "si": 2,
+   "ai": 0,
+   "gi": 0,
+   "surah": 112,
+   "num": 2,
+   "field": "before",
+   "from": "ٱللَّهُ "
+  },
+  {
+   "si": 2,
+   "ai": 0,
+   "gi": 0,
+   "surah": 112,
+   "num": 2,
+   "field": "hl",
+   "from": "ٱلصَّمَدُ"
+  },
+  {
+   "si": 3,
+   "ai": 0,
+   "gi": 0,
+   "surah": 108,
+   "num": 3,
+   "field": "before",
+   "from": "إِنَّ "
+  },
+  {
+   "si": 3,
+   "ai": 1,
+   "gi": 0,
+   "surah": 108,
+   "num": 3,
+   "field": "before",
+   "from": "إِنَّ شَانِئَكَ هُوَ "
+  },
+  {
+   "si": 5,
+   "ai": 0,
+   "gi": 0,
+   "surah": 106,
+   "num": 2,
+   "field": "after",
+   "from": " رِحۡلَةَ ٱلشِّتَآءِ وَٱلصَّيۡفِ"
+  },
+  {
+   "si": 6,
+   "ai": 0,
+   "gi": 0,
+   "surah": 105,
+   "num": 4,
+   "field": "before",
+   "from": "تَرۡمِيهِم بِحِجَارَةٖ مِّن "
+  },
+  {
+   "si": 6,
+   "ai": 0,
+   "gi": 0,
+   "surah": 105,
+   "num": 4,
+   "field": "hl",
+   "from": "سِجِّيلٖ"
+  },
+  {
+   "si": 6,
+   "ai": 1,
+   "gi": 0,
+   "surah": 105,
+   "num": 5,
+   "field": "hl",
+   "from": "عَصۡفٖ مَّأۡكُولِۭ"
+  },
+  {
+   "si": 7,
+   "ai": 0,
+   "gi": 0,
+   "surah": 104,
+   "num": 1,
+   "field": "before",
+   "from": "وَيۡلٞ لِّكُلِّ "
+  },
+  {
+   "si": 7,
+   "ai": 0,
+   "gi": 0,
+   "surah": 104,
+   "num": 1,
+   "field": "hl",
+   "from": "هُمَزَةٖ لُّمَزَةٍ"
+  },
+  {
+   "si": 7,
+   "ai": 1,
+   "gi": 0,
+   "surah": 104,
+   "num": 4,
+   "field": "before",
+   "from": "كَلَّاۖ لَيُنۢبَذَنَّ فِي "
+  },
+  {
+   "si": 8,
+   "ai": 1,
+   "gi": 0,
+   "surah": 101,
+   "num": 9,
+   "field": "before",
+   "from": "فَأُمُّهُۥ "
+  },
+  {
+   "si": 9,
+   "ai": 5,
+   "gi": 0,
+   "surah": 100,
+   "num": 6,
+   "field": "before",
+   "from": "إِنَّ ٱلۡإِنسَٰنَ لِرَبِّهِۦ "
+  },
+  {
+   "si": 11,
+   "ai": 0,
+   "gi": 0,
+   "surah": 98,
+   "num": 1,
+   "field": "before",
+   "from": "لَمۡ يَكُنِ ٱلَّذِينَ كَفَرُواْ مِنۡ أَهۡلِ ٱلۡكِتَٰبِ وَٱلۡمُشۡرِكِينَ "
+  },
+  {
+   "si": 11,
+   "ai": 0,
+   "gi": 0,
+   "surah": 98,
+   "num": 1,
+   "field": "hl",
+   "from": "مُنفَكِّينَ"
+  },
+  {
+   "si": 11,
+   "ai": 0,
+   "gi": 0,
+   "surah": 98,
+   "num": 1,
+   "field": "after",
+   "from": " حَتَّىٰ تَأۡتِيَهُمُ ٱلۡبَيِّنَةُ"
+  },
+  {
+   "si": 12,
+   "ai": 0,
+   "gi": 0,
+   "surah": 96,
+   "num": 15,
+   "field": "before",
+   "from": "كَلَّا لَئِن لَّمۡ يَنتَهِ "
+  },
+  {
+   "si": 12,
+   "ai": 0,
+   "gi": 0,
+   "surah": 96,
+   "num": 15,
+   "field": "hl",
+   "from": "لَنَسۡفَعَۢا بِٱلنَّاصِيَةِ"
+  },
+  {
+   "si": 12,
+   "ai": 1,
+   "gi": 0,
+   "surah": 96,
+   "num": 18,
+   "field": "hl",
+   "from": "ٱلزَّبَانِيَةَ"
+  },
+  {
+   "si": 13,
+   "ai": 0,
+   "gi": 0,
+   "surah": 94,
+   "num": 3,
+   "field": "before",
+   "from": "ٱلَّذِيٓ "
+  },
+  {
+   "si": 14,
+   "ai": 0,
+   "gi": 0,
+   "surah": 93,
+   "num": 2,
+   "field": "before",
+   "from": "وَٱلَّيۡلِ إِذَا "
+  },
+  {
+   "si": 14,
+   "ai": 1,
+   "gi": 0,
+   "surah": 93,
+   "num": 3,
+   "field": "before",
+   "from": "مَا وَدَّعَكَ رَبُّكَ وَمَا "
+  },
+  {
+   "si": 15,
+   "ai": 0,
+   "gi": 0,
+   "surah": 92,
+   "num": 11,
+   "field": "hl",
+   "from": "تَرَدَّىٰٓ"
+  },
+  {
+   "si": 15,
+   "ai": 1,
+   "gi": 0,
+   "surah": 92,
+   "num": 14,
+   "field": "hl",
+   "from": "تَلَظَّىٰ"
+  },
+  {
+   "si": 16,
+   "ai": 1,
+   "gi": 0,
+   "surah": 91,
+   "num": 10,
+   "field": "hl",
+   "from": "دَسَّىٰهَا"
+  },
+  {
+   "si": 17,
+   "ai": 0,
+   "gi": 0,
+   "surah": 90,
+   "num": 2,
+   "field": "hl",
+   "from": "حِلُّۢ"
+  },
+  {
+   "si": 18,
+   "ai": 0,
+   "gi": 0,
+   "surah": 89,
+   "num": 5,
+   "field": "before",
+   "from": "هَلۡ فِي ذَٰلِكَ قَسَمٞ لِّذِي "
+  },
+  {
+   "si": 18,
+   "ai": 1,
+   "gi": 0,
+   "surah": 89,
+   "num": 19,
+   "field": "hl",
+   "from": "تُّرَاثَ"
+  },
+  {
+   "si": 18,
+   "ai": 1,
+   "gi": 0,
+   "surah": 89,
+   "num": 19,
+   "field": "after",
+   "from": " أَكۡلٗا لَّمّٗا"
+  },
+  {
+   "si": 18,
+   "ai": 2,
+   "gi": 0,
+   "surah": 89,
+   "num": 19,
+   "field": "before",
+   "from": "وَتَأۡكُلُونَ ٱلتُّرَاثَ "
+  },
+  {
+   "si": 18,
+   "ai": 2,
+   "gi": 0,
+   "surah": 89,
+   "num": 19,
+   "field": "hl",
+   "from": "أَكۡلٗا لَّمّٗا"
+  },
+  {
+   "si": 19,
+   "ai": 0,
+   "gi": 0,
+   "surah": 88,
+   "num": 6,
+   "field": "before",
+   "from": "لَّيۡسَ لَهُمۡ طَعَامٌ إِلَّا مِن "
+  },
+  {
+   "si": 19,
+   "ai": 2,
+   "gi": 0,
+   "surah": 88,
+   "num": 16,
+   "field": "hl",
+   "from": "زَرَابِيُّ"
+  },
+  {
+   "si": 20,
+   "ai": 0,
+   "gi": 0,
+   "surah": 87,
+   "num": 5,
+   "field": "hl",
+   "from": "غُثَآءً أَحۡوَىٰ"
+  },
+  {
+   "si": 21,
+   "ai": 0,
+   "gi": 0,
+   "surah": 86,
+   "num": 3,
+   "field": "before",
+   "from": "ٱلنَّجۡمُ "
+  },
+  {
+   "si": 21,
+   "ai": 0,
+   "gi": 0,
+   "surah": 86,
+   "num": 3,
+   "field": "hl",
+   "from": "ٱلثَّاقِبُ"
+  },
+  {
+   "si": 21,
+   "ai": 1,
+   "gi": 0,
+   "surah": 86,
+   "num": 7,
+   "field": "before",
+   "from": "يَخۡرُجُ مِنۢ بَيۡنِ ٱلصُّلۡبِ وَ"
+  },
+  {
+   "si": 21,
+   "ai": 1,
+   "gi": 0,
+   "surah": 86,
+   "num": 7,
+   "field": "hl",
+   "from": "ٱلتَّرَآئِبِ"
+  },
+  {
+   "si": 21,
+   "ai": 2,
+   "gi": 0,
+   "surah": 86,
+   "num": 9,
+   "field": "hl",
+   "from": "تُبۡلَى ٱلسَّرَآئِرُ"
+  },
+  {
+   "si": 21,
+   "ai": 3,
+   "gi": 0,
+   "surah": 86,
+   "num": 2,
+   "field": "hl",
+   "from": "ٱلطَّارِقُ"
+  },
+  {
+   "si": 22,
+   "ai": 1,
+   "gi": 0,
+   "surah": 84,
+   "num": 14,
+   "field": "before",
+   "from": "إِنَّهُۥ ظَنَّ أَن لَّن "
+  },
+  {
+   "si": 22,
+   "ai": 2,
+   "gi": 0,
+   "surah": 84,
+   "num": 17,
+   "field": "before",
+   "from": "وَٱلَّيۡلِ وَمَا "
+  },
+  {
+   "si": 23,
+   "ai": 0,
+   "gi": 0,
+   "surah": 83,
+   "num": 7,
+   "field": "before",
+   "from": "كَلَّآ إِنَّ كِتَٰبَ ٱلۡفُجَّارِ لَفِي "
+  },
+  {
+   "si": 23,
+   "ai": 0,
+   "gi": 0,
+   "surah": 83,
+   "num": 7,
+   "field": "hl",
+   "from": "سِجِّينٖ"
+  },
+  {
+   "si": 23,
+   "ai": 1,
+   "gi": 0,
+   "surah": 83,
+   "num": 14,
+   "field": "before",
+   "from": "كَلَّاۖ بَلۡۜ "
+  },
+  {
+   "si": 23,
+   "ai": 1,
+   "gi": 0,
+   "surah": 83,
+   "num": 14,
+   "field": "after",
+   "from": " عَلَىٰ قُلُوبِهِم مَّا كَانُواْ يَكۡسِبُونَ"
+  },
+  {
+   "si": 23,
+   "ai": 2,
+   "gi": 0,
+   "surah": 83,
+   "num": 19,
+   "field": "before",
+   "from": "وَمَآ أَدۡرَىٰكَ مَا "
+  },
+  {
+   "si": 23,
+   "ai": 2,
+   "gi": 0,
+   "surah": 83,
+   "num": 19,
+   "field": "hl",
+   "from": "عِلِّيُّونَ"
+  },
+  {
+   "si": 24,
+   "ai": 1,
+   "gi": 0,
+   "surah": 81,
+   "num": 4,
+   "field": "hl",
+   "from": "ٱلۡعِشَارُ عُطِّلَتۡ"
+  },
+  {
+   "si": 24,
+   "ai": 2,
+   "gi": 0,
+   "surah": 81,
+   "num": 6,
+   "field": "hl",
+   "from": "ٱلۡبِحَارُ سُجِّرَتۡ"
+  },
+  {
+   "si": 24,
+   "ai": 3,
+   "gi": 0,
+   "surah": 81,
+   "num": 15,
+   "field": "before",
+   "from": "فَلَآ أُقۡسِمُ بِ"
+  },
+  {
+   "si": 24,
+   "ai": 3,
+   "gi": 0,
+   "surah": 81,
+   "num": 15,
+   "field": "hl",
+   "from": "ٱلۡخُنَّسِ"
+  },
+  {
+   "si": 24,
+   "ai": 3,
+   "gi": 1,
+   "surah": 81,
+   "num": 16,
+   "field": "hl",
+   "from": "ٱلۡجَوَارِ ٱلۡكُنَّسِ"
+  },
+  {
+   "si": 24,
+   "ai": 4,
+   "gi": 0,
+   "surah": 81,
+   "num": 17,
+   "field": "before",
+   "from": "وَٱلَّيۡلِ إِذَا "
+  },
+  {
+   "si": 25,
+   "ai": 1,
+   "gi": 0,
+   "surah": 80,
+   "num": 30,
+   "field": "before",
+   "from": "وَحَدَآئِقَ "
+  },
+  {
+   "si": 25,
+   "ai": 3,
+   "gi": 0,
+   "surah": 80,
+   "num": 33,
+   "field": "before",
+   "from": "فَإِذَا جَآءَتِ "
+  },
+  {
+   "si": 25,
+   "ai": 3,
+   "gi": 0,
+   "surah": 80,
+   "num": 33,
+   "field": "hl",
+   "from": "ٱلصَّآخَّةُ"
+  },
+  {
+   "si": 26,
+   "ai": 0,
+   "gi": 0,
+   "surah": 79,
+   "num": 1,
+   "field": "hl",
+   "from": "وَٱلنَّٰزِعَٰتِ غَرۡقٗا"
+  },
+  {
+   "si": 26,
+   "ai": 1,
+   "gi": 0,
+   "surah": 79,
+   "num": 2,
+   "field": "hl",
+   "from": "وَٱلنَّٰشِطَٰتِ نَشۡطٗا"
+  },
+  {
+   "si": 26,
+   "ai": 2,
+   "gi": 0,
+   "surah": 79,
+   "num": 3,
+   "field": "hl",
+   "from": "وَٱلسَّٰبِحَٰتِ سَبۡحٗا"
+  },
+  {
+   "si": 26,
+   "ai": 3,
+   "gi": 0,
+   "surah": 79,
+   "num": 4,
+   "field": "hl",
+   "from": "فَٱلسَّٰبِقَٰتِ سَبۡقٗا"
+  },
+  {
+   "si": 26,
+   "ai": 4,
+   "gi": 0,
+   "surah": 79,
+   "num": 5,
+   "field": "hl",
+   "from": "فَٱلۡمُدَبِّرَٰتِ أَمۡرٗا"
+  },
+  {
+   "si": 26,
+   "ai": 5,
+   "gi": 0,
+   "surah": 79,
+   "num": 10,
+   "field": "before",
+   "from": "يَقُولُونَ أَءِنَّا لَمَرۡدُودُونَ فِي "
+  },
+  {
+   "si": 26,
+   "ai": 6,
+   "gi": 0,
+   "surah": 79,
+   "num": 30,
+   "field": "hl",
+   "from": "دَحَىٰهَآ"
+  },
+  {
+   "si": 26,
+   "ai": 7,
+   "gi": 0,
+   "surah": 79,
+   "num": 34,
+   "field": "before",
+   "from": "فَإِذَا جَآءَتِ "
+  },
+  {
+   "si": 26,
+   "ai": 7,
+   "gi": 0,
+   "surah": 79,
+   "num": 34,
+   "field": "hl",
+   "from": "ٱلطَّآمَّةُ ٱلۡكُبۡرَىٰ"
+  },
+  {
+   "si": 27,
+   "ai": 0,
+   "gi": 0,
+   "surah": 78,
+   "num": 14,
+   "field": "before",
+   "from": "وَأَنزَلۡنَا مِنَ ٱلۡمُعۡصِرَٰتِ مَآءٗ "
+  },
+  {
+   "si": 27,
+   "ai": 0,
+   "gi": 0,
+   "surah": 78,
+   "num": 14,
+   "field": "hl",
+   "from": "ثَجَّاجٗا"
+  },
+  {
+   "si": 27,
+   "ai": 1,
+   "gi": 0,
+   "surah": 78,
+   "num": 25,
+   "field": "before",
+   "from": "إِلَّا حَمِيمٗا وَ"
+  },
+  {
+   "si": 27,
+   "ai": 1,
+   "gi": 0,
+   "surah": 78,
+   "num": 25,
+   "field": "hl",
+   "from": "غَسَّاقٗا"
+  }
+ ]
+}

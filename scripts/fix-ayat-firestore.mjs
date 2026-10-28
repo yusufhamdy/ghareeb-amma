@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
- * fix-ayat-firestore.mjs - applies the 2026-10-27 ayah text corrections to the production words document
- * (Firestore public/data), at release, together with the KFGQPC font.
+ * fix-ayat-firestore.mjs - makes every ayah segment of the production words document (Firestore public/data) the
+ * official text byte for byte, at release, together with the KFGQPC font: the 2026-10-27 text corrections (9 fields)
+ * and the 2026-10-28 rewrite of NFC-stored segments to the official bytes (no Unicode normalization).
  *
  *   node scripts/fix-ayat-firestore.mjs --dry-run            read only: back up, print the exact diff, change nothing
  *   node scripts/fix-ayat-firestore.mjs --apply --confirm    back up, then write the corrections (owner approval)
@@ -10,10 +11,12 @@
  * What it does:
  *   1. reads public/data and writes it, unchanged, to backup/firestore/public-data-<time>.json
  *      (git-ignored; also in a dry run);
- *   2. finds the segments that fail the ayah rule (public/admin/ayah-check.js) and rebuilds them from the official
- *      text with data/quran/fix.js - the same code that corrected public/words.json;
- *   3. accepts only the corrections listed in test/fixtures/ayat-fix-2026-10-27.json (same surah, ayah, field and
- *      old text); anything else that fails, or a field that cannot be rebuilt, stops the script with no write;
+ *   2. finds the segments that fail the ayah rule (public/admin/ayah-check.js: a byte-exact piece of the official
+ *      ayah) and rebuilds them from the official bytes with data/quran/fix.js - the same code that rewrote
+ *      public/words.json;
+ *   3. accepts a changed field only when it is the same text in other bytes (canonically equivalent: encoding only)
+ *      or one of the text corrections listed in test/fixtures/ayat-fix-2026-10-27.json (same surah, ayah, field and
+ *      old text); any other change, or a field that cannot be rebuilt, stops the script with no write;
  *   4. prints the diff, and every remaining difference in ayah text between the corrected document and
  *      public/words.json;
  *   5. with --apply --confirm only: in one transaction, re-reads public/data, refuses if its rev changed since the
@@ -58,7 +61,9 @@ function plan(doc) {
   const surahs = Array.isArray(doc.surahs) ? doc.surahs : [];
   const fx = JSON.parse(fs.readFileSync(FIXTURE, "utf8")).fields;
   const r = fixSurahs(surahs);
-  const allowed = (c) => fx.some((f) => f.surah === c.no && f.num === c.num && f.field === c.field && f.from === c.from);
+  // the 9 listed text corrections, and any change to the official bytes of the same text (encoding only)
+  const listed = (c) => fx.some((f) => f.surah === c.no && f.num === c.num && f.field === c.field && f.from === c.from);
+  const allowed = (c) => c.encoding || listed(c);
   const unexpected = r.changes.filter((c) => !allowed(c));
   // segments still failing after the corrections (should be none)
   const failing = [];
@@ -71,6 +76,8 @@ function plan(doc) {
 function report(doc, p) {
   console.log("public/data rev " + doc.rev + ": " + (doc.surahs || []).length + " surahs");
   console.log("\n== corrections (" + p.changes.length + ") ==");
+  const nSeg = new Set(p.changes.map((c) => c.si + "/" + c.ai + "/" + c.gi)).size, enc = p.changes.filter((c) => c.encoding).length;
+  console.log(p.changes.length + " fields in " + nSeg + " segments: " + (p.changes.length - enc) + " text corrections, " + enc + " encoding only (same text, official bytes)");
   for (const c of p.changes) {
     const d = changedPart(c.from, c.to);
     console.log("surahs[" + c.si + "].ayahs[" + c.ai + "].segments[" + c.gi + "]." + c.field + "  (surah " + c.no + ", ayah " + c.num + ", word " + JSON.stringify(c.word) + ")");
@@ -124,7 +131,7 @@ async function main() {
     time: new Date().toISOString(), mode: DRY ? "dry-run" : "apply", project: PROJECT,
     target: FROM_JSON ? "file " + FROM_JSON : process.env.FIRESTORE_EMULATOR_HOST ? "emulator " + process.env.FIRESTORE_EMULATOR_HOST : "production",
     backup: path.relative(ROOT, backup), revBefore: doc.rev == null ? null : doc.rev, revAfter: null,
-    corrections: p.changes.map((c) => ({ surah: c.no, ayah: c.num, field: c.field, word: c.word, from: c.from, to: c.to })),
+    corrections: p.changes.map((c) => ({ surah: c.no, ayah: c.num, field: c.field, word: c.word, kind: c.encoding ? "encoding" : "text", from: c.from, to: c.to })),
     result: null,
   };
   const done = (result, code) => { log.result = result; fs.writeFileSync(logFile, JSON.stringify(log, null, 2)); console.log("log: " + path.relative(ROOT, logFile)); return code; };

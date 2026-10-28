@@ -2,7 +2,7 @@
 /*
  * headword.test.js - the headword is shown in the mushaf's (Uthmani) spelling, taken from the ayah itself.
  *
- *   - dw for all 73 words follows the rule: the segments' hl in NFC, joined with one space, with an attached
+ *   - dw for all 73 words follows the rule: the segments' hl as stored (the official bytes), joined with one space, with an attached
  *     article (alef wasla + lam, with or without the sukun) from `before` put back in front, and no other attached
  *     particle; every mark in dw is the same code point as in its hl (so 83-0 keeps U+0656, never U+064D);
  *   - no visible headword in the static pages or in the app is in the stored modern spelling (unless the stored
@@ -28,7 +28,7 @@ const ALIF_WASLA = "\u0671", LAM = "\u0644", SUKUN = "\u06e1";
 // the rule, written out independently of qtext.js
 function expected(ayah) {
   return (ayah.segments || []).map((g) => {
-    const hl = g.hl.normalize("NFC").trim(), b = g.before.normalize("NFC");
+    const hl = g.hl.trim(), b = g.before;
     let pre = "";
     if (b.endsWith(ALIF_WASLA + LAM + SUKUN)) pre = ALIF_WASLA + LAM + SUKUN;
     else if (b.endsWith(ALIF_WASLA + LAM)) pre = ALIF_WASLA + LAM;
@@ -44,7 +44,7 @@ test("dw follows the rule for all 73 words, marks included", () => {
   let articles = 0;
   for (const x of all) {
     assert.strictEqual(x.dw, expected(x.ayah), x.word);
-    const hls = x.ayah.segments.map((g) => g.hl.normalize("NFC").trim()).join(" ");
+    const hls = x.ayah.segments.map((g) => g.hl.trim()).join(" ");
     // marks: the same code points, in the same order, as in hl (plus the article's sukun when it was put back)
     const marks = (s) => [...s].filter(isMark).join("");
     const extra = x.dw.length - hls.length;

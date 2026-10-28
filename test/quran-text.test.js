@@ -6,10 +6,12 @@
  *   - the official file is the downloaded one (hash) and holds 114 surahs and 6236 ayat;
  *   - in public/words.json and in the static word pages built from it, every segment's before + hl + after is one
  *     contiguous piece of its official ayah and the segment's num is that ayah's number (public/admin/ayah-check.js,
- *     the rule the admin applies before a save), compared in NFC on both sides;
- *   - the 2026-10-27 corrections changed only the listed fields: putting the old values back gives the old file
- *     byte for byte (test/fixtures/ayat-fix-2026-10-27.json), and each corrected field is what data/quran/fix.js
- *     rebuilds from the official text;
+ *     the rule the admin applies before a save), byte for byte, with no Unicode normalization;
+ *   - the 2026-10-28 rewrite to the official bytes changed only segment fields, each to a canonically equivalent
+ *     value (test/fixtures/ayat-bytes-2026-10-28.json), and putting the old values back gives that file byte for byte;
+ *   - the 2026-10-27 corrections changed only the listed fields: putting the old values back (after the 2026-10-28
+ *     ones) gives the old file byte for byte (test/fixtures/ayat-fix-2026-10-27.json), and each corrected field is what
+ *     data/quran/fix.js rebuilds from the official text;
  *   - the admin's copy (public/admin/quran-hafs.json) is exactly what scripts/build-quran-ref.mjs writes, and only
  *     the admin refers to it.
  *
@@ -44,8 +46,13 @@ test("the official text: unmodified file, 114 surahs, 6236 ayat", () => {
   assert.strictEqual(quran.ayahCount(114), 6);
   for (let s = 1; s <= 114; s++) for (let a = 1; a <= quran.ayahCount(s); a++) {
     const t = quran.ayah(s, a);
-    assert.ok(!/[\ufb50-\ufdff\ufe70-\ufeff\u00a0]/.test(t) && t === t.trim(), "ayah " + s + ":" + a + " has no ayah-number glyph or no-break space");
+    assert.ok(!/[\ufb50-\ufdff\ufe70-\ufeff]/.test(t) && t === t.trim(), "ayah " + s + ":" + a + " has no ayah-number glyph");
+    // the only no-break spaces kept are the file's own, after the hizb mark
+    assert.ok(!/[^\u06de]\u00a0|^\u00a0/.test(t), "ayah " + s + ":" + a + ": a no-break space only after U+06DE");
   }
+  // byte for byte the file's aya_text, less the trailing space and ayah-number glyph
+  const rows = JSON.parse(fs.readFileSync(quran.FILE, "utf8"));
+  for (const r of rows) assert.ok(r.aya_text.trim().startsWith(quran.ayah(r.sura_no, r.aya_no)) && /^[ \u00a0]*[\ufb50-\ufdff\ufe70-\ufeff]$/.test(r.aya_text.trim().slice(quran.ayah(r.sura_no, r.aya_no).length)), r.sura_no + ":" + r.aya_no + " is the official bytes");
 });
 
 test("every segment in words.json is a contiguous piece of its official ayah", () => {
@@ -63,14 +70,19 @@ test("every segment in words.json is a contiguous piece of its official ayah", (
   assert.strictEqual(n, 74, "all 74 segments checked");
 });
 
-test("the rule: NFC on both sides, a wrong number or an extra mark fails", () => {
+test("the rule: byte for byte; NFC or NFD text, a wrong number or an extra mark fails", () => {
   const ref = quran.ayah(114, 4);
   const words = ref.split(" ");
   const ok = { num: 4, before: words.slice(0, 2).join(" ") + " ", hl: words.slice(2).join(" "), after: "" };
   assert.deepStrictEqual(AyahCheck.check([ok], 114, quran.ayah), []);
-  // canonically equivalent (marks reordered) is not an error
-  const nfd = Object.assign({}, ok, { hl: ok.hl.normalize("NFD") });
-  assert.deepStrictEqual(AyahCheck.check([nfd], 114, quran.ayah), []);
+  // canonically equivalent but other bytes is an error: Safari draws them differently
+  assert.notStrictEqual(ok.hl.normalize("NFD"), ok.hl, "the test piece has marks NFD reorders");
+  assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { hl: ok.hl.normalize("NFD") })], 114, quran.ayah).map((p) => p.why), ["text"]);
+  // 81:15 with alef + maddah composed into U+0622 (what NFC stored)
+  const f = quran.ayah(81, 15), w0 = f.split(" ")[0];
+  assert.ok(w0.includes("\u0627\u0653") && w0.normalize("NFC").includes("\u0622"), "81:15 starts with alef + maddah");
+  assert.deepStrictEqual(AyahCheck.check([{ num: 15, before: "", hl: w0, after: "" }], 81, quran.ayah), []);
+  assert.deepStrictEqual(AyahCheck.check([{ num: 15, before: "", hl: w0.normalize("NFC"), after: "" }], 81, quran.ayah).map((p) => p.why), ["text"]);
   assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { num: 5 })], 114, quran.ayah).map((p) => p.why), ["text"]);
   assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { num: 7 })], 114, quran.ayah).map((p) => p.why), ["num"]);
   assert.deepStrictEqual(AyahCheck.check([Object.assign({}, ok, { hl: ok.hl + "\u0640" })], 114, quran.ayah).map((p) => p.why), ["text"]);
@@ -101,9 +113,33 @@ test("the static word pages show the same segments, and they pass", async () => 
   assert.strictEqual(pages, 73);
 });
 
+const BYTES = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "ayat-bytes-2026-10-28.json"), "utf8"));
+// words.json as it was before the 2026-10-28 rewrite to the official bytes
+function beforeBytes() {
+  const old = JSON.parse(WORDS_RAW);
+  for (const f of BYTES.fields) old[f.si].ayahs[f.ai].segments[f.gi][f.field] = f.from;
+  return old;
+}
+
+test("the rewrite to the official bytes changed only segment fields, each to the same text in other bytes", () => {
+  assert.ok(BYTES.fields.length > 0);
+  for (const f of BYTES.fields) {
+    const e = WORDS[f.si], g = e.ayahs[f.ai].segments[f.gi];
+    assert.strictEqual(quran.surahNumber(e.surah), f.surah);
+    assert.strictEqual(g.num, f.num);
+    assert.ok(["before", "hl", "after"].includes(f.field));
+    assert.notStrictEqual(g[f.field], f.from, f.surah + ":" + f.num + " " + f.field + " changed");
+    assert.strictEqual(g[f.field].normalize("NFC"), f.from.normalize("NFC"), f.surah + ":" + f.num + " " + f.field + " is the same text");
+  }
+  assert.strictEqual(sha(JSON.stringify(beforeBytes(), null, 2)), BYTES.beforeSha256, "with the old values back, words.json is byte-identical to the file before the rewrite");
+  // no composed alef + maddah left anywhere in the ayah text
+  const all = WORDS.map((e) => e.ayahs.map((a) => a.segments.map((g) => g.before + g.hl + g.after).join("")).join("")).join("");
+  assert.ok(!all.includes("\u0622"), "no U+0622 in the ayah text");
+});
+
 test("the ayah corrections changed only the listed fields, to the official text", () => {
   const fx = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "ayat-fix-2026-10-27.json"), "utf8"));
-  const old = JSON.parse(WORDS_RAW);
+  const old = beforeBytes();
   for (const f of fx.fields) {
     const e = WORDS[f.si], g = e.ayahs[f.ai].segments[f.gi];
     assert.strictEqual(quran.surahNumber(e.surah), f.surah, "fixture entry points at surah " + f.surah);

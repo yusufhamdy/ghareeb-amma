@@ -5,7 +5,8 @@
 //     "node scripts/checks/rules-real-data.mjs backup/firestore/<export dir>"
 // 1. Loads every exported document into the emulator; as the owner, writes each one back unchanged (set and update).
 // 2. Runs scripts/fix-ayat-firestore.mjs --apply --confirm against the emulator (project demo-ghareeb), checks it made
-//    exactly the 9 listed corrections and that a second --dry-run finds 0; then, as the owner, writes public/data and
+//    the 9 listed text corrections (plus the encoding-only rewrites to the official bytes) and that a second
+//    --dry-run finds 0; then, as the owner, writes public/data and
 //    public/prev back unchanged again.
 // 3. The real admin page (public/admin/index.html, Firebase SDK pointed at the emulators, owner signed in) on the
 //    corrected documents: a save that edits one meaning, undo, a challenge save and a note save.
@@ -67,18 +68,19 @@ const run = (args) => spawnSync(process.execPath, [path.join(REPO, "scripts/fix-
 const ap = run(["--apply", "--confirm"]);
 const apOut = ap.stdout + ap.stderr;
 const nFix = (apOut.match(/== corrections \((\d+)\) ==/) || [])[1];
-console.log("  apply: exit " + ap.status + ", corrections " + nFix + ", " + (apOut.match(/fix-ayat-firestore: .*$/m) || [""])[0]);
+const kinds = (apOut.match(/^\d+ fields in .*$/m) || [""])[0];
+console.log("  apply: exit " + ap.status + ", corrections " + nFix + " (" + kinds + "), " + (apOut.match(/fix-ayat-firestore: .*$/m) || [""])[0]);
 const dr = run(["--dry-run"]), drOut = dr.stdout + dr.stderr;
 const nAfter = (drOut.match(/== corrections \((\d+)\) ==/) || [])[1], same = (drOut.match(/public\/words\.json, ayah text: ([^=]+) ==/) || [])[1];
 console.log("  dry run after: exit " + dr.status + ", corrections " + nAfter + ", vs public/words.json: " + (same || "").trim());
-if (ap.status !== 0 || nFix !== "9" || dr.status !== 0 || nAfter !== "0") { bad++; console.log(apOut + "\n" + drOut); }
+if (ap.status !== 0 || !(Number(nFix) > 0) || !/: 9 text corrections,/.test(kinds) || dr.status !== 0 || nAfter !== "0") { bad++; console.log(apOut + "\n" + drOut); }
 const fixed = { "public/data": await raw("public/data"), "public/prev": await raw("public/prev") };
 console.log("  public/data after: rev " + fixed["public/data"].rev + ", by " + JSON.stringify(fixed["public/data"].by) + ", keys " + Object.keys(fixed["public/data"]).sort().join(","));
 console.log("  public/prev after: rev " + fixed["public/prev"].rev + ", keys " + Object.keys(fixed["public/prev"]).sort().join(","));
 if (fixed["public/data"].by !== OWNER) { bad++; console.log("  by is not the owner's lowercase address"); }
 { // the run log next to the backup
   const lf = (apOut.match(/^log: (.+)$/m) || [])[1], lg = lf ? JSON.parse(fs.readFileSync(path.join(REPO, lf.trim()), "utf8")) : null;
-  const ok = lg && lg.mode === "apply" && lg.result === "written" && lg.corrections.length === 9 && lg.revBefore === DOCS["public/data"].rev && lg.revAfter === DOCS["public/data"].rev + 1;
+  const ok = lg && lg.mode === "apply" && lg.result === "written" && lg.corrections.length === Number(nFix) && lg.corrections.filter((c) => c.kind === "text").length === 9 && lg.revBefore === DOCS["public/data"].rev && lg.revAfter === DOCS["public/data"].rev + 1;
   console.log("  run log " + (lf || "(none)").trim() + ": " + (lg ? lg.time + ", " + lg.target + ", rev " + lg.revBefore + " -> " + lg.revAfter + ", " + lg.corrections.length + " corrections: " + lg.corrections.map((c) => c.surah + ":" + c.ayah + " " + c.field).join(", ") + ", " + lg.result : "missing") + (ok ? "" : "  <- WRONG"));
   if (!ok) bad++;
 }

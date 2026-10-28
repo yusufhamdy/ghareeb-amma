@@ -6,10 +6,10 @@
  *   - fonts.css declares it with font-display: block and the metric descriptors; every page that shows Quran text
  *     preloads it and loads the qfont.js guard; the service worker precaches it;
  *   - glyph coverage: every code point used in .q content (ayah segments, headwords, surah names, the ornate
- *     parentheses, anything inside .q on the static pages and in the app's rendered views) is in the font's cmap,
- *     except (a) U+FD3E / U+FD3F, which the font does not have and Amiri Quran (the next face in the .q stack) draws,
- *     and (b) precomposed letters whose canonical decomposition the font has (the text is stored in NFC, so
- *     alef + maddah is U+0622): those must draw exactly like the decomposed sequence;
+ *     parentheses, anything inside .q on the static pages and in the app's rendered views) is in the font's cmap;
+ *     the only exceptions are U+FD3E / U+FD3F, listed in BRACKETS, which the font does not have and Amiri Quran (the
+ *     next face in the .q stack) draws on purpose. There is no exception for precomposed letters: the text is the
+ *     official bytes (alef + maddah is U+0627 U+0653, never U+0622, which Safari would take from the fallback face);
  *   - with the font blocked, <html> gets "qf", .q text shows the standard open-tanween code points, Amiri Quran has
  *     a glyph for every code point then shown, and the data is unchanged.
  *
@@ -106,14 +106,11 @@ function staticQText(html) {
 function classify(texts) {
   const cps = new Set();
   texts.forEach((t) => { for (const ch of String(t)) cps.add(ch.codePointAt(0)); });
-  const r = { font: [], brackets: [], decomposed: [], missing: [] };
+  const r = { font: [], brackets: [], missing: [] };
   for (const cp of [...cps].sort((a, b) => a - b)) {
     if (cp === 0x20 || KF.has(cp)) r.font.push(cp);
     else if (BRACKETS.includes(cp)) r.brackets.push(cp);
-    else {
-      const nfd = [...String.fromCodePoint(cp).normalize("NFD")].map((c) => c.codePointAt(0));
-      if (nfd.length > 1 && nfd.every((c) => KF.has(c))) r.decomposed.push(cp); else r.missing.push(cp);
-    }
+    else r.missing.push(cp);
   }
   return r;
 }
@@ -157,7 +154,6 @@ test("glyph coverage: every code point in .q content (data and static pages)", (
   assert.deepStrictEqual(r.missing.map(hex), [], "code points with no glyph in KFGQPC Uthmanic Hafs v22");
   assert.deepStrictEqual(r.brackets.map(hex), BRACKETS.map(hex), "only the ornate parentheses fall back");
   for (const cp of r.brackets) assert.ok(AMIRI.has(cp), hex(cp) + " is drawn by Amiri Quran");
-  assert.deepStrictEqual(r.decomposed.map(hex), ["U+0622"], "precomposed letters drawn through their decomposition (checked in the browser test)");
   assert.ok(r.font.length > 40, "sanity: " + r.font.length + " code points covered");
 });
 
@@ -206,7 +202,7 @@ async function appQText(page) {
   });
 }
 
-test("browser: the face loads, the app's .q text is covered, and U+0622 draws like alef + maddah", async (t) => {
+test("browser: the face loads, and the app's .q text is covered", async (t) => {
   await withBrowser(t, async (browser, base) => {
     const { ctx, page } = await newPage(browser);
     await page.goto(base + "/#/", { waitUntil: "load" });
@@ -215,14 +211,7 @@ test("browser: the face loads, the app's .q text is covered, and U+0622 draws li
     assert.deepStrictEqual(st, { n: 1, status: ["loaded"], qf: false }, "the Quran face loads and the fallback stays off");
     const r = classify(await appQText(page));
     assert.deepStrictEqual(r.missing.map(hex), [], "code points in the app's .q text with no glyph");
-    assert.ok(r.brackets.every((cp) => BRACKETS.includes(cp)) && r.decomposed.every((cp) => cp === 0x0622), "only the known exceptions");
-    // U+0622 and U+0627 U+0653 give the same pixels in the face (HarfBuzz decomposes it), in a word and alone
-    const same = await page.evaluate((fam) => {
-      const draw = (s) => { const c = document.createElement("canvas"); c.width = 600; c.height = 300; const x = c.getContext("2d"); x.font = '120px "' + fam + '"'; x.direction = "rtl"; x.textAlign = "right"; x.fillText(s, 560, 200); return c.toDataURL(); };
-      const pairs = [["\u0622", "\u0627\u0653"], ["\u0645\u064e\u0622", "\u0645\u064e\u0627\u0653"]];
-      return pairs.map(([a, b]) => draw(a) === draw(b) && draw(a) !== draw(""));
-    }, FAMILY);
-    assert.deepStrictEqual(same, [true, true], "U+0622 draws exactly like U+0627 U+0653");
+    assert.ok(r.brackets.every((cp) => BRACKETS.includes(cp)), "only the ornate parentheses fall back");
     await ctx.close();
   });
 });
