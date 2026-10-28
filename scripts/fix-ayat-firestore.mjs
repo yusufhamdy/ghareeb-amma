@@ -18,7 +18,11 @@
  *      public/words.json;
  *   5. with --apply --confirm only: in one transaction, re-reads public/data, refuses if its rev changed since the
  *      backup, copies it to public/prev (as the admin does before every save) and writes the corrected surahs with
- *      rev + 1. Nothing else in the document changes.
+ *      rev + 1, the time, and by = the owner's address (OWNER below: the rules accept only the signed-in admin's
+ *      own address in "by", so the owner can later write the document back unchanged). Nothing else changes.
+ *   6. every run writes a log next to its backup (<backup>.log.json): the time, mode, target, revision before and
+ *      after, the corrections applied (or found, in a dry run) and the result. The run stays traceable through the
+ *      backup, public/prev and this log.
  *
  * Uses the firebase-admin SDK with application default credentials. ASCII-only.
  */
@@ -33,6 +37,7 @@ const quran = require("../data/quran/index.js");
 const AyahCheck = require("../public/admin/ayah-check.js");
 const { fixSurahs } = require("../data/quran/fix.js");
 const FIXTURE = path.join(ROOT, "test", "fixtures", "ayat-fix-2026-10-27.json");
+const OWNER = "yusufhamdy20@gmail.com"; // lowercase, as firestore.rules compares it
 
 const argv = process.argv.slice(2);
 const opt = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
@@ -114,9 +119,18 @@ async function main() {
 
   const p = plan(doc);
   report(doc, p);
-  if (p.unexpected.length || p.errors.length || p.failing.length) { console.log("\nfix-ayat-firestore: stopped, nothing written."); return 1; }
-  if (DRY) { console.log("\nfix-ayat-firestore: dry run, nothing written."); return 0; }
-  if (!p.changes.length) { console.log("\nfix-ayat-firestore: nothing to correct."); return 0; }
+  const logFile = backup.replace(/\.json$/, ".log.json");
+  const log = {
+    time: new Date().toISOString(), mode: DRY ? "dry-run" : "apply", project: PROJECT,
+    target: FROM_JSON ? "file " + FROM_JSON : process.env.FIRESTORE_EMULATOR_HOST ? "emulator " + process.env.FIRESTORE_EMULATOR_HOST : "production",
+    backup: path.relative(ROOT, backup), revBefore: doc.rev == null ? null : doc.rev, revAfter: null,
+    corrections: p.changes.map((c) => ({ surah: c.no, ayah: c.num, field: c.field, word: c.word, from: c.from, to: c.to })),
+    result: null,
+  };
+  const done = (result, code) => { log.result = result; fs.writeFileSync(logFile, JSON.stringify(log, null, 2)); console.log("log: " + path.relative(ROOT, logFile)); return code; };
+  if (p.unexpected.length || p.errors.length || p.failing.length) { console.log("\nfix-ayat-firestore: stopped, nothing written."); return done("stopped, nothing written", 1); }
+  if (DRY) { console.log("\nfix-ayat-firestore: dry run, nothing written."); return done("dry run, nothing written", 0); }
+  if (!p.changes.length) { console.log("\nfix-ayat-firestore: nothing to correct."); return done("nothing to correct", 0); }
 
   const { FieldValue } = require("firebase-admin/firestore");
   await db.runTransaction(async (tx) => {
@@ -125,10 +139,11 @@ async function main() {
     const again = plan(cur.data());
     if (JSON.stringify(again.surahs) !== JSON.stringify(p.surahs)) throw new Error("public/data changed since the backup; run again");
     tx.set(db.doc("public/prev"), { rev: cur.data().rev || 0, surahs: cur.data().surahs, savedAt: FieldValue.serverTimestamp() });
-    tx.set(ref, Object.assign({}, cur.data(), { rev: (cur.data().rev || 0) + 1, surahs: p.surahs, updatedAt: FieldValue.serverTimestamp(), by: "scripts/fix-ayat-firestore.mjs" }));
-  });
-  console.log("\nfix-ayat-firestore: written (rev " + ((doc.rev || 0) + 1) + "); the previous version is in public/prev.");
-  return 0;
+    tx.set(ref, Object.assign({}, cur.data(), { rev: (cur.data().rev || 0) + 1, surahs: p.surahs, updatedAt: FieldValue.serverTimestamp(), by: OWNER }));
+  }).catch((e) => { done("write failed: " + e.message, 1); throw e; });
+  log.revAfter = (doc.rev || 0) + 1;
+  console.log("\nfix-ayat-firestore: written (rev " + log.revAfter + "); the previous version is in public/prev.");
+  return done("written", 0);
 }
 
 main().then((c) => { process.exitCode = c; }, (e) => { console.error("fix-ayat-firestore: " + e.message); process.exitCode = 1; });
