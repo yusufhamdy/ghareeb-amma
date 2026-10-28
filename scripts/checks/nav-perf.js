@@ -127,9 +127,72 @@ async function scenario(br, base, name) {
   };
 }
 
+// ---- cadence: how smoothly the drag-to-switch indicator follows a finger moving at constant speed, when touch input
+// does not line up with frames. Drives the drag inside the page with pointer events whose timeStamp is set to the
+// time the finger was at that point: per frame, the events of the pattern ([1] every frame, [1,0] every 2nd frame,
+// the irregular bunches, spread between the previous sample and the frame). Samples the indicator (bounding-box centre
+// and transform scale) at every frame, and reports over the steady part of the drag: % of frames that did not move
+// while the finger did, the CV of the step size, the mean |change of scale x| per frame, and the lag (px, ms).
+// Also lists every CSS transition or animation that starts on the labels or icons during the drag (there should be
+// none until the release).
+const CADENCES = { "every-frame": [1], "every-2nd": [1, 0], bunches: [1, 0, 2, 0, 0, 3, 1, 0, 1, 2, 0, 1] };
+async function cadence(br, base, name, query) {
+  const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: "no-preference" });
+  await ctx.addInitScript(() => { try { localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify({ mode: "dark", pal: "neo", gl: 50, gv: 3, sv: 2, style: "glass", cm: false, snd: false })); } catch (e) {} });
+  const p = await ctx.newPage();
+  await p.goto(base + "/" + (query || "") + "#/", { waitUntil: "load" });
+  await p.waitForSelector("#nv a.t"); await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(1000);
+  const r = await p.evaluate(async ([pattern, speed]) => {
+    const nv = document.getElementById("nv"), ind = nv.querySelector(".ind"), ts = [...nv.querySelectorAll(".t")].map((t) => t.getBoundingClientRect());
+    const y = ts[0].top + ts[0].height / 2, x0 = ts[0].left + ts[0].width / 2, x1 = ts[ts.length - 1].left + ts[ts.length - 1].width / 2, dir = Math.sign(x1 - x0);
+    const mk = (type, x, t) => { const e = new PointerEvent(type, { pointerId: 7, pointerType: "touch", isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true }); if (t != null) Object.defineProperty(e, "timeStamp", { value: t }); return e; };
+    const raf = () => new Promise((res) => requestAnimationFrame(res));
+    const seen = new Set(), started = [];
+    const watch = () => { for (const a of document.getAnimations()) { if (seen.has(a)) continue; seen.add(a); const el = a.effect && a.effect.target; if (el && el.closest && el.closest("#nv .t")) started.push((a.transitionProperty ? "transition " + a.transitionProperty : "animation " + (a.animationName || "?")) + " on " + el.tagName.toLowerCase() + "." + [...(el.classList || [])].join(".")); } };
+    document.getAnimations().forEach((a) => seen.add(a));
+    let t = await raf();
+    nv.dispatchEvent(mk("pointerdown", x0, t));
+    const t0 = t, fx = (tt) => x0 + dir * speed * (tt - t0);
+    let last = t0, prevT = t, i = 0;
+    const out = [];
+    while (true) {
+      t = await raf();
+      const b = ind.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(ind).transform);
+      out.push({ cx: b.left + b.width / 2, sx: m.a, finger: fx(prevT), drag: nv.classList.contains("drag") });
+      watch();
+      const n = pattern[i++ % pattern.length];
+      for (let k = 0; k < n; k++) { const tk = last + ((k + 1) * (t - last)) / n; nv.dispatchEvent(mk("pointermove", fx(tk), tk)); }
+      if (n) last = t;
+      prevT = t;
+      if (dir * (fx(t) - x1) > 0) break;
+    }
+    for (let k = 0; k < 20; k++) { await raf(); watch(); }
+    const beforeUp = started.slice();
+    nv.dispatchEvent(mk("pointerup", fx(last), performance.now()));
+    // steady part: the finger at least 40px inside both ends, the drag active
+    const st = out.filter((o) => o.drag && dir * (o.finger - x0) > 40 && dir * (x1 - o.finger) > 40);
+    const steps = [], ds = [];
+    for (let k = 1; k < st.length; k++) { steps.push(Math.abs(st[k].cx - st[k - 1].cx)); ds.push(Math.abs(st[k].sx - st[k - 1].sx)); }
+    const mean = (a) => a.reduce((s, x) => s + x, 0) / (a.length || 1);
+    const mu = mean(steps), sd = Math.sqrt(mean(steps.map((x) => (x - mu) ** 2)));
+    const lag = mean(st.map((o) => dir * (o.finger - o.cx)));
+    return { frames: st.length, stalledPct: +((100 * steps.filter((x) => x < 0.05).length) / (steps.length || 1)).toFixed(1), stepCV: +(sd / (mu || 1)).toFixed(2), meanStepPx: +mu.toFixed(2), meanDScale: +mean(ds).toFixed(4), lagPx: +lag.toFixed(1), lagMs: +(lag / speed).toFixed(1), startedDuringDrag: beforeUp };
+  }, [CADENCES[name], 0.3]);
+  await ctx.close();
+  return r;
+}
+
 (async () => {
   const { server, base } = await serve(ROOT);
   const br = await chromium.launch();
+  if (ONLY === "cadence") {
+    for (const c of Object.keys(CADENCES)) {
+      const r = await cadence(br, base, c, opt("--query", ""));
+      console.log(LABEL + " cadence " + c.padEnd(12) + " " + JSON.stringify(r));
+    }
+    await br.close(); server.close();
+    return;
+  }
   const all = {};
   for (const s of ["scroll-home", "scroll-surahs", "scroll-surah78", "tabs", "drag"].filter((s) => !ONLY || s === ONLY)) {
     const runs = [];

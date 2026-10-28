@@ -1,23 +1,23 @@
-// The nav indicator's own layer during a drag (will-change: transform, ?nav=new, preview-only) against the nav as it is
-// (default) at rest and mid-drag, glass and shade, light and dark, 390px, compared pixel by
-// pixel. Mid-drag: a real touch drag from the home tab to between the 2nd and 3rd tabs, held still 600ms (the stretch
+// The nav of two builds (rootA = before, rootB = after; e.g. the previous commit's public/ and the working tree) at rest
+// and mid-drag, glass and shade, light and dark, 390px, compared pixel by pixel. At rest they must be identical. Mid-drag: a real touch drag from the home tab to between the 2nd and 3rd tabs, held still 600ms (the stretch
 // settles), then the shot - the finger is still down.
-//   node nav-identity.js [root] [outDir]
+//   node nav-identity.js <rootA> [rootB] [outDir]
 const { serve } = require("./lib.js");
 const { chromium } = require("playwright");
 const fs = require("fs"), path = require("path");
-const ROOT = process.argv[2] || path.resolve(__dirname, "../../public");
-const OUT = process.argv[3] || path.join(__dirname, "out/nav-identity");
+const ROOT_A = process.argv[2], ROOT_B = process.argv[3] || path.resolve(__dirname, "../../public");
+const OUT = process.argv[4] || path.join(__dirname, "out/nav-identity");
 const LOOKS = [["glass", "light"], ["glass", "dark"], ["shade", "light"], ["shade", "dark"]];
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const { server, base } = await serve(ROOT);
+  const A = await serve(ROOT_A), B = await serve(ROOT_B);
   const br = await chromium.launch();
   const shot = async (style, mode, nav, state) => {
+    const base = nav === "old" ? A.base : B.base;
     const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: "no-preference" });
     await ctx.addInitScript((s) => { localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify(s)); }, { style, mode, pal: "neo", gl: 50, gv: 3, sv: 2, cm: false, snd: false });
     const p = await ctx.newPage();
-    await p.goto(base + "/" + (nav === "new" ? "?nav=new" : "") + "#/", { waitUntil: "load" });
+    await p.goto(base + "/#/", { waitUntil: "load" });
     await p.waitForSelector("#nv a.t"); await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(1500);
     // the page's own background blobs drift: stop them so two shots differ only by the nav
     await p.addStyleTag({ content: "#bg i{animation:none!important}" });
@@ -50,12 +50,12 @@ const LOOKS = [["glass", "light"], ["glass", "dark"], ["shade", "light"], ["shad
   }, [fs.readFileSync(a).toString("base64"), fs.readFileSync(b).toString("base64")]);
   let bad = 0;
   for (const [style, mode] of LOOKS) for (const state of ["rest", "drag"]) {
-    const o = await shot(style, mode, "old", state), n = await shot(style, mode, process.env.SELF ? "old" : "new", state);
+    const o = await shot(style, mode, "old", state), n = await shot(style, mode, "new", state);
     const d = await diff(o.file, n.file);
     const ok = !d.size && d.diff === 0;
-    if (!ok) bad++;
+    if (!ok && state === "rest") bad++;
     console.log(`${ok ? "identical" : "DIFFERENT"}  ${style}-${mode} ${state}: ${d.size ? "size differs" : d.diff + " of " + d.px + " pixels differ (max channel delta " + d.maxDelta + ")"}  [old: will-change ${o.info.wc}; new: will-change ${n.info.wc}]`);
   }
-  await br.close(); server.close();
-  console.log(bad ? bad + " DIFFERENT" : "ALL IDENTICAL");
+  await br.close(); A.server.close(); B.server.close();
+  console.log(bad ? bad + " DIFFERENT AT REST" : "AT REST: ALL IDENTICAL (mid-drag differences are listed above, by design)");
 })();

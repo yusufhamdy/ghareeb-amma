@@ -157,10 +157,9 @@ h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
 .ld{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .4s}.ld.gone{opacity:0;pointer-events:none}.ld .logo{font-size:44px}.lb{width:120px;height:3px;background:var(--ln);border-radius:2px;overflow:hidden}.lb i{display:block;height:100%;width:40%;background:var(--ac);animation:ldm 1.1s ease-in-out infinite}@keyframes ldm{from{transform:translateX(120%)}to{transform:translateX(-260%)}}
 nav.g{display:grid;grid-template-columns:repeat(4,1fr);padding:6px;transition:transform .35s cubic-bezier(.3,.8,.3,1)}nav.g.hide{transform:translateX(-50%) translateY(120px)}
 nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12px)/4);border-radius:26px;background:var(--ac);transform:translateX(calc(var(--i,0)*-100%));transition:transform .45s cubic-bezier(.34,1.4,.64,1)}nav.g.none .ind{opacity:0}
-/* PREVIEW-ONLY candidate (?nav=new, class .nav-new; not decided - remove the switch before release): during the
-   drag-to-switch the indicator gets its own compositing layer, so the nav and its glass are not repainted every frame.
-   At rest the nav is pixel-identical; mid-drag the label/icon anti-aliasing differs slightly (scripts/checks/nav-identity.js). */
-.nav-new nav.g.drag .ind{will-change:transform}
+/* during the drag-to-switch the indicator has its own compositing layer, so the nav and its glass are not repainted
+   every frame while it moves; at rest nothing changes (scripts/checks/nav-identity.js) */
+nav.g.drag .ind{will-change:transform}
 nav.g{touch-action:pan-y pinch-zoom}nav.g.drag .ind{transition:none;opacity:1}nav.g.drag .t:active{transform:none}nav.g.drag .t.on:not(.pv){color:inherit}nav.g.drag .t.pv{color:var(--btf)}.shade nav.g.drag .t.pv{color:var(--bg)}
 nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}/* nav icon motions, once when the tab becomes active; only the named part moves (transform only) */
 nav.g .t svg :is(.nvh,.nvl,.nvr,.nvo,.nvq){transform-box:view-box}nav.g .t .nvl{transform-origin:11px 19px}nav.g .t .nvr{transform-origin:13px 19px}nav.g .t .nvo{transform-origin:12px 12px}nav.g .t .nvq{transform-origin:12px 13px}

@@ -4,7 +4,7 @@
  *   ?gs=a|b|c|d  the glass slider's drag variants: a (default) the sheet panel follows, b the slider's pill only, c the
  *                sheet panel's fill and rim only (--gb/--gbr), d nothing during the drag; every variant ends the same
  *                way on release (the whole page's variables, no scoped values, the same saved setting);
- *   ?nav=new     the nav indicator's own layer during a drag (the candidate fix); without it the nav is as before;
+ *   ?nd=<ms>     the nav drag's delay override (read only by the drag code; no visible state to check here);
  *   ?perf=1      the on-device readout (live FPS, last drag's median and worst frame); absent without the parameter.
  *
  * ASCII only.
@@ -35,7 +35,7 @@ const STATE = () => {
   return { root: v(document.documentElement).join("|"), sheet: v(document.querySelector("#sh .p")), pill: v(document.querySelector("#sh .gs.g")), value: +document.getElementById("gs").value, saved: JSON.parse(localStorage.getItem("gq-set") || "{}") };
 };
 
-test("preview switches: slider variants end the same; nav and perf switches are opt-in", { timeout: 240000 }, async (t) => {
+test("preview switches: slider variants end the same; the perf readout is opt-in", { timeout: 240000 }, async (t) => {
   let chromium;
   try { ({ chromium } = require("playwright")); } catch (e) { t.skip("playwright not installed"); return; }
   let br;
@@ -69,15 +69,15 @@ test("preview switches: slider variants end the same; nav and perf switches are 
     }
     for (const gs of ["b", "c", "d"]) assert.deepStrictEqual(ends[gs], ends.a, "gs=" + gs + " ends exactly as the default");
     assert.notStrictEqual(ends.a.root, "", "the release wrote the page's variables");
-    // nav and perf switches
+    // the perf readout
     const ctx = await br.newContext({ viewport: { width: 390, height: 844 } });
     await ctx.addInitScript(() => { try { localStorage.setItem("gq-ld", "1"); } catch (e) {} });
     const p = await ctx.newPage();
-    const probe = () => ({ navNew: document.documentElement.classList.contains("nav-new"), readout: [...document.body.children].some((e) => /^FPS /.test(e.textContent || "")) });
+    const probe = () => ({ readout: [...document.body.children].some((e) => /^FPS /.test(e.textContent || "")) });
     await p.goto(base + "/#/", { waitUntil: "load" }); await p.waitForSelector("#app .acts"); await p.waitForTimeout(300);
-    assert.deepStrictEqual(await p.evaluate(probe), { navNew: false, readout: false }, "no switch: the nav as before, no readout");
-    await p.goto(base + "/?nav=new&perf=1#/", { waitUntil: "load" }); await p.waitForSelector("#app .acts"); await p.waitForTimeout(300);
-    assert.deepStrictEqual(await p.evaluate(probe), { navNew: true, readout: true }, "?nav=new&perf=1: the candidate layer and the readout");
+    assert.deepStrictEqual(await p.evaluate(probe), { readout: false }, "no switch: no readout");
+    await p.goto(base + "/?perf=1&nd=17#/", { waitUntil: "load" }); await p.waitForSelector("#app .acts"); await p.waitForTimeout(300);
+    assert.deepStrictEqual(await p.evaluate(probe), { readout: true }, "?perf=1: the readout");
     await ctx.close();
   } finally {
     await br.close();
