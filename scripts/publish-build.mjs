@@ -137,6 +137,8 @@ const LEGACY_CSS =
   "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}.aq{font-family:'Amiri Quran',serif}\n" +
   ".m{color:var(--mu);font-size:14px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}\n" +
   ".logo{font-size:27px}h1{font-size:44px;margin:8px 0;color:var(--ac);line-height:1.5}\n" +
+  // room for Amiri Quran's descenders under the heading: (ascent 1.815em + descent 0.634em - line-height) / 2 (see index.html, N2)
+  "h1.aq{padding-bottom:calc((1.815em + .634em - 1.5em) / 2)}\n" +
   ".card{background:var(--gb);border:1px solid var(--ln);border-radius:18px;padding:16px;margin:12px 0}\n" +
   ".pill{display:inline-flex;align-items:center;gap:8px;background:var(--gb);border:1px solid var(--ln);border-radius:999px;padding:9px 16px;font-size:15px}\n" +
   ".cols{display:grid;gap:12px}@media(min-width:800px){.cols{grid-template-columns:1fr 1fr;align-items:start}}\n" +

@@ -70,7 +70,7 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .row+.row{border-top:1px solid var(--ln)}
 .row .w{font-size:26px;color:var(--ac);min-width:96px;max-width:46%;line-height:1.5}
 .row .t{flex:1;min-width:0}
-.row .t div:first-child{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row .t div:first-child{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-inline:.15em;margin-inline:-.15em}
 .bd{width:38px;height:38px;border-radius:50%;border:1px solid var(--ac);color:var(--ac);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;flex:none}
 .wd{font-size:clamp(44px,9vw,64px);line-height:1.5;color:var(--ac)}
 h1.wd{font-weight:400;text-wrap:balance}
@@ -228,7 +228,11 @@ nav.g .t.nvm .nvh{animation:nv-hop .4s ease-out}nav.g .t.nvm .nvl{animation:nv-o
 .shade .sl .row+.row{border-top:0}
 .shade .sl .row:nth-child(6n+2),.shade .dy:nth-child(6n+2){background-image:var(--p1)}.shade .sl .row:nth-child(6n+3),.shade .dy:nth-child(6n+3){background-image:var(--p2)}.shade .sl .row:nth-child(6n+4),.shade .dy:nth-child(6n+4){background-image:var(--p3)}.shade .sl .row:nth-child(6n+5),.shade .dy:nth-child(6n+5){background-image:var(--p4)}.shade .sl .row:nth-child(6n),.shade .dy:nth-child(6n){background-image:var(--p5)}
 .shade .sl .bd{position:static;grid-row:1/3;width:34px;height:34px;border:0;background:var(--bdbg);color:var(--bdc);font-size:12px}
-.shade .sl .q{grid-column:2;text-align:start;font-size:25px;flex:none;line-height:1.5}.shade .sl .m{grid-column:2;text-align:start;font-size:12px}.shade .sl svg{display:none}
+.shade .sl{--slq:25px}.shade .sl .q{grid-column:2;text-align:start;font-size:var(--slq);flex:none;line-height:1.5}.shade .sl .m{grid-column:2;text-align:start;font-size:12px}
+/* N2: the name's descenders (KFGQPC with Amiri Quran's metrics: ascent 1.815em, descent 0.634em) reach
+   (1.815 + 0.634 - 1.5) / 2 of its size below its line box. The count moves down by that much in every tile, without
+   moving anything else (relative offset), so the name keeps its place and every tile looks the same. */
+.shade .sl .m{position:relative;top:calc((1.815 + .634 - 1.5) / 2 * var(--slq))}.shade .sl svg{display:none}
 .shade .dy{width:44px!important;height:44px!important;aspect-ratio:auto;border-radius:12px!important;border:0;color:var(--tx);align-items:center;padding:0;background:var(--sf)!important}
 .shade .dy.ok{background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 40%,var(--sf)))!important}.shade .dy.cur{background:var(--sf)!important;border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf)!important;filter:none;color:var(--mu)}
 .shade .dy .bg{background:var(--bg);color:var(--ac);border-color:var(--ac)}
@@ -386,6 +390,15 @@ svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-d
 .shd{display:flex;flex-direction:column}
 .shd>h1{line-height:1.7}
 .shd>.sub{margin-top:8px}
+/* N2: room for heading descenders. Amiri Quran (and KFGQPC, which takes Amiri Quran's metrics in fonts.css) draws
+   descenders down to its descent, 0.634em below the baseline (ascent 1.815em); a line box of line-height L keeps only
+   (L - 1.815em + 0.634em) / 2 of that below the baseline, so the rest, (1.815em + 0.634em - L) / 2, is padding under
+   the heading and the descenders never reach the text below. The word headword (.wd) has its own fit (word-gap.js).
+   Glass headings are IBM Plex Sans Arabic (ascent 1.085em, descent 0.415em) at line-height 1.3: the same rule, with
+   no specificity (:where), so the shade, surah-heading and Amiri (.aq) rules always override it. */
+:where(h1:not(.wd):not(.q):not(.aq)){padding-bottom:calc((1.085em + .415em - 1.3em) / 2)}
+.shade h1:not(.wd){padding-bottom:calc((1.815em + .634em - 1.5em) / 2)}
+.shd>h1,.shade .shd>h1{padding-bottom:calc((1.815em + .634em - 1.7em) / 2)}
 .shd>.cw.snav{margin-top:16px}
 /* shadowed rows above a translucent button: the gap covers the full shadow reach (y + blur), so it ends before the button.
    surah rows 14+34=48, cards, prev/next and the search box 10+30=40; the page gap is 18px */
