@@ -103,7 +103,7 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 .psw i{width:48px;height:48px;border-radius:50%;display:block;flex:none}
 .psw .on i{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ac)}.psw .on span{color:var(--tx);font-weight:600}
 .psw .pbar{display:block;width:14px;height:3px;border-radius:2px}.psw .on .pbar{width:24px}
-/* glass strength: the sample card is real glass over the palette's glows, so it follows the slider live */
+/* glass strength: the slider's pill is real glass over the palette's glows; during a drag only the sheet's own glass follows it (gsScoped) */
 #sh .gsw{padding-top:10px}
 /* the glass strength expands and collapses under النمط (height and opacity, ~200ms); hidden and inert when collapsed */
 #sh .gsx{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s linear .2s}
@@ -701,9 +701,24 @@ function toastUndo(m,undo){document.querySelectorAll('.toast.tu').forEach(t=>t.r
 // the site defaults (as for a first visit: stop-motion follows the device)
 const setDefaults=()=>({mode:'auto',pal:GQT.DEFAULT,gl:GQT.GLASS_DEFAULT,gv:3,style:'glass',cm:matchMedia('(prefers-reduced-motion:reduce)').matches,snd:true});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();openSh('الإعدادات',t);return}if(d.a==='close'||t.id==='sh'&&e.target===t){closeSh();return}if(d.a==='rnd'){drawWord();return}if(d.a==='reset'&&t.closest('#sh')){const prev=JSON.parse(JSON.stringify(set));Object.keys(set).forEach(k=>delete set[k]);Object.assign(set,setDefaults());LS.set(set);applySet();sheet();toastUndo('تمت استعادة الإعدادات الافتراضية',()=>{Object.keys(set).forEach(k=>delete set[k]);Object.assign(set,prev);LS.set(set);applySet();if($('sh').classList.contains('open')&&document.querySelector('#sh .psw'))sheet()});return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
-let gsRaf=0;
-document.addEventListener('input',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;g.setAttribute('aria-valuetext',glassText(set.gl));if(!gsRaf)gsRaf=requestAnimationFrame(()=>{gsRaf=0;glassVars(set.gl,isDark())})});
-document.addEventListener('change',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;set.gv=3;LS.set(set);if(!gsRaf)glassVars(set.gl,isDark())});
+// Glass strength. While a finger or pointer drags the slider, the four glass variables are written only on the sheet's
+// own glass (scoped on that element), so nothing else on the page restyles or re-blurs during the drag; on release
+// (pointerup / touchend / change), or when the sheet closes during a drag, they are written once on the whole page and
+// the setting is saved, as before. Keyboard and assistive steps apply to the whole page at each step.
+// PREVIEW SWITCH (to be removed once one is chosen): ?gd=pill scopes the drag to the slider's glass pill only;
+// ?gd=sheet, the default, to the whole sheet panel (the pill is inside it).
+const GD=(()=>{try{return new URLSearchParams(location.search).get('gd')==='pill'?'pill':'sheet'}catch(e){return 'sheet'}})();
+const GSV=['--gb','--gbr','--sat','--bl'];
+let gsRaf=0,gsDrag=false;
+function gsScoped(v){const el=document.querySelector(GD==='pill'?'#sh .gs.g':'#sh .p');if(!el)return;const g=GQT.glass(v,isDark());el.style.setProperty('--gb',rgba('#ffffff',g.gb));el.style.setProperty('--gbr',rgba('#ffffff',g.gbr));el.style.setProperty('--sat',g.sat);el.style.setProperty('--bl',g.bl)}
+function gsUnscope(){document.querySelectorAll('#sh .gs.g,#sh .p').forEach(el=>GSV.forEach(k=>el.style.removeProperty(k)))}
+// the end of a drag: the whole page once, then save (the same as a change)
+function gsEnd(){if(!gsDrag)return;gsDrag=false;if(gsRaf){cancelAnimationFrame(gsRaf);gsRaf=0}const g=$('gs');if(g)set.gl=+g.value;glassVars(set.gl,isDark());gsUnscope();set.gv=3;LS.set(set)}
+document.addEventListener('pointerdown',e=>{if(e.target&&e.target.id==='gs')gsDrag=true},true);
+document.addEventListener('touchstart',e=>{if(e.target&&e.target.id==='gs')gsDrag=true},{capture:true,passive:true});
+['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,()=>{if(gsDrag)gsEnd()},true));
+document.addEventListener('input',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;g.setAttribute('aria-valuetext',glassText(set.gl));if(!gsRaf)gsRaf=requestAnimationFrame(()=>{gsRaf=0;if(gsDrag)gsScoped(set.gl);else glassVars(set.gl,isDark())})});
+document.addEventListener('change',e=>{const g=e.target;if(!g||g.id!=='gs')return;if(gsDrag){gsEnd();return}set.gl=+g.value;set.gv=3;LS.set(set);if(!gsRaf)glassVars(set.gl,isDark())});
 // radio groups in the settings sheet: arrow keys (mirrored for right-to-left), Home and End move the selection
 document.addEventListener('keydown',e=>{const r=e.target.closest&&e.target.closest('#sh [role="radio"]');if(!r||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();const g=[...r.parentElement.querySelectorAll('[role="radio"]')],i=g.indexOf(r),rtl=getComputedStyle(r).direction==='rtl',k=e.key;let n=k==='Home'?0:k==='End'?g.length-1:(i+((k==='ArrowDown'||k===(rtl?'ArrowLeft':'ArrowRight'))?1:-1)+g.length)%g.length;if(n===i)return;g[n].focus();g[n].click()});
 // the gear's press motion: one 60-degree turn per press (pointer, tap, Enter, Space); hover and focus-visible run it
@@ -716,7 +731,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('sh').classLis
 // S2: the settings and save sheets are modal: focus moves into the panel on open, Tab stays inside, and closing returns focus to the opener.
 let shOp=null;
 function openSh(label,opener){const sh=$('sh'),p=sh.querySelector('.p');p.setAttribute('aria-label',label);if(!sh.classList.contains('open'))shOp=opener||(document.activeElement!==document.body?document.activeElement:null);sh.classList.add('open');p.focus({preventScroll:true})}
-function closeSh(back){const sh=$('sh');if(!sh.classList.contains('open'))return;sh.classList.remove('open');const o=shOp;shOp=null;if(back!==false&&o&&o.isConnected)o.focus({preventScroll:true})}
+function closeSh(back){const sh=$('sh');if(!sh.classList.contains('open'))return;gsEnd();sh.classList.remove('open');const o=shOp;shOp=null;if(back!==false&&o&&o.isConnected)o.focus({preventScroll:true})}
 document.addEventListener('keydown',e=>{const sh=$('sh');if(e.key!=='Tab'||!sh.classList.contains('open'))return;const p=sh.querySelector('.p'),f=[...p.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.tabIndex>=0&&x.getClientRects().length);if(!f.length){e.preventDefault();p.focus();return}const a=document.activeElement,i=f.indexOf(a);if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===-1||i===f.length-1)){e.preventDefault();f[0].focus()}});
 // M5: each history entry keeps its own scroll position (history.state.sp -> y); back/forward restore it, new navigations start at the top.
 try{history.scrollRestoration='manual'}catch(e){}
