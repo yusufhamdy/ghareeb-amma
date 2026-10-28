@@ -2,8 +2,9 @@
 /*
  * glass-drag.test.js - the glass-strength slider while it is dragged (the iPhone lag fix).
  *
- * While a pointer drags the slider, the four glass variables (--bl --sat --gb --gbr) are written only on the sheet's own
- * glass, scoped on that element: the sheet panel (default, ?gd=sheet) or the slider's pill (?gd=pill, preview switch).
+ * While a pointer drags the slider, the four glass variables (--bl --sat --gb --gbr) are written only on the sheet
+ * panel, scoped on that element (the slider's pill inside it follows). The former preview switch ?gd is gone: a ?gd=pill
+ * URL behaves the same.
  * The page itself (the <html> variables and every other glass surface) keeps its values until the release; then they
  * are written once on the whole page, the scoped values are removed and the setting is saved, exactly as a change
  * always did. Closing the sheet during a drag does the same. Keyboard steps apply to the whole page at each step.
@@ -56,8 +57,8 @@ test("glass slider drag: only the sheet's glass follows; the page updates once o
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = "http://127.0.0.1:" + server.address().port;
   try {
-    for (const gd of ["", "sheet", "pill"]) {
-      const mode = gd || "sheet", tag = "gd=" + (gd || "(none)");
+    for (const gd of ["", "pill"]) {
+      const mode = "sheet", tag = "gd=" + (gd || "(none)");
       const ctx = await br.newContext({ viewport: { width: 390, height: 844 } });
       await ctx.addInitScript(() => { try { if (!sessionStorage.getItem("s")) { sessionStorage.setItem("s", "1"); localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify({ mode: "dark", pal: "neo", gl: 50, gv: 3, sv: 2, style: "glass", cm: true, snd: false })); } } catch (e) {} });
       const p = await ctx.newPage();

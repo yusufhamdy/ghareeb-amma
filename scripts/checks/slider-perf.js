@@ -1,5 +1,5 @@
 // Glass-strength slider drag performance (the iPhone lag report).
-//   node slider-perf.js [root] [label] [--runs 3] [--cpu 4] [--gd pill|sheet]
+//   node slider-perf.js [root] [label] [--runs 3] [--cpu 4]
 // Chromium, mobile emulation (390x844, touch, 3x), CPU throttled, glass + dark + neo, settings sheet open on the home
 // page. The slider is driven with real touch input through CDP: touchStart on the thumb, touchMove every ~16.7ms (60Hz)
 // across the full track in 90 steps, then back, then touchEnd. Measured during the drag:
@@ -20,7 +20,7 @@ const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k);
 const pos = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && args[i - 1].startsWith("--")));
 const ROOT = pos[0] || path.resolve(__dirname, "../../public");
 const LABEL = pos[1] || "current";
-const RUNS = +opt("--runs", "3"), CPU = +opt("--cpu", "4"), GD = opt("--gd", "");
+const RUNS = +opt("--runs", "3"), CPU = +opt("--cpu", "4");
 const CATS = ["devtools.timeline", "disabled-by-default-devtools.timeline", "disabled-by-default-devtools.timeline.frame", "blink", "cc", "gpu", "toplevel"].join(",");
 const BUCKET = {
   style: ["UpdateLayoutTree", "RecalculateStyles", "ScheduleStyleRecalculation"],
@@ -36,7 +36,7 @@ async function once(br, base) {
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: "no-preference" });
   await ctx.addInitScript(() => { try { localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify({ mode: "dark", pal: "neo", gl: 3, gv: 2, style: "glass", cm: false, snd: false })); } catch (e) {} });
   const p = await ctx.newPage();
-  await p.goto(base + "/" + (GD ? "?gd=" + GD : "") + "#/", { waitUntil: "load" });
+  await p.goto(base + "/#/", { waitUntil: "load" });
   await p.waitForSelector("#app .acts, #app h1", { timeout: 30000 });
   await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(800);
   await p.click('[data-a="set"]');

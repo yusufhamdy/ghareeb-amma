@@ -701,17 +701,15 @@ function toastUndo(m,undo){document.querySelectorAll('.toast.tu').forEach(t=>t.r
 // the site defaults (as for a first visit: stop-motion follows the device)
 const setDefaults=()=>({mode:'auto',pal:GQT.DEFAULT,gl:GQT.GLASS_DEFAULT,gv:3,style:'glass',cm:matchMedia('(prefers-reduced-motion:reduce)').matches,snd:true});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();openSh('الإعدادات',t);return}if(d.a==='close'||t.id==='sh'&&e.target===t){closeSh();return}if(d.a==='rnd'){drawWord();return}if(d.a==='reset'&&t.closest('#sh')){const prev=JSON.parse(JSON.stringify(set));Object.keys(set).forEach(k=>delete set[k]);Object.assign(set,setDefaults());LS.set(set);applySet();sheet();toastUndo('تمت استعادة الإعدادات الافتراضية',()=>{Object.keys(set).forEach(k=>delete set[k]);Object.assign(set,prev);LS.set(set);applySet();if($('sh').classList.contains('open')&&document.querySelector('#sh .psw'))sheet()});return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
-// Glass strength. While a finger or pointer drags the slider, the four glass variables are written only on the sheet's
-// own glass (scoped on that element), so nothing else on the page restyles or re-blurs during the drag; on release
-// (pointerup / touchend / change), or when the sheet closes during a drag, they are written once on the whole page and
-// the setting is saved, as before. Keyboard and assistive steps apply to the whole page at each step.
-// PREVIEW SWITCH (to be removed once one is chosen): ?gd=pill scopes the drag to the slider's glass pill only;
-// ?gd=sheet, the default, to the whole sheet panel (the pill is inside it).
-const GD=(()=>{try{return new URLSearchParams(location.search).get('gd')==='pill'?'pill':'sheet'}catch(e){return 'sheet'}})();
+// Glass strength. While a finger or pointer drags the slider, the four glass variables are written only on the sheet
+// panel (scoped on that element; the slider's pill inside it follows), so nothing else on the page restyles or re-blurs
+// during the drag; on release (pointerup / touchend / change), or when the sheet closes during a drag, they are written
+// once on the whole page and the setting is saved, as before. Keyboard and assistive steps apply to the whole page at
+// each step.
 const GSV=['--gb','--gbr','--sat','--bl'];
 let gsRaf=0,gsDrag=false;
-function gsScoped(v){const el=document.querySelector(GD==='pill'?'#sh .gs.g':'#sh .p');if(!el)return;const g=GQT.glass(v,isDark());el.style.setProperty('--gb',rgba('#ffffff',g.gb));el.style.setProperty('--gbr',rgba('#ffffff',g.gbr));el.style.setProperty('--sat',g.sat);el.style.setProperty('--bl',g.bl)}
-function gsUnscope(){document.querySelectorAll('#sh .gs.g,#sh .p').forEach(el=>GSV.forEach(k=>el.style.removeProperty(k)))}
+function gsScoped(v){const el=document.querySelector('#sh .p');if(!el)return;const g=GQT.glass(v,isDark());el.style.setProperty('--gb',rgba('#ffffff',g.gb));el.style.setProperty('--gbr',rgba('#ffffff',g.gbr));el.style.setProperty('--sat',g.sat);el.style.setProperty('--bl',g.bl)}
+function gsUnscope(){const el=document.querySelector('#sh .p');if(el)GSV.forEach(k=>el.style.removeProperty(k))}
 // the end of a drag: the whole page once, then save (the same as a change)
 function gsEnd(){if(!gsDrag)return;gsDrag=false;if(gsRaf){cancelAnimationFrame(gsRaf);gsRaf=0}const g=$('gs');if(g)set.gl=+g.value;glassVars(set.gl,isDark());gsUnscope();set.gv=3;LS.set(set)}
 document.addEventListener('pointerdown',e=>{if(e.target&&e.target.id==='gs')gsDrag=true},true);
