@@ -183,6 +183,10 @@ h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
 .ld{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .4s}.ld.gone{opacity:0;pointer-events:none}.ld .logo{font-size:44px}.lb{width:120px;height:3px;background:var(--ln);border-radius:2px;overflow:hidden}.lb i{display:block;height:100%;width:40%;background:var(--ac);animation:ldm 1.1s ease-in-out infinite}@keyframes ldm{from{transform:translateX(120%)}to{transform:translateX(-260%)}}
 nav.g{display:grid;grid-template-columns:repeat(4,1fr);padding:6px;transition:transform .35s cubic-bezier(.3,.8,.3,1)}nav.g.hide{transform:translateX(-50%) translateY(120px)}
 nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12px)/4);border-radius:26px;background:var(--ac);transform:translateX(calc(var(--i,0)*-100%));transition:transform .45s cubic-bezier(.34,1.4,.64,1)}nav.g.none .ind{opacity:0}
+/* PREVIEW-ONLY candidate (?nav=new, class .nav-new; not decided - remove the switch before release): during the
+   drag-to-switch the indicator gets its own compositing layer, so the nav and its glass are not repainted every frame.
+   At rest the nav is pixel-identical; mid-drag the label/icon anti-aliasing differs slightly (scripts/checks/nav-identity.js). */
+.nav-new nav.g.drag .ind{will-change:transform}
 nav.g{touch-action:pan-y pinch-zoom}nav.g.drag .ind{transition:none;opacity:1}nav.g.drag .t:active{transform:none}nav.g.drag .t.on:not(.pv){color:inherit}nav.g.drag .t.pv{color:var(--btf)}.shade nav.g.drag .t.pv{color:var(--bg)}
 nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}/* nav icon motions, once when the tab becomes active; only the named part moves (transform only) */
 nav.g .t svg :is(.nvh,.nvl,.nvr,.nvo,.nvq){transform-box:view-box}nav.g .t .nvl{transform-origin:11px 19px}nav.g .t .nvr{transform-origin:13px 19px}nav.g .t .nvo{transform-origin:12px 12px}nav.g .t .nvq{transform-origin:12px 13px}
@@ -708,8 +712,12 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m
 // each step.
 const GSV=['--gb','--gbr','--sat','--bl'];
 let gsRaf=0,gsDrag=false;
-function gsScoped(v){const el=document.querySelector('#sh .p');if(!el)return;const g=GQT.glass(v,isDark());el.style.setProperty('--gb',rgba('#ffffff',g.gb));el.style.setProperty('--gbr',rgba('#ffffff',g.gbr));el.style.setProperty('--sat',g.sat);el.style.setProperty('--bl',g.bl)}
-function gsUnscope(){const el=document.querySelector('#sh .p');if(el)GSV.forEach(k=>el.style.removeProperty(k))}
+// PREVIEW-ONLY (remove before release): ?gs= picks the drag variant to compare on the iPhone. a (default): the sheet
+// panel follows (all four variables); b: the slider's pill only; c: the sheet panel's fill and rim only (--gb/--gbr),
+// blur and saturate on release; d: nothing during the drag. Every variant ends the same way, in gsEnd.
+const GSM=(()=>{try{const v=new URLSearchParams(location.search).get('gs');return ['a','b','c','d'].includes(v)?v:'a'}catch(e){return 'a'}})();
+function gsScoped(v){if(GSM==='d')return;const el=document.querySelector(GSM==='b'?'#sh .gs.g':'#sh .p');if(!el)return;const g=GQT.glass(v,isDark());el.style.setProperty('--gb',rgba('#ffffff',g.gb));el.style.setProperty('--gbr',rgba('#ffffff',g.gbr));if(GSM==='c')return;el.style.setProperty('--sat',g.sat);el.style.setProperty('--bl',g.bl)}
+function gsUnscope(){document.querySelectorAll('#sh .p,#sh .gs.g').forEach(el=>GSV.forEach(k=>el.style.removeProperty(k)))}
 // the end of a drag: the whole page once, then save (the same as a change)
 function gsEnd(){if(!gsDrag)return;gsDrag=false;if(gsRaf){cancelAnimationFrame(gsRaf);gsRaf=0}const g=$('gs');if(g)set.gl=+g.value;glassVars(set.gl,isDark());gsUnscope();set.gv=3;LS.set(set)}
 document.addEventListener('pointerdown',e=>{if(e.target&&e.target.id==='gs')gsDrag=true},true);
@@ -717,6 +725,22 @@ document.addEventListener('touchstart',e=>{if(e.target&&e.target.id==='gs')gsDra
 ['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,()=>{if(gsDrag)gsEnd()},true));
 document.addEventListener('input',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;g.setAttribute('aria-valuetext',glassText(set.gl));if(!gsRaf)gsRaf=requestAnimationFrame(()=>{gsRaf=0;if(gsDrag)gsScoped(set.gl);else glassVars(set.gl,isDark())})});
 document.addEventListener('change',e=>{const g=e.target;if(!g||g.id!=='gs')return;if(gsDrag){gsEnd();return}set.gl=+g.value;set.gv=3;LS.set(set);if(!gsRaf)glassVars(set.gl,isDark())});
+// PREVIEW-ONLY (remove before release): ?nav=new turns on the nav indicator's own layer during a drag (the candidate fix;
+// without it the nav behaves as now), to compare on the iPhone; ?perf=1 shows a small readout: live FPS, and the median and worst frame time of the last drag
+// (the glass slider or the nav). Nothing here runs without the parameters, and nothing is sent anywhere.
+(()=>{let q;try{q=new URLSearchParams(location.search)}catch(e){return}
+if(q.get('nav')==='new')document.documentElement.classList.add('nav-new');
+if(q.get('perf')!=='1')return;
+const box=document.createElement('div');box.setAttribute('aria-hidden','true');
+box.style.cssText='position:fixed;top:4px;left:4px;z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,monospace;background:rgba(0,0,0,.72);color:#fff;padding:4px 6px;border-radius:6px;direction:ltr;text-align:left;white-space:pre';
+document.body.appendChild(box);
+let last=0,ts=[],rec=null,what='',res='no drag yet';
+const tag=()=>'gs='+GSM+' nav='+(document.documentElement.classList.contains('nav-new')?'new':'old');
+const stop=()=>{if(!rec)return;const d=rec;rec=null;if(d.length<3){res=what+': too short';return}const s=d.slice().sort((a,b)=>a-b);res=what+': '+d.length+' frames, median '+s[Math.floor(s.length/2)].toFixed(1)+'ms, worst '+s[s.length-1].toFixed(1)+'ms, >20ms '+d.filter(x=>x>20).length};
+document.addEventListener('pointerdown',e=>{const t=e.target;if(!t||!t.closest)return;if(t.id==='gs'){what='slider';rec=[]}else if(t.closest('#nv')){what='nav drag';rec=[]}},true);
+['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,stop,true));
+const loop=t=>{if(last){const dt=t-last;ts.push(t);while(ts.length&&t-ts[0]>1000)ts.shift();if(rec)rec.push(dt)}last=t;box.textContent='FPS '+ts.length+'  '+tag()+'\n'+res;requestAnimationFrame(loop)};
+requestAnimationFrame(loop)})();
 // radio groups in the settings sheet: arrow keys (mirrored for right-to-left), Home and End move the selection
 document.addEventListener('keydown',e=>{const r=e.target.closest&&e.target.closest('#sh [role="radio"]');if(!r||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();const g=[...r.parentElement.querySelectorAll('[role="radio"]')],i=g.indexOf(r),rtl=getComputedStyle(r).direction==='rtl',k=e.key;let n=k==='Home'?0:k==='End'?g.length-1:(i+((k==='ArrowDown'||k===(rtl?'ArrowLeft':'ArrowRight'))?1:-1)+g.length)%g.length;if(n===i)return;g[n].focus();g[n].click()});
 // the gear's press motion: one 60-degree turn per press (pointer, tap, Enter, Space); hover and focus-visible run it

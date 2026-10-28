@@ -6,10 +6,13 @@
 //     scroll gestures do not scroll in headless mode), four 400px swipes down, then six back up to the top - the nav
 //     hides on the way down and returns on the way up (counted);
 //   tabs: real touch taps (Input.dispatchTouchEvent) on each tab in turn (home, surahs, challenge, quiz, and around again),
-//     800ms apart - the indicator slide, the icon motion and the page change.
+//     800ms apart - the indicator slide, the icon motion and the page change;
+//   drag: the drag-to-switch (3e15a9c): a real touch drag along the nav at 60Hz from the home tab to the last tab and
+//     back, then release - the indicator follows the finger with its stretch, the labels preview (.pv), and the release
+//     opens the tab under the finger.
 // Per scenario: frame intervals from requestAnimationFrame (median, p95, worst, frames over 33ms), long tasks, and per
 // frame from the DevTools trace: style recalc, layout, paint, composite (main thread), raster + GPU (all threads), and the
-// number of Layout events. --variant switches one suspect off (diagnosis only, never a fix): the nav's backdrop-filter,
+// number of Layout events and Paint events per frame. DUMP=1 prints which nodes painted (Paint events by node). --variant switches one suspect off (diagnosis only, never a fix): the nav's backdrop-filter,
 // the background blobs' animation, the blobs themselves, or every backdrop-filter.
 const { serve } = require("./lib.js");
 const { chromium } = require("playwright");
@@ -27,6 +30,7 @@ const VCSS = {
   "no-blob-anim": "#bg i{animation:none!important}",
   "no-blobs": "#bg{display:none!important}",
   "no-glass-blur": "*{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}",
+  "ind-layer": "nav.g .ind{will-change:transform}",
 };
 const CATS = ["devtools.timeline", "disabled-by-default-devtools.timeline", "disabled-by-default-devtools.timeline.frame", "blink", "cc", "gpu", "toplevel"].join(",");
 const BUCKET = {
@@ -45,7 +49,7 @@ async function scenario(br, base, name) {
   await ctx.addInitScript(() => { try { localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify({ mode: "dark", pal: "neo", gl: 50, gv: 3, sv: 2, style: "glass", cm: false, snd: false })); } catch (e) {} });
   if (VCSS[VARIANT]) await ctx.addInitScript((css) => { document.addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = css; document.head.appendChild(s); }); }, VCSS[VARIANT]);
   const p = await ctx.newPage();
-  const route = { "scroll-home": "/#/", "scroll-surahs": "/#/surahs", "scroll-surah78": "/#/surah/78", tabs: "/#/" }[name];
+  const route = { "scroll-home": "/#/", "scroll-surahs": "/#/surahs", "scroll-surah78": "/#/surah/78", tabs: "/#/", drag: "/#/" }[name];
   await p.goto(base + route, { waitUntil: "load" });
   await p.waitForSelector("#nv a.t", { timeout: 30000 });
   await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(1200);
@@ -63,7 +67,21 @@ async function scenario(br, base, name) {
   const done = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
   await cdp.send("Tracing.start", { categories: CATS, transferMode: "ReportEvents" });
   const t0 = await p.evaluate(() => performance.now());
-  if (name === "tabs") {
+  if (name === "drag") {
+    const tabs = await p.$$eval("#nv a.t", (as) => as.map((a) => { const r = a.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }));
+    const xs = tabs.map((t) => t.x), y = tabs[0].y, from = xs[0], to = xs[xs.length - 1];
+    const path = []; const n = 60;
+    for (let i = 0; i <= n; i++) path.push(from + ((to - from) * i) / n);
+    for (let i = n; i >= 0; i--) path.push(from + ((to - from) * i) / n);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from, y, id: 1 }] });
+    const t0d = Date.now();
+    for (let i = 0; i < path.length; i++) {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: path[i], y, id: 1 }] });
+      const w = t0d + (i + 1) * 16.7 - Date.now(); if (w > 0) await new Promise((r) => setTimeout(r, w));
+    }
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await new Promise((r) => setTimeout(r, 700));
+  } else if (name === "tabs") {
     const tabs = await p.$$eval("#nv a.t", (as) => as.map((a) => { const r = a.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }));
     // home -> surahs -> challenge -> quiz -> home ..., the DOM order is RTL (first = home on the right)
     for (const i of [1, 2, 3, 0, 1, 2, 3, 0]) {
@@ -95,6 +113,7 @@ async function scenario(br, base, name) {
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
   const res = await p.evaluate(([t0, t1]) => { window.__run = false; const f = window.__f.filter((t) => t >= t0 && t <= t1); const d = []; for (let i = 1; i < f.length; i++) d.push(f[i] - f[i - 1]); return { d, lt: window.__lt, hid: window.__hid, shown: window.__shown, y: scrollY, hash: location.hash }; }, [t0, t1]);
   await ctx.close();
+  if (process.env.DUMP) { const ps = tr.filter((e) => e.name === "Paint" && e.ph === "X"); const by = {}; ps.forEach((e) => { const d = (e.args && e.args.data) || {}; const k = d.nodeName + " #" + d.nodeId; by[k] = (by[k] || 0) + 1; }); console.log("PAINTS", JSON.stringify(by), JSON.stringify(ps[0] && ps[0].args)); }
   const main = new Set();
   for (const e of tr) if (e.name === "thread_name" && e.args && e.args.name === "CrRendererMain") main.add(e.pid + ":" + e.tid);
   const xs = tr.filter((e) => e.ph === "X" && main.has(e.pid + ":" + e.tid));
@@ -103,7 +122,7 @@ async function scenario(br, base, name) {
   sum.rasterGpu = tr.filter((e) => e.ph === "X" && RASTER.test(e.name)).reduce((s, e) => s + (e.dur || 0), 0) / 1000;
   return {
     scenario: name, frames: res.d.length, medianMs: +med(res.d).toFixed(1), p95Ms: +pct(res.d, 0.95).toFixed(1), worstMs: +Math.max(0, ...res.d).toFixed(1), over33: res.d.filter((x) => x > 33.4).length,
-    longTasks: res.lt.length, layouts: xs.filter((e) => e.name === "Layout").length, navHid: res.hid, navShown: res.shown,
+    longTasks: res.lt.length, layouts: xs.filter((e) => e.name === "Layout").length, paints: xs.filter((e) => e.name === "Paint").length, paintsPerFrame: +(xs.filter((e) => e.name === "Paint").length / frames).toFixed(2), navHid: res.hid, navShown: res.shown,
     perFrame: Object.fromEntries(Object.entries(sum).map(([k, v]) => [k, +(v / frames).toFixed(2)])),
   };
 }
@@ -112,11 +131,11 @@ async function scenario(br, base, name) {
   const { server, base } = await serve(ROOT);
   const br = await chromium.launch();
   const all = {};
-  for (const s of ["scroll-home", "scroll-surahs", "scroll-surah78", "tabs"].filter((s) => !ONLY || s === ONLY)) {
+  for (const s of ["scroll-home", "scroll-surahs", "scroll-surah78", "tabs", "drag"].filter((s) => !ONLY || s === ONLY)) {
     const runs = [];
     for (let i = 0; i < RUNS; i++) runs.push(await scenario(br, base, s));
     const m = (f) => med(runs.map(f));
-    all[s] = { medianMs: m((r) => r.medianMs), p95Ms: m((r) => r.p95Ms), worstMs: m((r) => r.worstMs), over33: m((r) => r.over33), longTasks: m((r) => r.longTasks), layouts: m((r) => r.layouts), navHid: m((r) => r.navHid), navShown: m((r) => r.navShown),
+    all[s] = { medianMs: m((r) => r.medianMs), p95Ms: m((r) => r.p95Ms), worstMs: m((r) => r.worstMs), over33: m((r) => r.over33), longTasks: m((r) => r.longTasks), layouts: m((r) => r.layouts), paintsPerFrame: m((r) => r.paintsPerFrame), navHid: m((r) => r.navHid), navShown: m((r) => r.navShown),
       perFrame: Object.fromEntries(Object.keys(runs[0].perFrame).map((k) => [k, m((r) => r.perFrame[k])])) };
     console.log(LABEL + " " + VARIANT + " " + s + " " + JSON.stringify(all[s]));
   }
