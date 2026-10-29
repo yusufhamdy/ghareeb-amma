@@ -575,6 +575,9 @@ export function validateInput(surahs) {
   }
 }
 
+// The ayah label format: an ayah number or a range. Also enforced in the admin (wordErrors and the JSON import).
+export const AYAH_LABEL_RE = /^[0-9]+(-[0-9]+)?$/;
+
 function validateRecords(records) {
   const problems = [];
   records.forEach((r, i) => {
@@ -582,6 +585,8 @@ function validateRecords(records) {
     if (!r.meaning) problems.push("word#" + i + ": empty meaning");
     if (!r.slug) problems.push("word#" + i + ": empty slug");
     if (!r.label) problems.push("word#" + i + ": empty label");
+    // an ayah label is the ayah number or a range ("3" or "3-4"): it becomes part of the word page's file name and URL
+    else if (!AYAH_LABEL_RE.test(r.label)) problems.push("word#" + i + ": ayah label is not a number or a range (" + JSON.stringify(r.label) + ")");
     if (!r.no) problems.push("word#" + i + ": unknown surah number");
     const segs = r.ayah && Array.isArray(r.ayah.segments) ? r.ayah.segments : [];
     if (!segs.length) problems.push("word#" + i + ": no ayah segments");
@@ -643,7 +648,9 @@ export function buildSite(surahs, challengeState) {
 export function writeSite(outDir, files, meta) {
   const out = path.resolve(outDir);
   for (const [name, content] of Object.entries(files)) {
-    const p = path.join(out, name);
+    const p = path.resolve(out, name);
+    // every generated file stays inside the output folder (a name with ".." or an absolute path is refused)
+    if (!p.startsWith(out + path.sep)) throw new Error("refusing to write outside " + out + ": " + JSON.stringify(name));
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, content, "utf8");
   }
