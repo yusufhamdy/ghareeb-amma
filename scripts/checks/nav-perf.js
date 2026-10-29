@@ -1,6 +1,6 @@
 // Bottom navigation performance (the iPhone report: the floating nav feels heavy).
 //   node nav-perf.js [root] [label] [--runs 3] [--cpu 4] [--variant base|no-nav-blur|no-blob-anim|no-blobs|no-glass-blur]
-//   node nav-perf.js [root] [label] --only cadence|clocks [--browser chromium|webkit] [--query "?nd=0"]
+//   node nav-perf.js [root] [label] --only cadence|clocks [--browser chromium|webkit] [--query "?x=y"]
 // Same setup as slider-perf.js: Chromium, mobile emulation (390x844, touch, 3x), CPU throttled, glass + dark + neo.
 // Scenarios, each traced on its own:
 //   scroll-home, scroll-surahs, scroll-surah78: real touch swipes (Input.dispatchTouchEvent at 60Hz; Chromium's synthesized

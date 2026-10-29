@@ -160,8 +160,6 @@ nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12p
 /* during the drag-to-switch the indicator has its own compositing layer, so the nav and its glass are not repainted
    every frame while it moves; at rest nothing changes (scripts/checks/nav-identity.js) */
 nav.g.drag .ind{will-change:transform}
-/* PREVIEW-ONLY isolation switches (?nb=0, ?nl=0; remove before release) */
-[data-nb="0"] nav.g.drag{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}[data-nl="0"] nav.g.drag .t{transition:none!important}
 nav.g{touch-action:pan-y pinch-zoom}nav.g.drag .ind{transition:none;opacity:1}nav.g.drag .t:active{transform:none}nav.g.drag .t.on:not(.pv){color:inherit}nav.g.drag .t.pv{color:var(--btf)}.shade nav.g.drag .t.pv{color:var(--bg)}
 nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}/* nav icon motions, once when the tab becomes active; only the named part moves (transform only) */
 nav.g .t svg :is(.nvh,.nvl,.nvr,.nvo,.nvq){transform-box:view-box}nav.g .t .nvl{transform-origin:11px 19px}nav.g .t .nvr{transform-origin:13px 19px}nav.g .t .nvo{transform-origin:12px 12px}nav.g .t .nvq{transform-origin:12px 13px}
