@@ -1,5 +1,6 @@
 // Bottom navigation performance (the iPhone report: the floating nav feels heavy).
 //   node nav-perf.js [root] [label] [--runs 3] [--cpu 4] [--variant base|no-nav-blur|no-blob-anim|no-blobs|no-glass-blur]
+//   node nav-perf.js [root] [label] --only cadence|clocks [--browser chromium|webkit] [--query "?nd=0"]
 // Same setup as slider-perf.js: Chromium, mobile emulation (390x844, touch, 3x), CPU throttled, glass + dark + neo.
 // Scenarios, each traced on its own:
 //   scroll-home, scroll-surahs, scroll-surah78: real touch swipes (Input.dispatchTouchEvent at 60Hz; Chromium's synthesized
@@ -15,7 +16,7 @@
 // number of Layout events and Paint events per frame. DUMP=1 prints which nodes painted (Paint events by node). --variant switches one suspect off (diagnosis only, never a fix): the nav's backdrop-filter,
 // the background blobs' animation, the blobs themselves, or every backdrop-filter.
 const { serve } = require("./lib.js");
-const { chromium } = require("playwright");
+const { chromium, webkit } = require("playwright");
 const path = require("path");
 
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
@@ -24,6 +25,10 @@ const ROOT = pos[0] || path.resolve(__dirname, "../../public");
 const LABEL = pos[1] || "current";
 const RUNS = +opt("--runs", "3"), CPU = +opt("--cpu", "4"), VARIANT = opt("--variant", "base");
 const ONLY = opt("--only", "");
+// --browser webkit: Playwright WebKit (the engine of Safari; on Windows not the iPhone's graphics stack, so only the
+// input and timing logic carry over, not the frame costs). The traced scenarios need Chromium (CDP); cadence and clocks
+// run in both.
+const BROWSER = opt("--browser", "chromium");
 const VCSS = {
   base: "",
   "no-nav-blur": "nav.g{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}",
@@ -141,7 +146,11 @@ async function cadence(br, base, name, query) {
   await ctx.addInitScript(() => { try { localStorage.setItem("gq-ld", "1"); localStorage.setItem("gq-set", JSON.stringify({ mode: "dark", pal: "neo", gl: 50, gv: 3, sv: 2, style: "glass", cm: false, snd: false })); } catch (e) {} });
   const p = await ctx.newPage();
   await p.goto(base + "/" + (query || "") + "#/", { waitUntil: "load" });
-  await p.waitForSelector("#nv a.t"); await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(1000);
+  await p.waitForSelector("#nv a.t"); await p.evaluate(() => document.fonts.ready);
+  // Playwright WebKit on Windows draws the page's blurred background blobs in software at ~400ms a frame (15ms without
+  // them), which would make every frame a drop; they are behind everything and play no part in the drag, so hide them
+  if (BROWSER === "webkit") await p.addStyleTag({ content: "#bg{display:none!important}" });
+  await p.waitForTimeout(1000);
   const r = await p.evaluate(async ([pattern, speed]) => {
     const nv = document.getElementById("nv"), ind = nv.querySelector(".ind"), ts = [...nv.querySelectorAll(".t")].map((t) => t.getBoundingClientRect());
     const y = ts[0].top + ts[0].height / 2, x0 = ts[0].left + ts[0].width / 2, x1 = ts[ts.length - 1].left + ts[ts.length - 1].width / 2, dir = Math.sign(x1 - x0);
@@ -182,13 +191,40 @@ async function cadence(br, base, name, query) {
   return r;
 }
 
+// ---- clocks: real input (Playwright's own mouse moves and touch taps, not synthetic events) - is each event's timeStamp
+// on the same clock as performance.now() and the requestAnimationFrame timestamp, and does getCoalescedEvents exist?
+async function clocks(br, base) {
+  const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => { try { localStorage.setItem("gq-ld", "1"); } catch (e) {} });
+  const p = await ctx.newPage();
+  await p.goto(base + "/#/", { waitUntil: "load" });
+  await p.waitForSelector("#nv a.t"); await p.waitForTimeout(500);
+  await p.evaluate(() => {
+    const L = (window.__clk = { ev: {}, raf: [], gce: typeof PointerEvent !== "undefined" && typeof PointerEvent.prototype.getCoalescedEvents === "function", coalesced: [] });
+    for (const type of ["pointerdown", "pointermove", "pointerup", "touchstart", "touchend", "mousemove"]) addEventListener(type, (e) => { const n = performance.now(); (L.ev[type + (e.pointerType ? ":" + e.pointerType : "")] ||= []).push(e.timeStamp - n); if (type === "pointermove" && e.getCoalescedEvents) L.coalesced.push(e.getCoalescedEvents().length); }, { capture: true, passive: true });
+    let k = 0; const f = (t) => { L.raf.push(t - performance.now()); if (++k < 60) requestAnimationFrame(f); }; requestAnimationFrame(f);
+  });
+  for (let i = 0; i < 30; i++) await p.mouse.move(40 + i * 10, 300);
+  for (let i = 0; i < 4; i++) await p.touchscreen.tap(100 + i * 40, 400);
+  await p.waitForTimeout(1200);
+  const L = await p.evaluate(() => window.__clk);
+  await ctx.close();
+  const sm = (a) => (a.length ? { n: a.length, median: +med(a).toFixed(2), min: +Math.min(...a).toFixed(2), max: +Math.max(...a).toFixed(2) } : null);
+  return { timeStampMinusNow: Object.fromEntries(Object.entries(L.ev).map(([k, a]) => [k, sm(a)])), rafMinusNow: sm(L.raf), getCoalescedEvents: L.gce, coalescedPerMove: sm(L.coalesced) };
+}
+
 (async () => {
   const { server, base } = await serve(ROOT);
-  const br = await chromium.launch();
+  const br = await (BROWSER === "webkit" ? webkit : chromium).launch();
+  if (ONLY === "clocks") {
+    console.log(LABEL + " " + BROWSER + " clocks " + JSON.stringify(await clocks(br, base)));
+    await br.close(); server.close();
+    return;
+  }
   if (ONLY === "cadence") {
     for (const c of Object.keys(CADENCES)) {
       const r = await cadence(br, base, c, opt("--query", ""));
-      console.log(LABEL + " cadence " + c.padEnd(12) + " " + JSON.stringify(r));
+      console.log(LABEL + " " + BROWSER + " cadence " + c.padEnd(12) + " " + JSON.stringify(r));
     }
     await br.close(); server.close();
     return;

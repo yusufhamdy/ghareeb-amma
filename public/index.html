@@ -186,6 +186,8 @@ nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12p
 /* during the drag-to-switch the indicator has its own compositing layer, so the nav and its glass are not repainted
    every frame while it moves; at rest nothing changes (scripts/checks/nav-identity.js) */
 nav.g.drag .ind{will-change:transform}
+/* PREVIEW-ONLY isolation switches (?nb=0, ?nl=0; remove before release) */
+[data-nb="0"] nav.g.drag{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}[data-nl="0"] nav.g.drag .t{transition:none!important}
 nav.g{touch-action:pan-y pinch-zoom}nav.g.drag .ind{transition:none;opacity:1}nav.g.drag .t:active{transform:none}nav.g.drag .t.on:not(.pv){color:inherit}nav.g.drag .t.pv{color:var(--btf)}.shade nav.g.drag .t.pv{color:var(--bg)}
 nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}/* nav icon motions, once when the tab becomes active; only the named part moves (transform only) */
 nav.g .t svg :is(.nvh,.nvl,.nvr,.nvo,.nvq){transform-box:view-box}nav.g .t .nvl{transform-origin:11px 19px}nav.g .t .nvr{transform-origin:13px 19px}nav.g .t .nvo{transform-origin:12px 12px}nav.g .t .nvq{transform-origin:12px 13px}
@@ -724,20 +726,8 @@ document.addEventListener('touchstart',e=>{if(e.target&&e.target.id==='gs')gsDra
 ['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,()=>{if(gsDrag)gsEnd()},true));
 document.addEventListener('input',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;g.setAttribute('aria-valuetext',glassText(set.gl));if(!gsRaf)gsRaf=requestAnimationFrame(()=>{gsRaf=0;if(gsDrag)gsScoped(set.gl);else glassVars(set.gl,isDark())})});
 document.addEventListener('change',e=>{const g=e.target;if(!g||g.id!=='gs')return;if(gsDrag){gsEnd();return}set.gl=+g.value;set.gv=3;LS.set(set);if(!gsRaf)glassVars(set.gl,isDark())});
-// PREVIEW-ONLY (remove before release): ?perf=1 shows a small readout: live FPS, and the median and worst frame time of the last drag
-// (the glass slider or the nav). Nothing here runs without the parameters, and nothing is sent anywhere.
-(()=>{let q;try{q=new URLSearchParams(location.search)}catch(e){return}
-if(q.get('perf')!=='1')return;
-const box=document.createElement('div');box.setAttribute('aria-hidden','true');
-box.style.cssText='position:fixed;top:4px;left:4px;z-index:9999;pointer-events:none;font:11px/1.35 ui-monospace,monospace;background:rgba(0,0,0,.72);color:#fff;padding:4px 6px;border-radius:6px;direction:ltr;text-align:left;white-space:pre';
-document.body.appendChild(box);
-let last=0,ts=[],rec=null,what='',res='no drag yet';
-const tag=()=>'gs='+GSM+' nd='+(new URLSearchParams(location.search).get('nd')||'24');
-const stop=()=>{if(!rec)return;const d=rec;rec=null;if(d.length<3){res=what+': too short';return}const s=d.slice().sort((a,b)=>a-b);res=what+': '+d.length+' frames, median '+s[Math.floor(s.length/2)].toFixed(1)+'ms, worst '+s[s.length-1].toFixed(1)+'ms, >20ms '+d.filter(x=>x>20).length};
-document.addEventListener('pointerdown',e=>{const t=e.target;if(!t||!t.closest)return;if(t.id==='gs'){what='slider';rec=[]}else if(t.closest('#nv')){what='nav drag';rec=[]}},true);
-['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,stop,true));
-const loop=t=>{if(last){const dt=t-last;ts.push(t);while(ts.length&&t-ts[0]>1000)ts.shift();if(rec)rec.push(dt)}last=t;box.textContent='FPS '+ts.length+'  '+tag()+'\n'+res;requestAnimationFrame(loop)};
-requestAnimationFrame(loop)})();
+// PREVIEW-ONLY (remove before release, with perf.js): ?perf=1 loads the on-device drag readout (perf.js)
+(()=>{try{if(new URLSearchParams(location.search).get('perf')!=='1')return}catch(e){return}const s=document.createElement('script');s.src='/perf.js';s.dataset.build='current';document.head.appendChild(s)})();
 // radio groups in the settings sheet: arrow keys (mirrored for right-to-left), Home and End move the selection
 document.addEventListener('keydown',e=>{const r=e.target.closest&&e.target.closest('#sh [role="radio"]');if(!r||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();const g=[...r.parentElement.querySelectorAll('[role="radio"]')],i=g.indexOf(r),rtl=getComputedStyle(r).direction==='rtl',k=e.key;let n=k==='Home'?0:k==='End'?g.length-1:(i+((k==='ArrowDown'||k===(rtl?'ArrowLeft':'ArrowRight'))?1:-1)+g.length)%g.length;if(n===i)return;g[n].focus();g[n].click()});
 // the gear's press motion: one 60-degree turn per press (pointer, tap, Enter, Space); hover and focus-visible run it
@@ -978,13 +968,21 @@ document.addEventListener('click',e=>{if(e.target.closest('nav .t')&&navigator.v
 // delivers 0 or 2 per frame); past the newest sample it extrapolates for at most ND ms. The stretch takes its speed
 // from that drawn path and the frame time, with steps scaled by the frame time (the same as before at 60fps). The tab
 // under the finger, the preview and the release use the real last finger position.
-// PREVIEW-ONLY: ?nd=<ms> (0..60) overrides the delay to tune it on the iPhone; remove before release, keep the value.
+// An event's timeStamp is read on the frame clock (performance.now) unless even the freshest event of the drag arrived
+// more than 100ms after it or more than 8ms before it: those timeStamps are not on the frame clock, so the samples are
+// read with that offset (the freshest counts as received at once). Chromium and WebKit stay within a few ms: offset 0.
+// PREVIEW-ONLY isolation switches, remove before release (keep the chosen delay): ?nd=<ms> (0..60) the delay, and
+// ?nd=0 the earlier drawing at the newest touch; ?nb=0 no backdrop blur on the nav during the drag; ?nl=0 no label
+// transition during the drag; ?ns=0 no stretch (translate only).
 (()=>{const nv=$('nv');if(!nv||!window.PointerEvent)return;let D=null,syn=false,endT=0;
-const ND=(()=>{try{const q=new URLSearchParams(location.search),v=+q.get('nd');return q.has('nd')&&v>=0&&v<=60?v:24}catch(e){return 24}})();
+const PQ=(()=>{try{return new URLSearchParams(location.search)}catch(e){return new URLSearchParams()}})();
+const ND=(()=>{const v=+PQ.get('nd');return PQ.has('nd')&&v>=0&&v<=60?v:24})(),NS=PQ.get('ns')!=='0';
+['nb','nl'].forEach(k=>{if(PQ.get(k)==='0')document.documentElement.dataset[k]='0'});
 const buzz=()=>{try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}};
 const tabAt=x=>{let k=0,b=1e9;D.tr.forEach((r,i)=>{const d=x<r.left?r.left-x:x>r.right?x-r.right:0;if(d<b){b=d;k=i}});return k};
-// an event's time on the frame clock (performance.now); a browser giving epoch-based timeStamps falls back to now
-const tsOf=e=>{const n=performance.now(),t=e.timeStamp;return typeof t==='number'&&Math.abs(t-n)<1000?t:n};
+const tsOf=e=>{const t=e.timeStamp;return typeof t==='number'&&isFinite(t)?t:performance.now()};
+// the receipt delay of the event just received; the smallest so far sets the drag's clock offset D.c
+const rcv=e=>{const d=performance.now()-tsOf(e);if(d<D.md){D.md=d;D.c=d>100||d<-8?d:0}};
 const addS=(h,t,x)=>{if(h.length&&t<h[h.length-1][0])t=h[h.length-1][0];h.push([t,x]);if(h.length>12)h.shift()};
 const posAt=(h,q)=>{const n=h.length;if(!n)return null;if(q<=h[0][0])return h[0][1];
 for(let i=n-1;i>0;i--){const a=h[i-1],b=h[i];if(q>=a[0]&&q<=b[0])return b[0]>a[0]?a[1]+(b[1]-a[1])*(q-a[0])/(b[0]-a[0]):b[1]}
@@ -992,11 +990,17 @@ for(let i=n-1;i>0;i--){const a=h[i-1],b=h[i];if(q>=a[0]&&q<=b[0])return b[0]>a[0
 // stopped), back to the newest sample over the next ND ms (smoothstep), so a still finger has the indicator under it
 const b=h[n-1];if(n<2)return b[1];const a=h[n-2],s=b[0]>a[0]?(b[1]-a[1])/(b[0]-a[0]):0,e=q-b[0];
 if(e<=ND)return b[1]+s*e;const u=Math.min(1,ND?(e-ND)/ND:1);return b[1]+s*ND*(1-u*u*(3-2*u))};
-const frame=t=>{if(!D||!D.active)return;const dt=Math.max(1,t-D.lt);D.lt=t;const p=posAt(D.h,t-ND),x=p==null?D.x:p,k=Math.min(4,Math.max(.25,dt/(1000/60))),a=1-Math.pow(.6,k);
+const frame=t=>{if(!D||!D.active)return;const dt=Math.max(1,t-D.lt);D.lt=t;const p=posAt(D.h,t-ND-D.c),x=p==null?D.x:p,k=Math.min(4,Math.max(.25,dt/(1000/60))),a=1-Math.pow(.6,k);
 D.v=D.v*(1-a)+(x-D.px)/dt*a;D.px=x;
 const cx=Math.min(D.max,Math.max(D.min,x));let sx=1,sy=1;
-if(!D.still){const tg=1+Math.min(.25,Math.abs(D.v)*.3);D.sv=D.sv*Math.pow(.72,k)+(tg-D.sx)*.28*k;D.sx+=D.sv*k;sx=Math.min(1.25,D.sx);sy=1-Math.max(0,sx-1)*.32}
-D.ind.style.transform='translateX('+(cx-D.w/2-D.rest).toFixed(1)+'px) scale('+sx.toFixed(3)+','+sy.toFixed(3)+')';D.raf=requestAnimationFrame(frame)};
+if(!D.still&&NS){const tg=1+Math.min(.25,Math.abs(D.v)*.3);D.sv=D.sv*Math.pow(.72,k)+(tg-D.sx)*.28*k;D.sx+=D.sv*k;sx=Math.min(1.25,D.sx);sy=1-Math.max(0,sx-1)*.32}
+put(cx,sx,sy);D.raf=requestAnimationFrame(frame)};
+const put=(cx,sx,sy)=>{D.ind.style.transform='translateX('+(cx-D.w/2-D.rest).toFixed(1)+'px)'+(NS?' scale('+sx.toFixed(3)+','+sy.toFixed(3)+')':'')};
+// PREVIEW-ONLY ?nd=0: the drawing before 322b2c0, at the newest touch received
+const frame0=t=>{if(!D||!D.active)return;const dt=Math.max(1,t-D.lt);D.lt=t;D.v=D.v*.6+(D.x-D.px)/dt*.4;D.px=D.x;
+const cx=Math.min(D.max,Math.max(D.min,D.x));let sx=1,sy=1;
+if(!D.still&&NS){const tg=1+Math.min(.25,Math.abs(D.v)*.3);D.sv=D.sv*.72+(tg-D.sx)*.28;D.sx+=D.sv;sx=Math.min(1.25,D.sx);sy=1-Math.max(0,sx-1)*.32}
+put(cx,sx,sy);D.raf=requestAnimationFrame(frame0)};
 const preview=k=>{if(k===D.k)return;D.ts.forEach((t,i)=>t.classList.toggle('pv',i===k));if(D.k>=0)buzz();D.k=k};
 const end=open=>{const d=D;D=null;cancelAnimationFrame(d.raf);endT=performance.now();
 const r=d.nr,inside=open&&d.x>r.left-32&&d.x<r.right+32&&d.y>r.top-32&&d.y<r.bottom+32,t=d.ts[d.k];
@@ -1005,12 +1009,12 @@ nv.classList.remove('drag');d.ts.forEach(x=>x.classList.remove('pv'));d.ind.styl
 if(inside&&t&&t.isConnected){syn=true;try{t.click()}finally{syn=false}}};
 nv.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'||!e.isPrimary||D)return;const ind=nv.querySelector('.ind'),ts=[...nv.querySelectorAll('.t')];if(!ind||ts.length<2)return;
 const nr=nv.getBoundingClientRect(),tr=ts.map(t=>t.getBoundingClientRect()),w=ind.offsetWidth;
-D={id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,px:e.clientX,v:0,sx:1,sv:0,ind,ts,tr,nr,w,k:-1,active:false,h:[[tsOf(e),e.clientX]],
+D={id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,px:e.clientX,v:0,sx:1,sv:0,ind,ts,tr,nr,w,k:-1,active:false,h:[[tsOf(e),e.clientX]],md:Infinity,c:0,
 rest:nr.left+nv.clientLeft+ind.offsetLeft,min:Math.min(...tr.map(r=>r.left))+w/2,max:Math.max(...tr.map(r=>r.right))-w/2,
-still:document.body.classList.contains('cm')||matchMedia('(prefers-reduced-motion: reduce)').matches}});
-nv.addEventListener('pointermove',e=>{if(!D||e.pointerId!==D.id)return;const cs=e.getCoalescedEvents?e.getCoalescedEvents():null;if(cs&&cs.length)cs.forEach(c=>addS(D.h,tsOf(c),c.clientX));else addS(D.h,tsOf(e),e.clientX);D.x=e.clientX;D.y=e.clientY;if(D.active){preview(tabAt(D.x));return}
+still:document.body.classList.contains('cm')||matchMedia('(prefers-reduced-motion: reduce)').matches};rcv(e)});
+nv.addEventListener('pointermove',e=>{if(!D||e.pointerId!==D.id)return;rcv(e);const cs=e.getCoalescedEvents?e.getCoalescedEvents():null;if(cs&&cs.length)cs.forEach(c=>addS(D.h,tsOf(c),c.clientX));else addS(D.h,tsOf(e),e.clientX);D.x=e.clientX;D.y=e.clientY;if(D.active){preview(tabAt(D.x));return}
 const dx=Math.abs(D.x-D.x0),dy=Math.abs(D.y-D.y0);
-if(dx>=8&&dx>dy){D.active=true;try{nv.setPointerCapture(D.id)}catch(err){}nv.classList.add('drag');D.k=-1;const k=tabAt(D.x);D.ts.forEach((t,i)=>t.classList.toggle('pv',i===k));D.k=k;D.lt=performance.now();D.raf=requestAnimationFrame(frame)}
+if(dx>=8&&dx>dy){D.active=true;try{nv.setPointerCapture(D.id)}catch(err){}nv.classList.add('drag');D.k=-1;const k=tabAt(D.x);D.ts.forEach((t,i)=>t.classList.toggle('pv',i===k));D.k=k;D.lt=performance.now();D.raf=requestAnimationFrame(ND?frame:frame0)}
 else if(dy>=8)D=null});
 nv.addEventListener('pointerup',e=>{if(!D||e.pointerId!==D.id)return;if(D.active)end(true);else D=null});
 nv.addEventListener('pointercancel',e=>{if(!D||e.pointerId!==D.id)return;if(D.active)end(false);else D=null});
