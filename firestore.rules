@@ -19,13 +19,14 @@ service cloud.firestore {
     }
 
     // --- document shapes (what the admin page writes; Firestore itself caps a document at 1 MiB) ---
-    // public/data: the words list, written with its revision, time and author
+    // public/data: the words list, written with its revision, time and author (the writer's Firebase uid: this
+    // document is public, so it never carries an address)
     function validWords(d) {
       return d.keys().hasAll(['rev', 'surahs']) && d.keys().hasOnly(['rev', 'surahs', 'updatedAt', 'by'])
         && d.rev is int && d.rev >= 0
         && d.surahs is list && d.surahs.size() <= 114
         && (!('updatedAt' in d) || d.updatedAt is timestamp)
-        && (!('by' in d) || (d.by is string && d.by.lower() == mail()));
+        && (!('by' in d) || (d.by is string && d.by == request.auth.uid));
     }
     // public/prev: the previous words list (one undo step)
     function validPrev(d) {

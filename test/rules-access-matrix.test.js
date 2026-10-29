@@ -210,7 +210,7 @@ test('admins write only the known public documents, in their shapes, and delete 
   const db = track(env.authenticatedContext('admin2-shapes', ADMIN2)).firestore();
   const ts = require('firebase/firestore').serverTimestamp;
   // the shapes the admin page writes
-  await assertSucceeds(db.doc('public/data').set({ rev: 2, surahs: SEED['public/data'].surahs, updatedAt: ts(), by: 'Admin2@Example.com' }));
+  await assertSucceeds(db.doc('public/data').set({ rev: 2, surahs: SEED['public/data'].surahs, updatedAt: ts(), by: 'admin2-shapes' })); // by = the writer's own uid
   await assertSucceeds(db.doc('public/prev').set({ rev: 1, surahs: [], savedAt: ts() }));
   await assertSucceeds(db.doc('public/challenge').set({ startDate: '2026-11-01', releasedUpTo: 3, days: [{ d: 1, w: [{ no: 114, word: 'w' }], reelIg: 'https://www.instagram.com/p/x/' }] }));
   await assertSucceeds(db.doc('public/challenge').set({ startDate: null, releasedUpTo: null, days: [] }));
@@ -225,7 +225,9 @@ test('admins write only the known public documents, in their shapes, and delete 
   await assertFails(db.doc('public/data').set({ rev: -1, surahs: [] }));
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: 'all' }));
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: Array.from({ length: 115 }, () => ({})) }));
-  await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by: 'yusufhamdy20@gmail.com' }));
+  await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by: 'owner-uid' })); // someone else's uid
+  // an address is never accepted as the author, not even the writer's own (public/data is world-readable)
+  for (const by of [ADMIN2.email, 'Admin2@Example.com', 'yusufhamdy20@gmail.com']) await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by }));
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], updatedAt: 'today' }));
   await assertFails(db.doc('public/data').update({ html: '<script>' }));
   // previous words: only its own keys

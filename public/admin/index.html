@@ -193,7 +193,7 @@ const store={
    const ref=doc(FB.db,"public","data"),cur=await tx.get(ref),ex=cur.exists(),cs=ex?cur.data().surahs||[]:[],cr=ex?cur.data().rev||0:0;
    const next=fn(fix({surahs:clone(cs)}).surahs);chkSize(next);
    if(ex)tx.set(doc(FB.db,"public","prev"),{rev:cr,surahs:cs,savedAt:serverTimestamp()});
-   out={rev:cr+1,surahs:next};tx.set(ref,{rev:cr+1,surahs:next,updatedAt:serverTimestamp(),by:U.email});
+   out={rev:cr+1,surahs:next};tx.set(ref,{rev:cr+1,surahs:next,updatedAt:serverTimestamp(),by:U.uid});
   }),T);
   return fix(out);
  },
@@ -206,7 +206,7 @@ const store={
    if(!p.exists())throw errOf("noprev");
    const r=(c.data().rev||0)+1;
    tx.set(rp,{rev:c.data().rev||0,surahs:c.data().surahs,savedAt:serverTimestamp()});
-   tx.set(rd,{rev:r,surahs:p.data().surahs,updatedAt:serverTimestamp(),by:U.email});
+   tx.set(rd,{rev:r,surahs:p.data().surahs,updatedAt:serverTimestamp(),by:U.uid});
    out={rev:r,surahs:p.data().surahs};
   }),T);
   return fix(out);

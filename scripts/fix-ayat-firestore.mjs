@@ -6,7 +6,8 @@
  *
  *   node scripts/fix-ayat-firestore.mjs --dry-run            read only: back up, print the exact diff, change nothing
  *   node scripts/fix-ayat-firestore.mjs --apply --confirm    back up, then write the corrections (owner approval)
- *   options: --project ID (default ghareebalquran-d9ae5), --from-json FILE (dry run on a saved copy, no Firestore)
+ *   options: --project ID (default ghareebalquran-d9ae5), --from-json FILE (dry run on a saved copy, no Firestore),
+ *            --owner-uid UID (or env GHAREEB_OWNER_UID): the owner's Firebase uid, written as "by"
  *
  * What it does:
  *   1. reads public/data and writes it, unchanged, to backup/firestore/public-data-<time>.json
@@ -21,8 +22,10 @@
  *      public/words.json;
  *   5. with --apply --confirm only: in one transaction, re-reads public/data, refuses if its rev changed since the
  *      backup, copies it to public/prev (as the admin does before every save) and writes the corrected surahs with
- *      rev + 1, the time, and by = the owner's address (OWNER below: the rules accept only the signed-in admin's
- *      own address in "by", so the owner can later write the document back unchanged). Nothing else changes.
+ *      rev + 1, the time, and by = the owner's Firebase uid (the rules accept only the signed-in writer's own uid in
+ *      "by", so the owner can later write the document back unchanged, and no address is stored in the public
+ *      document). Nothing else changes. The uid comes from --owner-uid or GHAREEB_OWNER_UID; without either it is
+ *      looked up, read-only, in Firebase Auth by the owner address that firestore.rules names in isOwner().
  *   6. every run writes a log next to its backup (<backup>.log.json): the time, mode, target, revision before and
  *      after, the corrections applied (or found, in a dry run) and the result. The run stays traceable through the
  *      backup, public/prev and this log.
@@ -40,7 +43,6 @@ const quran = require("../data/quran/index.js");
 const AyahCheck = require("../public/admin/ayah-check.js");
 const { fixSurahs } = require("../data/quran/fix.js");
 const FIXTURE = path.join(ROOT, "test", "fixtures", "ayat-fix-2026-10-27.json");
-const OWNER = "yusufhamdy20@gmail.com"; // lowercase, as firestore.rules compares it
 
 const argv = process.argv.slice(2);
 const opt = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
@@ -100,13 +102,23 @@ function report(doc, p) {
   diff.forEach((d) => console.log("  " + d));
 }
 
+// the owner's Firebase uid, for "by": --owner-uid / GHAREEB_OWNER_UID, else a read-only Auth lookup of the owner
+// address in firestore.rules (no address in this script)
+async function ownerUid(admin) {
+  const v = opt("--owner-uid") || process.env.GHAREEB_OWNER_UID;
+  if (v) return { uid: v, from: opt("--owner-uid") ? "--owner-uid" : "GHAREEB_OWNER_UID" };
+  const m = fs.readFileSync(path.join(ROOT, "firestore.rules"), "utf8").match(/function isOwner\(\)\s*\{\s*return mail\(\) == '([^']+)';/);
+  if (!m) throw new Error("no owner address in firestore.rules isOwner(); pass --owner-uid");
+  return { uid: (await admin.auth().getUserByEmail(m[1])).uid, from: "Firebase Auth lookup of the isOwner() address" };
+}
+
 async function main() {
   if (!DRY && !(APPLY && CONFIRM)) {
     console.log("fix-ayat-firestore: pass --dry-run, or --apply --confirm (owner approval, at release).");
     return 2;
   }
   if (process.env.FIRESTORE_EMULATOR_HOST && APPLY) console.log("fix-ayat-firestore: FIRESTORE_EMULATOR_HOST is set - writing to the emulator.");
-  let db = null, doc;
+  let db = null, doc, owner = null;
   if (FROM_JSON) {
     if (APPLY) throw new Error("--from-json is for dry runs only");
     doc = JSON.parse(fs.readFileSync(FROM_JSON, "utf8"));
@@ -117,6 +129,7 @@ async function main() {
     const snap = await db.doc("public/data").get();
     if (!snap.exists) throw new Error("public/data does not exist");
     doc = snap.data();
+    owner = await ownerUid(admin).catch((e) => { if (APPLY) throw new Error("owner uid: " + e.message); console.log("owner uid: not found (" + e.message + ")"); return null; });
   }
   const dir = path.join(ROOT, "backup", "firestore"); // git-ignored
   fs.mkdirSync(dir, { recursive: true });
@@ -126,11 +139,15 @@ async function main() {
 
   const p = plan(doc);
   report(doc, p);
+  // exactly what --apply writes: the two documents, field by field (surahs: the corrected list above / the current one)
+  console.log("\n== after --apply ==");
+  console.log("public/data: { " + Object.keys(Object.assign({}, doc, { rev: 0, surahs: 0, updatedAt: 0, by: 0 })).sort().map((k) => k === "rev" ? "rev: " + ((doc.rev || 0) + 1) : k === "surahs" ? "surahs: (corrected, " + p.surahs.length + " surahs)" : k === "updatedAt" ? "updatedAt: (server time)" : k === "by" ? "by: " + JSON.stringify(owner ? owner.uid : "(owner uid)") : k + ": (unchanged)").join(", ") + " }" + (owner ? "   [uid from " + owner.from + "]" : ""));
+  console.log("public/prev: { rev: " + (doc.rev || 0) + ", surahs: (the current public/data surahs), savedAt: (server time) }");
   const logFile = backup.replace(/\.json$/, ".log.json");
   const log = {
     time: new Date().toISOString(), mode: DRY ? "dry-run" : "apply", project: PROJECT,
     target: FROM_JSON ? "file " + FROM_JSON : process.env.FIRESTORE_EMULATOR_HOST ? "emulator " + process.env.FIRESTORE_EMULATOR_HOST : "production",
-    backup: path.relative(ROOT, backup), revBefore: doc.rev == null ? null : doc.rev, revAfter: null,
+    backup: path.relative(ROOT, backup), revBefore: doc.rev == null ? null : doc.rev, revAfter: null, by: owner ? owner.uid : null,
     corrections: p.changes.map((c) => ({ surah: c.no, ayah: c.num, field: c.field, word: c.word, kind: c.encoding ? "encoding" : "text", from: c.from, to: c.to })),
     result: null,
   };
@@ -146,7 +163,7 @@ async function main() {
     const again = plan(cur.data());
     if (JSON.stringify(again.surahs) !== JSON.stringify(p.surahs)) throw new Error("public/data changed since the backup; run again");
     tx.set(db.doc("public/prev"), { rev: cur.data().rev || 0, surahs: cur.data().surahs, savedAt: FieldValue.serverTimestamp() });
-    tx.set(ref, Object.assign({}, cur.data(), { rev: (cur.data().rev || 0) + 1, surahs: p.surahs, updatedAt: FieldValue.serverTimestamp(), by: OWNER }));
+    tx.set(ref, Object.assign({}, cur.data(), { rev: (cur.data().rev || 0) + 1, surahs: p.surahs, updatedAt: FieldValue.serverTimestamp(), by: owner.uid }));
   }).catch((e) => { done("write failed: " + e.message, 1); throw e; });
   log.revAfter = (doc.rev || 0) + 1;
   console.log("\nfix-ayat-firestore: written (rev " + log.revAfter + "); the previous version is in public/prev.");
