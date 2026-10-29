@@ -98,7 +98,7 @@
   function toTuples(days) {
     return (Array.isArray(days) ? days : []).map(function (d) {
       return {
-        d: d && d.d,
+        d: d && (d.d == null ? d.d : Number(d.d)), // the day number is a number (never markup)
         w: (d && Array.isArray(d.w) ? d.w : []).map(refToTuple),
         reel: (d && d.reel) || "",
       };
@@ -108,7 +108,7 @@
   function toObjects(days) {
     return (Array.isArray(days) ? days : []).map(function (d) {
       return {
-        d: d && d.d,
+        d: d && (d.d == null ? d.d : Number(d.d)), // the day number is a number (never markup)
         w: (d && Array.isArray(d.w) ? d.w : []).map(refToObject),
         reel: (d && d.reel) || "",
       };
