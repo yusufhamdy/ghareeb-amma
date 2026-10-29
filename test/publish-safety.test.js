@@ -63,3 +63,22 @@ test("admin: wordErrors and the JSON import use the same ayah label rule", () =>
   const imp = html.slice(html.indexOf('dataset.f!=="imp"'), html.indexOf('dataset.f!=="imp"') + 900);
   assert.ok(/LABEL_RE\.test\(String\(a\.label\)\.trim\(\)\)/.test(imp), "the JSON import checks every label before writing");
 });
+
+test("publish-build: admin text cannot inject markup into a word page's head or close its JSON-LD", async () => {
+  const mod = await load();
+  const s = words();
+  s[0].words[0] = 'x</title><meta http-equiv="refresh" content="0;url=https://example.invalid/">';
+  s[0].meanings[0] = 'm</script><b id="ld">ld</b>"&';
+  const { files } = mod.buildSite(s, challenge());
+  const page = Object.entries(files).find(([k, v]) => k.startsWith("word/") && v.includes("x&lt;/title&gt;"));
+  assert.ok(page, "the crafted word page is generated, with the word escaped in the head");
+  const head = page[1].slice(0, page[1].indexOf("</head>"));
+  assert.ok(!/<meta http-equiv/i.test(head), "no injected meta refresh in the head");
+  assert.strictEqual((head.match(/<title>/g) || []).length, 1, "one title element");
+  for (const ld of head.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g) || []) {
+    const body = ld.slice(ld.indexOf(">") + 1, -"</script>".length);
+    assert.ok(!body.includes("<"), "no raw '<' inside JSON-LD");
+    JSON.parse(body); // still valid JSON
+  }
+  assert.ok(!page[1].includes('<b id="ld">'), "the meaning cannot add elements");
+});

@@ -296,17 +296,18 @@ export function buildRecords(surahs) {
 }
 
 // Shared head for every static page: fonts, the extracted app stylesheet and
-// the synchronous theme bootstrap (applied before first paint).
+// the synchronous theme bootstrap (applied before first paint). Every value is
+// HTML-escaped here (they come from admin-written data); callers pass raw text.
 function staticHead(o) {
   return (
     "<!doctype html>\n" +
     '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n' +
     '<meta name="theme-color" content="#EEF3F6">\n' +
-    "<title>" + o.title + "</title>\n" +
-    '<meta name="description" content="' + o.desc + '">\n' +
-    '<link rel="canonical" href="' + o.canonical + '">\n' +
-    '<meta property="og:type" content="' + (o.type || "website") + '"><meta property="og:title" content="' + o.ogTitle + '"><meta property="og:description" content="' + o.ogDesc + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + o.ogTitle + '"><meta name="twitter:description" content="' + o.ogDesc + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
+    "<title>" + esc(o.title) + "</title>\n" +
+    '<meta name="description" content="' + esc(o.desc) + '">\n' +
+    '<link rel="canonical" href="' + esc(o.canonical) + '">\n' +
+    '<meta property="og:type" content="' + esc(o.type || "website") + '"><meta property="og:title" content="' + esc(o.ogTitle) + '"><meta property="og:description" content="' + esc(o.ogDesc) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(o.ogTitle) + '"><meta name="twitter:description" content="' + esc(o.ogDesc) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     // the Quran face (word and surah pages show Quran text): preloaded, and guarded by qfont.js
@@ -369,9 +370,10 @@ function cutAtWord(s, max) {
   return (i > 0 ? head.slice(0, i) : head).trim();
 }
 
-// JSON-LD for the static pages, ASCII-escaped so the generator stays ASCII-only.
+// JSON-LD for the static pages, ASCII-escaped so the generator stays ASCII-only;
+// "<" is escaped too (<), so no data value can close the <script> element.
 function jsonLd(obj) {
-  return JSON.stringify(obj).replace(/[\u0080-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+  return JSON.stringify(obj).replace(/[<\u0080-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
 }
 
 // A BreadcrumbList from an ordered [{ name, item }] trail.
