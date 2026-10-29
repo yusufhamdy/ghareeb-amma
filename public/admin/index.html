@@ -269,7 +269,7 @@ function tabS(){
  const used=new Set(D.surahs.map(nm)),free=JUZ.filter(n=>!used.has(n));
  return`<div class="g c2"><label class="sm" for="ns">إضافة سورة</label><div class="bar" style="margin-top:8px"><select class="in" id="ns" data-f="ns"${SERR?' aria-invalid="true" aria-describedby="fe-ns"':""}><option value="">اختر من جزء عمّ</option>${free.map(n=>`<option>${esc(n)}</option>`).join("")}<option value="*">سورة أخرى…</option></select><button class="pill btn" data-a="addS">إضافة</button></div>${SERR?`<div class="sm dg ferr" id="fe-ns" role="alert">${esc(SERR)}</div>`:""}</div>
 <div class="sm" style="margin:6px 0 10px">${D.surahs.length} سورة، ${COUNT(D.surahs.reduce((n,e)=>n+e.words.length,0))}</div>
-<div class="g card sl">${rows().map(r=>`<div class="row"><span class="nb">${r.no<999?r.no:"·"}</span><span class="q t" style="font-size:24px">${esc(r.name)}</span><span class="sm cnt">${COUNT(r.e.words.length)}</span><button class="g sm2" data-a="editS" data-v="${r.i}">${IC_PEN}تعديل</button><button class="g sm2 dg" data-a="delS" data-v="${r.i}">${IC_TRASH}حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد سور بعد. يمكنك استيراد البيانات من تبويب «أدوات».</div>'}</div>`;
+<div class="g card sl">${rows().map(r=>`<div class="row"><span class="nb">${r.no<999?esc(r.no):"·"}</span><span class="q t" style="font-size:24px">${esc(r.name)}</span><span class="sm cnt">${COUNT(r.e.words.length)}</span><button class="g sm2" data-a="editS" data-v="${r.i}">${IC_PEN}تعديل</button><button class="g sm2 dg" data-a="delS" data-v="${r.i}">${IC_TRASH}حذف</button></div>`).join("")||'<div class="sm" style="padding:16px">لا توجد سور بعد. يمكنك استيراد البيانات من تبويب «أدوات».</div>'}</div>`;
 }
 function tabW(){
  const q=NM(FQ),list=[];
@@ -336,7 +336,7 @@ function tabA(){
 ${OWN?`<div class="bar" style="margin-top:14px"><input class="in" id="ae" data-f="ae" type="email" dir="ltr" placeholder="email@gmail.com" aria-label="البريد الإلكتروني للمشرف الجديد"${AERR?' aria-invalid="true" aria-describedby="fe-ae"':""}><button class="pill btn" data-a="addA">إضافة مشرف</button></div>${AERR?`<div class="sm dg ferr" id="fe-ae" role="alert">${esc(AERR)}</div>`:""}<div class="sm">يجب أن يكون حساب جوجل ذا بريد إلكتروني مُفعَّل. لا يضيف المشرفين إلا مالك الموقع.</div>`:'<div class="sm" style="margin-top:12px">لا يضيف المشرفين إلا مالك الموقع.</div>'}`;
 }
 function tabT(){
- return`<div class="g c2"><div class="sm">رقم نسخة البيانات الحالية: ${D.rev}</div>
+ return`<div class="g c2"><div class="sm">رقم نسخة البيانات الحالية: ${esc(D.rev)}</div>
 <div class="acts"><button class="g pill" data-a="exp">تصدير ملف الكلمات</button><label class="g pill" style="cursor:pointer" tabindex="0">استيراد من ملف<input type="file" accept=".json" data-f="imp" hidden></label><button class="g pill dg" data-a="undo" data-busy="جارٍ الاستعادة…">تراجع عن آخر تعديل</button></div>
 <div class="sm">يستبدل الاستيراد كل البيانات الحالية، وتُحفظ النسخة السابقة فيمكنك الرجوع إليها بزر «تراجع عن آخر تعديل».</div></div>`;
 }
