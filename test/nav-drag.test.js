@@ -3,7 +3,8 @@
  * nav-drag.test.js - the bottom nav's drag-to-switch follows the finger smoothly whatever the touch cadence.
  *
  * Drives the drag in Chromium with pointer events whose timeStamp is the time the finger was there (as a phone gives
- * them), the finger moving at constant speed, and samples the indicator every frame:
+ * them), the finger moving at constant speed, and samples the indicator every frame. The frames come from a virtual
+ * clock at exactly 60fps (see DRAG), so the result does not depend on how busy the machine is:
  *   - touches every 2nd frame and in irregular bunches: no frame without movement, step-size CV <= 0.1;
  *   - the finger stops: the indicator ends exactly under it (it does not stay ahead);
  *   - the release opens the tab under the real last finger position, even though the indicator is drawn a little
@@ -39,7 +40,16 @@ const DRAG = async ([pattern, speed, stopAt, release]) => {
   const nv = document.getElementById("nv"), ind = nv.querySelector(".ind"), ts = [...nv.querySelectorAll(".t")].map((t) => t.getBoundingClientRect());
   const y = ts[0].top + ts[0].height / 2, x0 = ts[0].left + ts[0].width / 2, x1 = ts[ts.length - 1].left + ts[ts.length - 1].width / 2, dir = Math.sign(x1 - x0);
   const mk = (type, x, t) => { const e = new PointerEvent(type, { pointerId: 7, pointerType: "touch", isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true }); Object.defineProperty(e, "timeStamp", { value: t }); return e; };
-  const raf = () => new Promise((r) => requestAnimationFrame(r));
+  // A virtual frame clock from here on: performance.now() and requestAnimationFrame are replaced, and the test pumps
+  // the frames itself at exactly 60fps. With real frames a busy machine (the full suite in parallel) delays some of
+  // them, the indicator then correctly moves farther on those frames, and the step-size CV measured machine load
+  // instead of the drag. The drag code reads the time only through these two (and the events' timeStamps).
+  let vnow = performance.now(), vid = 0;
+  const vq = new Map();
+  performance.now = () => vnow;
+  window.requestAnimationFrame = (cb) => { vq.set(++vid, cb); return vid; };
+  window.cancelAnimationFrame = (i) => { vq.delete(i); };
+  const raf = async () => { vnow += 1000 / 60; const run = [...vq.values()]; vq.clear(); for (const cb of run) cb(vnow); return vnow; };
   const end = stopAt ? x0 + (x1 - x0) * stopAt : x1;
   let t = await raf();
   nv.dispatchEvent(mk("pointerdown", x0, t));
@@ -64,6 +74,7 @@ const DRAG = async ([pattern, speed, stopAt, release]) => {
   const before = location.hash;
   if (release) nv.dispatchEvent(mk("pointerup", end, performance.now()));
   await raf(); await raf();
+  await new Promise((r) => setTimeout(r, 50)); // the tab's click navigation and hashchange (real tasks)
   return { stalled: steps.filter((v) => v < 0.05).length, steps: steps.length, cv: sd / (mu || 1), maxScale: Math.max(...out.map((o) => o.sx)), holdEnd: hold.length ? hold[hold.length - 1] : null, before, after: location.hash };
 };
 
