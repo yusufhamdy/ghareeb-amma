@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 import parse5 from "parse5";
 
 const require = createRequire(import.meta.url);
-const seo = require("../functions/seo.js");
+const seo = require("../shared/seo.js");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE_COMMIT = "0d491b2"; // K0, the last commit before the K1 rebuild

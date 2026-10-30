@@ -6,7 +6,7 @@
  * bootstrap. These tests prove the generator extracts the app's <style> block
  * into one committed stylesheet, every static page links it plus the synchronous
  * theme bootstrap and nothing else, the word pages were rebuilt to match the app
- * (no source line, "open on the site" button, prev/next), the 28 static surah
+ * (source line, "browse the site" button, prev/next), the 28 static surah
  * pages exist, and the sitemap lists them.
  *
  * K2: SEO titles/descriptions per the spec, diacritics stripped only in the
@@ -27,9 +27,9 @@ const PUBLIC = path.join(ROOT, "public");
 const loadPublish = () => import(pathToFileURL(path.join(ROOT, "scripts", "publish-build.mjs")).href);
 
 // Arabic labels under test (escaped).
-const OPEN_SITE = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639"; // "open on the site"
+const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "browse the site"
 const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"; // "open in the app" (removed)
-const SOURCE = "\u0627\u0644\u0645\u0635\u062f\u0631"; // "the source" (removed line)
+const SOURCE = "\u0627\u0644\u0645\u0635\u062f\u0631"; // "the source" (the word pages' source line)
 const OTHER_WORDS = "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0646\u0641\u0633 \u0627\u0644\u0633\u0648\u0631\u0629"; // "other words from the same surah"
 const LOGO = "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646"; // "Ghareeb Al-Quran"
 const WORD_T_PRE = "\u0645\u0639\u0646\u0649 "; // "meaning of "
@@ -107,7 +107,15 @@ test("K1: every static page links the shared stylesheet and the synchronous them
     // Word pages may add exactly one deferred /word-gap.js; every check below runs on the rest of the page.
     if (p.startsWith("word/")) assert.strictEqual(full.split(WORD_GAP).length - 1, 1, p + " must load /word-gap.js once, deferred");
     else assert.ok(!full.includes("/word-gap.js"), p + " must not load /word-gap.js");
-    const html = p.startsWith("word/") ? full.replace(WORD_GAP, "") : full;
+    // Pages with Quran text (word and surah pages) also load the Quran-face guard once, synchronously in <head>
+    // (KFGQPC, 2026-10-27); the legal pages show no Quran text and do not.
+    const QFONT = '<script src="/qfont.js"></script>';
+    const quranPage = p.startsWith("word/") || p.startsWith("surah/");
+    if (quranPage) {
+      assert.strictEqual(full.split(QFONT).length - 1, 1, p + " must load /qfont.js once");
+      assert.ok(full.indexOf(QFONT) < full.indexOf("</head>"), p + " /qfont.js must be in <head>");
+    } else assert.ok(!full.includes("/qfont.js"), p + " must not load /qfont.js");
+    const html = (p.startsWith("word/") ? full.replace(WORD_GAP, "") : full).replace(quranPage ? QFONT : "\u0000", "");
     assert.ok(html.includes('<link rel="stylesheet" href="/css/app.css">'), p + " must link the shared stylesheet");
     assert.ok(html.includes('<script src="/theme-boot.js"></script>'), p + " must include the theme bootstrap");
     assert.ok(html.indexOf('<script src="/theme-boot.js"></script>') < html.indexOf("</head>"), p + " theme bootstrap must be in <head>");
@@ -128,7 +136,7 @@ test("K1: the theme bootstrap applies the saved gq-set record before first paint
   assert.ok(isAscii(boot), "theme bootstrap stays ASCII-only");
 });
 
-test("K1: word pages are rebuilt like the app (no source line, open-on-site, prev/next, others card)", () => {
+test("K1: word pages are rebuilt like the app (source line, browse-the-site pill, prev/next, others card)", () => {
   const files = wordFiles();
   assert.strictEqual(files.length, 73, "exactly the 73 canonical word pages");
   for (const f of files) {
@@ -137,7 +145,7 @@ test("K1: word pages are rebuilt like the app (no source line, open-on-site, pre
     assert.ok(html.includes('<link rel="canonical" href="https://ghareebalquran.com/word/' + slug + '.html">'), f + " canonical");
     assert.ok(html.includes(OPEN_SITE), f + " must show the open-on-site button");
     assert.ok(!html.includes(OPEN_APP), f + " must not show the old open-in-app label");
-    assert.ok(!html.includes(SOURCE), f + " must not show the source line");
+    assert.ok(html.includes(SOURCE), f + " must show the source line");
     assert.ok(html.includes('class="g pnb pv"') && html.includes('class="g pnb nx"'), f + " app-style prev/next controls");
     assert.ok(html.includes(OTHER_WORDS), f + " others card heading");
     assert.ok(html.includes('href="/surah/'), f + " links to its static surah page");
@@ -145,8 +153,8 @@ test("K1: word pages are rebuilt like the app (no source line, open-on-site, pre
   }
 });
 
-test("K1: the 28 static surah pages exist with the slug stems from functions/seo.js", () => {
-  const seo = require("../functions/seo.js");
+test("K1: the 28 static surah pages exist with the slug stems from shared/seo.js", () => {
+  const seo = require("../shared/seo.js");
   const slugs = Object.values(seo.SURAH_SLUG);
   assert.strictEqual(slugs.length, 28);
   const files = surahFiles().map((f) => f.replace(/\.html$/, ""));
@@ -162,8 +170,8 @@ test("K1: the 28 static surah pages exist with the slug stems from functions/seo
 });
 
 test("K1: the sitemap lists the home, 73 word pages, 28 surah pages and the legal pages", () => {
-  const seo = require("../functions/seo.js");
-  const legal = require("../functions/legal.js");
+  const seo = require("../shared/seo.js");
+  const legal = require("../shared/legal.js");
   const xml = read("sitemap.xml");
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   assert.strictEqual(locs.length, 1 + 73 + Object.keys(seo.SURAH_SLUG).length + legal.LEGAL.length);
@@ -387,8 +395,9 @@ test("K3: a saved stop-motion choice is used as-is instead of the device default
   try {
     const page = await off.open();
     assert.ok(!(await page.evaluate(() => document.body.classList.contains("cm"))), "no cm class when motion is on");
-    const gear = await page.$eval("#gear", (e) => getComputedStyle(e).transitionDuration);
-    assert.ok(gear.includes("0.5s"), "the gear rotation transition is present when motion is on (got " + gear + ")");
+    // the gear's motion is a one-shot 60-degree turn (an animation on its icon, ~400ms); a press (.gp) plays it
+    const gear = await page.evaluate(() => { const g = document.getElementById("gear"); g.classList.add("gp"); const c = getComputedStyle(g.querySelector("svg")); const r = c.animationName + " " + c.animationDuration; g.classList.remove("gp"); return r; });
+    assert.ok(/^gear-turn-p 0\.4s$/.test(gear), "the gear's one-shot turn is present when motion is on (got " + gear + ")");
   } finally {
     await off.close();
   }

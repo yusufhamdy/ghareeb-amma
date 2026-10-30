@@ -1,113 +1,72 @@
 /*
- * arabic-guard.test.js - Stage A: permanent read-only Arabic-content guard.
+ * arabic-guard.test.js - the Arabic/Quranic content preservation guard (scripts/arabic-baseline.js).
  *
- * Runs under `node --test`. It verifies that protected Arabic/Quranic content
- * on disk still matches the committed baseline fixture, and proves the guard
- * itself detects diacritic changes, canonical-equivalence-only changes, and
- * added Arabic runs.
+ * Compares the committed data, field by field, with the committed baseline fixture. It never skips: a missing
+ * fixture, a missing protected file or a missing git fails the test. The synthetic cases prove the guard notices a
+ * removed diacritic, a canonical-equivalence-only change and an added run, and that reading the data changes
+ * nothing on disk.
  *
- * The guard only reads repository files. Synthetic cases use in-memory strings
- * (constructed from code points so this file stays ASCII-only) and a temp file.
+ * ASCII only (the synthetic strings are built from code points).
  */
 "use strict";
 
 const test = require("node:test");
 const assert = require("node:assert");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 
-const baselineMod = require("../scripts/arabic-baseline.js");
+const B = require("../scripts/arabic-baseline.js");
 
-const { BASELINE_PATH, sha256, extractRuns, diffRuns, compareBaseline } = baselineMod;
+const cpStr = (cps) => cps.map((c) => String.fromCodePoint(c)).join("");
 
-// The guard protects the LOCAL working tree during Phase 5B. A fresh CI checkout
-// contains neither the untracked handoff bundle nor the (untracked) baseline
-// fixture, so the tree-dependent tests skip there instead of failing. They never
-// skip in the full local environment.
-const HANDOFF_WORDS = path.join(baselineMod.ROOT, "ghareeb-handoff", "data", "words.json");
-const PARTIAL_TREE = !(fs.existsSync(BASELINE_PATH) && fs.existsSync(HANDOFF_WORDS));
-const PARTIAL_REASON = PARTIAL_TREE
-  ? "partial checkout: baseline fixture or untracked handoff data absent"
-  : false;
+test("protected Arabic content matches the baseline (never skipped)", () => {
+  assert.ok(fs.existsSync(B.BASELINE_PATH), "the baseline fixture is missing: " + B.BASELINE_PATH);
+  const res = B.compareBaseline(JSON.parse(fs.readFileSync(B.BASELINE_PATH, "utf8")));
+  assert.ok(res.ok, "Arabic preservation baseline mismatch:\n" + JSON.stringify(res, null, 1));
+});
 
-function loadBaseline() {
-  assert.ok(fs.existsSync(BASELINE_PATH), "baseline fixture missing: " + BASELINE_PATH);
-  return JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
-}
+test("the guard covers every field of words.json and challenge.json", () => {
+  const c = B.collect();
+  const words = Object.keys(c.fields["public/words.json"]);
+  for (const k of ["surah", "words", "meanings", "source", "label", "num", "before", "hl", "after"]) {
+    assert.ok(words.some((p) => p.includes("." + k)), "words.json fields include " + k);
+  }
+  assert.ok(Object.keys(c.fields["public/challenge.json"]).length > 30, "challenge.json is covered");
+});
 
-// Build a string from an array of code points (keeps this file ASCII-only).
-function cpStr(cps) {
-  return cps.map((c) => String.fromCodePoint(c)).join("");
-}
-
-test("protected Arabic content matches the baseline", { skip: PARTIAL_REASON }, () => {
-  const baseline = loadBaseline();
-  const res = compareBaseline(baseline);
-  const detail = JSON.stringify(
-    {
-      class1: res.class1,
-      class2Changed: res.class2.changed.map((c) => ({ path: c.path, diffs: c.diffs.length })),
-      class2Missing: res.class2.missing,
-      class2Added: res.class2.added,
-    },
-    null,
-    2
-  );
-  assert.ok(res.ok, "Arabic preservation baseline mismatch:\n" + detail);
+test("a changed field is reported by its path", () => {
+  const W = JSON.parse(fs.readFileSync(path.join(B.ROOT, "public", "words.json"), "utf8"));
+  const a = B.leaves(W, "", {});
+  W[0].ayahs[0].segments[0].hl = W[0].ayahs[0].segments[0].hl.normalize("NFD") + "\u0640";
+  const b = B.leaves(W, "", {});
+  const changed = Object.keys(a).filter((k) => a[k] !== b[k]);
+  assert.deepStrictEqual(changed, ["[0].ayahs[0].segments[0].hl"]);
 });
 
 test("guard detects a removed diacritic mark", () => {
-  const base = cpStr([0x0628, 0x0650, 0x0633, 0x0652, 0x0645, 0x0650]);
-  const mutated = cpStr([0x0628, 0x0650, 0x0633, 0x0652, 0x0645]);
-  const diffs = diffRuns(extractRuns(mutated), extractRuns(base));
-  assert.ok(diffs.length > 0, "expected a diacritic change to be detected");
+  const diffs = B.diffRuns(B.extractRuns(cpStr([0x0628, 0x0650, 0x0633, 0x0652, 0x0645])), B.extractRuns(cpStr([0x0628, 0x0650, 0x0633, 0x0652, 0x0645, 0x0650])));
+  assert.ok(diffs.length > 0);
 });
 
 test("guard detects a canonical-equivalence-only change (no normalization)", () => {
-  const base = cpStr([0x0623]);
-  const canonicalOnly = cpStr([0x0627, 0x0654]);
-  const diffs = diffRuns(extractRuns(canonicalOnly), extractRuns(base));
-  assert.ok(diffs.length > 0, "expected canonical-equivalence change to be detected");
+  assert.ok(B.diffRuns(B.extractRuns(cpStr([0x0627, 0x0654])), B.extractRuns(cpStr([0x0623]))).length > 0);
+  assert.notStrictEqual(B.sha256(Buffer.from(cpStr([0x0627, 0x0654]))), B.sha256(Buffer.from(cpStr([0x0623]))));
 });
 
 test("guard detects an added Arabic run", () => {
   const base = cpStr([0x0633, 0x0648, 0x0631, 0x0629]);
-  const withExtra = cpStr([
-    0x0633, 0x0648, 0x0631, 0x0629,
-    0x0020,
-    0x0627, 0x0644, 0x0646, 0x0627, 0x0633,
-  ]);
-  const diffs = diffRuns(extractRuns(withExtra), extractRuns(base));
-  assert.ok(diffs.length > 0, "expected an added run to be detected");
+  assert.ok(B.diffRuns(B.extractRuns(base + " " + cpStr([0x0627, 0x0644, 0x0646, 0x0627, 0x0633])), B.extractRuns(base)).length > 0);
 });
 
 test("identical Arabic content yields no differences", () => {
   const text = cpStr([0x0633, 0x0648, 0x0631, 0x0629, 0x0020, 0x0627, 0x0644, 0x0646, 0x0627, 0x0633]);
-  const diffs = diffRuns(extractRuns(text), extractRuns(text));
-  assert.strictEqual(diffs.length, 0);
+  assert.strictEqual(B.diffRuns(B.extractRuns(text), B.extractRuns(text)).length, 0);
 });
 
-test("guard run leaves inspected repository files byte-identical", { skip: PARTIAL_REASON }, () => {
-  const samples = ["public/words.json", "public/index.html", "functions/index.js"];
-  const before = samples.map((rel) => {
-    const abs = path.join(baselineMod.ROOT, rel);
-    const st = fs.statSync(abs);
-    return { rel, size: st.size, mtimeMs: st.mtimeMs, sha256: sha256(fs.readFileSync(abs)) };
-  });
-
-  const baseline = loadBaseline();
-  compareBaseline(baseline);
-
-  const after = samples.map((rel) => {
-    const abs = path.join(baselineMod.ROOT, rel);
-    const st = fs.statSync(abs);
-    return { rel, size: st.size, mtimeMs: st.mtimeMs, sha256: sha256(fs.readFileSync(abs)) };
-  });
-
-  for (let i = 0; i < before.length; i++) {
-    assert.strictEqual(after[i].sha256, before[i].sha256, "content changed: " + before[i].rel);
-    assert.strictEqual(after[i].size, before[i].size, "size changed: " + before[i].rel);
-    assert.strictEqual(after[i].mtimeMs, before[i].mtimeMs, "mtime changed: " + before[i].rel);
-  }
+test("guard run leaves inspected repository files byte-identical", () => {
+  const files = B.FIELD_FILES.concat(B.HASH_FILES);
+  const snap = () => files.map((rel) => { const abs = path.join(B.ROOT, rel), st = fs.statSync(abs); return [rel, st.size, st.mtimeMs, B.sha256(fs.readFileSync(abs))].join("|"); });
+  const before = snap();
+  B.compareBaseline(JSON.parse(fs.readFileSync(B.BASELINE_PATH, "utf8")));
+  assert.deepStrictEqual(snap(), before);
 });

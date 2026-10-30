@@ -7,13 +7,14 @@
  *   - the surah+verse pill links to that word's surah and matches the row text
  *   - the card split: card 1 = word + highlighted verse, card 2 = meaning
  *     (>= 20px, "enlarged") + source, and card 2 has no verse
- *   - prev/next: inside a surah -> word links; at a surah boundary -> neighbour
- *     surah links; at the very first/last word -> disabled (aria-disabled,
- *     reduced opacity, still rendered), never hidden
+ *   - prev/next: always word links; at a surah boundary -> the neighbouring
+ *     surah's last/first word, with that surah's name on a second line; at the
+ *     very first/last word -> disabled (aria-disabled, reduced opacity, still
+ *     rendered), never hidden
  *   - RTL chevrons: previous points right, next points left
  *   - the three actions in spec order: other-words link -> draw -> save
- *   - layout: below 801px the nav is a row under the cards; from 801px one
- *     button per side; touch targets >= 44px
+ *   - layout: the nav is a row of two pills under the cards at every width
+ *     (previous on the right, next on the left); touch targets >= 44px
  * It reports the surah count + data order to a UTF-8 JSON file (Arabic names are
  * never printed to the console).
  */
@@ -37,7 +38,7 @@ const AR = {
 const CHEV_RIGHT = "M9 5l7 7-7 7"; // previous (RTL: start side points right)
 const CHEV_LEFT = "M15 5l-7 7 7 7"; // next (RTL: end side points left)
 const GRID_MOBILE = '"c c" "p n"';
-const GRID_DESKTOP = '"p c n"';
+const GRID_DESKTOP = '"c c" "p n"';
 
 function staticServer(root) {
   const types = {
@@ -157,7 +158,7 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
             }),
             pv: pv ? { tag: pv.tagName, href: pv.getAttribute("href"), text: pv.textContent.trim(), ad: pv.getAttribute("aria-disabled"), op: pv.style.opacity, chev: chev(pv), r: rect(pv), vis: pv.offsetWidth > 0 && pv.offsetHeight > 0 } : null,
             nx: nx ? { tag: nx.tagName, href: nx.getAttribute("href"), text: nx.textContent.trim(), ad: nx.getAttribute("aria-disabled"), op: nx.style.opacity, chev: chev(nx), r: rect(nx), vis: nx.offsetWidth > 0 && nx.offsetHeight > 0 } : null,
-            acts: qa("#app .acts.v3 > *").map((a) => ({ tag: a.tagName, href: a.getAttribute("href"), da: a.getAttribute("data-a"), did: a.getAttribute("data-id") })),
+            acts: qa("#app .acts.v3 > *:not(.pr), #app .acts.v3 > .pr > *").map((a) => ({ tag: a.tagName, href: a.getAttribute("href"), da: a.getAttribute("data-a"), did: a.getAttribute("data-id") })),
             colsR: rect(cols),
             grid: getComputedStyle(q("#app .cw")).gridTemplateAreas.replace(/\s+/g, " ").trim(),
           };
@@ -186,14 +187,15 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
           assert.ok(d.pv.chev.indexOf(CHEV_RIGHT) >= 0, "prev chevron points right");
         } else if (prevSurah) {
           assert.equal(d.pv.tag, "A");
-          assert.equal(d.pv.href, "#/surah/" + prevSurah.num, "boundary: prev = neighbouring surah");
-          assert.equal(d.pv.text, AR.prevSurah);
+          const pl = bySurah[prevSurah.num];
+          assert.equal(d.pv.href, "#/word/" + pl[pl.length - 1].id, "boundary: prev = last word of the neighbouring surah");
+          assert.equal(d.pv.text, AR.prevWord + prevSurah.name);
           assert.ok(d.pv.chev.indexOf(CHEV_RIGHT) >= 0);
         } else {
           assert.equal(d.pv.tag, "SPAN", "no previous word -> disabled, never hidden");
           assert.equal(d.pv.ad, "true");
           assert.equal(d.pv.op, "0.5");
-          assert.equal(d.pv.text, AR.prevSurah);
+          assert.equal(d.pv.text, AR.prevWord);
           assert.ok(d.pv.vis && d.pv.r.h >= 44 && d.pv.r.w > 0, "disabled control still visible, >=44px");
         }
 
@@ -206,19 +208,19 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
           assert.ok(d.nx.chev.indexOf(CHEV_LEFT) >= 0, "next chevron points left");
         } else if (nextSurah) {
           assert.equal(d.nx.tag, "A");
-          assert.equal(d.nx.href, "#/surah/" + nextSurah.num, "boundary: next = neighbouring surah");
-          assert.equal(d.nx.text, AR.nextSurah);
+          assert.equal(d.nx.href, "#/word/" + bySurah[nextSurah.num][0].id, "boundary: next = first word of the neighbouring surah");
+          assert.equal(d.nx.text, AR.nextWord + " " + nextSurah.name);
           assert.ok(d.nx.chev.indexOf(CHEV_LEFT) >= 0);
         } else {
           assert.equal(d.nx.tag, "SPAN", "no next word -> disabled, never hidden");
           assert.equal(d.nx.ad, "true");
           assert.equal(d.nx.op, "0.5");
-          assert.equal(d.nx.text, AR.nextSurah);
+          assert.equal(d.nx.text, AR.nextWord);
           assert.ok(d.nx.vis && d.nx.r.h >= 44 && d.nx.r.w > 0, "disabled control still visible, >=44px");
         }
 
-        // three actions in spec order: other-words -> draw -> save
-        assert.equal(d.acts.length, 3, "three action buttons");
+        // four actions in spec order: other-words -> draw -> save -> share (save and share share one row)
+        assert.equal(d.acts.length, 4, "four action buttons");
         assert.equal(d.acts[0].tag, "A");
         assert.equal(d.acts[0].href, "#/surah/" + s.num, "1st = other words from this surah");
         assert.equal(d.acts[1].tag, "BUTTON");
@@ -226,6 +228,8 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
         assert.equal(d.acts[2].tag, "BUTTON");
         assert.equal(d.acts[2].da, "card", "3rd = save as image");
         assert.equal(d.acts[2].did, cur.id);
+        assert.equal(d.acts[3].tag, "BUTTON");
+        assert.equal(d.acts[3].da, "share", "4th = share");
 
         // enabled nav targets are >=44px too
         if (d.pv.tag === "A") assert.ok(d.pv.r.h >= 44, "prev touch target >=44px");
@@ -247,21 +251,22 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
     assert.equal(boundary.first.prevDisabled, true, "very first word has a disabled previous");
     assert.equal(boundary.last.nextDisabled, true, "very last word has a disabled next");
 
-    // ---- desktop layout: one control per side ----
+    // ---- desktop layout: the pill row under the cards ----
     await page.setViewportSize({ width: 1000, height: 900 });
     await nav("#/word/" + boundary.first.id, wordReady, boundary.first.id);
     const desk = await page.evaluate(() => {
       const q = (s) => document.querySelector(s);
-      const R = (el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), right: Math.round(r.right), h: Math.round(r.height) }; };
+      const R = (el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), right: Math.round(r.right), bottom: Math.round(r.bottom), h: Math.round(r.height) }; };
       const cols = q("#app .cw .cols");
       return {
         grid: getComputedStyle(q("#app .cw")).gridTemplateAreas.replace(/\s+/g, " ").trim(),
         pv: R(q("#app .cw .pnb.pv")), nx: R(q("#app .cw .pnb.nx")), cols: R(cols),
       };
     });
-    assert.ok(desk.grid === GRID_DESKTOP, "desktop grid is p|c|n (got " + desk.grid + ")");
-    assert.ok(desk.pv.x >= desk.cols.right - 2, "previous control is on the right side");
-    assert.ok(desk.nx.right <= desk.cols.x + 2, "next control is on the left side");
+    assert.ok(desk.grid === GRID_DESKTOP, "desktop grid is cards over a p|n row (got " + desk.grid + ")");
+    assert.ok(desk.pv.y >= desk.cols.bottom - 2 && desk.nx.y >= desk.cols.bottom - 2, "desktop pills sit below the cards");
+    assert.ok(Math.abs(desk.pv.y - desk.nx.y) < 2, "desktop pills share one row");
+    assert.ok(desk.pv.x >= desk.nx.right, "previous control is on the right side, next on the left");
     assert.ok(desk.pv.h >= 44 && desk.nx.h >= 44, "desktop nav targets >=44px");
 
     // ---- report ----

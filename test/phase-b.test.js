@@ -89,7 +89,7 @@ test("B1: mark is a bounded inline-block box, no underline, no overlap", { timeo
         borderBottom: cm.borderBottomWidth,
         deco: cm.textDecorationLine,
         radius: parseFloat(cm.borderTopLeftRadius),
-        bg: cm.backgroundColor,
+        bg: getComputedStyle(mk, "::before").backgroundColor, // the highlight is drawn by ::before
         color: cm.color,
         mH: mk.getBoundingClientRect().height,
         lineH: parseFloat(ca.lineHeight),
@@ -296,10 +296,9 @@ test("B6: action buttons carry icons and forward arrows sit last", { timeout: 12
     assert.ok((await btn('#app a.btn[href^="#/surah/"]')).svg, "other-words button has the book icon");
 
     await page.evaluate(() => { location.hash = "#/day/1"; });
-    await page.waitForSelector('#app a[href="#/day/2"]', { timeout: 20000 });
-    const fwd = await btn('#app a[href="#/day/2"]');
-    assert.equal(fwd.last, "svg", "forward arrow is the last child of the button");
-    assert.ok((fwd.d || "").includes("M19 12H5"), "forward arrow points left");
+    await page.waitForSelector("#app .cw.dnav .nx", { timeout: 20000 });
+    const fwd = await page.$eval("#app .cw.dnav .nx", (e) => (e.querySelector(":scope>svg path") || {}).getAttribute("d"));
+    assert.ok((fwd || "").includes("M15 5l-7 7 7 7"), "the next pill's chevron points left");
   } finally { await env.close(); }
 });
 

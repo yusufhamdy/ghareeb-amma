@@ -330,9 +330,9 @@ test("I2: the real settings controls still change the theme (mouse and keyboard)
 
     await page.click('#sh [data-st="glass"]');
     await page.waitForSelector("#gs", { timeout: 5000 });
-    await page.evaluate(() => { const g = document.getElementById("gs"); g.value = "5"; g.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.evaluate(() => { const g = document.getElementById("gs"); g.value = "100"; g.dispatchEvent(new Event("input", { bubbles: true })); g.dispatchEvent(new Event("change", { bubbles: true })); });
     s = await page.evaluate(() => JSON.parse(localStorage.getItem("gq-set")));
-    assert.equal(s.gl, 5, "the glass strength persists");
+    assert.equal(s.gl, 100, "the glass strength persists (saved on release)");
 
     await page.click("#sh [data-c]");
     s = await page.evaluate(() => JSON.parse(localStorage.getItem("gq-set")));

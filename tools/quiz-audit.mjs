@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const QCORE = require(path.join(ROOT, 'public', 'quiz-core.js'));
-const seo = require(path.join(ROOT, 'functions', 'seo.js'));
+const seo = require(path.join(ROOT, 'shared', 'seo.js'));
 const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'words.json'), 'utf8'));
 
 const DRAWS = 500;

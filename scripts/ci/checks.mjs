@@ -4,7 +4,7 @@
  *
  * Runs without network and without the emulator. Covers the static checks the
  * CI job needs:
- *   1. no Google Fonts references in public/ or functions/
+ *   1. no Google Fonts references in public/ or shared/
  *   2. legacy redirects: data/redirects.json <-> firebase.json hosting.redirects
  *      (counts, 301 type, correct targets, target files exist)
  *   3. sitemap.xml word pages <-> public/word/*.html (exact set match)
@@ -46,7 +46,7 @@ const TEXT_EXT = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.json', '.css
 // ---------------------------------------------------------------- 1) fonts
 function checkNoGoogleFonts() {
   const hits = [];
-  for (const root of ['public', 'functions']) {
+  for (const root of ['public', 'shared']) {
     const abs = path.join(ROOT, root);
     if (!fs.existsSync(abs)) continue;
     const files = [];
@@ -57,7 +57,7 @@ function checkNoGoogleFonts() {
     }
   }
   if (hits.length) failures.push('google-fonts: references found in ' + hits.join(', '));
-  else ok.push('google-fonts: 0 references in public/ and functions/');
+  else ok.push('google-fonts: 0 references in public/ and shared/');
 }
 
 // ------------------------------------------------------------ 2) redirects

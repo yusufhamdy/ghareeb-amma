@@ -1,12 +1,12 @@
 /*
- * seo.test.js - canonical SEO verification for the `seo` Cloud Function.
+ * seo.test.js - canonical SEO verification for the static site.
  *
  * The 73 static word pages, public/sitemap.xml and data/redirects.json are the
  * source of truth for the canonical English URL scheme:
  *
  *     /word/<surah-slug>-<ayah>[-<n>].html
  *
- * These tests prove that functions/seo.js (used by the deployed `seo` function)
+ * These tests prove that shared/seo.js (used by scripts/publish-build.mjs)
  * reproduces exactly that scheme, and check the static sitemap, canonical tags,
  * internal word links and 404 lookup. All Arabic/Qur'anic data is read-only and
  * this file is intentionally ASCII-only (see test/arabic-guard.test.js).
@@ -19,8 +19,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ROOT = path.join(__dirname, "..");
-const seo = require("../functions/seo");
-const legal = require("../functions/legal");
+const seo = require("../shared/seo");
+const legal = require("../shared/legal");
 
 const wordsData = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8"));
 const redirects = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "redirects.json"), "utf8"));

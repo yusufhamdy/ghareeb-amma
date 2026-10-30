@@ -94,7 +94,7 @@ test("STEP 5: save-as-image previews, story default, PNG sizes", { timeout: 1800
           sc: o.dataset.sc,
           on: o.classList.contains("on"),
           pressed: o.getAttribute("aria-pressed"),
-          label: (o.querySelector("span") || {}).textContent || "",
+          label: (o.querySelector(":scope > span") || {}).textContent || "", // the option's own label, not a span inside its preview
           st: !!o.querySelector(".art.st"),
           rg: !!o.querySelector(".art.rg"),
         })),

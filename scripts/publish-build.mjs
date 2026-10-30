@@ -22,7 +22,7 @@
  * Output (written only under --out; never over the committed public/ tree):
  *   words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
  *   plus the static legal pages about/index.html, privacy/index.html,
- *   terms/index.html, rights/index.html (copy verbatim from functions/legal.js).
+ *   terms/index.html, rights/index.html (copy verbatim from shared/legal.js).
  *
  * Safety: the whole site is built in memory, validated, and only then written.
  * It aborts with a non-zero exit and no output on empty data, fewer than 73
@@ -30,8 +30,8 @@
  *
  * ASCII-ONLY: every Arabic fragment is a \u escape (see
  * test/arabic-guard.test.js, which treats literal Arabic in new files as
- * protected content). The canonical slug scheme comes from functions/seo.js and
- * the public challenge payload from functions/challenge.js, so both stay single
+ * protected content). The canonical slug scheme comes from shared/seo.js and
+ * the public challenge payload from shared/challenge.js, so both stay single
  * sources of truth. The rendered HTML mirrors the committed static pages
  * byte-for-byte (the older committed format, which is the one Google indexed).
  */
@@ -42,9 +42,11 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const seo = require("../functions/seo.js");
-const challenge = require("../functions/challenge.js");
-const { LEGAL } = require("../functions/legal.js");
+const seo = require("../shared/seo.js");
+const challenge = require("../shared/challenge.js");
+const { LEGAL } = require("../shared/legal.js");
+// How Quran text is shown (shared with the app): the headword in the mushaf's spelling, the highlight on whole words.
+const QText = require("../public/qtext.js");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -60,11 +62,13 @@ const A = {
   AYAH: "\u0622\u064a\u0629 ", // "ayah "
   COMMA: "\u060c ", // U+060C ARABIC COMMA, then a space
   OTHER: "\u0643\u0644\u0645\u0627\u062a \u0623\u062e\u0631\u0649 \u0645\u0646 \u0633\u0648\u0631\u0629 ", // "other words from surah "
-  APP: "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639", // "open on the site"
+  APP: "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639", // "browse the site"
   PREV_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous word"
   PREV_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629", // "previous surah"
   NEXT_WORD: "\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next word"
   NEXT_SURAH: "\u0627\u0644\u0633\u0648\u0631\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629", // "next surah"
+  FROM_SURAH: "\u060c \u0645\u0646 \u0633\u0648\u0631\u0629 ", // ", from surah " (accessible name of a cross-surah prev/next)
+  COMMA: "\u060c ", // ", " (accessible name of the surah-page prev/next)
   ALL_SURAS: "\u0643\u0644 \u0627\u0644\u0633\u0648\u0631", // "all surahs"
   ONE_WORD: "\u0643\u0644\u0645\u0629 \u0648\u0627\u062d\u062f\u0629", // "one word"
   TWO_WORDS: "\u0643\u0644\u0645\u062a\u0627\u0646", // "two words"
@@ -127,12 +131,14 @@ const SURAH_NO = {
 // from public/index.html at build time by appCss() below and committed as
 // public/css/app.css.
 const LEGACY_CSS =
-  ":root{--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
+  ":root{--bg:#EEF3F6;--tx:#1D2B25;--mu:#55645D;--ac:#0B6E8A;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
   "@media(prefers-color-scheme:dark){:root{--bg:#0A0E1F;--tx:#ECEFFA;--mu:#A3ABC9;--ac:#9FB4FF;--ln:rgba(255,255,255,.13);--gb:rgba(255,255,255,.07)}}\n" +
   "*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.8}\n" +
-  "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'Amiri Quran',serif}\n" +
+  "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}.aq{font-family:'Amiri Quran',serif}.sn{font-family:'Amiri',serif;font-weight:700}\n" +
   ".m{color:var(--mu);font-size:14px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}\n" +
   ".logo{font-size:27px}h1{font-size:44px;margin:8px 0;color:var(--ac);line-height:1.5}\n" +
+  // room for Amiri Quran's descenders under the heading: (ascent 1.815em + descent 0.634em - line-height) / 2 (see index.html, N2)
+  "h1.aq{padding-bottom:calc((1.815em + .634em - 1.5em) / 2)}\n" +
   ".card{background:var(--gb);border:1px solid var(--ln);border-radius:18px;padding:16px;margin:12px 0}\n" +
   ".pill{display:inline-flex;align-items:center;gap:8px;background:var(--gb);border:1px solid var(--ln);border-radius:999px;padding:9px 16px;font-size:15px}\n" +
   ".cols{display:grid;gap:12px}@media(min-width:800px){.cols{grid-template-columns:1fr 1fr;align-items:start}}\n" +
@@ -162,6 +168,11 @@ const STATIC_CSS_TAIL =
   // The more specific .cols .card rule above still wins for the word/meaning
   // cards, so the app's look is untouched.
   ".card{display:flex;flex-direction:column;gap:14px}\n" +
+  // The chips' shadow (10px + 30px blur = 40px) ends before the translucent
+  // "all words" button below them; the card's own gap is 14px.
+  ".chips+.acts{margin-top:26px}\n" +
+  // S8: in glass dark the chips sit on two glass layers; mixing the accent toward the text colour keeps them >= 4.5:1
+  ":root.dk:not(.shade) .chip{color:color-mix(in srgb,var(--ac) 35%,var(--tx))}\n" +
   // P1 Tier 4: the legal pages' home link is a small text link, so it gets the
   // same subtle hover colour and light (opacity-only) press as the app's links.
   ":is(.legal>a.b,.para a){transition:color .2s,opacity .15s}\n" +
@@ -196,9 +207,8 @@ function strippedMeaning(word, raw) {
 
 function renderAyah(ayah) {
   const segs = ayah && Array.isArray(ayah.segments) ? ayah.segments : [];
-  return segs
-    .map((sg) => A.OL + esc(sg.before) + "<mark>" + esc(sg.hl) + "</mark>" + esc(sg.after) + A.OR)
-    .join(" ");
+  // the mark covers whole written words and the parentheses stay with their words, like the app (qtext.js)
+  return QText.ayahHtml({ segments: segs }, esc);
 }
 
 // Flatten the raw surah list into one record per word, in canonical order.
@@ -219,8 +229,9 @@ export function buildRecords(surahs) {
         i,
         label,
         labelNum: Number(String(label).split("-")[0]) || i + 1,
-        slug: slugs[si++], // slugs are assigned in data order (see functions/seo.js)
+        slug: slugs[si++], // slugs are assigned in data order (see shared/seo.js)
         word: words[i],
+        dw: QText.displayWord(a) || words[i],
         raw: meanings[i] || "",
         ayah: a,
       });
@@ -236,6 +247,7 @@ export function buildRecords(surahs) {
         surahShort: short,
         source: e.source,
         word: it.word,
+        dw: it.dw,
         rawMeaning: it.raw,
         meaning: strippedMeaning(it.word, it.raw),
         label: it.label,
@@ -245,20 +257,23 @@ export function buildRecords(surahs) {
         idx,
         ayah: it.ayah,
         others: sorted
-          .map((o, j) => ({ word: o.word, slug: o.slug, j }))
+          .map((o, j) => ({ word: o.word, dw: o.dw, slug: o.slug, j }))
           .filter((o) => o.j !== idx)
-          .map((o) => ({ word: o.word, slug: o.slug })),
+          .map((o) => ({ word: o.word, dw: o.dw, slug: o.slug })),
         prev: idx > 0 ? { word: sorted[idx - 1].word, slug: sorted[idx - 1].slug } : null,
         next: sorted[idx + 1] ? { word: sorted[idx + 1].word, slug: sorted[idx + 1].slug } : null,
       });
     });
   });
   // Surah-level links for the static surah pages (prev/next surah + the surah
-  // slug shared with the word pages). Order follows the data order.
+  // slug shared with the word pages). Prev/next follow the app's order: surah number.
   const seqOrder = [];
   records.forEach((r) => {
     if (!seqOrder.includes(r.surahSeq)) seqOrder.push(r.surahSeq);
   });
+  const noOf = (seq) => records.find((x) => x.surahSeq === seq).no;
+  const nameOf = (seq) => records.find((x) => x.surahSeq === seq).surahShort;
+  seqOrder.sort((a, b) => noOf(a) - noOf(b));
   records.forEach((r) => {
     const i = seqOrder.indexOf(r.surahSeq);
     const slugOf = (seq) => {
@@ -266,38 +281,68 @@ export function buildRecords(surahs) {
       return seo.SURAH_SLUG[first.surahShort] || "surah-" + first.no;
     };
     r.surahSlug = slugOf(r.surahSeq);
-    r.surahPrev = i > 0 ? { no: records.find((x) => x.surahSeq === seqOrder[i - 1]).no, slug: slugOf(seqOrder[i - 1]) } : null;
-    r.surahNext = i < seqOrder.length - 1 ? { no: records.find((x) => x.surahSeq === seqOrder[i + 1]).no, slug: slugOf(seqOrder[i + 1]) } : null;
+    r.surahPrev = i > 0 ? { no: noOf(seqOrder[i - 1]), slug: slugOf(seqOrder[i - 1]), name: nameOf(seqOrder[i - 1]) } : null;
+    r.surahNext = i < seqOrder.length - 1 ? { no: noOf(seqOrder[i + 1]), slug: slugOf(seqOrder[i + 1]), name: nameOf(seqOrder[i + 1]) } : null;
+  });
+  // Word-page prev/next always lead to a word, in the app's order (surah number,
+  // then the sorted order above); crossing into another surah carries its name.
+  const flat = records.slice().sort((x, y) => x.no - y.no || x.idx - y.idx);
+  flat.forEach((r, k) => {
+    const p = flat[k - 1], n = flat[k + 1];
+    r.wordPrev = p ? { slug: p.slug, surah: p.no !== r.no ? p.surahShort : "" } : null;
+    r.wordNext = n ? { slug: n.slug, surah: n.no !== r.no ? n.surahShort : "" } : null;
   });
   return records;
 }
 
 // Shared head for every static page: fonts, the extracted app stylesheet and
-// the synchronous theme bootstrap (applied before first paint).
+// the synchronous theme bootstrap (applied before first paint). Every value is
+// HTML-escaped here (they come from admin-written data); callers pass raw text.
 function staticHead(o) {
   return (
     "<!doctype html>\n" +
     '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n' +
-    '<meta name="theme-color" content="#F2F0E8">\n' +
-    "<title>" + o.title + "</title>\n" +
-    '<meta name="description" content="' + o.desc + '">\n' +
-    '<link rel="canonical" href="' + o.canonical + '">\n' +
-    '<meta property="og:type" content="' + (o.type || "website") + '"><meta property="og:title" content="' + o.ogTitle + '"><meta property="og:description" content="' + o.ogDesc + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + o.ogTitle + '"><meta name="twitter:description" content="' + o.ogDesc + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
+    '<meta name="theme-color" content="#EEF3F6">\n' +
+    "<title>" + esc(o.title) + "</title>\n" +
+    '<meta name="description" content="' + esc(o.desc) + '">\n' +
+    '<link rel="canonical" href="' + esc(o.canonical) + '">\n' +
+    '<meta property="og:type" content="' + esc(o.type || "website") + '"><meta property="og:title" content="' + esc(o.ogTitle) + '"><meta property="og:description" content="' + esc(o.ogDesc) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(o.ogTitle) + '"><meta name="twitter:description" content="' + esc(o.ogDesc) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
-    '<script src="/theme-boot.js"></script>\n' +
+    // the Quran face (word and surah pages show Quran text): preloaded, and guarded by qfont.js
+    '<link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>\n' +
+    '<script src="/theme-boot.js"></script>\n<script src="/qfont.js"></script>\n' +
     (o.jsonLd || []).map((j) => '<script type="application/ld+json">' + jsonLd(j) + "</script>\n").join("") +
     "</head>\n"
   );
 }
 
-const CHEV_R = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
-const CHEV_L = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+const CHEV_R = '<svg class="i-cv i-cr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+const CHEV_L = '<svg class="i-cv i-cl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+// list rows keep a plain chevron: they are rows, not buttons, and do not nudge
+const ROW_CHEV = CHEV_L.replace(' class="i-cv i-cl"', "");
 const EXT =
-  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
+  '<svg class="im i-ex" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></svg>';
+// The open book, split into its halves so they open on hover/focus/press wherever it sits in a button (S12).
 const BOOK =
-  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+  '<svg class="im i-bk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/><path class="pt bl" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path class="pt br" d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+
+// The small book in a pill's second line stays still (only the pill's chevron moves).
+const BOOK_P = BOOK.replace(' class="im i-bk"', "").replace(/<path class="pt[^>]*>/g, "").replace(' class="w"', "");
+
+// The prev/next pill shared by the word and surah pages (same markup as the
+// app's pnBtn): o = { label, href, surah, aria }; no href -> disabled. The
+// surah line (open book + name) shows whenever o.surah is set.
+function navBtn(o, dir) {
+  const ps = o.surah ? '<span class="ps" aria-hidden="true">' + BOOK_P + esc(o.surah) + "</span>" : "";
+  const lb = o.label.replace(/^(\S+) /, '<span class="pl">$1 </span>'); // first word hidden visually at <=340px
+  const inner = dir === "pv" ? CHEV_R + " " + lb + ps : lb + " " + CHEV_L + ps;
+  const al = o.aria ? ' aria-label="' + esc(o.aria) + '"' : "";
+  return o.href
+    ? '<a class="g pnb ' + dir + '" href="' + o.href + '"' + al + ">" + inner + "</a>"
+    : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
+}
 
 // The app's existing count phrasing ("كلمة واحدة" / "كلمتان" / "n كلمات" /
 // "n كلمة"), escaped for this ASCII-only module.
@@ -325,9 +370,10 @@ function cutAtWord(s, max) {
   return (i > 0 ? head.slice(0, i) : head).trim();
 }
 
-// JSON-LD for the static pages, ASCII-escaped so the generator stays ASCII-only.
+// JSON-LD for the static pages, ASCII-escaped so the generator stays ASCII-only;
+// "<" is escaped too (<), so no data value can close the <script> element.
 function jsonLd(obj) {
-  return JSON.stringify(obj).replace(/[\u0080-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+  return JSON.stringify(obj).replace(/[<\u0080-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
 }
 
 // A BreadcrumbList from an ordered [{ name, item }] trail.
@@ -357,7 +403,7 @@ export function buildSurahs(records) {
       s = { seq: r.surahSeq, no: r.no, slug: r.surahSlug, name: r.surahShort, prev: r.surahPrev, next: r.surahNext, words: [] };
       out.push(s);
     }
-    s.words.push({ word: r.word, slug: r.slug, label: r.label });
+    s.words.push({ word: r.word, dw: r.dw, slug: r.slug, label: r.label });
   });
   return out;
 }
@@ -388,24 +434,12 @@ export function renderWordPage(r) {
   const ayah = renderAyah(r.ayah);
   const surahHref = "/surah/" + r.surahSlug + ".html";
   const appHref = "/#/word/" + r.no + "-" + r.idx;
-  const pv = r.prev
-    ? { label: A.PREV_WORD, href: "/word/" + r.prev.slug + ".html" }
-    : r.surahPrev
-      ? { label: A.PREV_SURAH, href: "/surah/" + r.surahPrev.slug + ".html" }
-      : { label: A.PREV_SURAH, href: null };
-  const nx = r.next
-    ? { label: A.NEXT_WORD, href: "/word/" + r.next.slug + ".html" }
-    : r.surahNext
-      ? { label: A.NEXT_SURAH, href: "/surah/" + r.surahNext.slug + ".html" }
-      : { label: A.NEXT_SURAH, href: null };
-  const navBtn = (o, dir) => {
-    const inner = (dir === "pv" ? CHEV_R + " " : "") + o.label + (dir === "nx" ? " " + CHEV_L : "");
-    return o.href
-      ? '<a class="g pnb ' + dir + '" href="' + o.href + '">' + inner + "</a>"
-      : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
-  };
+  const link = (w, label) =>
+    w ? { label, href: "/word/" + w.slug + ".html", surah: w.surah, aria: w.surah ? label + A.FROM_SURAH + w.surah : "" } : { label, href: null };
+  const pv = link(r.wordPrev, A.PREV_WORD);
+  const nx = link(r.wordNext, A.NEXT_WORD);
   const chips = r.others
-    .map((o) => '<a class="g chip q" href="/word/' + o.slug + '.html">' + esc(o.word) + "</a>")
+    .map((o) => '<a class="g chip q" href="/word/' + o.slug + '.html">' + esc(o.dw) + "</a>")
     .join("");
   const others =
     '<div class="g card"><h2>' + A.OTHER_SAME + "</h2>" +
@@ -415,14 +449,14 @@ export function renderWordPage(r) {
   return (
     staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
-    '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
+    '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<a class="pill" href="/surah/' + r.surahSlug + '.html">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + CHEV_L + "</a>\n" +
     '<div class="cw">' + navBtn(pv, "pv") +
     '<div class="cols">' +
-    '<div class="g card"><h1 class="wd q">' + esc(r.word) + '</h1><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
-    '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + "</div></div>" +
+    '<div class="g card"><h1 class="wd q">' + esc(r.dw) + '</h1><div class="vr"><div class="ay q">' + ayah + "</div></div></div>" +
+    '<div class="g card"><div class="m">' + A.MEANING + '</div><div class="mn">' + esc(r.meaning) + '</div><div class="m">' + esc(r.source || "") + "</div></div>" +
     "</div>" + navBtn(nx, "nx") + "</div>\n" +
     others +
     "</main>" +
@@ -444,31 +478,29 @@ export function renderSurahPage(s) {
     ]),
   ];
   const sbtn = (o, dir) => {
-    const inner = dir === "pv" ? CHEV_R + " " + A.PREV_SURAH : A.NEXT_SURAH + " " + CHEV_L;
-    return o
-      ? '<a class="g pnb ' + dir + '" href="/surah/' + o.slug + '.html">' + inner + "</a>"
-      : '<span class="g pnb ' + dir + '" aria-disabled="true" style="opacity:.5;pointer-events:none">' + inner + "</span>";
+    const label = dir === "pv" ? A.PREV_SURAH : A.NEXT_SURAH;
+    return navBtn(o ? { label, href: "/surah/" + o.slug + ".html", surah: o.name, aria: label + A.COMMA + o.name } : { label, href: null }, dir);
   };
   const rows = s.words
     .map(
       (w) =>
         '<a class="row" href="/word/' + w.slug + '.html">' +
-        '<span class="q w" style="flex:1;font-size:25px">' + esc(w.word) + "</span>" +
-        '<span class="m">' + A.AYAH + esc(w.label) + "</span>" + CHEV_L + "</a>"
+        '<span class="q w" style="flex:1;font-size:25px">' + esc(w.dw) + "</span>" +
+        '<span class="m">' + A.AYAH + esc(w.label) + "</span>" + ROW_CHEV + "</a>"
     )
     .join("");
   const year = new Date().getFullYear();
   return (
     staticHead({ title, desc, canonical: SITE + "/surah/" + s.slug + ".html", ogTitle: title, ogDesc: desc, type: "website", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
-    '<header><a class="logo q" href="/">' + A.LOGO + "</a>" +
+    '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<div class="shd"><h1 class="q">' + esc(s.name) + '</h1><div class="sub">' + count + "</div>" +
-    '<div class="cw snav">' + sbtn(s.prev, "pv") +
+    '<div class="cw snav">' +
     '<div class="list g rs">' + rows + "</div>" +
-    sbtn(s.next, "nx") + "</div></div>\n" +
-    '<div class="acts"><a class="btn o g" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
+    sbtn(s.prev, "pv") + sbtn(s.next, "nx") + "</div></div>\n" +
+    '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     "</div></body></html>"
@@ -476,7 +508,7 @@ export function renderSurahPage(s) {
 }
 
 // Static legal pages: /about, /privacy, /terms, /rights. Text is verbatim from
-// functions/legal.js (never retyped here). Same bare sheet as the word pages.
+// shared/legal.js (never retyped here). Same bare sheet as the word pages.
 export function renderLegalPage(entry) {
   const title = esc(entry.title) + " | " + A.LOGO;
   // The contact email becomes a mailto link; the paragraph text itself is unchanged.
@@ -493,8 +525,8 @@ export function renderLegalPage(entry) {
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     "<style>" + LEGACY_CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style>\n" +
     '<script src="/theme-boot.js"></script></head>\n' +
-    '<body><main class="legal"><a href="/" class="q" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
-    '<h1 class="q" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
+    '<body><main class="legal"><a href="/" class="sn" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
+    '<h1 class="aq" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
     paras + "\n" +
     '<a class="b" href="/">' + A.HOME + "</a>\n" +
     "</main></body></html>"
@@ -545,6 +577,9 @@ export function validateInput(surahs) {
   }
 }
 
+// The ayah label format: an ayah number or a range. Also enforced in the admin (wordErrors and the JSON import).
+export const AYAH_LABEL_RE = /^[0-9]+(-[0-9]+)?$/;
+
 function validateRecords(records) {
   const problems = [];
   records.forEach((r, i) => {
@@ -552,6 +587,8 @@ function validateRecords(records) {
     if (!r.meaning) problems.push("word#" + i + ": empty meaning");
     if (!r.slug) problems.push("word#" + i + ": empty slug");
     if (!r.label) problems.push("word#" + i + ": empty label");
+    // an ayah label is the ayah number or a range ("3" or "3-4"): it becomes part of the word page's file name and URL
+    else if (!AYAH_LABEL_RE.test(r.label)) problems.push("word#" + i + ": ayah label is not a number or a range (" + JSON.stringify(r.label) + ")");
     if (!r.no) problems.push("word#" + i + ": unknown surah number");
     const segs = r.ayah && Array.isArray(r.ayah.segments) ? r.ayah.segments : [];
     if (!segs.length) problems.push("word#" + i + ": no ayah segments");
@@ -559,6 +596,38 @@ function validateRecords(records) {
   if (problems.length) {
     throw new Error("refusing to publish; invalid words:\n" + problems.join("\n"));
   }
+}
+
+// Per-platform video links: reelIg / reelTt / reelYt, each https on its platform's host. The public challenge carries
+// a link only when it is set and valid; every other field of a day (private notes included) stays out, exactly as
+// sanitizePublicChallenge decides. The old single "reel" link is kept as it is until release.
+export const REEL_LINKS = [
+  ["reelIg", ["instagram.com", "www.instagram.com"]],
+  ["reelTt", ["tiktok.com", "www.tiktok.com", "vm.tiktok.com"]],
+  ["reelYt", ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"]],
+];
+export function reelLinkOk(url, hosts) {
+  try {
+    const u = new URL(String(url));
+    return u.protocol === "https:" && hosts.includes(u.hostname.toLowerCase());
+  } catch (e) {
+    return false;
+  }
+}
+export function publicChallenge(state) {
+  const out = challenge.sanitizePublicChallenge(state);
+  const src = state && Array.isArray(state.days) ? state.days : [];
+  out.days.forEach((day, i) => {
+    const s = src[i] || {};
+    // a word reference keeps only its surah number and word, in the shape it came in: no other field can reach the file
+    day.w = day.w.map((r) => (Array.isArray(r) ? [r[0], r[1]] : { no: r && r.no, word: r && r.word }));
+    for (const [key, hosts] of REEL_LINKS) {
+      if (typeof s[key] !== "string" || !s[key]) continue;
+      if (!reelLinkOk(s[key], hosts)) throw new Error("refusing to publish; day " + day.d + " has an invalid " + key + ": " + s[key]);
+      day[key] = s[key];
+    }
+  });
+  return out;
 }
 
 // Build the whole site in memory. Returns { files, hash, wordCount }.
@@ -569,7 +638,7 @@ export function buildSite(surahs, challengeState) {
   const surahList = buildSurahs(records);
   const files = {};
   files["words.json"] = JSON.stringify(surahs, null, 2);
-  files["challenge.json"] = JSON.stringify(challenge.sanitizePublicChallenge(challengeState), null, 1);
+  files["challenge.json"] = JSON.stringify(publicChallenge(challengeState), null, 1);
   files["sitemap.xml"] = buildSitemap(records, surahList);
   files["css/app.css"] = appCss();
   for (const r of records) files["word/" + r.slug + ".html"] = renderWordPage(r);
@@ -581,7 +650,9 @@ export function buildSite(surahs, challengeState) {
 export function writeSite(outDir, files, meta) {
   const out = path.resolve(outDir);
   for (const [name, content] of Object.entries(files)) {
-    const p = path.join(out, name);
+    const p = path.resolve(out, name);
+    // every generated file stays inside the output folder (a name with ".." or an absolute path is refused)
+    if (!p.startsWith(out + path.sep)) throw new Error("refusing to write outside " + out + ": " + JSON.stringify(name));
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, content, "utf8");
   }

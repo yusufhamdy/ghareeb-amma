@@ -109,9 +109,9 @@ test("F1: desktop gear is inset outside the content column and unchanged on mobi
 });
 
 // ---------------------------------------------------------------------------
-// F2: word-page previous/next share one structure (icon above text on desktop)
+// F2: word-page previous/next share one structure (pills, icon beside the text)
 // ---------------------------------------------------------------------------
-test("F2: prev/next stack icon above text on desktop and share a height", { timeout: 120000 }, async (t) => {
+test("F2: prev/next are pills with the icon beside the text on desktop and share a height", { timeout: 120000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
   try {
@@ -134,20 +134,23 @@ test("F2: prev/next stack icon above text on desktop and share a height", { time
       for (const k of ["pv", "nx"]) {
         const e = el("#app .cw .pnb." + k);
         const s = svgR(e), tx = textR(e);
+        const er = e.getBoundingClientRect();
         out[k] = {
-          h: e.getBoundingClientRect().height,
+          h: er.height,
+          pill: parseFloat(getComputedStyle(e).borderTopLeftRadius) >= er.height / 2 - 0.5,
           flex: getComputedStyle(e).flexDirection,
           svg: s, text: tx,
-          iconAbove: !!(s && tx) && s.bottom <= tx.top + 2,
+          // beside: the chevron overlaps the text vertically and sits on its own side of it
+          iconBeside: !!(s && tx) && s.top < tx.bottom && s.bottom > tx.top &&
+            (k === "pv" ? s.left >= tx.right - 2 : s.right <= tx.left + 2),
           d: d(e),
         };
       }
       return out;
     });
-    assert.ok(r.pv.iconAbove, "previous icon sits above its text");
-    assert.ok(r.nx.iconAbove, "next icon sits above its text");
-    assert.equal(r.pv.flex, "column", "previous stacks in a column");
-    assert.equal(r.nx.flex, "column-reverse", "next stacks in a reversed column (same look)");
+    assert.ok(r.pv.iconBeside, "previous icon sits beside its text, on the right");
+    assert.ok(r.nx.iconBeside, "next icon sits beside its text, on the left");
+    assert.ok(r.pv.pill && r.nx.pill, "both controls are fully rounded pills");
     assert.ok(Math.abs(r.pv.h - r.nx.h) < 0.5, "both controls share a height (" + r.pv.h + " vs " + r.nx.h + ")");
     assert.ok(r.pv.h >= 44 && r.nx.h >= 44, "controls keep a >=44px touch target");
     assert.ok(r.pv.d.indexOf("M9 5l7 7") >= 0, "previous chevron points right");

@@ -5,7 +5,7 @@
  * The private notes live in data/challenge-notes-private.json, which is
  * gitignored and must never be committed, deployed, or served. This test:
  *   1. confirms the private file is git-ignored and not tracked by git;
- *   2. scans public/ and functions/ for any private note text;
+ *   2. scans public/ and shared/ for any private note text;
  *   3. confirms the public API shape drops notes for non-admins.
  *
  * If the private file is absent (e.g. on CI), the content scan is skipped but
@@ -56,7 +56,7 @@ test('private notes file is git-ignored and not tracked', () => {
   assert.strictEqual(tracked, '', 'the private notes file must not be tracked by git');
 });
 
-test('no private note text appears under public/ or functions/', (t) => {
+test('no private note text appears under public/ or shared/', (t) => {
   if (!fs.existsSync(PRIVATE)) {
     t.skip('private notes file is not present locally');
     return;
@@ -80,7 +80,7 @@ test('no private note text appears under public/ or functions/', (t) => {
 
   const files = [];
   walk(path.join(ROOT, 'public'), files);
-  walk(path.join(ROOT, 'functions'), files);
+  walk(path.join(ROOT, 'shared'), files);
 
   const offenders = [];
   files.forEach((f) => {
@@ -98,8 +98,9 @@ test('no private note text appears under public/ or functions/', (t) => {
   assert.deepStrictEqual(offenders, [], 'private note content leaked: ' + JSON.stringify(offenders));
 });
 
-test('public challenge payload never carries notes', () => {
-  const A = require('../functions/admin-challenge');
+test('public challenge payload never carries notes', async () => {
+  // the builder that writes the published challenge.json (scripts/publish-build.mjs)
+  const A = await import('../scripts/publish-build.mjs');
   const shaped = A.publicChallenge({
     startDate: null,
     releasedUpTo: null,

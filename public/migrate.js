@@ -33,7 +33,7 @@
 
   function buildChallenge(challenge) {
     var days = (challenge && challenge.days ? challenge.days : []).map(function (d) {
-      return {
+      var day = {
         d: Number(d.d),
         w: (d.w || []).map(function (r) {
           if (Array.isArray(r)) return [Number(r[0]), r[1]];
@@ -41,6 +41,11 @@
         }),
         reel: d.reel || '',
       };
+      // the per-platform video links the admin saves (only when set; the app checks each link's host)
+      ['reelIg', 'reelTt', 'reelYt'].forEach(function (k) {
+        if (typeof d[k] === 'string' && d[k]) day[k] = d[k];
+      });
+      return day;
     });
     return {
       startDate: challenge ? (challenge.startDate == null ? null : challenge.startDate) : null,

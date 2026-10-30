@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>غريب القرآن - معاني كلمات جزء عم</title>
 <meta name="description" content="غريب القرآن: معاني كلمات جزء عم (غريب عم) حسب السورة، مع الآية والمعنى.">
-<meta name="theme-color" content="#F2F0E8">
+<meta name="theme-color" content="#EEF3F6">
 <meta property="og:type" content="website">
 <meta property="og:title" content="غريب القرآن - معاني كلمات جزء عم">
 <meta property="og:description" content="غريب القرآن: معاني كلمات جزء عم (غريب عم) حسب السورة، مع الآية والمعنى.">
@@ -20,16 +20,19 @@
 <meta name="twitter:image" content="https://ghareebalquran.com/og.png">
 <link rel="canonical" href="https://ghareebalquran.com/">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646","url":"https://ghareebalquran.com/","inLanguage":"ar"}</script>
-<link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/firebase-config.js"></script><script src="/migrate.js"></script><script src="/quiz-core.js"></script><script src="/word-gap.js" defer></script>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/firebase-config.js"></script><script src="/migrate.js"></script><script src="/quiz-core.js"></script><script src="/qtext.js"></script><script src="/word-gap.js" defer></script>
 <link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>
+<script src="/qfont.js"></script>
 <style>
-:root{--bad:color-mix(in srgb,#E53935 50%,var(--tx));--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--b1:#8FCBAE;--b2:#EBC98A;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px}
+:root{--bad:color-mix(in srgb,#E53935 50%,var(--tx));--bg:#EEF3F6;--tx:#1D2B25;--mu:#55645D;--ac:#0B6E8A;--b1:#72CFF0;--b2:#8FE6DA;--gb:rgba(255,255,255,.5);--gbr:rgba(255,255,255,.85);--ln:rgba(29,43,37,.12);--btf:#fff;--bl:22px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.7;min-height:100vh}
 a{color:inherit;text-decoration:none}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.q{font-family:'Amiri Quran',serif}
+.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}
+.aq{font-family:'Amiri Quran',serif}.sn{font-family:'Amiri',serif;font-weight:700}
 .m{font-size:13px;color:var(--mu)}
 #bg i{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
 #bg i:nth-child(1){top:-90px;right:-70px;width:320px;height:320px;background:var(--b1);opacity:.8;animation:dr 26s ease-in-out infinite alternate}
@@ -45,7 +48,7 @@ button,input{font:inherit;color:inherit}
 }
 .g{background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));-webkit-backdrop-filter:blur(var(--bl)) saturate(var(--sat,160%));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 30px rgba(0,0,0,.15)}
 @media(prefers-reduced-transparency:reduce){.g{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}}
-.wrap{position:relative;max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 150px;display:flex;flex-direction:column;gap:18px}.wrap>main{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;min-width:0}
+.wrap{position:relative;max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 20px 150px;display:flex;flex-direction:column;gap:18px}.wrap>main,.wrap>.hm{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;min-width:0}
 header{display:flex;justify-content:space-between;align-items:center}
 .logo{font-size:28px;color:var(--ac)}
 .ib{width:44px;height:44px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;color:var(--ac);cursor:pointer}
@@ -53,7 +56,7 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .sub{font-size:15px;color:var(--mu)}
 .card{border-radius:24px;padding:22px}
 .sb{display:flex;align-items:center;gap:10px;padding:0 18px;height:54px;border-radius:27px}
-.sb input{flex:1;border:0;background:transparent;font-size:17px;outline:none;min-width:0}
+.sb input{flex:1;border:0;background:transparent;font-size:17px;outline:none;min-width:0;-webkit-appearance:none;appearance:none}.sb input::-webkit-search-cancel-button,.sb input::-webkit-search-decoration{-webkit-appearance:none;display:none}
 .sb input::placeholder{color:color-mix(in srgb,var(--mu) 55%,var(--tx));opacity:1}
 .btn{height:46px;padding:0 22px;border:0;border-radius:23px;background:var(--ac);color:var(--btf);font-size:15px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .btn.o{background:var(--gb);border:1px solid var(--gbr);color:var(--tx);cursor:pointer}
@@ -67,13 +70,18 @@ h1{margin:0;font-size:clamp(26px,5vw,34px);font-weight:600;line-height:1.3}
 .row+.row{border-top:1px solid var(--ln)}
 .row .w{font-size:26px;color:var(--ac);min-width:96px;max-width:46%;line-height:1.5}
 .row .t{flex:1;min-width:0}
-.row .t div:first-child{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row .t div:first-child{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-inline:.15em;margin-inline:-.15em}
 .bd{width:38px;height:38px;border-radius:50%;border:1px solid var(--ac);color:var(--ac);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;flex:none}
 .wd{font-size:clamp(44px,9vw,64px);line-height:1.5;color:var(--ac)}
-h1.wd{font-weight:400}
+h1.wd{font-weight:400;text-wrap:balance}
 .shade h1.wd{font-size:clamp(44px,9vw,64px);line-height:1.5}
 .ay{font-size:clamp(22px,4vw,28px);line-height:2.1}
-mark{display:inline-block;line-height:1.6;padding:.08em .32em .14em;border-radius:10px;background:color-mix(in srgb,var(--ac) 20%,transparent);color:inherit;text-decoration:none;-webkit-box-decoration-break:slice;box-decoration-break:slice}
+mark{display:inline-block;line-height:1.6;padding:.08em .32em .14em;border-radius:10px;background:none;color:inherit;text-decoration:none;position:relative;isolation:isolate}
+/* an ornate parenthesis stays on the line of its first/last word or mark (qtext.js ayahHtml); a long mark still wraps inside */
+.nb{white-space:nowrap}.nb mark{white-space:normal}
+/* the highlight is the mark's ::before: word-gap.js sizes it to the text's real ink plus an equal 0.12em on every side;
+   without that measurement it covers the mark's padding box */
+mark::before{content:"";position:absolute;z-index:-1;top:var(--hl-t,0);left:var(--hl-l,0);width:var(--hl-w,100%);height:var(--hl-h,100%);border-radius:10px;background:color-mix(in srgb,var(--ac) 20%,transparent)}
 .cols{display:grid;gap:16px}
 @media(min-width:800px){.cols{grid-template-columns:1fr 1fr}.wrap{max-width:900px}}
 nav{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 40px));height:64px;border-radius:32px;display:flex;justify-content:space-around;align-items:center;z-index:5}
@@ -81,6 +89,50 @@ nav a{min-height:44px;padding:0 14px;display:flex;align-items:center;border-radi
 nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 #sh{position:fixed;inset:0;z-index:10;display:none;background:rgba(0,0,0,.25)}
 #sh.open{display:block}
+/* settings: no dark overlay (the page stays visible and its colours true); an outside tap still closes the sheet */
+#sh:has(.psw){background:none}
+#sh .p:has(.psw){gap:12px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 16px 48px rgba(0,0,0,.28),0 0 0 1px var(--ln)}
+@media(max-width:600px){#sh .p:has(.psw){left:8px;right:8px;bottom:8px;border-radius:26px;gap:10px;padding-top:12px}#sh .grp .m{margin-bottom:5px}#sh .shn{margin-top:3px}}
+#sh .sht{display:flex;justify-content:space-between;align-items:center}#sh .sht b{font-size:18px}#sh .sht .btn{height:44px;color:var(--ac)}
+#sh .grp .m{margin-bottom:6px}
+#sh .p:has(.psw) .seg button{height:44px}
+/* palettes: all five in one row from 320px; the circle is the palette's gradient (the same in light and dark), the bar
+   under its name its real accent in the current mode; the selected one gets a ring in the accent, 3px off the circle */
+.psw{display:flex;gap:6px}
+.psw button{flex:1 1 0;min-width:0;min-height:44px;padding:5px 0 2px;border:0;border-radius:14px;background:none;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--mu)}
+.psw i{width:48px;height:48px;border-radius:50%;display:block;flex:none}
+.psw .on i{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ac)}.psw .on span{color:var(--tx);font-weight:600}
+.psw .pbar{display:block;width:14px;height:3px;border-radius:2px}.psw .on .pbar{width:24px}
+/* glass strength: the slider's pill is real glass over the palette's glows; during a drag only the sheet's own glass follows it (gsScoped) */
+#sh .gsw{padding-top:10px}
+/* the glass strength expands and collapses under النمط (height and opacity, ~200ms); hidden and inert when collapsed */
+#sh .gsx{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s linear .2s}
+#sh .gsx.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .2s ease,opacity .2s ease,visibility 0s}
+#sh .gsi{overflow:hidden;min-height:0}
+/* the row clips only while it opens or closes; at rest (open) the pill's glass, rim and shadow are drawn in full */
+#sh .gsx.open.rest .gsi{overflow:visible}
+/* segmented controls: one selected background that slides between options (the bottom nav's duration, a smooth ease-out
+   without overshoot, so it never runs past the option it lands on); its own class, its geometry from its own padding/gap */
+.seg.segi{position:relative;display:flex;--sp:4px;--sgp:4px;padding:var(--sp);gap:var(--sgp)}
+.seg.segi .si{position:absolute;top:var(--sp);bottom:var(--sp);right:var(--sp);width:calc((100% - 2 * var(--sp) - (var(--n) - 1) * var(--sgp)) / var(--n));border-radius:18px;background:var(--ac);transform:translateX(calc(var(--k,0) * (-100% - var(--sgp))));transition:transform .45s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.seg.segi button{position:relative;z-index:1}.seg.segi button.on{background:none}
+.cm .seg.segi .si,.cm #sh .gsx{transition:none!important}
+#sh .shn{font-size:12px;margin-top:4px}
+#sh .shd{border:0;height:1px;background:var(--ln);margin:2px 0}
+#sh .rst{align-self:center;min-height:44px;padding:0 10px;border:0;background:none;color:var(--mu);font-family:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* with the settings sheet open, toasts show at the top so they never cover its controls */
+body:has(#sh.open .psw) .toast{top:calc(16px + env(safe-area-inset-top,0px));bottom:auto}
+.toast .tub{min-height:36px;padding:0 6px;border:0;background:none;color:var(--ac);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+#sh .tgs{display:flex;justify-content:space-between;gap:8px}#sh .tgs .tg{width:auto;justify-content:flex-start;gap:10px;white-space:nowrap}
+/* S1/L5: the bottom nav covers max(20px, safe area) + 64px of the viewport: focused or scrolled-to elements stop above it,
+   and the page always ends with the footer clear of it. Desktop (>=1025px) puts the nav at the top. */
+@media(max-width:1024px){.gq{scroll-padding-bottom:calc(max(20px,env(safe-area-inset-bottom)) + 64px)}#app{padding-bottom:max(150px,calc(max(20px,env(safe-area-inset-bottom)) + 112px))}}
+/* S11: short landscape phone screens: the bottom nav turns compact (icons only, names stay for screen readers) */
+@media(max-height:500px) and (orientation:landscape) and (max-width:1024px){nav.g{height:40px;bottom:max(6px,env(safe-area-inset-bottom))}nav.g .ind{top:4px;bottom:4px}nav.g .t svg{width:20px;height:20px}nav.g .t span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.gq{scroll-padding-bottom:calc(max(6px,env(safe-area-inset-bottom)) + 40px)}}
+/* S2/S3: programmatic focus targets (page heading, sheet panel) never paint a ring */
+h1[tabindex="-1"]:focus,#sh .p:focus{outline:none}
+/* M2: two equal buttons share one row in the word/surah action rows */
+.acts.v3 .pr{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:0 0 auto}.acts.v3 .pr .btn{min-width:0}.acts.v3 .pr.pf{flex:1 1 100%}@media(max-width:600px){.acts.v3 .pr{flex:1 1 100%}}
 #sh .p{position:absolute;left:12px;right:12px;bottom:12px;max-width:520px;margin:0 auto;border-radius:32px;padding:20px 22px;display:flex;flex-direction:column;gap:18px;max-height:calc(100% - 24px);overflow:auto;background:var(--bg)}
 .seg{display:flex;border-radius:22px;padding:4px;gap:4px}
 .seg button{flex:1;height:38px;border:0;border-radius:18px;background:none;cursor:pointer;font-size:14px}
@@ -105,18 +157,21 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 .gs input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--ln)}
 .gs input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ac);border:2px solid var(--bg);margin-top:-9px}
 .gs input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--ac);border:2px solid var(--bg)}
-.gs input[type=range]:focus-visible{outline:2px solid var(--ac);outline-offset:4px;border-radius:12px}
+/* keyboard focus: the site's ring (2px accent, 2px off) around the thumb only; the thumb's own 2px border is the gap */
+.gs input[type=range]:focus-visible{outline:none}
+.gs input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--ac)}
+.gs input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px var(--ac)}
 .gs .lbl{font-size:14px;color:var(--mu);min-width:38px;text-align:center}
 .sw{display:flex;flex-wrap:wrap;gap:14px 6px;justify-content:space-between}
 .sw button{background:none;border:0;padding:0;width:62px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--mu)}
 .sw i{width:48px;height:48px;border-radius:50%;display:block}
 .sw .on i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ac)}
-.tg{display:flex;justify-content:space-between;align-items:center;font-size:15px}
-.tg button{width:48px;height:28px;border-radius:14px;border:0;background:var(--ln);position:relative;cursor:pointer}
-.tg button:after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--tx);transition:transform .2s}
-.tg button.on{background:var(--ac)}
-.tg button.on:after{transform:translateX(-20px);background:var(--btf)}
-.sh-def-d{--p0:url(assets/tiles/def-day-1.webp);--p1:url(assets/tiles/def-day-2.webp);--p2:url(assets/tiles/def-day-3.webp);--p3:url(assets/tiles/def-day-4.webp);--p4:url(assets/tiles/def-day-5.webp);--p5:url(assets/tiles/def-day-6.webp);}.sh-def-n{--p0:url(assets/tiles/def-night-1.webp);--p1:url(assets/tiles/def-night-2.webp);--p2:url(assets/tiles/def-night-3.webp);--p3:url(assets/tiles/def-night-4.webp);--p4:url(assets/tiles/def-night-5.webp);--p5:url(assets/tiles/def-night-6.webp);}.sh-lav-d{--p0:url(assets/tiles/lav-day-1.webp);--p1:url(assets/tiles/lav-day-2.webp);--p2:url(assets/tiles/lav-day-3.webp);--p3:url(assets/tiles/lav-day-4.webp);--p4:url(assets/tiles/lav-day-5.webp);--p5:url(assets/tiles/lav-day-6.webp);}.sh-lav-n{--p0:url(assets/tiles/lav-night-1.webp);--p1:url(assets/tiles/lav-night-2.webp);--p2:url(assets/tiles/lav-night-3.webp);--p3:url(assets/tiles/lav-night-4.webp);--p4:url(assets/tiles/lav-night-5.webp);--p5:url(assets/tiles/lav-night-6.webp);}.sh-sun-d{--p0:url(assets/tiles/sun-day-1.webp);--p1:url(assets/tiles/sun-day-2.webp);--p2:url(assets/tiles/sun-day-3.webp);--p3:url(assets/tiles/sun-day-4.webp);--p4:url(assets/tiles/sun-day-5.webp);--p5:url(assets/tiles/sun-day-6.webp);}.sh-sun-n{--p0:url(assets/tiles/sun-night-1.webp);--p1:url(assets/tiles/sun-night-2.webp);--p2:url(assets/tiles/sun-night-3.webp);--p3:url(assets/tiles/sun-night-4.webp);--p4:url(assets/tiles/sun-night-5.webp);--p5:url(assets/tiles/sun-night-6.webp);}.sh-neo-d{--p0:url(assets/tiles/neo-day-1.webp);--p1:url(assets/tiles/neo-day-2.webp);--p2:url(assets/tiles/neo-day-3.webp);--p3:url(assets/tiles/neo-day-4.webp);--p4:url(assets/tiles/neo-day-5.webp);--p5:url(assets/tiles/neo-day-6.webp);}.sh-neo-n{--p0:url(assets/tiles/neo-night-1.webp);--p1:url(assets/tiles/neo-night-2.webp);--p2:url(assets/tiles/neo-night-3.webp);--p3:url(assets/tiles/neo-night-4.webp);--p4:url(assets/tiles/neo-night-5.webp);--p5:url(assets/tiles/neo-night-6.webp);}.sh-min-d{--p0:url(assets/tiles/min-day-1.webp);--p1:url(assets/tiles/min-day-2.webp);--p2:url(assets/tiles/min-day-3.webp);--p3:url(assets/tiles/min-day-4.webp);--p4:url(assets/tiles/min-day-5.webp);--p5:url(assets/tiles/min-day-6.webp);}.sh-min-n{--p0:url(assets/tiles/min-night-1.webp);--p1:url(assets/tiles/min-night-2.webp);--p2:url(assets/tiles/min-night-3.webp);--p3:url(assets/tiles/min-night-4.webp);--p4:url(assets/tiles/min-night-5.webp);--p5:url(assets/tiles/min-night-6.webp);}
+.tg{display:flex;justify-content:space-between;align-items:center;font-size:15px;width:100%;min-height:44px;padding:0 4px;border:0;border-radius:14px;background:none;color:var(--tx);font-family:inherit;cursor:pointer;text-align:start}
+.tg i{width:48px;height:28px;border-radius:14px;background:var(--ln);position:relative;flex:none}
+.tg i:after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:var(--tx);transition:transform .2s}
+.tg.on i{background:var(--ac)}
+.tg.on i:after{transform:translateX(-20px);background:var(--btf)}
+.sh-def-d{--p0:url(assets/tiles/def-day-1.webp);--p1:url(assets/tiles/def-day-2.webp);--p2:url(assets/tiles/def-day-3.webp);--p3:url(assets/tiles/def-day-4.webp);--p4:url(assets/tiles/def-day-5.webp);--p5:url(assets/tiles/def-day-6.webp);}.sh-def-n{--p0:url(assets/tiles/grn-night-1.webp);--p1:url(assets/tiles/grn-night-2.webp);--p2:url(assets/tiles/grn-night-3.webp);--p3:url(assets/tiles/grn-night-4.webp);--p4:url(assets/tiles/grn-night-5.webp);--p5:url(assets/tiles/grn-night-6.webp);}.sh-lav-d{--p0:url(assets/tiles/lav-day-1.webp);--p1:url(assets/tiles/lav-day-2.webp);--p2:url(assets/tiles/lav-day-3.webp);--p3:url(assets/tiles/lav-day-4.webp);--p4:url(assets/tiles/lav-day-5.webp);--p5:url(assets/tiles/lav-day-6.webp);}.sh-lav-n{--p0:url(assets/tiles/lav-night-1.webp);--p1:url(assets/tiles/lav-night-2.webp);--p2:url(assets/tiles/lav-night-3.webp);--p3:url(assets/tiles/lav-night-4.webp);--p4:url(assets/tiles/lav-night-5.webp);--p5:url(assets/tiles/lav-night-6.webp);}.sh-sun-d{--p0:url(assets/tiles/sun-day-1.webp);--p1:url(assets/tiles/sun-day-2.webp);--p2:url(assets/tiles/sun-day-3.webp);--p3:url(assets/tiles/sun-day-4.webp);--p4:url(assets/tiles/sun-day-5.webp);--p5:url(assets/tiles/sun-day-6.webp);}.sh-sun-n{--p0:url(assets/tiles/sun-night-1.webp);--p1:url(assets/tiles/sun-night-2.webp);--p2:url(assets/tiles/sun-night-3.webp);--p3:url(assets/tiles/sun-night-4.webp);--p4:url(assets/tiles/sun-night-5.webp);--p5:url(assets/tiles/sun-night-6.webp);}.sh-neo-d{--p0:url(assets/tiles/neo-day-1.webp);--p1:url(assets/tiles/neo-day-2.webp);--p2:url(assets/tiles/neo-day-3.webp);--p3:url(assets/tiles/neo-day-4.webp);--p4:url(assets/tiles/neo-day-5.webp);--p5:url(assets/tiles/neo-day-6.webp);}.sh-neo-n{--p0:url(assets/tiles/neo-night-1.webp);--p1:url(assets/tiles/neo-night-2.webp);--p2:url(assets/tiles/neo-night-3.webp);--p3:url(assets/tiles/neo-night-4.webp);--p4:url(assets/tiles/neo-night-5.webp);--p5:url(assets/tiles/neo-night-6.webp);}.sh-gold-d{--p0:url(assets/tiles/gold-day-1.webp);--p1:url(assets/tiles/gold-day-2.webp);--p2:url(assets/tiles/gold-day-3.webp);--p3:url(assets/tiles/gold-day-4.webp);--p4:url(assets/tiles/gold-day-5.webp);--p5:url(assets/tiles/gold-day-6.webp);}.sh-gold-n{--p0:url(assets/tiles/gold-night-1.webp);--p1:url(assets/tiles/gold-night-2.webp);--p2:url(assets/tiles/gold-night-3.webp);--p3:url(assets/tiles/gold-night-4.webp);--p4:url(assets/tiles/gold-night-5.webp);--p5:url(assets/tiles/gold-night-6.webp);}
 .dy{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
 .dy.ok{background:var(--ac);color:var(--btf);border-color:var(--ac)}
 .dy.cur{border:2px solid var(--ac);color:var(--ac);box-shadow:0 0 18px var(--ac)}
@@ -128,8 +183,15 @@ nav a.on{background:var(--ac);color:var(--btf);font-weight:500}
 .ld{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .4s}.ld.gone{opacity:0;pointer-events:none}.ld .logo{font-size:44px}.lb{width:120px;height:3px;background:var(--ln);border-radius:2px;overflow:hidden}.lb i{display:block;height:100%;width:40%;background:var(--ac);animation:ldm 1.1s ease-in-out infinite}@keyframes ldm{from{transform:translateX(120%)}to{transform:translateX(-260%)}}
 nav.g{display:grid;grid-template-columns:repeat(4,1fr);padding:6px;transition:transform .35s cubic-bezier(.3,.8,.3,1)}nav.g.hide{transform:translateX(-50%) translateY(120px)}
 nav.g .ind{position:absolute;top:6px;bottom:6px;right:6px;width:calc((100% - 12px)/4);border-radius:26px;background:var(--ac);transform:translateX(calc(var(--i,0)*-100%));transition:transform .45s cubic-bezier(.34,1.4,.64,1)}nav.g.none .ind{opacity:0}
+/* during the drag-to-switch the indicator has its own compositing layer, so the nav and its glass are not repainted
+   every frame while it moves; at rest nothing changes (scripts/checks/nav-identity.js) */
+nav.g.drag .ind{will-change:transform}
 nav.g{touch-action:pan-y pinch-zoom}nav.g.drag .ind{transition:none;opacity:1}nav.g.drag .t:active{transform:none}nav.g.drag .t.on:not(.pv){color:inherit}nav.g.drag .t.pv{color:var(--btf)}.shade nav.g.drag .t.pv{color:var(--bg)}
-nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18);animation:pop .4s}@keyframes pop{40%{transform:scale(1.2)}}
+nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0;min-height:0;font-size:11px;border-radius:26px;transition:transform .15s,color .25s}nav.g .t.on{background:none;color:var(--btf)}nav.g .t:active{transform:scale(.9)}nav.g .t.on svg{stroke-width:2.3;fill:rgba(255,255,255,.18)}/* nav icon motions, once when the tab becomes active; only the named part moves (transform only) */
+nav.g .t svg :is(.nvh,.nvl,.nvr,.nvo,.nvq){transform-box:view-box}nav.g .t .nvl{transform-origin:11px 19px}nav.g .t .nvr{transform-origin:13px 19px}nav.g .t .nvo{transform-origin:12px 12px}nav.g .t .nvq{transform-origin:12px 13px}
+@keyframes nv-hop{35%{transform:translateY(-3px)}70%{transform:translateY(.4px)}}@keyframes nv-open-l{50%{transform:rotate(-8deg)}}@keyframes nv-open-r{50%{transform:rotate(8deg)}}@keyframes nv-orbit{to{transform:rotate(360deg)}}@keyframes nv-wig{20%{transform:rotate(-10deg)}45%{transform:rotate(8deg)}70%{transform:rotate(-4deg)}}
+nav.g .t.nvm .nvh{animation:nv-hop .4s ease-out}nav.g .t.nvm .nvl{animation:nv-open-l .45s ease-in-out}nav.g .t.nvm .nvr{animation:nv-open-r .45s ease-in-out}nav.g .t.nvm .nvo{animation:nv-orbit .5s ease-in-out}nav.g .t.nvm .nvq{animation:nv-wig .4s ease-in-out}
+.cm nav.g .t svg *{animation:none!important}@keyframes pop{40%{transform:scale(1.2)}}
 .dt{position:absolute;top:7px;right:calc(50% - 18px);width:10px;height:10px;border-radius:50%;background:#d4553f;border:2px solid var(--bg)}
 .pg>*:not(header){animation:pgin .25s ease-out}.pgs>*:not(header){animation:pgs .3s cubic-bezier(.3,.8,.3,1)}@keyframes pgin{from{transform:translateY(6px)}}@keyframes pgs{from{transform:translateX(-18px)}}
 .lg2 p{margin:0 0 12px;line-height:2}.strip{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:20px;font-size:14px}.strip>span:first-child{flex:1;line-height:1.6}.so{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:22px;font-size:13px;color:var(--ac)}.strip .so{padding:0;width:44px;height:44px;justify-content:center}.strip .so span{display:none}.strip button{width:36px;height:36px;border:0;background:none;font-size:22px;color:var(--mu);cursor:pointer}
@@ -152,8 +214,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 @media(max-width:600px){.acts.v3 .btn{flex:1 1 100%}}
 @media(min-width:801px){.cw{grid-template-columns:auto 1fr auto;grid-template-areas:"p c n";align-items:center}.pnb{flex-direction:column;width:104px;min-height:112px;padding:14px 8px;text-align:center;justify-content:center}}
 .cw.snav>.list{grid-area:c}
-@media(max-width:800px){.cw.snav{grid-template-areas:"p n" "c c"}}
 .shade h1{font-family:'Amiri Quran',serif;font-weight:400;font-size:clamp(34px,7vw,60px);line-height:1.35}
+.shade h1.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}
 .shade .bd,.shade .lg{font-family:'IBM Plex Mono','IBM Plex Sans Arabic',monospace}
 .shade .g,.shade .card,.shade .sb,.shade .strip,.shade .toast,.shade .seg,.shade .list,.shade .ib{background:var(--sf);border:1px solid var(--sbd);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 .shade .card,.shade .list,.shade .strip{border-radius:26px}
@@ -169,12 +231,16 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .sl .row+.row{border-top:0}
 .shade .sl .row:nth-child(6n+2),.shade .dy:nth-child(6n+2){background-image:var(--p1)}.shade .sl .row:nth-child(6n+3),.shade .dy:nth-child(6n+3){background-image:var(--p2)}.shade .sl .row:nth-child(6n+4),.shade .dy:nth-child(6n+4){background-image:var(--p3)}.shade .sl .row:nth-child(6n+5),.shade .dy:nth-child(6n+5){background-image:var(--p4)}.shade .sl .row:nth-child(6n),.shade .dy:nth-child(6n){background-image:var(--p5)}
 .shade .sl .bd{position:static;grid-row:1/3;width:34px;height:34px;border:0;background:var(--bdbg);color:var(--bdc);font-size:12px}
-.shade .sl .q{grid-column:2;text-align:start;font-size:25px;flex:none;line-height:1.5}.shade .sl .m{grid-column:2;text-align:start;font-size:12px}.shade .sl svg{display:none}
+.shade .sl{--slq:25px}.shade .sl .q{grid-column:2;text-align:start;font-size:var(--slq);flex:none;line-height:1.5}.shade .sl .m{grid-column:2;text-align:start;font-size:12px}
+/* N2: the name's descenders (KFGQPC with Amiri Quran's metrics: ascent 1.815em, descent 0.634em) reach
+   (1.815 + 0.634 - 1.5) / 2 of its size below its line box. The count moves down by that much in every tile, without
+   moving anything else (relative offset), so the name keeps its place and every tile looks the same. */
+.shade .sl .m{position:relative;top:calc((1.815 + .634 - 1.5) / 2 * var(--slq))}.shade .sl svg{display:none}
 .shade .dy{width:44px!important;height:44px!important;aspect-ratio:auto;border-radius:12px!important;border:0;color:var(--tx);align-items:center;padding:0;background:var(--sf)!important}
 .shade .dy.ok{background:linear-gradient(180deg,var(--tc),color-mix(in srgb,var(--tc) 40%,var(--sf)))!important}.shade .dy.cur{background:var(--sf)!important;border:2px solid var(--tx);box-shadow:0 0 22px var(--tc)}.shade .dy:not(.ok):not(.cur):not(.lk){filter:saturate(.5) brightness(.8)}.shade .dy.lk{background:var(--sf)!important;filter:none;color:var(--mu)}
 .shade .dy .bg{background:var(--bg);color:var(--ac);border-color:var(--ac)}
 /* R12: shade dark, neon and mint - their bright completed-day tile needs the dark page colour for its number (AA) */
-.sh-neo-n .dy.ok,.sh-min-n .dy.ok{color:color-mix(in srgb,var(--bg) 30%,#000)}
+
 .shade .cg{grid-template-columns:repeat(auto-fill,44px)!important;justify-content:center;gap:12px!important}.shade .opt{border-radius:22px}.shade .opt.ok{background:linear-gradient(180deg,var(--tc),var(--sf));color:var(--tx);border:1px solid var(--tc)}.shade .opt.bad{border-color:var(--bad);color:var(--bad)}
 .shade #sh .p{background:var(--bg)}
 @media(min-width:601px){.shade .list.sl{grid-template-columns:repeat(3,1fr)}}
@@ -194,8 +260,8 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 /* B4: per-theme interaction (hover / press / focus) */
 .btn{gap:8px}.btn svg{flex:none}
 .btn,.opt,.pnb,.chip,a.g,button.g{transition:transform .35s cubic-bezier(.3,1.4,.5,1),box-shadow .3s}
-@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
-:is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:scale(.96)}
+@media(hover:hover){:is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):where(:not([aria-disabled="true"])):hover{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),0 10px 26px color-mix(in srgb,var(--ac) 18%,transparent)}}
+:is(a.g,button.g,.btn,.opt,.pnb,.chip):where(:not([aria-disabled="true"])):active{transform:scale(.96)}
 /* E2: quiz options never move on press, and every option reserves the ok/bad glyph slot from the start */
 .opt:active{transform:none!important}
 .ogi{display:inline-block;width:24px;height:16px;vertical-align:-2px}
@@ -204,20 +270,64 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .so:focus-visible:before,.so:active:before{opacity:1;transform:scale(1.05)}
 @media(hover:hover){.so:hover:before{opacity:1;transform:scale(1.05)}}
 .shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so){transition:transform .25s,border-color .25s,background .25s,box-shadow .25s}
-@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
-.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):active{transform:translateY(1px) scale(.98)}
+@media(hover:hover){.shade :is(a.g,button.g,.btn.o,.opt,.pnb,.chip):not(:disabled):where(:not([aria-disabled="true"])):hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade a.row:hover{border-color:var(--tc);background-color:color-mix(in srgb,var(--tc) 14%,var(--sf));box-shadow:0 10px 24px rgba(0,0,0,.3);transform:translateY(-2px)}}
+.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip):where(:not([aria-disabled="true"])):active{transform:translateY(1px) scale(.98)}
 .shade .so{border-radius:14px}.shade .so:before{inset:0;width:100%;height:100%;border-radius:14px;transform:scale(.7);box-shadow:none;background:color-mix(in srgb,var(--tc) 38%,var(--sf))}
 .shade .so:focus-visible:before,.shade .so:active:before{transform:scale(1)}
 @media(hover:hover){.shade .so:hover:before{transform:scale(1)}}
 /* B5: floating settings gear (above content, below open sheets) */
-#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .2s ease,visibility .2s ease}
-#gear:active,#gear:focus-visible{transform:rotate(60deg)}
-@media(hover:hover){#gear:hover{transform:rotate(60deg)}}
+#gear{position:fixed;top:max(14px,env(safe-area-inset-top));inset-inline-end:16px;z-index:8;transition:opacity .2s ease,visibility .2s ease}
+/* the gear turns once by one tooth (60deg, the icon has 6 teeth, so it ends looking exactly like rest): ~400ms ease-out,
+   no overshoot, never held, never turned back; hover (hover devices), focus-visible, and a press (.gp, also a phone tap) */
+@keyframes gear-turn{from{transform:rotate(0)}to{transform:rotate(60deg)}}@keyframes gear-turn-p{from{transform:rotate(0)}to{transform:rotate(60deg)}}
+#gear svg{transform-origin:50% 50%}
+#gear:focus-visible svg{animation:gear-turn .4s ease-out}
+@media(hover:hover){#gear:hover svg{animation:gear-turn .4s ease-out}}
+#gear.gp svg{animation:gear-turn-p .4s ease-out}
+.cm #gear svg{animation:none!important}
 /* ===== Phase C ===== */
 /* F1: desktop-only gear inset just outside the content column (never over nav/content) */
 @media(min-width:1025px){#gear{inset-inline-end:max(16px,calc((100vw - 1080px)/2 - 56px))}}
 /* F2: prev/next identical structure - icon above text on desktop, same height */
 @media(min-width:801px){.cw .nx{flex-direction:column-reverse}.cw .pnb{height:116px}}
+/* word page prev/next: pills on every width - chevron beside the text, the surah line under the label when crossing
+   surahs (always, on the surah page). Fixed 58px height so the row never jumps; both share the row. One rule set for the
+   word page and the surah page (.snav, where the words list keeps the width it had between the old 104px tiles). */
+.pnb .ps{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;line-height:1.3;color:var(--ac);white-space:nowrap}.pnb .ps svg{width:13px;height:13px;flex:none}
+.cw .pnb{display:grid;grid-template-columns:auto auto;column-gap:12px;align-content:center;align-items:center;justify-content:start;justify-items:start;justify-self:stretch;width:auto;height:58px;min-height:0;padding:0;padding-inline:20px 16px;border-radius:999px;font-size:16px;font-weight:500;line-height:1.35;text-align:start;white-space:nowrap}
+.cw .nx{justify-content:end;justify-items:end;padding-inline:16px 20px}.cw .pnb>svg{width:20px;height:20px}
+.cw .pv:has(>.ps)>svg{grid-row:1/span 2}.cw .nx:has(>.ps)>.ps{grid-row:2;grid-column:1}.cw .nx:has(>.ps)>svg{grid-row:1/span 2;grid-column:2}
+.cw .pnb .pl{display:contents}
+@media(max-width:360px){.cw .pnb{font-size:15px;padding-inline:12px;column-gap:8px}.cw .nx{padding-inline:12px}.pnb .ps{font-size:11.7px}.pnb .ps svg{width:12px;height:12px}}
+@media(max-width:340px){.cw .pnb .pl{font-size:0}}
+@media(min-width:801px){.cw{grid-template-columns:1fr 1fr;grid-template-areas:"c c" "p n";align-items:stretch}.cw .pnb{width:230px}.cw .pv{justify-self:end}.cw .nx{justify-self:start}.cw.snav>.list{width:calc(100% - 236px);justify-self:center}}
+/* chevron nudge: ~3px in its own direction on hover, focus-visible and press, back in 200ms; links only (disabled pills are spans) */
+/* S12: meaningful icon motion, tied to the icon itself: any enabled link or button that contains a motion icon runs
+   that icon's motion, whatever its label. Only the named part moves and the icon at rest is unchanged: the shuffle
+   strands redraw (stroke-dashoffset over pathLength 1) as the arrowheads fade in, the download/share arrow leaves and
+   returns, the book halves open about the spine's foot, a platform icon lifts 2px, the external-link icon moves 2px up and outward. Hover (hover-capable pointers),
+   focus-visible and press each run it once; press (.imp, set by JS) uses a twin keyframe so it replays even while
+   hovered. Disabled controls and motion-off never move. At rest the icon is its original single path (.w); the split
+   parts (.pt) only show while the motion runs, so the icon at rest is pixel-identical to before. */
+svg.im *{transform-box:view-box}svg.im .pt{opacity:0}.i-sh .s{stroke-dasharray:1 2}.i-bk :is(.bl,.br){transform-origin:12px 21px}
+@media(hover:hover){:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-sh .w{animation:i-hide .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-sh .s{animation:i-draw .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-sh .h{animation:i-head .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-dl .w{animation:i-hide .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-dl .st{animation:i-show .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-dl .ar{animation:i-drop .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-sr .w{animation:i-hide .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-sr .st{animation:i-show .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-sr .ar{animation:i-rise .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-bk .w{animation:i-hide .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-bk .bl{animation:i-bl .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-bk .br{animation:i-br .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-pf{animation:i-lift .35s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-ex{animation:i-out .35s ease-out}}
+:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-sh .w{animation:i-hide .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-sh .s{animation:i-draw .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-sh .h{animation:i-head .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-dl .w{animation:i-hide .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-dl .st{animation:i-show .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-dl .ar{animation:i-drop .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-sr .w{animation:i-hide .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-sr .st{animation:i-show .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-sr .ar{animation:i-rise .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-bk .w{animation:i-hide .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-bk .bl{animation:i-bl .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-bk .br{animation:i-br .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-pf{animation:i-lift .35s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]):focus-visible svg.i-ex{animation:i-out .35s ease-out}
+:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-sh .w{animation:i-hide-p .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-sh .s{animation:i-draw-p .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-sh .h{animation:i-head-p .45s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-dl .w{animation:i-hide-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-dl .st{animation:i-show-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-dl .ar{animation:i-drop-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-sr .w{animation:i-hide-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-sr .st{animation:i-show-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-sr .ar{animation:i-rise-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-bk .w{animation:i-hide-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-bk .bl{animation:i-bl-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-bk .br{animation:i-br-p .5s ease-in-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-pf{animation:i-lift-p .35s ease-out}:is(a,button):not(:disabled):not([aria-disabled="true"]).imp svg.i-ex{animation:i-out-p .35s ease-out}
+@keyframes i-hide{from,to{opacity:0}}@keyframes i-hide-p{from,to{opacity:0}}@keyframes i-show{from,to{opacity:1}}@keyframes i-show-p{from,to{opacity:1}}@keyframes i-draw{from{opacity:1;stroke-dashoffset:1}to{opacity:1;stroke-dashoffset:0}}@keyframes i-draw-p{from{opacity:1;stroke-dashoffset:1}to{opacity:1;stroke-dashoffset:0}}@keyframes i-head{0%,55%{opacity:0;transform:translateX(-3px)}to{opacity:1;transform:none}}@keyframes i-head-p{0%,55%{opacity:0;transform:translateX(-3px)}to{opacity:1;transform:none}}@keyframes i-drop{0%{transform:none;opacity:1}45%{transform:translateY(6px);opacity:0}46%{transform:translateY(-7px);opacity:0}to{transform:none;opacity:1}}@keyframes i-drop-p{0%{transform:none;opacity:1}45%{transform:translateY(6px);opacity:0}46%{transform:translateY(-7px);opacity:0}to{transform:none;opacity:1}}@keyframes i-rise{0%{transform:none;opacity:1}45%{transform:translateY(-7px);opacity:0}46%{transform:translateY(5px);opacity:0}to{transform:none;opacity:1}}@keyframes i-rise-p{0%{transform:none;opacity:1}45%{transform:translateY(-7px);opacity:0}46%{transform:translateY(5px);opacity:0}to{transform:none;opacity:1}}@keyframes i-bl{from,to{opacity:1}50%{opacity:1;transform:rotate(-9deg)}}@keyframes i-bl-p{from,to{opacity:1}50%{opacity:1;transform:rotate(-9deg)}}@keyframes i-br{from,to{opacity:1}50%{opacity:1;transform:rotate(9deg)}}@keyframes i-br-p{from,to{opacity:1}50%{opacity:1;transform:rotate(9deg)}}@keyframes i-lift{50%{transform:translateY(-2px)}}@keyframes i-lift-p{50%{transform:translateY(-2px)}}@keyframes i-out{50%{transform:translate(2px,-2px)}}@keyframes i-out-p{50%{transform:translate(2px,-2px)}}
+/* chevrons and forward arrows (.i-cv) nudge 3px the way they point while hovered, focused or pressed; list rows and the
+   day cards' expand chevron are not tagged */
+svg.i-cv{transition:transform .2s ease}
+@media(hover:hover){:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-cr{transform:translateX(3px)}:is(a,button):not(:disabled):not([aria-disabled="true"]):hover svg.i-cl{transform:translateX(-3px)}}
+:is(a,button):not(:disabled):not([aria-disabled="true"]):is(:focus-visible,:active) svg.i-cr{transform:translateX(3px)}:is(a,button):not(:disabled):not([aria-disabled="true"]):is(:focus-visible,:active) svg.i-cl{transform:translateX(-3px)}
+/* locks (.i-lk: the locked next-day pill, the locked day dots) shake once per tap (JS restarts .shk); never on hover.
+   Quiz marks, once when the answer is revealed (.rv): the correct mark draws like the done check, the wrong one shakes */
+button.pnb{font-family:inherit;margin:0}
+svg.i-lk.shk,svg.qx.rv{animation:i-shake .4s ease-in-out}svg.qk.rv path{stroke-dasharray:1;animation:i-draw .4s ease-out}@keyframes i-shake{20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-1.5px)}80%{transform:translateX(1px)}}
+/* Tier 2 (outlined buttons): glass keeps the shared hover shadow and press scale, no opacity press; shade inverts on
+   hover and focus-visible (the surah line follows the text colour) with no size change */
+.cw a.pnb:active{opacity:1}
+@media(hover:hover){.shade .cw a.pnb:not(:disabled):hover{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw a.pnb:not(:disabled):hover .ps{color:inherit}}
+.shade .cw a.pnb:focus-visible{background:var(--tx);color:var(--bg);border-color:var(--tx);box-shadow:0 10px 24px rgba(0,0,0,.3)}.shade .cw a.pnb:focus-visible .ps{color:inherit}
 /* J1: search collapse */
 /* K4b: overflow was permanently hidden on the action rows, clipping the button
    shadow into a straight grey band (the .acts box bottom == button bottom, so a
@@ -283,7 +393,23 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shd{display:flex;flex-direction:column}
 .shd>h1{line-height:1.7}
 .shd>.sub{margin-top:8px}
+/* N2: room for heading descenders. Amiri Quran (and KFGQPC, which takes Amiri Quran's metrics in fonts.css) draws
+   descenders down to its descent, 0.634em below the baseline (ascent 1.815em); a line box of line-height L keeps only
+   (L - 1.815em + 0.634em) / 2 of that below the baseline, so the rest, (1.815em + 0.634em - L) / 2, is padding under
+   the heading and the descenders never reach the text below. The word headword (.wd) has its own fit (word-gap.js).
+   Glass headings are IBM Plex Sans Arabic (ascent 1.085em, descent 0.415em) at line-height 1.3: the same rule, with
+   no specificity (:where), so the shade, surah-heading and Amiri (.aq) rules always override it. */
+:where(h1:not(.wd):not(.q):not(.aq)){padding-bottom:calc((1.085em + .415em - 1.3em) / 2)}
+.shade h1:not(.wd){padding-bottom:calc((1.815em + .634em - 1.5em) / 2)}
+.shd>h1,.shade .shd>h1{padding-bottom:calc((1.815em + .634em - 1.7em) / 2)}
 .shd>.cw.snav{margin-top:16px}
+/* shadowed rows above a translucent button: the gap covers the full shadow reach (y + blur), so it ends before the button.
+   surah rows 14+34=48, cards, prev/next and the search box 10+30=40; the page gap is 18px */
+.shd+.btn,.shd+.acts{margin-top:30px}.cw+.acts.v3{margin-top:22px}
+/* Shadow rule: wherever a drop shadow sits above a button or pill, the gap is at least the shadow's reach (offset-y + blur).
+   Cards 0 10px 30px -> 40px, list rows -> 48px, day cards -> 22px. Spacing only; the shadows are unchanged. */
+:is(#app,main) .cw{row-gap:40px}:is(#app,main) .cw.snav{row-gap:48px}:is(#app,main) .cw.dnav{row-gap:22px}
+#app .cw.dnav+.dw,#app .opts+.acts{margin-top:22px}.sb+.hacts{margin-top:22px}
 /* C1: shared roulette overlay (glass translucent / shade solid) */
 .rou{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.4);opacity:0;transition:opacity .25s}
 .rou.in{opacity:1}
@@ -301,11 +427,24 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
 .shade .reelrow.pick{box-shadow:0 0 22px var(--tc);background:color-mix(in srgb,var(--tc) 22%,var(--sf))}
 /* D3: challenge day cards - stacked, collapsible (no roulette, no next) */
 .dw{display:flex;flex-direction:column;gap:14px}
-.dh{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"h h" "p n";gap:12px;align-items:center}
-.dh h1{grid-area:h;text-align:center}
-.dh .pv{grid-area:p;justify-self:start}
-.dh .nx{grid-area:n;justify-self:end}
-@media(min-width:601px){.dh{grid-template-columns:1fr auto 1fr;grid-template-areas:"p h n"}}
+.dh{text-align:center}
+.cw.dnav>.dw{grid-area:c}
+/* day blocks: word cards, video card, done button (the pills follow in the grid, 22px below). The video card's glass
+   shadow (0 10px 30px -> 40px reach) ends before the done button; the day cards have no shadow at rest. */
+.dmain{gap:22px}.dmain>.vcard+.acts{margin-top:18px}
+/* the video card keeps the glass tint and border but not the blur: a day page stays within its 6 blurred surfaces */
+.vcard{display:flex;flex-direction:column;gap:14px;backdrop-filter:none;-webkit-backdrop-filter:none}.vcard h2{margin:0;font-size:18px;font-weight:600;text-align:center}
+.vbs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}.vbs .vb{min-width:0;padding:0 12px;white-space:nowrap}
+@media(max-width:480px){.vbs[data-n="3"] .vb{flex-direction:column;gap:4px;height:64px;border-radius:20px;padding:0 6px;font-size:14px}}
+@media(max-width:340px){.vbs[data-n="2"] .vb{flex-direction:column;gap:4px;height:64px;border-radius:20px;padding:0 6px;font-size:14px}}
+.btn.dbtn:not(.o){border:1px solid transparent}
+.dck path{stroke-dasharray:1 2;stroke-dashoffset:1;transition:stroke-dashoffset .4s ease-in}.dbtn[data-ds="u"] .dck path{stroke-dashoffset:0;transition-timing-function:ease-out}
+.dlb{display:inline-grid}.dlb>span{grid-area:1/1;text-align:center;opacity:0;transition:opacity .15s}
+.dbtn[data-ds="r"] .dlb>:not([data-l="r"]),.dbtn:not([data-ds="r"]) .dlb>[data-l="r"]{display:none}
+.dbtn[data-ds="r"] [data-l="r"],.dbtn[data-ds="d"] [data-l="d"],.dbtn[data-ds="u"] [data-l="u"]{opacity:1}
+
+
+@media(min-width:601px){}
 .dprog{display:flex;flex-direction:column;gap:10px}
 .dcount{font-size:15px}
 .dcard{width:100%;display:flex;flex-direction:column;gap:0;border-radius:22px;padding:14px 16px;min-height:64px;text-align:start;cursor:pointer;font:inherit;color:var(--tx);background:var(--gb);border:1px solid var(--gbr);backdrop-filter:blur(var(--bl));-webkit-backdrop-filter:blur(var(--bl));transition:box-shadow .3s,border-color .3s}
@@ -335,38 +474,102 @@ nav.g .t{position:relative;z-index:1;flex-direction:column;justify-content:cente
    hover lift, the roulette becomes a quick fade (<=400ms), no challenge stagger,
    the gear does not rotate, transitions are removed (<=1ms), the glow blobs stay
    visible but static, and the nav does not slide. Sound is untouched. */
-.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg button:after,.cm .rou{animation:none;transition:none}
+.cm #bg i,.cm .pg>*:not(header),.cm .pgs>*:not(header),.cm nav.g,.cm nav.g .ind,.cm nav.g .t,.cm nav.g .t:active,.cm nav.g .t.on svg,.cm .lb i,.cm #gear,.cm .btn,.cm .opt,.cm .pnb,.cm .chip,.cm a.g,.cm button.g,.cm .list.rs .row,.cm .list:not(.sl):not(.rs) .row,.cm .so,.cm .so:before,.cm.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.cm .acts,.cm .strip,.cm .dcard,.cm .dcard .chev,.cm .ld,.cm .tg i:after,.cm .rou{animation:none;transition:none}
 .cm #gear:hover,.cm #gear:active,.cm #gear:focus-visible,.cm .dcard.open .chev,.cm nav.g .t:active{transform:none}
+.cm svg.i-cv{transform:none!important;transition:none!important}.cm :is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 .cm :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,.cm :is(a.g,button.g,.btn,.opt,.pnb,.chip):active,.cm a.row:hover{transform:none!important}.cm .so:before{transform:none!important}
 .cm .reelstrip{transition:opacity .3s}
 @media(prefers-reduced-motion:reduce){
-#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg button:after,.rou{animation:none;transition:none}
+#gear svg{animation:none!important}
+nav.g .t svg *{animation:none!important}
+.seg.segi .si,#sh .gsx{transition:none!important}
+#bg i,.pg>*:not(header),.pgs>*:not(header),nav.g,nav.g .ind,nav.g .t,nav.g .t:active,nav.g .t.on svg,.lb i,#gear,.btn,.opt,.pnb,.chip,a.g,button.g,.list.rs .row,.list:not(.sl):not(.rs) .row,.so,.so:before,.shade :is(a.g,button.g,.btn,.opt,.pnb,.chip,.row,.so),.acts,.strip,.dcard,.dcard .chev,.ld,.tg i:after,.rou{animation:none;transition:none}
 #gear:hover,#gear:active,#gear:focus-visible,.dcard.open .chev,nav.g .t:active{transform:none}
+svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,svg.i-lk,svg.rv,svg.rv *,.pnb .ps svg,.dck path,.dlb>span){animation:none!important;transition:none!important}
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }
 </style>
 </head>
 <body>
-<div id="ld" class="ld"><div class="logo q">غريب القرآن</div><div class="lb"><i></i></div></div>
+<div id="ld" class="ld"><div class="logo sn">غريب القرآن</div><div class="lb"><i></i></div></div>
 <script>try{if(localStorage.getItem("gq-ld"))document.getElementById("ld").remove();else localStorage.setItem("gq-ld","1")}catch(e){}</script>
 <div id="bg"><i></i><i></i></div>
-<div class="wrap" id="app"></div>
-<nav class="g" id="nv"></nav>
-<div id="sh"><div class="p g" role="dialog" aria-label="الإعدادات"></div></div>
+<main class="wrap" id="app"></main>
+<nav class="g" id="nv" aria-label="التنقل الرئيسي"></nav>
+<div id="sh"><div class="p g" role="dialog" aria-modal="true" aria-label="الإعدادات" tabindex="-1"></div></div>
 <script>
 const LS={get(){try{return JSON.parse(localStorage.getItem('gq-set'))||{}}catch(e){return{}}},set(v){try{localStorage.setItem('gq-set',JSON.stringify(v))}catch(e){}}};
-const PAL={def:['الافتراضي',['#F2F0E8','#1E6B50','#8FCBAE','#EBC98A'],['#0A0E1F','#9FB4FF','#4B5BDB','#2FB5A8']],lav:['لافندر',['#F1F0F8','#4B3CD8','#B9B4FF','#8FA8FF'],['#0B0D22','#B7B2FF','#5B6CF0','#C6B8FF']],sun:['غروب',['#F6EFEA','#A8381F','#F2A97B','#E8B5D6'],['#140A1C','#FFB38A','#E0689B','#F2A97B']],neo:['نيون',['#EEF3F6','#0B6E8A','#7FD6EA','#F0A6D0'],['#0B0620','#7FE7FF','#19C2E8','#E64AA8']],min:['نعناع',['#F1F3E8','#1E6B50','#A5E3C4','#F2E28A'],['#08140F','#A6F0C6','#3FBF8F','#E8D56A']]};
+/* GQ_THEME:begin - the theme definitions: palettes (names, light/dark colours, swatch gradient), picker order, default, migration of
+   saved settings, and the continuous glass mapping. Identical copies live in the public folder: index.html (inline),
+   theme-boot.js and theme.js; test/theme-copies.test.js fails if any copy differs. ASCII-only. */
+var GQ_THEME = (function () {
+  // [background, accent, glow 1, glow 2] per mode (each palette keeps one hue family in light and dark); sw: the
+  // picker swatch, a 135deg gradient [start, end], the same in light and dark. neo's night is the old site's default
+  // night (palette "def" before 2026-10-28), unchanged.
+  var PAL = {
+    neo: { n: "\u0641\u064a\u0631\u0648\u0632\u064a", l: ["#EEF3F6", "#0B6E8A", "#72CFF0", "#8FE6DA"], d: ["#0A0E1F", "#9FB4FF", "#4B5BDB", "#2FB5A8"], sw: ["#0B6E8A", "#9FB4FF"] },
+    gold: { n: "\u0630\u0647\u0628\u064a", l: ["#F4EDD8", "#7A5412", "#E3C94F", "#E2CC8E"], d: ["#14100A", "#F0CD78", "#B9862A", "#7C5A24"], sw: ["#B59045", "#F0CD78"] },
+    def: { n: "\u0632\u0645\u0631\u062f\u064a", l: ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"], d: ["#07140F", "#8EE6B4", "#1F8A57", "#2C6E44"], sw: ["#56A882", "#8EE6B4"] },
+    lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"], sw: ["#8177EC", "#B7B2FF"] },
+    sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"], sw: ["#D47654", "#FFB38A"] }
+  };
+  var ORDER = ["neo", "gold", "def", "lav", "sun"], DEFAULT = "neo", GLASS_DEFAULT = 50, SV = 2;
+  // Glass strength 0..100, piecewise-linear through the old site's five levels (0, 25, 50, 75, 100 are exactly levels
+  // 1..5): [blur px, saturate %, fill alpha light, fill alpha dark, rim alpha light, rim alpha dark].
+  var GL = [[4, 140, 0.88, 0.26, 0.55, 0.10], [12, 160, 0.80, 0.22, 0.63, 0.13], [22, 180, 0.72, 0.18, 0.71, 0.16], [34, 200, 0.64, 0.15, 0.79, 0.19], [48, 220, 0.56, 0.12, 0.87, 0.22]];
+  function glass(v, dark) {
+    var x = Math.min(100, Math.max(0, +v || 0)) / 25, i = Math.min(3, Math.floor(x)), t = x - i;
+    var at = function (k) { return t === 0 ? GL[i][k] : GL[i][k] + (GL[i + 1][k] - GL[i][k]) * t; };
+    return { bl: +at(0).toFixed(2) + "px", sat: +at(1).toFixed(1) + "%", gb: +at(dark ? 3 : 2).toFixed(3), gbr: +at(dark ? 5 : 4).toFixed(3) };
+  }
+  // Settings version (sv): records saved before 2026-10-28 have none. Then "def" was the default palette (blue at
+  // night), which became neo; "def" is now the green palette. upgrade(saved) returns the saved record moved to the
+  // current version (a saved "def" becomes "neo", once), or null when there is nothing to change: no record, or one
+  // already at version SV (so a "def" chosen after the release stays green).
+  function upgrade(saved) {
+    if (!saved || typeof saved !== "object" || !Object.keys(saved).length || saved.sv >= SV) return null;
+    var out = {};
+    for (var k in saved) out[k] = saved[k];
+    if (out.pal === "def") out.pal = "neo";
+    out.sv = SV;
+    return out;
+  }
+  // Settings in use: the version upgrade first, then "min" (removed) becomes the green palette and an unknown or
+  // missing palette the default; glass strength moves to 0..100 (gv 3) from the 1..5 scale (gv 2) or the older 0/1/2
+  // scale. Every record gets sv, so whatever is saved from it is never upgraded again.
+  function migrate(s) {
+    if (!(s.sv >= SV)) { if (s.pal === "def") s.pal = "neo"; s.sv = SV; }
+    if (s.pal === "min") s.pal = "def";
+    if (!PAL[s.pal]) s.pal = DEFAULT;
+    if (s.gv !== 3) {
+      var g = s.gl;
+      if (s.gv !== 2) g = g === 0 ? 1 : g === 1 ? 3 : g === 2 ? 5 : (g >= 1 && g <= 5 ? g : 3);
+      else if (!(g >= 1 && g <= 5)) g = 3;
+      s.gl = Math.round((g - 1) * 25);
+      s.gv = 3;
+    }
+    if (!(s.gl >= 0 && s.gl <= 100)) s.gl = GLASS_DEFAULT;
+    return s;
+  }
+  return { PAL: PAL, ORDER: ORDER, DEFAULT: DEFAULT, GLASS_DEFAULT: GLASS_DEFAULT, SV: SV, glass: glass, upgrade: upgrade, migrate: migrate };
+})();
+/* GQ_THEME:end */
+const GQT=GQ_THEME,PAL=Object.fromEntries(GQT.ORDER.map(k=>[k,[GQT.PAL[k].n,GQT.PAL[k].l,GQT.PAL[k].d]]));
 const rgba=(h,a)=>{h=h.replace('#','');if(h.length===3)h=h.replace(/./g,x=>x+x);const n=parseInt(h,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`};
-// Glass-intensity levels (index.html copy; keep in sync with tools/glass-levels.js).
-// [blurPx, saturate%, fillAlphaLight, fillAlphaDark, rimAlphaLight, rimAlphaDark]
-const GLLV=[[4,140,.88,.26,.55,.10],[12,160,.80,.22,.63,.13],[22,180,.72,.18,.71,.16],[34,200,.64,.15,.79,.19],[48,220,.56,.12,.87,.22]];
-let set=Object.assign({mode:'auto',pal:'def',gl:3,cm:false,snd:true,style:'glass'},LS.get());
+// Glass strength is continuous, 0..100 (GQT.glass: piecewise-linear through tools/glass-levels.js levels 1..5).
+// a record saved before the settings version is moved to it once and saved back (GQ_THEME.upgrade: the old default "def" becomes neo)
+{const up=GQT.upgrade(LS.get());if(up)LS.set(up)}
+let set=Object.assign({mode:'auto',pal:GQT.DEFAULT,cm:false,snd:true,style:'glass'},LS.get());
+if(LS.get().gl===undefined){set.gl=GQT.GLASS_DEFAULT;set.gv=3}
 // K3: on the FIRST visit (no saved choice) stop-motion defaults to the device's
 // prefers-reduced-motion; once the user toggles it, that saved choice always wins.
 if(LS.get().cm===undefined)set.cm=matchMedia('(prefers-reduced-motion:reduce)').matches;
-if(set.gv!==2){const g=set.gl;set.gl=g===0?1:g===1?3:g===2?5:(g>=1&&g<=5?g:3);set.gv=2}
-function applySet(){const dark=set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);const p=PAL[set.pal]||PAL.def;const c=dark?p[2]:p[1];const r=document.documentElement.style;r.setProperty('--bg',c[0]);r.setProperty('--ac',c[1]);r.setProperty('--b1',c[2]);r.setProperty('--b2',c[3]);r.setProperty('--tx',dark?'#ECEFFA':'#1D2B25');r.setProperty('--mu',dark?'#A3ABC9':'#55645D');r.setProperty('--gb',rgba('#ffffff',GLLV[Math.min(4,Math.max(0,set.gl-1))][dark?3:2]));r.setProperty('--gbr',rgba('#ffffff',GLLV[Math.min(4,Math.max(0,set.gl-1))][dark?5:4]));r.setProperty('--sat',GLLV[Math.min(4,Math.max(0,set.gl-1))][1]+'%');r.setProperty('--ln',dark?'rgba(255,255,255,.12)':'rgba(29,43,37,.12)');r.setProperty('--btf',dark?c[0]:'#fff');r.setProperty('--bl',GLLV[Math.min(4,Math.max(0,set.gl-1))][0]+'px');document.body.classList.toggle('cm',!!set.cm);const t=document.querySelector('meta[name=theme-color]');if(t)t.content=c[0];}
+GQT.migrate(set);
+const isDark=()=>set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);
+// the four glass variables alone: written on every settings change, and at most once per frame while the slider is dragged
+function glassVars(v,dark){const g=GQT.glass(v,dark),r=document.documentElement.style;r.setProperty('--gb',rgba('#ffffff',g.gb));r.setProperty('--gbr',rgba('#ffffff',g.gbr));r.setProperty('--sat',g.sat);r.setProperty('--bl',g.bl)}
+function applySet(){const dark=isDark();const p=PAL[set.pal]||PAL[GQT.DEFAULT];const c=dark?p[2]:p[1];const r=document.documentElement.style;r.setProperty('--bg',c[0]);r.setProperty('--ac',c[1]);r.setProperty('--b1',c[2]);r.setProperty('--b2',c[3]);r.setProperty('--tx',dark?'#ECEFFA':'#1D2B25');r.setProperty('--mu',dark?'#A3ABC9':'#55645D');glassVars(set.gl,dark);r.setProperty('--ln',dark?'rgba(255,255,255,.12)':'rgba(29,43,37,.12)');r.setProperty('--btf',dark?c[0]:'#fff');document.body.classList.toggle('cm',!!set.cm);const t=document.querySelector('meta[name=theme-color]');if(t)t.content=c[0];}
 applySet();
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applySet);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -374,45 +577,52 @@ const norm=s=>String(s).replace(/[\u0640\u064B-\u065F\u0670\u06D6-\u06ED]/g,'').
 const NAMES='النبأ النازعات عبس التكوير الانفطار المطففين الانشقاق البروج الطارق الأعلى الغاشية الفجر البلد الشمس الليل الضحى الشرح التين العلق القدر البينة الزلزلة العاديات القارعة التكاثر العصر الهمزة الفيل قريش الماعون الكوثر الكافرون النصر المسد الإخلاص الفلق الناس'.split(' ');
 const NUM={};NAMES.forEach((n,i)=>NUM[norm(n)]=78+i);
 let S=[],W=[];
-function build(d){S=d.map(e=>{const name=e.surah.replace(/^سورة\s*/,'');const s={name,num:NUM[norm(name)]||0,w:[]};e.words.forEach((word,i)=>{let m=e.meanings[i]||'';const k=m.indexOf(':');if(k>0&&k<60&&norm(m.slice(0,k))===norm(word))m=m.slice(k+1).trim();const ay=e.ayahs[i]||{label:'',segments:[]};s.w.push({s,word,mean:m,ay,src:e.source||'',k:norm(word),km:norm(m),n:+(ay.segments[0]&&ay.segments[0].num)||0})});s.w.sort((a,b)=>a.n-b.n);return s}).sort((a,b)=>a.num-b.num);W=[];S.forEach(s=>s.w.forEach((w,i)=>{w.id=s.num+'-'+i;W.push(w)}));}
+// Static page slugs (shared/seo.js scheme): /surah/<slug>.html and /word/<slug>-<ayah>[-<n>].html, n counting words of the same ayah in data order.
+const SLUG={78:'an-naba',79:'an-naziat',80:'abasa',81:'at-takwir',83:'al-mutaffifin',84:'al-inshiqaq',86:'at-tariq',87:'al-ala',88:'al-ghashiyah',89:'al-fajr',90:'al-balad',91:'ash-shams',92:'al-layl',93:'ad-duha',94:'ash-sharh',96:'al-alaq',98:'al-bayyinah',99:'az-zalzalah',100:'al-adiyat',101:'al-qariah',104:'al-humazah',105:'al-fil',106:'quraysh',107:'al-maun',108:'al-kawthar',112:'al-ikhlas',113:'al-falaq',114:'an-nas'};
+function build(d){S=d.map(e=>{const name=e.surah.replace(/^سورة\s*/,'');const s={name,num:NUM[norm(name)]||0,w:[]};s.slug=SLUG[s.num]||'surah-'+s.num;const cnt={};e.words.forEach((word,i)=>{const a0=(e.ayahs||[])[i]||(e.ayahs||[])[0]||{},sl=String(a0.label==null?'':a0.label).split('-')[0].trim()||String(i+1);cnt[sl]=(cnt[sl]||0)+1;const slug=s.slug+'-'+sl+(cnt[sl]>1?'-'+cnt[sl]:'');let m=e.meanings[i]||'';const k=m.indexOf(':');if(k>0&&k<60&&norm(m.slice(0,k))===norm(word))m=m.slice(k+1).trim();const ay=e.ayahs[i]||{label:'',segments:[]};const dw=QText.displayWord(ay)||word;s.w.push({s,word,dw,slug,mean:m,ay,src:e.source||'',k:norm(word),km:norm(m),sk:QText.searchNorm(word),sd:QText.searchNorm(dw),skm:QText.searchNorm(m),n:+(ay.segments[0]&&ay.segments[0].num)||0})});s.w.sort((a,b)=>a.n-b.n);return s}).sort((a,b)=>a.num-b.num);W=[];S.forEach(s=>s.w.forEach((w,i)=>{w.id=s.num+'-'+i;W.push(w)}));}
 const byId=id=>W.find(w=>w.id===id);
 const ICO={s:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',g:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',c:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>'};
-const BI={sh:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',bk:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>',dl:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>',fw:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',bw:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
-const head=()=>`<header><a class="logo q" href="#/">غريب القرآن</a></header>`;
-const wrow=w=>`<a class="row" href="#/word/${w.id}"><div class="w q">${esc(w.word)}</div><div class="t"><div>${esc(w.mean)}</div><div class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div></div></a>`;
-function rank(q){const n=norm(q);if(!n)return[];return W.map(w=>{let r=0;if(w.k===n)r=4;else if(w.k.startsWith(n))r=3;else if(w.k.includes(n))r=2;else if(w.km.includes(n))r=1;return[r,w]}).filter(x=>x[0]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);}
-const AY=a=>a.segments.map(g=>`﴿${esc(g.before)}<mark>${esc(g.hl)}</mark>${esc(g.after)}﴾`).join(' ');
-const CIc='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
-const CIcL='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+const BI={lk:'<svg class="i-lk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',sr:'<svg class="im i-sr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M12 15V3m0 0L8 7m4-4 4 4M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/><path class="pt ar" d="M12 15V3m0 0L8 7m4-4 4 4"/><path class="pt st" d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>',sh:'<svg class="im i-sh" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/><path class="pt s" pathLength="1" d="M4 20 21 3"/><path class="pt s" pathLength="1" d="M4 4l5 5M15 15l6 6"/><path class="pt h" d="M16 3h5v5"/><path class="pt h" d="M21 16v5h-5"/></svg>',bk:'<svg class="im i-bk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/><path class="pt bl" d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2z"/><path class="pt br" d="M22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>',dl:'<svg class="im i-dl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="w" d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/><path class="pt ar" d="M12 3v12m0 0-4-4m4 4 4-4"/><path class="pt st" d="M4 21h16"/></svg>',fw:'<svg class="i-cv i-cl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',bw:'<svg class="i-cv i-cr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
+const head=()=>`<header><a class="logo sn" href="#/">غريب القرآن</a></header>`;
+const wrow=w=>`<a class="row" href="#/word/${w.id}"><div class="w q">${esc(w.dw)}</div><div class="t"><div>${esc(w.mean)}</div><div class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div></div></a>`;
+// search: the stored (modern) spelling and the shown (Uthmani) headword are both indexed; w.k stays the challenge key
+function rank(q){const n=QText.searchNorm(q);if(!n)return[];return W.map(w=>{let r=0;if(w.sk===n||w.sd===n)r=4;else if(w.sk.startsWith(n)||w.sd.startsWith(n))r=3;else if(w.sk.includes(n)||w.sd.includes(n))r=2;else if(w.skm.includes(n))r=1;return[r,w]}).filter(x=>x[0]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);}
+// the mark covers whole written words, and the ornate parentheses stay on their first/last word's line: see qtext.js
+const AY=a=>QText.ayahHtml(a,esc);
+const BKP='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>';
+const CIc='<svg class="i-cv i-cr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+const CIcL='<svg class="i-cv i-cl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 const DCHEV='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 const DCK='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+// prev/next pill shared by the word and surah pages: o={label,href,sur,aria} or {label,dis:true}; the surah line shows when o.sur is set
+function pnBtn(o,dir){const ps=o.sur?`<span class="ps"${o.say?'':' aria-hidden="true"'}>${o.ic||BKP}${esc(o.sur)}</span>`:'';const lb=o.label.replace(/^(\S+) /,'<span class="pl">$1 </span>');const inner=dir==='pv'?CIc+' '+lb+ps:lb+' '+CIcL+ps;return o.dis
+    ?(o.lock?`<button type="button" class="g pnb ${dir}" aria-disabled="true" data-a="lock" data-d="${o.lock}" style="opacity:.5">${inner}</button>`:`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`)
+    :`<a class="g pnb ${dir}" href="${o.href}"${o.aria?` aria-label="${esc(o.aria)}"`:''}>${inner}</a>`}
 function wordNav(w){
   const idx=W.indexOf(w);
   const prev=idx>0?W[idx-1]:null;
   const next=idx>=0&&idx<W.length-1?W[idx+1]:null;
-  const pv=prev?{label:prev.s.num===w.s.num?'الكلمة السابقة':'السورة السابقة',href:'#/'+(prev.s.num===w.s.num?'word/'+prev.id:'surah/'+prev.s.num),dis:false}:{label:'السورة السابقة',dis:true};
-  const nx=next?{label:next.s.num===w.s.num?'الكلمة التالية':'السورة التالية',href:'#/'+(next.s.num===w.s.num?'word/'+next.id:'surah/'+next.s.num),dis:false}:{label:'السورة التالية',dis:true};
-  const btn=(o,dir)=>{const inner=(dir==='pv'?CIc+' ':'')+o.label+(dir==='nx'?' '+CIcL:'');return o.dis
-    ?`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`
-    :`<a class="g pnb ${dir}" href="${o.href}">${inner}</a>`};
+  // always word to word (W order); a second line names the surah when the target is in another one
+  const to=(x,label)=>{if(!x)return{label,dis:true};const sur=x.s.num!==w.s.num?x.s.name:'';return{label,href:'#/word/'+x.id,sur,aria:sur?label+'، من سورة '+sur:''}};
+  const pv=to(prev,'الكلمة السابقة'),nx=to(next,'الكلمة التالية'),btn=pnBtn;
   return `<div class="cw">${btn(pv,'pv')}<div class="cols">
-<div class="g card"><div class="wd q">${esc(w.word)}</div><div class="vr"><div class="ay q">${AY(w.ay)}</div></div></div>
+<div class="g card"><h1 class="wd q">${esc(w.dw)}</h1><div class="vr"><div class="ay q">${AY(w.ay)}</div></div></div>
 <div class="g card"><div class="m">المعنى</div><div class="mn">${esc(w.mean)}</div><div class="m">${esc(w.src)}</div></div>
 </div>${btn(nx,'nx')}</div>`;
 }
 function view(r){const [p,a]=r;
 if(p==='surahs')return `${head()}<div><h1>السور</h1><div class="sub">${S.length} سورة فيها كلمات حاليًا.</div></div><div class="list g sl">${S.map(s=>`<a class="row" href="#/surah/${s.num}"><span class="bd">${s.num}</span><span class="q" style="flex:1;font-size:25px">${esc(s.name)}</span><span class="m">${wc(s.w.length)}</span>${ICO.c}</a>`).join('')}</div>`;
-if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();const si=S.indexOf(s),sp=si>0?S[si-1]:null,sn=si<S.length-1?S[si+1]:null;const sbtn=(o,dir)=>{const inner=dir==='pv'?CIc+' السورة السابقة':'السورة التالية '+CIcL;return o?`<a class="g pnb ${dir}" href="#/surah/${o.num}">${inner}</a>`:`<span class="g pnb ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`};return `${head()}<div class="shd"><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div><div class="cw snav">${sbtn(sp,'pv')}<div class="list g rs">${s.w.map(wrow).join('')}</div>${sbtn(sn,'nx')}</div></div><a class="btn o g" href="#/surahs">${BI.bk}كل السور</a>`;}
-if(p==='word'){const w=byId(a);if(!w)return nf();return `${head()}<a class="pill" href="#/surah/${w.s.num}">${esc(w.s.name)} · آية ${esc(w.ay.label)}${CIcL}</a>${wordNav(w)}<div class="acts v3"><a class="btn o g" href="#/surah/${w.s.num}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></svg>كلمات أخرى من نفس السورة</a><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة أخرى</button><button class="btn o" data-a="card" data-id="${w.id}">${BI.dl}حفظ كصورة</button></div>`;}
+if(p==='surah'){const s=S.find(x=>x.num==a);if(!s)return nf();const si=S.indexOf(s),sp=si>0?S[si-1]:null,sn=si<S.length-1?S[si+1]:null;const sbtn=(o,dir)=>{const label=dir==='pv'?'السورة السابقة':'السورة التالية';return pnBtn(o?{label,href:'#/surah/'+o.num,sur:o.name,aria:label+'، '+o.name}:{label,dis:true},dir)};return `${head()}<div class="shd"><h1 class="q">${esc(s.name)}</h1><div class="sub">${wc(s.w.length)} في هذه السورة.</div><div class="cw snav"><div class="list g rs">${s.w.map(wrow).join('')}</div>${sbtn(sp,'pv')}${sbtn(sn,'nx')}</div></div><div class="acts v3"><div class="pr pf"><a class="btn o g mib" href="#/surahs">${BI.bk}كل السور</a><button class="btn o" data-a="share" data-u="/surah/${s.slug}.html">${BI.sr}مشاركة</button></div></div>`;}
+if(p==='word'){const w=byId(a);if(!w)return nf();return `${head()}<a class="pill" href="#/surah/${w.s.num}">${esc(w.s.name)} · آية ${esc(w.ay.label)}${CIcL}</a>${wordNav(w)}<div class="acts v3"><a class="btn o g mib" href="#/surah/${w.s.num}">${BI.bk}كلمات أخرى من نفس السورة</a><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة أخرى</button><div class="pr"><button class="btn o" data-a="card" data-id="${w.id}">${BI.dl}حفظ كصورة</button><button class="btn o" data-a="share" data-u="/word/${esc(w.slug)}.html">${BI.sr}مشاركة</button></div></div>`;}
 if(p==='challenge'||p==='quiz')return `${head()}<div class="g card"><h1>${p==='quiz'?'اختبر نفسك':'تحدي غريب عمّ'}</h1><div class="sub" style="margin-top:8px">قيد الإعداد.</div></div>`;
-return `${head()}<main><div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts hacts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div></main>`;
+return `${head()}<div class="hm"><div><h1>كلمات القرآن، بمعناها</h1><div class="sub">${W.length} كلمة في ${S.length} سورة، بآياتها ومصادرها.</div></div><label class="g sb">${ICO.s}<input id="q" type="search" enterkeyhint="search" placeholder="اكتب كلمة، بالتشكيل أو بدونه" autocomplete="off" aria-label="بحث"></label><div class="acts hacts"><button class="btn" data-a="rnd">${BI.sh}اسحب كلمة</button><a class="btn o g" href="#/surahs">${BI.bk}تصفح بالسورة</a></div><div id="res"></div></div>`;
 function nf(){return `${head()}<div class="g card">الصفحة غير موجودة. <a href="#/" style="color:var(--ac)">العودة إلى الرئيسية</a></div>`}}
 function route(){const h=location.hash.replace(/^#\/?/,'').split('/');return[h[0]||'home',decodeURIComponent(h[1]||'')]}
 // The `searching` class is the single source of truth for the home search state:
 // it is set while the box has text and cleared on every render, so leaving and
 // returning home (or clearing the box) always restores the hidden rows.
 function setSearching(on){document.body.classList.toggle('searching',!!on)}
-function render(){clearTimeout(qT);setSearching(0);const r=route();$('app').innerHTML=view(r);const tab={home:0,word:0,surahs:1,surah:1,challenge:2,quiz:3}[r[0]];$('nv').innerHTML=[['','بحث'],['surahs','السور'],['challenge','التحدي'],['quiz','اختبر نفسك']].map((x,i)=>`<a href="#/${x[0]}" class="${i===tab?'on':''}">${x[1]}</a>`).join('');scrollTo(0,0);const q=$('q');if(q){q.oninput=()=>{const v=q.value.trim();setSearching(!!v);const res=$('res');if(!res)return;clearTimeout(qT);if(!v){res.innerHTML='';return}qT=setTimeout(()=>{const l=rank(q.value);res.innerHTML=!v?'':l.length?`<div class="list g rs">${l.slice(0,30).map(wrow).join('')}</div>`:'<div class="g card m">لا توجد نتيجة لـ «'+esc(q.value)+'». جرّب كلمة أخرى.</div>';},120);}}}
+function render(){clearTimeout(qT);setSearching(0);const r=route();$('app').innerHTML=view(r);const tab={home:0,word:0,surahs:1,surah:1,challenge:2,quiz:3}[r[0]];scrollTo(0,0);const q=$('q');if(q){q.oninput=()=>{const v=q.value.trim();setSearching(!!v);const res=$('res');if(!res)return;clearTimeout(qT);if(!v){res.innerHTML='';return}qT=setTimeout(()=>{const l=rank(q.value);res.innerHTML=!v?'':l.length?`<div class="list g rs">${l.slice(0,30).map(wrow).join('')}</div>`:'<div class="g card m">لا توجد نتيجة لـ «'+esc(q.value)+'». جرّب كلمة أخرى. <a href="#/surahs" style="color:var(--ac)">تصفّح بالسورة</a></div>';},120);}}}
 function $(i){return document.getElementById(i)}
 const wc=n=>n===1?'كلمة واحدة':n===2?'كلمتان':(n<=10?n+' كلمات':n+' كلمة');
 // Counted-noun agreement: f = [1, 2, 3-10, 11+]. NW = words after 'من' (genitive),
@@ -423,8 +633,14 @@ function rnd(){const r=route();let w;do{w=W[Math.floor(Math.random()*W.length)]}
 // ---- C1: shared roulette overlay (draw buttons + challenge day spin) ----
 const SKIPICO='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:scaleX(-1)"><path d="M5 4l10 8-10 8zM19 5v14"/></svg>';
 let lastPick=null;
+// S12: a press (pointer, Enter or Space) replays a control's icon motion once via .imp (twin keyframes, so it restarts
+// even while hovered); .imp is dropped once the motion is over and the control is neither hovered nor focused.
+(()=>{const hv=matchMedia('(hover:hover)'),drop=c=>{if(c._imt||(hv.matches&&c.matches(':hover'))||c.matches(':focus-visible'))return;c.classList.remove('imp')};
+const press=e=>{const c=e.target.closest&&e.target.closest('a,button');if(!c||!c.querySelector('svg.im')||c.disabled||c.getAttribute('aria-disabled')==='true')return;c.classList.remove('imp');void c.offsetWidth;c.classList.add('imp');clearTimeout(c._imt);c._imt=setTimeout(()=>{c._imt=0;drop(c)},600)};
+const out=e=>{const c=e.target.closest&&e.target.closest('.imp');if(c)setTimeout(()=>drop(c),0)};
+addEventListener('pointerdown',press,true);addEventListener('keydown',e=>{if(!e.repeat&&(e.key==='Enter'||e.key===' '))press(e)},true);addEventListener('mouseout',out,true);addEventListener('focusout',out,true)})();
 function sfx(n){try{if(typeof SND!=='undefined'&&SND&&SND[n])SND[n]()}catch(e){}}
-try{if(document.fonts)['100px "Amiri Quran"','40px "IBM Plex Sans Arabic"','40px "IBM Plex Mono"'].forEach(f=>document.fonts.load(f).catch(()=>{}))}catch(e){}
+try{if(document.fonts)['100px "KFGQPC Uthmanic Hafs"','100px "Amiri Quran"','40px "IBM Plex Sans Arabic"','40px "IBM Plex Mono"'].forEach(f=>document.fonts.load(f).catch(()=>{}))}catch(e){}
 let rouAbort=null,qT=0;
 function rouOpen(pool,onPick){
   const list=(pool&&pool.length?pool:W).filter(w=>w&&w.word);
@@ -436,8 +652,8 @@ function rouOpen(pool,onPick){
   const el=document.createElement('div');el.className='rou';el.id='rou';
   const N=14,KI=N-2;
   let inner='';
-  if(rm){inner=`<div class="reelrow pick">${esc(pick.word)}</div>`}
-  else{for(let i=0;i<N;i++){const w=i===KI?pick:list[Math.floor(Math.random()*list.length)];inner+=`<div class="reelrow${i===KI?' pick':''}">${esc(w.word)}</div>`}}
+  if(rm){inner=`<div class="reelrow q pick">${esc(pick.dw)}</div>`}
+  else{for(let i=0;i<N;i++){const w=i===KI?pick:list[Math.floor(Math.random()*list.length)];inner+=`<div class="reelrow q${i===KI?' pick':''}">${esc(w.dw)}</div>`}}
   el.innerHTML=`<div class="roucard g" role="dialog" aria-modal="true" aria-label="اسحب كلمة"><div class="rout">اسحب كلمة</div><div class="rous">جاري اختيار كلمة لك…</div><div class="reel"><div class="reelstrip" id="reels">${inner}</div></div><div class="rouacts"><button class="btn o" data-a="rskip">تخطَّ ${SKIPICO}</button></div>${set.snd?'<div class="rousnd">الصوت مفعّل · يمكن إيقافه من الإعدادات</div>':''}</div>`;
   document.body.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('in'));
@@ -457,20 +673,95 @@ function rouOpen(pool,onPick){
 }
 function drawWord(){const r=route();const cur=r[0]==='word'?r[1]:null;rouOpen(W.filter(w=>w.id!==cur),w=>{if(w)location.hash='#/word/'+w.id})}
 let STYLES=['glass','shade'];const STN={glass:'زجاج',shade:'ظلال'};
-function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass';p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">الإعدادات</b><button class="btn o" data-a="close" style="height:44px;color:var(--ac)">تم</button></div>${STYLES.length>1?`<div><div class="m" style="margin-bottom:8px">النمط</div><div class="seg g">${STYLES.map(x=>`<button data-st="${x}" class="${st===x?'on':''}" aria-pressed="${st===x?'true':'false'}">${STN[x]}</button>`).join('')}</div></div>`:''}<div><div class="m" style="margin-bottom:8px">المظهر</div><div class="seg g">${[['auto','تلقائي'],['light','نهار'],['dark','ليل']].map(x=>`<button data-m="${x[0]}" class="${set.mode===x[0]?'on':''}" aria-pressed="${set.mode===x[0]?'true':'false'}">${x[1]}</button>`).join('')}</div></div>${`<div><div class="m" style="margin-bottom:10px">ألوان التوهج</div><div class="sw">${Object.keys(PAL).map(k=>`<button data-p="${k}" class="${set.pal===k?'on':''}" aria-pressed="${set.pal===k?'true':'false'}"><i style="background:radial-gradient(circle at 30% 30%,${PAL[k][2][3]},${PAL[k][2][2]})"></i>${PAL[k][0]}</button>`).join('')}</div></div>`}${st==='glass'?`<div><div class="m" style="margin-bottom:8px">شدة الزجاج</div><label class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="1" max="5" step="1" value="${set.gl}" aria-label="شدة الزجاج"><span class="lbl">قوي</span></label></div>`:''}<div class="tg"><span>إيقاف الحركة</span><button data-c="1" class="${set.cm?'on':''}" aria-pressed="${set.cm?'true':'false'}" aria-label="إيقاف الحركة"></button></div>`}
-document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();$('sh').classList.add('open');return}if(d.a==='close'||t.id==='sh'&&e.target===t){$('sh').classList.remove('open');return}if(d.a==='rnd'){drawWord();return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
-document.addEventListener('input',e=>{if(e.target&&e.target.id==='gs'){set.gl=+e.target.value;set.gv=2;LS.set(set);applySet()}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){const q=$('q');if(q&&q.value){q.value='';q.dispatchEvent(new Event('input',{bubbles:true}));q.focus();return;}$('sh').classList.remove('open');}});
-addEventListener('hashchange',()=>{$('sh').classList.remove('open');if(rouAbort)rouAbort();render()});
+// Settings: المظهر, اللون, النمط (with شدة الزجاج under it, glass only), then the switches. Each choice row is a radio group
+// (one Tab stop, arrow keys move the selection); each switch is one button the size of its row.
+const glassText=v=>v<34?'خفيف':v<67?'متوسط':'قوي';
+const radio=(attr,v,on,html)=>`<button role="radio" data-${attr}="${v}" class="${on?'on':''}" aria-checked="${on?'true':'false'}" tabindex="${on?0:-1}">${html}</button>`;
+const tgRow=(attr,on,label)=>`<button class="tg${on?' on':''}" data-${attr}="1" role="switch" aria-checked="${on?'true':'false'}"><span>${label}</span><i aria-hidden="true"></i></button>`;
+// a segmented control (radio group) whose selected background is one indicator that slides between options, with the
+// bottom nav indicator's timing; --k is the selected index, --n the count
+const segCtl=(attr,items,cur,lbl)=>{const k=Math.max(0,items.findIndex(x=>x[0]===cur));return `<div class="seg g segi" role="radiogroup" aria-labelledby="${lbl}" data-sg="${attr}" style="--n:${items.length};--k:${k}"><i class="si" aria-hidden="true"></i>${items.map(x=>radio(attr,x[0],cur===x[0],x[1])).join('')}</div>`};
+// what the open sheet showed last (mode and style index, glass strength open): a re-render starts there and moves to
+// the new state, so the indicator slides and the glass strength expands or collapses
+let SHP=null;
+function sheet(){const p=document.querySelector('#sh .p'),st=set.style||'glass',dark=isDark(),prev=$('sh').classList.contains('open')?SHP:null;
+ const MODES=[['auto','تلقائي'],['light','نهار'],['dark','ليل']],STS=STYLES.map(x=>[x,STN[x]]),glass=st==='glass';
+ p.innerHTML=`<div class="sht"><b>الإعدادات</b><button class="btn o" data-a="close">تم</button></div>` +
+ `<div class="grp"><div class="m" id="lbm">المظهر</div>${segCtl('m',MODES,set.mode,'lbm')}<div class="m shn">يتبع إعداد جهازك</div></div>` +
+ (STYLES.length>1?`<div class="grp"><div class="m" id="lbs">النمط</div>${segCtl('st',STS,st,'lbs')}<div class="gsx${glass?' open':''}"${glass?'':' inert'}><div class="gsi"><div class="gsw"><div class="m" id="lbg">شدة الزجاج</div><div class="gs g"><span class="lbl">خفيف</span><input id="gs" type="range" min="0" max="100" step="1" value="${set.gl}" aria-labelledby="lbg" aria-label="شدة الزجاج" aria-valuetext="${glassText(set.gl)}"><span class="lbl">قوي</span></div></div></div></div></div>`:'') +
+ `<div class="grp"><div class="m" id="lbp">اللون</div><div class="psw" role="radiogroup" aria-labelledby="lbp">${GQT.ORDER.map(k=>{const c=dark?PAL[k][2]:PAL[k][1];const g=GQT.PAL[k].sw;return radio('p',k,set.pal===k,`<i style="background:linear-gradient(135deg,${g[0]},${g[1]})"></i><span>${PAL[k][0]}</span><b class="pbar" style="background:${c[1]}"></b>`)}).join('')}</div></div>` +
+ `<hr class="shd"><div class="tgs">${tgRow('c',set.cm,'إيقاف الحركة')}</div><button class="rst" data-a="reset">استعادة الإعدادات الافتراضية</button>`;
+ const mk=MODES.findIndex(x=>x[0]===set.mode),sk=STS.findIndex(x=>x[0]===st),sm=p.querySelector('[data-sg="m"]'),ss=p.querySelector('[data-sg="st"]'),gx=p.querySelector('.gsx');
+ if(prev){sm.style.setProperty('--k',prev.m);if(ss)ss.style.setProperty('--k',prev.st);if(gx)gx.classList.toggle('open',prev.glass);void p.offsetWidth;sm.style.setProperty('--k',mk);if(ss)ss.style.setProperty('--k',sk);if(gx)gx.classList.toggle('open',glass)}
+ if(gx)gxRest(gx,glass,prev);
+ SHP={m:mk,st:sk,glass}}
+// The glass row rests unclipped (.rest) once it is open: right away when it did not move (the sheet opened on glass, or
+// motion is off), else when its opening transition ends. Closing removes .rest first, so the collapse is clipped.
+function gxRest(gx,open,prev){gx.classList.remove('rest');if(!open)return;const done=()=>{if(gx.isConnected&&gx.classList.contains('open'))gx.classList.add('rest')};
+ if(prev&&!prev.glass&&parseFloat(getComputedStyle(gx).transitionDuration)>0){const tm=setTimeout(done,400);gx.addEventListener('transitionend',e=>{if(e.target===gx&&e.propertyName==='grid-template-rows'){clearTimeout(tm);done()}})}else done()}
+// a toast with an undo action (about 5 seconds)
+function toastUndo(m,undo){document.querySelectorAll('.toast.tu').forEach(t=>t.remove());const t=document.createElement('div');t.className='g toast tu';t.setAttribute('role','status');t.innerHTML=esc(m)+' <button class="tub" type="button">تراجع</button>';document.body.appendChild(t);const tm=setTimeout(()=>t.remove(),5000);t.querySelector('.tub').addEventListener('click',()=>{clearTimeout(tm);t.remove();undo()})}
+// the site defaults (as for a first visit: stop-motion follows the device)
+const setDefaults=()=>({mode:'auto',pal:GQT.DEFAULT,gl:GQT.GLASS_DEFAULT,gv:3,style:'glass',cm:matchMedia('(prefers-reduced-motion:reduce)').matches,snd:true});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-m],[data-p],[data-g],[data-c],#sh');if(!t)return;const d=t.dataset;if(d.a==='set'){sheet();openSh('الإعدادات',t);return}if(d.a==='close'||t.id==='sh'&&e.target===t){closeSh();return}if(d.a==='rnd'){drawWord();return}if(d.a==='reset'&&t.closest('#sh')){const prev=JSON.parse(JSON.stringify(set));Object.keys(set).forEach(k=>delete set[k]);Object.assign(set,setDefaults());LS.set(set);applySet();sheet();toastUndo('تمت استعادة الإعدادات الافتراضية',()=>{Object.keys(set).forEach(k=>delete set[k]);Object.assign(set,prev);LS.set(set);applySet();if($('sh').classList.contains('open')&&document.querySelector('#sh .psw'))sheet()});return}if(!t.closest('#sh'))return;if(d.m)set.mode=d.m;else if(d.p)set.pal=d.p;else if(d.c)set.cm=!set.cm;else return;LS.set(set);applySet();sheet()});
+// Glass strength. While a finger or pointer drags the slider, the four glass variables are written only on the sheet
+// panel (scoped on that element; the slider's pill inside it follows), so nothing else on the page restyles or re-blurs
+// during the drag; on release (pointerup / touchend / change), or when the sheet closes during a drag, they are written
+// once on the whole page and the setting is saved, as before. Keyboard and assistive steps apply to the whole page at
+// each step.
+const GSV=['--gb','--gbr','--sat','--bl'];
+let gsRaf=0,gsDrag=false;
+function gsScoped(v){const el=document.querySelector('#sh .p');if(!el)return;const g=GQT.glass(v,isDark());el.style.setProperty('--gb',rgba('#ffffff',g.gb));el.style.setProperty('--gbr',rgba('#ffffff',g.gbr));el.style.setProperty('--sat',g.sat);el.style.setProperty('--bl',g.bl)}
+function gsUnscope(){const el=document.querySelector('#sh .p');if(el)GSV.forEach(k=>el.style.removeProperty(k))}
+// the end of a drag: the whole page once, then save (the same as a change)
+function gsEnd(){if(!gsDrag)return;gsDrag=false;if(gsRaf){cancelAnimationFrame(gsRaf);gsRaf=0}const g=$('gs');if(g)set.gl=+g.value;glassVars(set.gl,isDark());gsUnscope();set.gv=3;LS.set(set)}
+document.addEventListener('pointerdown',e=>{if(e.target&&e.target.id==='gs')gsDrag=true},true);
+document.addEventListener('touchstart',e=>{if(e.target&&e.target.id==='gs')gsDrag=true},{capture:true,passive:true});
+['pointerup','pointercancel','touchend','touchcancel'].forEach(t=>document.addEventListener(t,()=>{if(gsDrag)gsEnd()},true));
+document.addEventListener('input',e=>{const g=e.target;if(!g||g.id!=='gs')return;set.gl=+g.value;g.setAttribute('aria-valuetext',glassText(set.gl));if(!gsRaf)gsRaf=requestAnimationFrame(()=>{gsRaf=0;if(gsDrag)gsScoped(set.gl);else glassVars(set.gl,isDark())})});
+document.addEventListener('change',e=>{const g=e.target;if(!g||g.id!=='gs')return;if(gsDrag){gsEnd();return}set.gl=+g.value;set.gv=3;LS.set(set);if(!gsRaf)glassVars(set.gl,isDark())});
+// radio groups in the settings sheet: arrow keys (mirrored for right-to-left), Home and End move the selection
+document.addEventListener('keydown',e=>{const r=e.target.closest&&e.target.closest('#sh [role="radio"]');if(!r||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();const g=[...r.parentElement.querySelectorAll('[role="radio"]')],i=g.indexOf(r),rtl=getComputedStyle(r).direction==='rtl',k=e.key;let n=k==='Home'?0:k==='End'?g.length-1:(i+((k==='ArrowDown'||k===(rtl?'ArrowLeft':'ArrowRight'))?1:-1)+g.length)%g.length;if(n===i)return;g[n].focus();g[n].click()});
+// the gear's press motion: one 60-degree turn per press (pointer, tap, Enter, Space); hover and focus-visible run it
+// from the stylesheet. .gp stays until the gear is neither hovered nor focused, so dropping it never replays the turn.
+(()=>{const gp=b=>{if(b._gt||(matchMedia('(hover:hover)').matches&&b.matches(':hover'))||b.matches(':focus-visible'))return;b.classList.remove('gp')};
+const press=e=>{const b=e.target.closest&&e.target.closest('#gear');if(!b)return;b.classList.remove('gp');void b.offsetWidth;b.classList.add('gp');clearTimeout(b._gt);b._gt=setTimeout(()=>{b._gt=0;gp(b)},450)};
+addEventListener('pointerdown',press,true);addEventListener('keydown',e=>{if(!e.repeat&&(e.key==='Enter'||e.key===' '))press(e)},true);
+const out=e=>{const b=e.target.closest&&e.target.closest('#gear.gp');if(b)setTimeout(()=>gp(b),0)};addEventListener('mouseout',out,true);addEventListener('focusout',out,true)})();
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('sh').classList.contains('open')){closeSh();return}const q=$('q');if(q&&q.value){q.value='';q.dispatchEvent(new Event('input',{bubbles:true}));q.focus();return;}}});
+// S2: the settings and save sheets are modal: focus moves into the panel on open, Tab stays inside, and closing returns focus to the opener.
+let shOp=null;
+function openSh(label,opener){const sh=$('sh'),p=sh.querySelector('.p');p.setAttribute('aria-label',label);if(!sh.classList.contains('open'))shOp=opener||(document.activeElement!==document.body?document.activeElement:null);sh.classList.add('open');p.focus({preventScroll:true})}
+function closeSh(back){const sh=$('sh');if(!sh.classList.contains('open'))return;gsEnd();sh.classList.remove('open');const o=shOp;shOp=null;if(back!==false&&o&&o.isConnected)o.focus({preventScroll:true})}
+document.addEventListener('keydown',e=>{const sh=$('sh');if(e.key!=='Tab'||!sh.classList.contains('open'))return;const p=sh.querySelector('.p'),f=[...p.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.tabIndex>=0&&x.getClientRects().length);if(!f.length){e.preventDefault();p.focus();return}const a=document.activeElement,i=f.indexOf(a);if(e.shiftKey&&(i<=0)){e.preventDefault();f[f.length-1].focus()}else if(!e.shiftKey&&(i===-1||i===f.length-1)){e.preventDefault();f[0].focus()}});
+// M5: each history entry keeps its own scroll position (history.state.sp -> y); back/forward restore it, new navigations start at the top.
+try{history.scrollRestoration='manual'}catch(e){}
+const SP={m:(()=>{try{return JSON.parse(sessionStorage.getItem('gq-sp'))||{}}catch(e){return{}}})(),save(){try{sessionStorage.setItem('gq-sp',JSON.stringify(SP.m))}catch(e){}}};
+let spN=0;
+function spId(){const st=history.state;if(st&&st.sp)return st.sp;const id=Date.now().toString(36)+'.'+(spN++);try{history.replaceState(Object.assign({},st,{sp:id}),'')}catch(e){}return id}
+addEventListener('scroll',()=>{const st=history.state;if(st&&st.sp)SP.m[st.sp]=scrollY},{passive:true});
+addEventListener('pagehide',()=>SP.save());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')SP.save()});
+// S3: after a route change focus moves to the page heading (no scroll); then the entry's scroll position is applied (M5).
+function navDone(){$('app').style.minHeight='';const h=$('app').querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true})}const y=SP.m[spId()];scrollTo(0,y>0?y:0)}
+addEventListener('hashchange',()=>{closeSh(false);if(rouAbort)rouAbort();render();navDone()});
+// S6: Enter opens the top result, or closes the keyboard when there is none; on touch screens the focused box scrolls near the top.
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'||!e.target||e.target.id!=='q'||e.isComposing)return;e.preventDefault();const l=rank(e.target.value);if(l.length)location.hash='#/word/'+l[0].id;else e.target.blur()});
+document.addEventListener('focusin',e=>{const q=e.target;if(!q||q.id!=='q'||!matchMedia('(pointer:coarse)').matches)return;setTimeout(()=>{const b=q.closest('.sb');if(!b||document.activeElement!==q)return;const g=$('gear'),off=(g?g.getBoundingClientRect().bottom:0)+12,y=Math.max(0,b.getBoundingClientRect().top+scrollY-off);if(document.documentElement.scrollHeight-innerHeight<y)$('app').style.minHeight=(innerHeight+y)+'px';scrollTo(0,y)},300)});
+// the temporary room for that scroll goes away once the box loses focus or the route changes
+document.addEventListener('focusout',e=>{if(e.target&&e.target.id==='q')$('app').style.minHeight=''});
+// M2: share the static page (its own title and link preview); without the share sheet, copy the link.
+function cpy(u){try{const t=document.createElement('textarea');t.value=u;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:0;opacity:0';document.body.appendChild(t);t.select();const ok=document.execCommand('copy');t.remove();return ok}catch(e){return false}}
+function shareLink(path){const url=location.origin+path,title=document.title,ok=()=>toast('تم نسخ الرابط',CK);const copy=()=>{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(ok,()=>{if(cpy(url))ok()});else if(cpy(url))ok()};if(navigator.share)navigator.share({title,url}).catch(err=>{if(!err||err.name!=='AbortError')copy()});else copy()}
 const PR={get(){try{return JSON.parse(localStorage.getItem('gq-prog'))||{done:[]}}catch(e){return{done:[]}}},set(v){try{localStorage.setItem('gq-prog',JSON.stringify(v))}catch(e){}}};
 let CH=[],CHM={},Q=null,NS=false,AU=null;
-const CK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4"><path d="M5 12l5 5 9-10"/></svg>',LK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-const OKI='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-inline-end:8px"><path d="M5 12l5 5 9-10"/></svg>',BADI='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-inline-end:8px"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const CK='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4"><path d="M5 12l5 5 9-10"/></svg>',LK='<svg class="i-lk" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const OKI='<svg class="qk" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-inline-end:8px"><path pathLength="1" d="M5 12l5 5 9-10"/></svg>',BADI='<svg class="qx" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-inline-end:8px"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const NOW=()=>window.__NOW__||Date.now(),cairo=t=>new Date(t).toLocaleDateString('en-CA',{timeZone:'Africa/Cairo'}),dnum=s=>{const a=s.split('-');return Date.UTC(+a[0],+a[1]-1,+a[2])/864e5};
-function released(){/* Single release decision source (mirror of functions/challenge.js computeUnlocked). Sequential now: day 1 open, the next day opens only after the previous is done; releasedUpTo is an explicit admin override that can pre-open days. Planned date-based release changes HERE only. */const d=done(),N=CH.length;let prefix=0;for(let i=1;i<=N;i++){if(d.includes(i))prefix=i;else break}let u=Math.min(N,prefix+1);if(CHM.releasedUpTo!=null)u=Math.max(u,Math.max(0,Math.min(N,+CHM.releasedUpTo)));return u}
+function released(){/* Single release decision source (mirror of shared/challenge.js computeUnlocked). Sequential now: day 1 open, the next day opens only after the previous is done; releasedUpTo is an explicit admin override that can pre-open days. Planned date-based release changes HERE only. */const d=done(),N=CH.length;let prefix=0;for(let i=1;i<=N;i++){if(d.includes(i))prefix=i;else break}let u=Math.min(N,prefix+1);if(CHM.releasedUpTo!=null)u=Math.max(u,Math.max(0,Math.min(N,+CHM.releasedUpTo)));return u}
 function isDayUnlocked(n){return +n>=1&&+n<=released()}
 function lockMsg(n){const r=released();if(!r&&CHM.startDate)return 'يبدأ التحدي يوم '+CHM.startDate;if(n===r+1&&CHM.releasedUpTo==null)return 'اليوم '+n+' يفتح بعد إتمام اليوم السابق';return 'اليوم '+n+' لم يُفتح بعد'}
-function toast(m){const t=document.createElement('div');t.className='g toast';t.innerHTML=LK+' '+esc(m);document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
+function toast(m,ic){const t=document.createElement('div');t.className='g toast';t.innerHTML=(ic||LK)+' '+esc(m);document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
 const done=()=>PR.get().done||[];
 const VW={get(){try{return JSON.parse(localStorage.getItem('gq-view'))||{}}catch(e){return{}}},set(v){try{localStorage.setItem('gq-view',JSON.stringify(v))}catch(e){}}};
 const dkey=(n,w)=>n+':'+w.s.num+':'+w.k;
@@ -480,10 +771,26 @@ const dayWords=d=>d.w.map(x=>{const no=Array.isArray(x)?x[0]:x.no,k=Array.isArra
 const nextDay=()=>{const d=done(),r=released(),x=CH.find(c=>!d.includes(c.d)&&c.d<=r);return x?x.d:Math.max(1,r)};
 const ring=(n,t,sz=64)=>{const c=2*Math.PI*26;return `<svg width="${sz}" height="${sz}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--ln)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--ac)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(c*n/t).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 32 32)"/><text x="32" y="38" text-anchor="middle" font-size="18" font-weight="600" fill="var(--tx)" font-family="IBM Plex Sans Arabic">${n}</text></svg>`};
 const ringCard=()=>CH.length?`<a class="g card" href="#/challenge" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(done().length,CH.length)}</span><div style="flex:1"><b>تحدي غريب عمّ</b><div class="m">${done().length?'اليوم '+Math.min(nextDay(),CH.length)+' من '+CH.length:nc(CH.length,ND)+' لفهم كلمات جزء عم'}</div></div><span class="btn" style="height:40px">${done().length?'تابع'+BI.fw:'ابدأ'}</span></a>`:'';
-function chView(){const dn=done(),nd=nextDay(),r=released();return `${head()}<div><h1>تحدي غريب عمّ</h1><div class="sub">${nc(CH.length,ND)}، يوم جديد كل يوم مع مقطع مصوّر.</div></div><div class="g card" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(dn.length,CH.length)}</span><div style="flex:1"><b>${dn.length} من ${nc(CH.length,NDC)}</b><div class="m">${r?'اليوم الحالي: '+r:lockMsg(1)}</div></div></div><div class="cg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px 0;justify-items:center">${CH.map(c=>{const o=dn.includes(c.d),lk=c.d>r,cl='g dy'+(o?' ok':'')+(c.d===r?' cur':'')+(lk?' lk':''),bg=o?`<span class="bg">${CK}</span>`:lk?`<span class="bg">${LK}</span>`:'';return lk?`<button class="${cl}" data-a="lock" data-d="${c.d}" aria-label="اليوم ${c.d} مقفول">${c.d}${bg}</button>`:`<a href="#/day/${c.d}" class="${cl}" aria-label="اليوم ${c.d}">${c.d}${bg}</a>`}).join('')}</div><div class="lg"><span class="li"><span class="g dy ok sw"><span class="bg">${CK}</span></span>مكتمل</span><span class="li"><span class="g dy sw"></span>متاح</span><span class="li"><span class="g dy cur sw"></span>اليوم</span><span class="li"><span class="g dy lk sw"><span class="bg">${LK}</span></span>مقفول</span></div>${r?`<div class="acts"><a class="btn" href="#/day/${nd}">${dn.length?'تابع اليوم '+nd+BI.fw:'ابدأ التحدي'}</a>${dn.length?'<button class="btn o" data-a="reset">إعادة التحدي</button>':''}</div>`:''}`}
+function chView(){const dn=done(),nd=nextDay(),r=released();return `${head()}<div><h1>تحدي غريب عمّ</h1><div class="sub">${nc(CH.length,ND)}، يُفتح كل يوم بعد إتمام اليوم الذي قبله، مع مقطع مصوّر.</div></div><div class="g card chc" style="display:flex;align-items:center;gap:16px;padding:14px 18px"><span>${ring(dn.length,CH.length)}</span><div style="flex:1"><b>${dn.length} من ${nc(CH.length,NDC)}</b><div class="m">${r?'اليوم الحالي: '+r:esc(lockMsg(1))}</div></div></div><div class="cg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px 0;justify-items:center">${CH.map(c=>{const o=dn.includes(c.d),lk=c.d>r,cl='g dy'+(o?' ok':'')+(c.d===r?' cur':'')+(lk?' lk':''),bg=o?`<span class="bg">${CK}</span>`:lk?`<span class="bg">${LK}</span>`:'';return lk?`<button class="${cl}" data-a="lock" data-d="${c.d}" aria-label="اليوم ${c.d} مقفول">${c.d}${bg}</button>`:`<a href="#/day/${c.d}" class="${cl}" aria-label="اليوم ${c.d}">${c.d}${bg}</a>`}).join('')}</div><div class="lg"><span class="li"><span class="g dy ok sw"><span class="bg">${CK}</span></span>مكتمل</span><span class="li"><span class="g dy sw"></span>متاح</span><span class="li"><span class="g dy cur sw"></span>اليوم</span><span class="li"><span class="g dy lk sw"><span class="bg">${LK}</span></span>مقفول</span></div>${r?`<div class="acts"><a class="btn" href="#/day/${nd}">${dn.length?'تابع اليوم '+nd+BI.fw:'ابدأ التحدي'}</a>${dn.length?'<button class="btn o" data-a="reset">إعادة التحدي</button>':''}</div>`:''}`}
 let DG=null; // D3: current day state {n,m,exp:Set(index)}
-function refreshDay(){const c=CH.find(x=>x.d===(DG&&DG.n));if(!c)return;const ws=dayWords(c),M=ws.length,opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,ok=done().includes(c.d),all=viewedAll(c.d);const cnt=document.querySelector('.dcount');if(cnt){cnt.textContent=K+' من '+nc(M,NW);cnt.dataset.k=K;cnt.dataset.mtot=M}const bar=document.querySelector('.dprog .bar i');if(bar)bar.style.width=(M?Math.round(K/M*100):0)+'%';document.querySelectorAll('#dw .dcard').forEach(el=>{const i=+el.dataset.i,w=ws[i],b=el.querySelector('.bdg');if(b&&w)b.innerHTML=(opened[dkey(c.d,w)]===true)?DCK:String(i+1)});const db=document.querySelector('[data-a="done"][data-d]');if(db){db.classList.toggle('o',ok);db.disabled=!ok&&!all;db.textContent=ok?'إلغاء الإنجاز':(all?'تم إنجاز اليوم':'اقرأ معاني كل الكلمات أولًا')}}
-function dayView(n){const c=CH.find(x=>x.d==n);if(!c)return _view(['word','x']);if(c.d>released())return `${head()}<div class="g card" style="text-align:center"><h1>اليوم ${c.d}</h1><div class="sub" style="margin:8px 0 14px">${esc(lockMsg(c.d))}</div><a class="btn" href="#/challenge">العودة إلى التحدي</a></div>`;const ws=dayWords(c),M=ws.length,ok=done().includes(c.d);if(!DG||DG.n!==c.d)DG={n:c.d,m:M,exp:new Set()};DG.m=M;if(M===1){DG.exp.add(0);markWordOpened(c.d,ws[0])}const opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,pct=M?Math.round(K/M*100):0;const card=(w,i)=>{const open=DG.exp.has(i),seen=opened[dkey(c.d,w)]===true;return `<button type="button" class="dcard${open?' open':''}" data-a="dword" data-i="${i}" aria-expanded="${open?'true':'false'}" style="--d:${i*140}ms"><span class="dhead"><span class="bdg" aria-hidden="true">${seen?DCK:i+1}</span><span class="q dword">${esc(w.word)}</span><span class="chev">${DCHEV}</span></span><span class="dbody"><span class="ay q">${AY(w.ay)}</span><span>${esc(w.mean)}</span><span class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</span></span></button>`};const dn=(dir)=>{const p=dir==='pv',on=p?c.d>1:c.d<CH.length,hr='#/day/'+(p?c.d-1:c.d+1),ic=p?BI.bw:BI.fw,lbl=p?'اليوم السابق':'اليوم التالي',inner=p?ic+lbl:lbl+ic;return on?`<a class="btn o ${dir}" href="${hr}">${inner}</a>`:`<span class="btn o ${dir}" aria-disabled="true" style="opacity:.5;pointer-events:none">${inner}</span>`};return `${head()}<div class="dh">${dn('pv')}<h1>اليوم ${c.d} <span class="m">من ${CH.length}</span></h1>${dn('nx')}</div><div class="g card dprog"><b class="dcount" data-k="${K}" data-mtot="${M}">${K} من ${nc(M,NW)}</b><div class="bar"><i style="width:${pct}%"></i></div></div><div id="dw" class="dw">${ws.map((w,i)=>card(w,i)).join('')}${c.reel?`<a class="btn o" href="${esc(c.reel)}" target="_blank" rel="noopener">شاهد المقطع</a>`:''}<div class="acts"><button class="btn${ok?' o':''}" data-a="done" data-d="${c.d}" ${(!ok&&!viewedAll(c.d))?'disabled':''}>${ok?'إلغاء الإنجاز':(viewedAll(c.d)?'تم إنجاز اليوم':'اقرأ معاني كل الكلمات أولًا')}</button></div></div>`}
+// Video links per platform (reelIg/reelTt/reelYt); a day with only the old single link shows it as its platform's button.
+const PF=[['ig','إنستجرام','reelIg',['instagram.com','www.instagram.com']],['tt','تيك توك','reelTt',['tiktok.com','www.tiktok.com','vm.tiktok.com']],['yt','يوتيوب','reelYt',['youtube.com','www.youtube.com','m.youtube.com','youtu.be']]];
+const pfOf=u=>{try{const x=new URL(u),h=x.hostname.toLowerCase();if(x.protocol!=='https:')return null;const p=PF.find(p=>p[3].includes(h));return p?p[0]:null}catch(e){return null}};
+const dayLinks=c=>{const l=PF.filter(p=>typeof c[p[2]]==='string'&&pfOf(c[p[2]])===p[0]).map(p=>[p,c[p[2]]]);if(l.length||!c.reel)return l;const k=pfOf(c.reel);return k?[[PF.find(p=>p[0]===k),c.reel]]:[]};
+const vCard=c=>{const l=dayLinks(c);return l.length?`<div class="g card vcard"><h2>شاهد شرح اليوم</h2><div class="vbs" data-n="${l.length}">${l.map(([p,u])=>`<a class="btn o vb" href="${esc(u)}" target="_blank" rel="noopener">${IC[p[0]].replace('<svg ','<svg class="im i-pf" aria-hidden="true" ')}<span>${p[1]}</span></a>`).join('')}</div></div>`:''};
+// Done/undo: a fixed slot for the check and the three labels stacked in one grid cell; the state (data-ds: r = read first,
+// d = done, u = undo) only changes opacity and the check's stroke-dashoffset, so nothing moves.
+const DCKP='<svg class="dck" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M5 12l5 5 9-10"/></svg>';
+const DLB=[['r','اقرأ معاني كل الكلمات أولًا'],['d','تم إنجاز اليوم'],['u','إلغاء الإنجاز']];
+const dState=(ok,all)=>ok?'u':all?'d':'r';
+const doneBtn=(c,ok,all)=>{const st=dState(ok,all);return `<button class="btn dbtn${ok?' o':''}" data-a="done" data-d="${c.d}" data-ds="${st}"${st==='r'?' disabled':''}>${DCKP}<span class="dlb">${DLB.map(([k,l])=>`<span data-l="${k}"${k===st?'':' aria-hidden="true"'}>${l}</span>`).join('')}</span></button>`};
+// S4: day prev/next use the shared pill. A next day that is still locked shows a disabled pill with a lock line; it is
+// an aria-disabled button (reachable by keyboard and screen readers, never a link): a tap or Enter shows the lock toast
+// and shakes the lock instead of navigating.
+function dayPill(n,dir){const p=dir==='pv',t=p?n-1:n+1,label=p?'اليوم السابق':'اليوم التالي';if(t<1||t>CH.length)return pnBtn({label,dis:true},dir);if(!p&&t>released())return pnBtn({label,dis:true,sur:'بعد إتمام اليوم',ic:BI.lk,say:true,lock:t},dir);return pnBtn({label,href:'#/day/'+t},dir)}
+function refreshDay(){const c=CH.find(x=>x.d===(DG&&DG.n));if(!c)return;const ws=dayWords(c),M=ws.length,opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,ok=done().includes(c.d),all=viewedAll(c.d);const cnt=document.querySelector('.dcount');if(cnt){cnt.textContent=K+' من '+nc(M,NW);cnt.dataset.k=K;cnt.dataset.mtot=M}const bar=document.querySelector('.dprog .bar i');if(bar)bar.style.width=(M?Math.round(K/M*100):0)+'%';document.querySelectorAll('#dw .dcard').forEach(el=>{const i=+el.dataset.i,w=ws[i],b=el.querySelector('.bdg');if(b&&w)b.innerHTML=(opened[dkey(c.d,w)]===true)?DCK:String(i+1)});const db=document.querySelector('[data-a="done"][data-d]'),st=dState(ok,all);if(db&&db.dataset.ds!==st){db.dataset.ds=st;db.classList.toggle('o',ok);db.disabled=st==='r';db.querySelectorAll('.dlb>span').forEach(e=>{if(e.dataset.l===st)e.removeAttribute('aria-hidden');else e.setAttribute('aria-hidden','true')})}}
+function dayView(n){const c=CH.find(x=>x.d==n);if(!c)return _view(['word','x']);if(c.d>released())return `${head()}<div class="g card" style="text-align:center"><h1>اليوم ${c.d}</h1><div class="sub" style="margin:8px 0 14px">${esc(lockMsg(c.d))}</div><a class="btn" href="#/challenge">العودة إلى التحدي</a></div>`;const ws=dayWords(c),M=ws.length,ok=done().includes(c.d);if(!DG||DG.n!==c.d)DG={n:c.d,m:M,exp:new Set()};DG.m=M;if(M===1){DG.exp.add(0);markWordOpened(c.d,ws[0])}const opened=VW.get()[c.d]||{},K=ws.filter(w=>opened[dkey(c.d,w)]===true).length,pct=M?Math.round(K/M*100):0;const card=(w,i)=>{const open=DG.exp.has(i),seen=opened[dkey(c.d,w)]===true;return `<button type="button" class="dcard${open?' open':''}" data-a="dword" data-i="${i}" aria-expanded="${open?'true':'false'}" style="--d:${i*140}ms"><span class="dhead"><span class="bdg" aria-hidden="true">${seen?DCK:i+1}</span><span class="q dword">${esc(w.dw)}</span><span class="chev">${DCHEV}</span></span><span class="dbody"><span class="ay q">${AY(w.ay)}</span><span>${esc(w.mean)}</span><span class="m">${esc(w.s.name)} · آية ${esc(w.ay.label)}</span></span></button>`};return `${head()}<div class="dh"><h1>اليوم ${c.d} <span class="m">من ${CH.length}</span></h1></div><div class="g card dprog"><b class="dcount" data-k="${K}" data-mtot="${M}">${K} من ${nc(M,NW)}</b><div class="bar"><i style="width:${pct}%"></i></div></div><div class="cw dnav"><div class="dw dmain"><div id="dw" class="dw">${ws.map((w,i)=>card(w,i)).join('')}</div>${vCard(c)}<div class="acts">${doneBtn(c,ok,viewedAll(c.d))}</div></div>${dayPill(c.d,'pv')}${dayPill(c.d,'nx')}</div>`}
+const _rdS4=refreshDay;refreshDay=function(){_rdS4();const n=DG&&DG.n,el=document.querySelector('#app .cw.dnav .nx');if(n&&el){const h=dayPill(n,'nx');if(el.outerHTML!==h)el.outerHTML=h}if(window.markInk)markInk($('dw'))};
 // ---- C3: Web Audio sound module (4 short, theme-aware cues, lazily created) ----
 const SND=(()=>{let ctx=null;const shade=()=>document.body.classList.contains('shade');
 const ac=()=>{if(!set.snd)return null;try{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}catch(e){return null}};
@@ -504,21 +811,24 @@ return{ok:()=>play('ok'),bad:()=>play('bad'),tick:()=>play('tick'),land:()=>play
 // D3: the day screen no longer spins a roulette; opening a card marks that word viewed.
 // quiz-core.js can fail to load (network); show a retry view instead of throwing, and report it once.
 function qStart(){if(!window.QCORE){if(!qStart.rep&&window.Sentry&&Sentry.captureMessage){qStart.rep=1;try{Sentry.captureMessage('quiz: QCORE missing (quiz-core.js did not load)')}catch(e){}}return false}const sh=a=>QCORE.shuffle(a);Q={i:0,s:0,a:null,qs:sh(W).slice(0,Math.min(10,W.length)).map(w=>({w,o:sh(QCORE.pickDistractors(w,W,3).concat([w]))}))}}
-function qView(){if(!Q&&qStart()===false)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;gap:10px"><div style="font-size:52px;color:var(--ac);line-height:1.2" aria-hidden="true">⚠</div><h1 style="font-size:24px">تعذّر تحميل الاختبار</h1><div class="sub">تأكد من اتصالك بالإنترنت ثم أعد المحاولة.</div></div><div class="acts"><button class="btn" data-a="reload">إعادة المحاولة</button><a class="btn o g" href="#/">الرئيسية</a></div>`;if(!Q)qStart();const n=Q.qs.length;if(Q.i>=n)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px"><h1>نتيجتك</h1>${ring(Q.s,n,96)}<div class="sub">${Q.s} من ${n}</div><div class="acts"><button class="btn" data-a="qre">اختبار جديد</button><a class="btn o" href="#/">الرئيسية</a></div></div>`;const q=Q.qs[Q.i],a=Q.a;return `${head()}<div style="display:flex;justify-content:space-between;align-items:center"><h1>اختبر نفسك</h1><span class="m">${Q.i+1} من ${n}</span></div><div class="bar"><i style="width:${Q.i/n*100}%"></i></div><div class="g card"><div class="m">ما معنى الكلمة المظللة؟</div><div class="ay q">${AY(q.w.ay)}</div></div><div class="opts">${q.o.map((x,i)=>`<button class="g opt${a!==null?(x===q.w?' ok':i===a?' bad':''):''}" data-o="${i}"${a!==null?' disabled':''}><span class="ogi" aria-hidden="true">${a!==null?(x===q.w?OKI:i===a?BADI:''):''}</span>${esc(x.mean)}</button>`).join('')}</div>${`<div class="acts"${a===null?' style="visibility:hidden"':''}><button class="btn" data-a="qn">${Q.i+1<n?'التالي'+BI.fw:'النتيجة'}</button><a class="btn o" href="#/word/${q.w.id}">افتح الكلمة</a></div>`}`}
-function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');const art=(sc,cls,lbl,on)=>`<button class="opt2${on?' on':''}" data-sc="${sc}" aria-pressed="${on?'true':'false'}"><div class="artw"><div class="art ${cls}"><div class="lg3 q">غريب القرآن</div><div class="pl">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div class="aw q">${esc(w.word)}</div><div class="av q">${AY(w.ay)}</div><div class="am">${esc(w.mean)}</div></div></div><span>${lbl}</span></button>`;p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:44px">إلغاء</button></div><div class="m">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="arts">${art('n','rg','عادية · 1080×1350',false)}${art('s','st','ستوري · 1080×1920',true)}</div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="s" style="align-self:stretch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>حفظ على جهازي</button>`;$('sh').classList.add('open');cardFonts().then(()=>p.querySelectorAll('.artw').forEach(wr=>{const im=wr.firstElementChild;im.style.padding='0';const c=renderCard(w,im.classList.contains('st')?'s':'n');const put=u=>{const i=document.createElement('img');i.alt='';i.src=u;i.style.cssText='width:100%;height:100%;object-fit:cover;display:block';im.textContent='';im.appendChild(i)};if(c.toBlob)c.toBlob(b=>put(URL.createObjectURL(b)),'image/png');else put(c.toDataURL('image/png'))}))}
+function qView(){if(!Q&&qStart()===false)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;gap:10px"><div style="font-size:52px;color:var(--ac);line-height:1.2" aria-hidden="true">⚠</div><h1 style="font-size:24px">تعذّر تحميل الاختبار</h1><div class="sub">تأكد من اتصالك بالإنترنت ثم أعد المحاولة.</div></div><div class="acts"><button class="btn" data-a="reload">إعادة المحاولة</button><a class="btn o g" href="#/">الرئيسية</a></div>`;if(!Q)qStart();const n=Q.qs.length;if(Q.i>=n)return `${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px"><h1>نتيجتك</h1>${ring(Q.s,n,96)}<div class="sub">${Q.s} من ${n}</div><div class="acts"><button class="btn" data-a="qre">اختبار جديد</button><a class="btn o" href="#/">الرئيسية</a></div></div>`;const q=Q.qs[Q.i],a=Q.a;return `${head()}<div style="display:flex;justify-content:space-between;align-items:center"><h1>اختبر نفسك</h1><span class="m">${Q.i+1} من ${n}</span></div><div class="bar"><i style="width:${Q.i/n*100}%"></i></div><div class="g card"><div class="m">ما معنى الكلمة المظللة؟</div><div class="ay q">${AY(q.w.ay)}</div></div><div class="opts">${q.o.map((x,i)=>`<button class="g opt${a!==null?(x===q.w?' ok':i===a?' bad':''):''}" data-o="${i}"${a!==null?' disabled':''}><span class="ogi" aria-hidden="true">${a!==null?(x===q.w?OKI:i===a?BADI:'').replace('<svg class="q',Q.rv?'<svg class="rv q':'<svg class="q'):''}</span>${esc(x.mean)}</button>`).join('')}</div>${`<div class="acts"${a===null?' style="visibility:hidden"':''}><button class="btn" data-a="qn">${Q.i+1<n?'التالي'+BI.fw:'النتيجة'}</button><a class="btn o" href="#/word/${q.w.id}">افتح الكلمة</a></div>`}`}
+function saveSheet(id){const w=byId(id);if(!w)return;const p=document.querySelector('#sh .p');const art=(sc,cls,lbl,on)=>`<button class="opt2${on?' on':''}" data-sc="${sc}" aria-pressed="${on?'true':'false'}"><div class="artw"><div class="art ${cls}"><div class="lg3 sn">غريب القرآن</div><div class="pl">${esc(w.s.name)} · آية ${esc(w.ay.label)}</div><div class="aw q">${esc(w.dw)}</div><div class="av q">${AY(w.ay)}</div><div class="am">${esc(w.mean)}</div></div></div><span>${lbl}</span></button>`;p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">حفظ كصورة</b><button class="btn o" data-a="close" style="height:44px">إلغاء</button></div><div class="m">اختر المقاس ثم احفظ الصورة على جهازك</div><div class="arts">${art('n','rg','عادية · <bdi dir="ltr">1080×1350</bdi>',false)}${art('s','st','ستوري · <bdi dir="ltr">1080×1920</bdi>',true)}</div><button class="btn" data-a="savepng" data-id="${w.id}" data-size="s" style="align-self:stretch">${BI.dl}حفظ على جهازي</button>`;cardFonts().then(()=>p.querySelectorAll('.artw').forEach(wr=>{const im=wr.firstElementChild;im.style.padding='0';const c=renderCard(w,im.classList.contains('st')?'s':'n');const put=u=>{const i=document.createElement('img');i.alt='';i.src=u;i.style.cssText='width:100%;height:100%;object-fit:cover;display:block';im.textContent='';im.appendChild(i)};if(c.toBlob)c.toBlob(b=>put(URL.createObjectURL(b)),'image/png');else put(c.toDataURL('image/png'))}))}
 function cardFonts(){if(!document.fonts||!document.fonts.load)return Promise.resolve();return Promise.all(CARD_FONTS.map(([f,t])=>document.fonts.load(f,t).catch(()=>{}))).then(()=>document.fonts.ready).catch(()=>{})}
 function cardMobile(){try{if(matchMedia('(hover: none) and (pointer: coarse)').matches)return true}catch(e){}return /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle|Opera Mini/i.test(navigator.userAgent||'')}
 function downloadBlob(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 // Save-as-image card: mirrors the word page at a fixed size; content auto-fits instead of growing the canvas.
-const CARD_FONTS=[['40px "Amiri Quran"','غريب ﴿﴾'],['40px "Amiri Quran"','a'],['400 40px "IBM Plex Sans Arabic"','المعنى'],['400 40px "IBM Plex Sans Arabic"','a'],['500 40px "IBM Plex Sans Arabic"','المعنى'],['500 40px "IBM Plex Sans Arabic"','a'],['600 40px "IBM Plex Sans Arabic"','المعنى'],['600 40px "IBM Plex Sans Arabic"','a']];
+const CARD_FONTS=[['700 40px "Amiri"','غريب القرآن'],['40px "KFGQPC Uthmanic Hafs"','بِسۡمِ'],['40px "Amiri Quran"','غريب ﴿﴾'],['40px "Amiri Quran"','a'],['400 40px "IBM Plex Sans Arabic"','المعنى'],['400 40px "IBM Plex Sans Arabic"','a'],['500 40px "IBM Plex Sans Arabic"','المعنى'],['500 40px "IBM Plex Sans Arabic"','a'],['600 40px "IBM Plex Sans Arabic"','المعنى'],['600 40px "IBM Plex Sans Arabic"','a']];
 function renderCard(w,size){size=size==='s'?'s':'n';
 const st=size==='s',W=1080,H=st?1920:1350,K=st?1.1:1,S=W/390,B=170/64*K,M=72,P=60*K,PM=54*K,GAP=st?44:36,TOP=st?250:72,BOT=st?360:72,IW=W-2*M-2*P,XR=W-M-P,
 c=document.createElement('canvas'),x=c.getContext('2d'),cs=getComputedStyle(document.documentElement),v=k=>cs.getPropertyValue(k).trim(),shade=document.body.classList.contains('shade');
 c.width=W;c.height=H;x.direction='rtl';x.textAlign='right';
-const AQ=s=>s+'px "Amiri Quran"',PX=(wt,s)=>wt+' '+s+'px "IBM Plex Sans Arabic"';
+// Quran text (word, ayah) is drawn in KFGQPC, the logo in Amiri Quran; QT applies the display mapping of /qfont.js when KFGQPC could not load.
+const AQ=s=>s+'px "Amiri Quran"',AB=s=>'700 '+s+'px "Amiri"',QF=s=>s+'px "KFGQPC Uthmanic Hafs","Amiri Quran"',QT=s=>window.qText?window.qText(s):String(s),PX=(wt,s)=>wt+' '+s+'px "IBM Plex Sans Arabic"';
 const rgb=s=>{x.fillStyle='#000';x.fillStyle=s||'#000';const f=x.fillStyle;if(f[0]==='#')return[1,3,5].map(i=>parseInt(f.substr(i,2),16)).concat(1);const m=f.match(/[\d.]+/g).map(Number);return[m[0],m[1],m[2],m[3]==null?1:m[3]]};
 const rgba=(k,a)=>`rgba(${k[0]},${k[1]},${k[2]},${a==null?k[3]:a})`,mix=(a,b,t)=>[0,1,2].map(i=>Math.round(a[i]*(1-t)+b[i]*t)).concat(1);
 const met=(font,t)=>{x.font=font;const m=x.measureText(t),s=parseFloat(font.replace(/^\d00 /,''));return{w:m.width,asc:m.actualBoundingBoxAscent,desc:m.actualBoundingBoxDescent,fa:m.fontBoundingBoxAscent!=null?m.fontBoundingBoxAscent:s*.9,fd:m.fontBoundingBoxDescent!=null?m.fontBoundingBoxDescent:s*.3}};
+// two lines as close in width as possible (like text-wrap: balance), or null when no split fits
+const balance2=(font,t,max)=>{x.font=font;const ws=String(t).split(' ');let best=null;for(let i=1;i<ws.length;i++){const a=ws.slice(0,i).join(' '),b=ws.slice(i).join(' '),wa=x.measureText(a).width,wb=x.measureText(b).width;if(wa<=max&&wb<=max&&(!best||Math.abs(wa-wb)<best.d))best={d:Math.abs(wa-wb),ls:[a,b]}}return best&&best.ls};
 const wrap=(font,t,max)=>{x.font=font;const out=[];let cur='',ok=true;for(const wd of String(t).split(' ')){const n=cur?cur+' '+wd:wd;if(cur&&x.measureText(n).width>max){out.push(cur);cur=wd}else cur=n;if(x.measureText(wd).width>max)ok=false}out.push(cur);return{ls:out,ok:ok&&out.every(l=>x.measureText(l).width<=max)}};
 // CSS-like line box: baseline sits half-leading below the box top.
 const lbox=(font,lh,s)=>{const k=met(font,'المعنى a');return{h:lh*s,base:(lh*s-(k.fa+k.fd))/2+k.fa}};
@@ -527,17 +837,18 @@ const pill=w.s.name+' · آية '+w.ay.label,LG=66*K,PF=32*K,PH=76*K,PPX=35*K;
 // Ayah as glue groups (split at spaces); each <mark> is one unbreakable piece, like the site's inline-block mark.
 const G=[];let cur=null;const nw=()=>{cur=[];G.push(cur)};
 const addT=t=>t.split(' ').forEach((p,i)=>{if(i>0||!cur)nw();if(p)cur.push({t:p,mk:false})});
-w.ay.segments.forEach((g,i)=>{if(i>0)nw();addT('﴿'+g.before);if(g.hl){if(!cur)nw();cur.push({t:g.hl,mk:true})}addT(g.after+'﴾')});
+w.ay.segments.forEach((g,i)=>{if(i>0)nw();const k=QText.markParts(g);addT('﴿'+QT(k.pre));if(k.mark){if(!cur)nw();cur.push({t:QT(k.mark),mk:true})}addT(QT(k.post)+'﴾')});
 const GR=G.filter(g=>g.length);
 const lay=f=>{const o={f,ok:true};
-const lg=met(AQ(LG),'غريب القرآن');o.HH=Math.max(PH,lg.asc+lg.desc);o.lg=lg;o.pw=met(PX(600,PF),pill).w+2*PPX;
-let ws=170*K*f,wl;for(;;){wl=wrap(AQ(ws),w.word,IW);if((wl.ls.length<=2&&wl.ok)||ws<24)break;ws*=.96}
+const lg=met(AB(LG),'غريب القرآن');o.HH=Math.max(PH,lg.asc+lg.desc);o.lg=lg;o.pw=met(PX(600,PF),pill).w+2*PPX;
+let ws=170*K*f,wl;for(;;){wl=wrap(QF(ws),QT(w.dw),IW);if((wl.ls.length<=2&&wl.ok)||ws<24)break;ws*=.96}
+if(wl.ls.length===2)wl.ls=balance2(QF(ws),QT(w.dw),IW)||wl.ls;
 if(!wl.ok||wl.ls.length>2)o.ok=false;
-const wm=wl.ls.map(t=>met(AQ(ws),t));const wb=[wm[0].asc];for(let i=1;i<wm.length;i++)wb.push(wb[i-1]+Math.max(1.5*ws,wm[i-1].desc+wm[i].asc+.08*ws));
+const wm=wl.ls.map(t=>met(QF(ws),t));const wb=[wm[0].asc];for(let i=1;i<wm.length;i++)wb.push(wb[i-1]+Math.max(1.5*ws,wm[i-1].desc+wm[i].asc+.08*ws));
 o.ws=ws;o.wl=wl.ls;o.wb=wb;o.wInk=wb[wb.length-1]+wm[wm.length-1].desc;o.div=o.wInk+28;
-const as=58*K*f,am=met(AQ(as),'﴿'),hl=(1.6*as-(am.fa+am.fd))/2,mT=am.fa+hl+.08*as,mB=am.fd+hl+.14*as,mX=.32*as;
-x.font=AQ(as);const sp=x.measureText(' ').width;
-const gs=GR.map(g=>{const ps=g.map(p=>{const k=met(AQ(as),p.t);return{t:p.t,mk:p.mk,w:k.w+(p.mk?2*mX:0),top:p.mk?Math.max(mT,k.asc):k.asc,bot:p.mk?Math.max(mB,k.desc):k.desc}});return{ps,w:ps.reduce((a,p)=>a+p.w,0)}});
+const as=58*K*f,am=met(QF(as),'﴿'),hl=(1.6*as-(am.fa+am.fd))/2,mT=am.fa+hl+.08*as,mB=am.fd+hl+.14*as,mX=.32*as;
+x.font=QF(as);const sp=x.measureText(' ').width;
+const gs=GR.map(g=>{const ps=g.map(p=>{const k=met(QF(as),p.t);return{t:p.t,mk:p.mk,w:k.w+(p.mk?2*mX:0),top:p.mk?Math.max(mT,k.asc):k.asc,bot:p.mk?Math.max(mB,k.desc):k.desc}});return{ps,w:ps.reduce((a,p)=>a+p.w,0)}});
 const al=[];let ln=null;for(const g of gs){if(g.w>IW)o.ok=false;if(ln&&ln.w+sp+g.w<=IW){ln.gs.push(g);ln.w+=sp+g.w}else{ln={gs:[g],w:g.w};al.push(ln)}}
 al.forEach(l=>{l.top=Math.max(...l.gs.flatMap(g=>g.ps.map(p=>p.top)));l.bot=Math.max(...l.gs.flatMap(g=>g.ps.map(p=>p.bot)))});
 const ab=al.length?[o.div+30+al[0].top]:[];for(let i=1;i<al.length;i++)ab.push(ab[i-1]+Math.max(2.1*as,al[i-1].bot+al[i].top+.1*as));
@@ -564,11 +875,11 @@ else{const va=okL>.5?.31:.6;disc(W-90*S,70*S,160*S,35*S,mix(C.b1,bgK,va),.8);dis
 const ops=[],cards={};let y=TOP+(avail-o.stack)/2;
 const T=(t,X,Y,font,col,card,al,role)=>{al=al||'right';x.font=font;x.textAlign=al;const m=x.measureText(t);ops.push({t,x:X,y:Y,font,col,card:card||null,al,role,box:{l:X-m.actualBoundingBoxLeft,r:X+m.actualBoundingBoxRight,t:Y-m.actualBoundingBoxAscent,b:Y+m.actualBoundingBoxDescent}})};
 const hy=y;y+=o.HH+GAP;cards.word={x:M,y,w:W-2*M,h:o.WH};const wy=y+P;y+=o.WH+GAP;cards.mean={x:M,y,w:W-2*M,h:o.MH};const my=y;y+=o.MH+GAP;const fy=y;
-const lgB=hy+o.HH/2+(o.lg.asc-o.lg.desc)/2;T('غريب القرآن',W-M,lgB,AQ(LG),rgba(C.ac,1),null,'right','logo');
+const lgB=hy+o.HH/2+(o.lg.asc-o.lg.desc)/2;T('غريب القرآن',W-M,lgB,AB(LG),rgba(C.ac,1),null,'right','logo');
 const pl={x:M,y:hy+(o.HH-PH)/2,w:o.pw,h:PH},pb=lbox(PX(600,PF),PH/PF,PF);
-o.wl.forEach((t,i)=>T(t,XR,wy+o.wb[i],AQ(o.ws),rgba(C.ac,1),'word','right','word'));
+o.wl.forEach((t,i)=>T(t,XR,wy+o.wb[i],QF(o.ws),rgba(C.ac,1),'word','right','word'));
 const divY=o.al.length?wy+o.div:null,marks=[];
-o.al.forEach((l,i)=>{const b=wy+o.ab[i];let xr=XR;l.gs.forEach(g=>{g.ps.forEach(p=>{if(p.mk){marks.push({x:xr-p.w,y:b-o.mT,w:p.w,h:o.mT+o.mB,card:'word'});T(p.t,xr-o.mX,b,AQ(o.as),C.tx,'word','right','ayah')}else T(p.t,xr,b,AQ(o.as),C.tx,'word','right','ayah');xr-=p.w});xr-=o.sp})});
+o.al.forEach((l,i)=>{const b=wy+o.ab[i];let xr=XR;l.gs.forEach(g=>{g.ps.forEach(p=>{if(p.mk){x.font=QF(o.as);x.textAlign='right';const q=x.measureText(p.t),hp=.12*o.as,rx=xr-o.mX,ik=(window.rasterInk&&rasterInk(QF(o.as),o.as,p.t,1))||(q.actualBoundingBoxLeft!=null?{left:q.actualBoundingBoxLeft,right:q.actualBoundingBoxRight,asc:q.actualBoundingBoxAscent,desc:q.actualBoundingBoxDescent}:null);marks.push(ik?{x:rx-ik.left-hp,y:b-ik.asc-hp,w:ik.left+ik.right+2*hp,h:ik.asc+ik.desc+2*hp,card:'word'}:{x:xr-p.w,y:b-o.mT,w:p.w,h:o.mT+o.mB,card:'word'});T(p.t,xr-o.mX,b,QF(o.as),C.tx,'word','right','ayah')}else T(p.t,xr,b,QF(o.as),C.tx,'word','right','ayah');xr-=p.w});xr-=o.sp})});
 let my2=my+PM;T('المعنى',XR,my2+o.L1.base,PX(400,30*K),C.mu,'mean','right','label');my2+=o.L1.h+o.g2;
 o.ml.forEach(t=>{T(t,XR,my2+o.L2.base,PX(500,o.ms),C.tx,'mean','right','meaning');my2+=o.L2.h});
 if(o.sl.length){my2+=o.g2;o.sl.forEach(t=>{T(t,XR,my2+o.L3.base,PX(400,27*K),C.mu,'mean','right','source');my2+=o.L3.h})}
@@ -595,48 +906,81 @@ function d2b(u){const s=u.slice(u.indexOf(',')+1),bin=atob(s),a=new Uint8Array(b
 function card(w,size){size=size==='s'?'s':'n';const name='ghareeb-'+w.id+'-'+(size==='s'?'story':'card')+'.png';const fire=()=>{const c=renderCard(w,size);if(cardMobile()){const b=d2b(c.toDataURL('image/png')),f=new File([b],name,{type:'image/png'});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){navigator.share({files:[f]}).catch(err=>{if(!err||err.name!=='AbortError')downloadBlob(b,name)});return}downloadBlob(b,name);return}if(c.toBlob)c.toBlob(b=>{if(b)downloadBlob(b,name)},'image/png');else downloadBlob(d2b(c.toDataURL('image/png')),name)};let ready=true;try{ready=!document.fonts||!document.fonts.check||CARD_FONTS.every(([f,t])=>document.fonts.check(f,t))}catch(e){ready=true}ready?fire():cardFonts().then(fire)}
 const _view=view;view=function(r){const p=r[0];if(p==='challenge')return chView();if(p==='day')return dayView(r[1]);if(p==='quiz')return qView();let h=_view(r);if(p==='home')h=h.replace('<div id="res"></div>','<div id="res"></div>'+ringCard());return h};
 const _render=render;render=function(){_render();if(route()[0]==='day'){const a=document.querySelectorAll('#nv a');if(a[2])a[2].classList.add('on')}};
-const _sheet=sheet;sheet=function(){_sheet();document.querySelector('#sh .p').insertAdjacentHTML('beforeend','<div class="tg"><span>الصوت</span><button data-s="1" class="'+(set.snd?'on':'')+'" aria-pressed="'+(set.snd?'true':'false')+'" aria-label="الصوت"></button></div>')};
+const _sheet=sheet;sheet=function(){_sheet();if(document.querySelector('#sh .psw'))document.querySelector('#sh .tgs').insertAdjacentHTML('beforeend',tgRow('s',set.snd,'الصوت'))};
+// rebuilding the settings panel keeps focus on the same control
+const _sheetF=sheet;sheet=function(){const p=$('sh').querySelector('.p'),a=document.activeElement,k=a&&a!==p&&p.contains(a)?['data-st','data-m','data-p','data-c','data-s','data-a','id'].find(x=>a.hasAttribute(x)):null,v=k&&a.getAttribute(k);_sheetF();if(k){const n=[...p.querySelectorAll('['+k+']')].find(x=>x.getAttribute(k)===v);(n||p).focus({preventScroll:true})}};
 const rr=()=>{const y=scrollY;render();scrollTo(0,y)};
 document.addEventListener('click',e=>{const t=e.target.closest('[data-o],[data-a],[data-s],[data-st],[data-sc]');if(!t)return;const d=t.dataset;
 if(d.st){if(!t.closest('#sh'))return;set.style=d.st;LS.set(set);applySet();sheet();return}
-if(d.o!==undefined&&Q&&Q.a===null){Q.a=+d.o;const q=Q.qs[Q.i];if(q.o[Q.a]===q.w){Q.s++;sfx('ok');navigator.vibrate&&navigator.vibrate(15)}else sfx('bad');rr();return}
+if(d.o!==undefined&&Q&&Q.a===null){Q.a=+d.o;const q=Q.qs[Q.i];if(q.o[Q.a]===q.w){Q.s++;sfx('ok');navigator.vibrate&&navigator.vibrate(15)}else sfx('bad');Q.rv=1;rr();Q.rv=0;return}
 if(d.a==='qn'){Q.i++;Q.a=null;render();return}
 if(d.a==='qre'){qStart();render();return}
 if(d.a==='done'){const p=PR.get(),n=+d.d;if(!isDayUnlocked(n)){toast(lockMsg(n));return}const has=p.done.includes(n);if(!has&&!viewedAll(n)){toast('اقرأ معاني كل الكلمات أولًا');return}p.done=has?p.done.filter(z=>z!==n):p.done.concat(n);PR.set(p);sfx(has?'undo':'done');refreshDay();return}
 if(d.a==='dword'){if(!DG)return;const c=CH.find(x=>x.d===DG.n);if(!c)return;const ws=dayWords(c),i=+d.i,w=ws[i];if(!w)return;if(DG.exp.has(i)){DG.exp.delete(i)}else{DG.exp.add(i);markWordOpened(c.d,w)}const open=DG.exp.has(i);t.classList.toggle('open',open);t.setAttribute('aria-expanded',open?'true':'false');refreshDay();return}
-if(d.a==='reset'){if(confirm('هل تريد مسح تقدمك في التحدي؟')){PR.set({done:[]});VW.set({});render()}return}
-if(d.a==='lock'){toast(lockMsg(+d.d));return}
-if(d.a==='card'){saveSheet(d.id);return}
-if(d.a==='savepng'){const w=byId(d.id);$('sh').classList.remove('open');card(w,d.size);return}
+if(d.a==='reset'){const c=document.querySelector('#app .chc');if(!c)return;let f=c.querySelector('.rcf');if(!f){c.style.flexWrap='wrap';c.insertAdjacentHTML('beforeend','<div class="rcf" role="group" aria-label="إعادة التحدي" style="flex:1 1 100%;display:flex;flex-direction:column;gap:12px"><div>هل تريد إعادة التحدي؟ سيُحذف تقدّمك.</div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-a="rsyes">إعادة التحدي</button><button class="btn o" data-a="rsno">إلغاء</button></div></div>');f=c.querySelector('.rcf')}f.querySelector('[data-a="rsno"]').focus();return}
+if(d.a==='rsyes'){PR.set({done:[]});VW.set({});render();return}
+if(d.a==='rsno'){const c=t.closest('.chc');if(c){c.querySelector('.rcf').remove();c.style.flexWrap=''}const b=document.querySelector('#app [data-a="reset"]');if(b)b.focus({preventScroll:true});return}
+if(d.a==='lock'){toast(lockMsg(+d.d));const k=t.querySelector('svg.i-lk');if(k){k.classList.remove('shk');k.getBoundingClientRect();k.classList.add('shk');k.onanimationend=()=>k.classList.remove('shk')}return}
+if(d.a==='card'){saveSheet(d.id);openSh('حفظ كصورة',t);return}
+if(d.a==='share'){shareLink(d.u);return}
+if(d.a==='savepng'){const w=byId(d.id);closeSh();card(w,d.size);return}
 if(d.a==='reload'){location.reload();return}
 if(d.sc){const p=$('sh');p.querySelectorAll('[data-sc]').forEach(b=>{const on=b.dataset.sc===d.sc;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false')});const sb=p.querySelector('[data-a="savepng"]');if(sb)sb.dataset.size=d.sc;return}
 if(d.s){if(!t.closest('#sh'))return;set.snd=!set.snd;LS.set(set);sheet()}});
 addEventListener('hashchange',()=>{if(route()[0]!=='quiz')Q=null});
 const MAIL='yusufhamdy20@gmail.com';
-const LEG={about:['عن الموقع',['غريب القرآن موقع يشرح معاني الكلمات الغريبة في القرآن الكريم بأسلوب مبسّط، ويعرض الآية ورقمها ومصدر المعنى.','يبدأ الموقع بجزء عمّ، ثم يتوسّع تدريجيًا ليشمل بقية القرآن الكريم بإذن الله.','للتواصل أو للإبلاغ عن خطأ: <a href="mailto:'+MAIL+'">'+MAIL+'</a>']],privacy:['سياسة الخصوصية',['لا يتطلب الموقع تسجيلًا من الزوار، ولا يجمع أسماءهم أو بياناتهم الشخصية.','تُحفظ إعدادات المظهر وتقدّمك في التحدي على جهازك فقط، ولا تُرسل إلى أي خادم.','لا يستخدم الموقع أدوات تحليل ولا إعلانات. وتسجّل الخوادم المستضيفة سجلات تقنية اعتيادية، مثل عنوان الشبكة ونوع المتصفح، لأغراض التشغيل والأمان.','تسجيل الدخول بحساب جوجل مخصّص لمشرفي الموقع فقط.','لأي استفسار عن الخصوصية: <a href="mailto:'+MAIL+'">'+MAIL+'</a>']],terms:['شروط الاستخدام',['باستخدامك الموقع فإنك توافق على هذه الشروط.','المحتوى مقدَّم لأغراض تعليمية وتيسيرًا لفهم كلمات القرآن، ولا يغني عن الرجوع إلى كتب التفسير وأهل العلم.','نبذل الجهد في مراجعة المحتوى، وإذا وجدت خطأً فيسعدنا أن تبلّغنا عنه.','يجوز مشاركة المحتوى بذكر المصدر ورابط الموقع، ولا يجوز إعادة نشره تجاريًا دون إذن مكتوب.','قد نحدّث هذه الشروط من حين لآخر، واستمرارك في الاستخدام يعني موافقتك على النسخة المحدّثة.']],rights:['الحقوق والمصادر',['جميع الحقوق محفوظة لموقع غريب القرآن فيما يخص تصميم الموقع وتنظيم محتواه.','نص القرآن الكريم بخط مصحف المدينة النبوية للنشر الحاسوبي (مجمّع الملك فهد لطباعة المصحف الشريف)، ويُستخدم وفق شروط المجمّع.','معاني الكلمات مأخوذة من التفسير الميسر وكتب التفسير، ويُذكر المصدر عند كل كلمة.','إذا رأيت أن محتوى منسوبًا إليك يحتاج إلى تصحيح أو إزالة فراسلنا: <a href="mailto:'+MAIL+'">'+MAIL+'</a>']]};
+const LEG={about:['عن الموقع',['غريب القرآن موقع يشرح معاني الكلمات الغريبة في القرآن الكريم بأسلوب مبسّط، ويعرض الآية ورقمها ومصدر المعنى.','يبدأ الموقع بجزء عمّ، ثم يتوسّع تدريجيًا ليشمل بقية القرآن الكريم بإذن الله.','للتواصل أو للإبلاغ عن خطأ: <a href="mailto:'+MAIL+'">'+MAIL+'</a>']],privacy:['سياسة الخصوصية',['لا يتطلب الموقع تسجيلًا من الزوار، ولا يجمع أسماءهم أو بياناتهم الشخصية.','تُحفظ إعدادات المظهر وتقدّمك في التحدي على جهازك فقط، ولا تُرسل إلى أي خادم، ولا يستخدم الموقع ملفات تعريف الارتباط (الكوكيز).','لا يستخدم الموقع أدوات تحليل ولا إعلانات.','يستخدم الموقع خدمة Sentry لرصد الأعطال التقنية فقط؛ فإذا وقع خطأ في أثناء التصفح أُرسل تقرير تقني يتضمن عنوان الصفحة ونوع المتصفح ونظام التشغيل إلى خوادم الخدمة في الاتحاد الأوروبي، دون حفظ عنوان الشبكة، ولا يُستخدم إلا لإصلاح الأعطال.','تسجّل خوادم الاستضافة وقاعدة البيانات (خدمة Firebase التابعة لشركة Google) سجلات تقنية اعتيادية، مثل عنوان الشبكة ونوع المتصفح، لأغراض التشغيل والأمان.','تنقلك روابط المقاطع والحسابات إلى مواقع خارجية مثل إنستجرام وتيك توك ويوتيوب وإكس، وتخضع تلك المواقع لسياسات الخصوصية الخاصة بها.','تسجيل الدخول بحساب جوجل مخصّص لمشرفي الموقع فقط.','لأي استفسار عن الخصوصية: <a href="mailto:'+MAIL+'">'+MAIL+'</a>']],terms:['شروط الاستخدام',['باستخدامك الموقع فإنك توافق على هذه الشروط.','المحتوى مقدَّم لأغراض تعليمية وتيسيرًا لفهم كلمات القرآن، ولا يغني عن الرجوع إلى كتب التفسير وأهل العلم.','نبذل الجهد في مراجعة المحتوى، وإذا وجدت خطأً فيسعدنا أن تبلّغنا عنه.','يجوز مشاركة المحتوى بذكر المصدر ورابط الموقع، ولا يجوز إعادة نشر ما أعدّه الموقع إعادةً تجارية دون إذن مكتوب. ولا يشمل هذا القيد نص القرآن الكريم ولا ما نُقل من كتب التفسير، فلكلٍّ منها حقوق أصحابه وشروطه.','قد نحدّث هذه الشروط من حين لآخر، واستمرارك في الاستخدام يعني موافقتك على النسخة المحدّثة.']],rights:['الحقوق والمصادر',['جميع الحقوق محفوظة لموقع غريب القرآن فيما يخص تصميم الموقع وتنظيم محتواه.','نص القرآن الكريم برواية حفص عن عاصم بالرسم العثماني، منقول من النص الرقمي لمجمّع الملك فهد لطباعة المصحف الشريف، ويُعرض بخط مصحف المدينة النبوية للنشر الحاسوبي، وهو ملك للمجمّع ويُستخدم كما هو دون أي تعديل.','معاني الكلمات مأخوذة من التفسير الميسر وكتب التفسير، ويُذكر المصدر عند كل كلمة.','خطوط واجهة الموقع: Amiri وAmiri Quran وIBM Plex Sans Arabic وIBM Plex Mono، وهي مرخّصة برخصة SIL المفتوحة.','إذا رأيت أن محتوى منسوبًا إليك يحتاج إلى تصحيح أو إزالة فراسلنا: <a href="mailto:'+MAIL+'">'+MAIL+'</a>']]};
 const legal=k=>`${head()}<h1>${LEG[k][0]}</h1><div class="g card lg2">${LEG[k][1].map(p=>`<p>${p}</p>`).join('')}</div>`;
 const IC={ig:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg>',tt:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5M14 4c.4 2.4 2 4 4.5 4.2"/></svg>',yt:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5l5 2.5-5 2.5z" fill="currentColor"/></svg>'};
 const SOC=[['ig','https://instagram.com/yusuf.hamdy','@yusuf.hamdy','إنستجرام'],['tt','https://www.tiktok.com/@yusuf.hamdy','@yusuf.hamdy','تيك توك'],['yt','https://youtube.com/@yusuf_hamdy','@yusuf_hamdy','يوتيوب']];
 const socA=()=>SOC.map(s=>`<a class="so" href="${s[1]}" target="_blank" rel="noopener" aria-label="${s[3]}: ${s[2]}">${IC[s[0]]}<span>${s[2]}</span></a>`).join('');
 const foot=()=>`<footer class="ft"><div class="fl"><a href="#/about">عن الموقع</a><a href="#/privacy">الخصوصية</a><a href="#/terms">الشروط</a><a href="#/rights">الحقوق والمصادر</a></div><div class="m">© ${new Date().getFullYear()} غريب القرآن</div></footer>`;
 const strip=()=>`<div class="g strip"><span>لمشاهدة شروح الكلمات في مقاطع قصيرة، تابعنا</span>${socA()}</div>`;
-const nf404=()=>`${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px"><div class="q" style="font-size:96px;color:var(--ac);line-height:1.3">404</div><h1>الصفحة غير موجودة</h1><div class="sub">ربما تغيّر الرابط أو لم تعد الصفحة متاحة.</div><div class="acts" style="justify-content:center"><a class="btn" href="#/">الرئيسية</a><button class="btn o" data-a="rnd">${BI.sh}اسحب كلمة</button></div></div>`;
+const nf404=()=>`${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px"><div class="aq" style="font-size:96px;color:var(--ac);line-height:1.3">404</div><h1>الصفحة غير موجودة</h1><div class="sub">ربما تغيّر الرابط أو لم تعد الصفحة متاحة.</div><div class="acts" style="justify-content:center"><a class="btn" href="#/">الرئيسية</a><button class="btn o" data-a="rnd">${BI.sh}اسحب كلمة</button></div></div>`;
 const failView=()=>`${head()}<div class="g card" style="text-align:center;display:flex;flex-direction:column;gap:10px"><div style="font-size:52px;color:var(--ac);line-height:1.2" aria-hidden="true">⚠</div><h1 style="font-size:24px">تعذّر تحميل البيانات</h1><div class="sub">تأكد من اتصالك بالإنترنت ثم أعد المحاولة.</div></div><div class="list g">${['قاعدة البيانات','النسخة الاحتياطية'].map(s=>`<div class="row"><b style="flex:1">${s}</b><span class="m">✕ تعذّر الوصول</span></div>`).join('')}</div><div class="acts"><button class="btn" data-a="reload">إعادة المحاولة</button><a class="btn o g" href="#/">الرئيسية</a></div>`;
-const TABS=[['','بحث','<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>'],['surahs','السور','<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5A1.5 1.5 0 0 1 4 17.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v15h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>'],['challenge','التحدي','<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8"/>'],['quiz','اختبر نفسك','<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>']];
+// nav icons: each moving part is named (nvh house, nvl/nvr the book's halves, nvo the challenge arc, nvq the question
+// mark) for the motion that plays once when its tab becomes the active tab
+const TABS=[['','الرئيسية','<g class="nvh"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9v10h12V9"/><path d="M10 19v-5h4v5"/></g>'],['surahs','السور','<path class="nvl" d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5A1.5 1.5 0 0 1 4 17.5z"/><path class="nvr" d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v15h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>'],['challenge','التحدي','<circle cx="12" cy="12" r="8"/><path class="nvo" d="M12 4a8 8 0 0 1 8 8"/>'],['quiz','اختبر نفسك','<circle cx="12" cy="12" r="9"/><path class="nvq" d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>']];
 const seenD=()=>{try{return +localStorage.getItem('gq-seen')||0}catch(e){return 0}};
-function navBuild(i){const nv=$('nv');nv.style.setProperty('--i',Math.max(0,i));nv.className='g'+(nv.classList.contains('hide')?' hide':'')+(i<0?' none':'');nv.innerHTML='<i class="ind"></i>'+TABS.map((t,k)=>`<a href="#/${t[0]}" class="t${k===i?' on':''}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t[2]}</svg><span>${t[1]}</span>${k===2&&CH.length&&released()>seenD()&&i!==2?'<b class="dt"></b>':''}</a>`).join('')}
+// The tabs are built once; every later render only moves the active state, so the active tab's icon motion (nvm)
+// and the indicator slide play only when the active tab actually changes (not when the tabs are first built).
+function navBuild(i){const nv=$('nv');nv.style.setProperty('--i',Math.max(0,i));const cn='g'+(nv.classList.contains('hide')?' hide':'')+(nv.classList.contains('drag')?' drag':'')+(i<0?' none':'');if(nv.className!==cn)nv.className=cn;let ts=nv.querySelectorAll('.t'),built=false;if(ts.length!==TABS.length){built=true;nv.innerHTML='<i class="ind"></i>'+TABS.map(t=>`<a href="#/${t[0]}" class="t"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t[2]}</svg><span>${t[1]}</span></a>`).join('');ts=nv.querySelectorAll('.t');['animationend','animationcancel'].forEach(k=>nv.addEventListener(k,e=>{const t=e.target.closest&&e.target.closest('.t');if(t)t.classList.remove('nvm')}))}
+ts.forEach((a,k)=>{const on=k===i;if(a.classList.contains('on')!==on){a.classList.toggle('on',on);a.classList.toggle('nvm',on&&!built&&!document.body.classList.contains('cm')&&!matchMedia('(prefers-reduced-motion:reduce)').matches)}if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');const dot=!!(k===2&&CH.length&&released()>seenD()&&i!==2),b=a.querySelector('.dt');if(dot&&!b)a.insertAdjacentHTML('beforeend','<b class="dt"></b>');else if(!dot&&b)b.remove()})}
 const _view2=view;view=function(r){const p=r[0];if(['about','privacy','terms','rights'].includes(p))return legal(p)+foot();if(p==='fail')return failView()+foot();if(!['home','surahs','surah','word','challenge','day','quiz'].includes(p))return nf404()+foot();let h=_view2(r);if(h.includes('الصفحة غير موجودة.'))return nf404()+foot();if(p==='home')h=h.replace('<div id="res"></div>',strip()+'<div id="res"></div>');if(p==='word'){const w=byId(r[1]);if(w)h+=`<a class="m" style="text-align:center;padding:10px" href="mailto:${MAIL}?subject=${encodeURIComponent('بلاغ عن خطأ: '+w.word)}">أبلغ عن خطأ في هذه الكلمة</a>`;if(w&&w.reel)h=h.replace('<div class="acts">','<a class="btn o" href="'+esc(w.reel)+'" target="_blank" rel="noopener">شاهد شرح الكلمة في مقطع قصير</a><div class="acts">')}return h+foot()};
-const _render2=render;let _rk='\u0000';render=function(){_render2();const r=route()[0];if(r==='word'&&window.wordGap)wordGap();const i={home:0,word:0,surahs:1,surah:1,challenge:2,day:2,quiz:3}[r];navBuild(i===undefined?-1:i);if(r==='challenge'||r==='day'){try{localStorage.setItem('gq-seen',released())}catch(e){}}const a=$('app'),key=location.hash||'#/';if(key===_rk){a.classList.remove('pg','pgs');return}_rk=key;a.classList.remove('pg','pgs');void a.offsetWidth;a.classList.add(['word','surah','day'].includes(r)?'pgs':'pg')};
+// M3: every route sets the tab title; word and surah titles match their static pages exactly.
+const dstr=x=>String(x).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,'');
+function pageTitle(){const [p,a]=route(),L='غريب القرآن',T=' | '+L;if(p==='home')return L+' - معاني كلمات جزء عم';if(p==='word'){const w=byId(a);if(w)return 'معنى '+dstr(w.word)+' في سورة '+dstr(w.s.name)+' - '+L}if(p==='surah'){const s=S.find(x=>x.num==a);if(s)return 'معاني كلمات سورة '+dstr(s.name)+' - '+L}if(p==='day'&&CH.find(x=>x.d==a))return 'اليوم '+(+a)+T;const k={surahs:'السور',challenge:'تحدي غريب عمّ',quiz:'اختبر نفسك'}[p]||(LEG[p]&&LEG[p][0]);return (k||'404')+T}
+const _render2=render;let _rk='\u0000';render=function(){_render2();document.title=pageTitle();if(window.markInk)markInk($('app'));const r=route()[0];if(r==='word'&&window.wordGap)wordGap();const i={home:0,word:0,surahs:1,surah:1,challenge:2,day:2,quiz:3}[r];navBuild(i===undefined?-1:i);if(r==='challenge'||r==='day'){try{localStorage.setItem('gq-seen',released())}catch(e){}}const a=$('app'),key=location.hash||'#/';if(key===_rk){a.classList.remove('pg','pgs');return}_rk=key;a.classList.remove('pg','pgs');void a.offsetWidth;a.classList.add(['word','surah','day'].includes(r)?'pgs':'pg')};
 let ly=0;addEventListener('scroll',()=>{const nv=$('nv');if(!nv)return;const d=scrollY-ly;if(Math.abs(d)>8){nv.classList.toggle('hide',d>0&&scrollY>140);ly=scrollY}},{passive:true});
 document.addEventListener('click',e=>{if(e.target.closest('nav .t')&&navigator.vibrate)navigator.vibrate(8);});
 // Touch drag on the bottom nav: the indicator follows the finger with a liquid stretch, and releasing opens the
 // tab under it through the same click a tap makes. Mouse, pen, keyboard and short taps are untouched.
+// The indicator is drawn where the finger was ND ms ago, interpolated between its timestamped samples (every coalesced
+// sample included), so it moves the same amount every frame however the touches line up with frames (iOS often
+// delivers 0 or 2 per frame); past the newest sample it extrapolates for at most ND ms. The stretch takes its speed
+// from that drawn path and the frame time, with steps scaled by the frame time (the same as before at 60fps). The tab
+// under the finger, the preview and the release use the real last finger position.
+// An event's timeStamp is read on the frame clock (performance.now) unless even the freshest event of the drag arrived
+// more than 100ms after it or more than 8ms before it: those timeStamps are not on the frame clock, so the samples are
+// read with that offset (the freshest counts as received at once). Chromium and WebKit stay within a few ms: offset 0.
 (()=>{const nv=$('nv');if(!nv||!window.PointerEvent)return;let D=null,syn=false,endT=0;
+const ND=24;
 const buzz=()=>{try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}};
 const tabAt=x=>{let k=0,b=1e9;D.tr.forEach((r,i)=>{const d=x<r.left?r.left-x:x>r.right?x-r.right:0;if(d<b){b=d;k=i}});return k};
-const frame=t=>{if(!D||!D.active)return;const dt=Math.max(1,t-D.lt);D.lt=t;D.v=D.v*.6+(D.x-D.px)/dt*.4;D.px=D.x;
-const cx=Math.min(D.max,Math.max(D.min,D.x));let sx=1,sy=1;
-if(!D.still){const tg=1+Math.min(.25,Math.abs(D.v)*.3);D.sv=D.sv*.72+(tg-D.sx)*.28;D.sx+=D.sv;sx=Math.min(1.25,D.sx);sy=1-Math.max(0,sx-1)*.32}
+const tsOf=e=>{const t=e.timeStamp;return typeof t==='number'&&isFinite(t)?t:performance.now()};
+// the receipt delay of the event just received; the smallest so far sets the drag's clock offset D.c
+const rcv=e=>{const d=performance.now()-tsOf(e);if(d<D.md){D.md=d;D.c=d>100||d<-8?d:0}};
+const addS=(h,t,x)=>{if(h.length&&t<h[h.length-1][0])t=h[h.length-1][0];h.push([t,x]);if(h.length>12)h.shift()};
+const posAt=(h,q)=>{const n=h.length;if(!n)return null;if(q<=h[0][0])return h[0][1];
+for(let i=n-1;i>0;i--){const a=h[i-1],b=h[i];if(q>=a[0]&&q<=b[0])return b[0]>a[0]?a[1]+(b[1]-a[1])*(q-a[0])/(b[0]-a[0]):b[1]}
+// past the newest sample: on along the last two samples' line for up to ND ms; if still no sample (the finger has
+// stopped), back to the newest sample over the next ND ms (smoothstep), so a still finger has the indicator under it
+const b=h[n-1];if(n<2)return b[1];const a=h[n-2],s=b[0]>a[0]?(b[1]-a[1])/(b[0]-a[0]):0,e=q-b[0];
+if(e<=ND)return b[1]+s*e;const u=Math.min(1,ND?(e-ND)/ND:1);return b[1]+s*ND*(1-u*u*(3-2*u))};
+const frame=t=>{if(!D||!D.active)return;const dt=Math.max(1,t-D.lt);D.lt=t;const p=posAt(D.h,t-ND-D.c),x=p==null?D.x:p,k=Math.min(4,Math.max(.25,dt/(1000/60))),a=1-Math.pow(.6,k);
+D.v=D.v*(1-a)+(x-D.px)/dt*a;D.px=x;
+const cx=Math.min(D.max,Math.max(D.min,x));let sx=1,sy=1;
+if(!D.still){const tg=1+Math.min(.25,Math.abs(D.v)*.3);D.sv=D.sv*Math.pow(.72,k)+(tg-D.sx)*.28*k;D.sx+=D.sv*k;sx=Math.min(1.25,D.sx);sy=1-Math.max(0,sx-1)*.32}
 D.ind.style.transform='translateX('+(cx-D.w/2-D.rest).toFixed(1)+'px) scale('+sx.toFixed(3)+','+sy.toFixed(3)+')';D.raf=requestAnimationFrame(frame)};
 const preview=k=>{if(k===D.k)return;D.ts.forEach((t,i)=>t.classList.toggle('pv',i===k));if(D.k>=0)buzz();D.k=k};
 const end=open=>{const d=D;D=null;cancelAnimationFrame(d.raf);endT=performance.now();
@@ -646,10 +990,10 @@ nv.classList.remove('drag');d.ts.forEach(x=>x.classList.remove('pv'));d.ind.styl
 if(inside&&t&&t.isConnected){syn=true;try{t.click()}finally{syn=false}}};
 nv.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'||!e.isPrimary||D)return;const ind=nv.querySelector('.ind'),ts=[...nv.querySelectorAll('.t')];if(!ind||ts.length<2)return;
 const nr=nv.getBoundingClientRect(),tr=ts.map(t=>t.getBoundingClientRect()),w=ind.offsetWidth;
-D={id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,px:e.clientX,v:0,sx:1,sv:0,ind,ts,tr,nr,w,k:-1,active:false,
+D={id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,px:e.clientX,v:0,sx:1,sv:0,ind,ts,tr,nr,w,k:-1,active:false,h:[[tsOf(e),e.clientX]],md:Infinity,c:0,
 rest:nr.left+nv.clientLeft+ind.offsetLeft,min:Math.min(...tr.map(r=>r.left))+w/2,max:Math.max(...tr.map(r=>r.right))-w/2,
-still:document.body.classList.contains('cm')||matchMedia('(prefers-reduced-motion: reduce)').matches}});
-nv.addEventListener('pointermove',e=>{if(!D||e.pointerId!==D.id)return;D.x=e.clientX;D.y=e.clientY;if(D.active){preview(tabAt(D.x));return}
+still:document.body.classList.contains('cm')||matchMedia('(prefers-reduced-motion: reduce)').matches};rcv(e)});
+nv.addEventListener('pointermove',e=>{if(!D||e.pointerId!==D.id)return;rcv(e);const cs=e.getCoalescedEvents?e.getCoalescedEvents():null;if(cs&&cs.length)cs.forEach(c=>addS(D.h,tsOf(c),c.clientX));else addS(D.h,tsOf(e),e.clientX);D.x=e.clientX;D.y=e.clientY;if(D.active){preview(tabAt(D.x));return}
 const dx=Math.abs(D.x-D.x0),dy=Math.abs(D.y-D.y0);
 if(dx>=8&&dx>dy){D.active=true;try{nv.setPointerCapture(D.id)}catch(err){}nv.classList.add('drag');D.k=-1;const k=tabAt(D.x);D.ts.forEach((t,i)=>t.classList.toggle('pv',i===k));D.k=k;D.lt=performance.now();D.raf=requestAnimationFrame(frame)}
 else if(dy>=8)D=null});
@@ -661,15 +1005,16 @@ document.addEventListener('click',e=>{if(!syn&&performance.now()-endT<450&&e.tar
 const _apply=applySet;
 applySet=function(){_apply();const st=set.style||'glass',b=document.body,r=document.documentElement.style,keys=['--tc','--sf','--sbd'];[...b.classList].filter(c=>c.startsWith('sh-')).forEach(c=>b.classList.remove(c));
 if(st!=='shade'){b.classList.remove('shade');keys.forEach(k=>r.removeProperty(k));return}
-const dark=set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches),k=PAL[set.pal]?set.pal:'def',c=dark?PAL[k][2]:PAL[k][1];
+const dark=set.mode==='dark'||(set.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches),k=PAL[set.pal]?set.pal:GQT.DEFAULT,c=dark?PAL[k][2]:PAL[k][1];
 const mx=(a,z,t)=>'#'+[1,3,5].map(i=>Math.round(parseInt(a.substr(i,2),16)*(1-t)+parseInt(z.substr(i,2),16)*t).toString(16).padStart(2,'0')).join('');
 b.classList.add('shade','sh-'+k+'-'+(dark?'n':'d'));
 r.setProperty('--tc',c[2]);r.setProperty('--sf',dark?mx(c[0],'#ffffff',.07):mx(c[0],'#ffffff',.55));r.setProperty('--sbd',dark?'rgba(255,255,255,.08)':'rgba(29,43,37,.1)');r.setProperty('--ln',dark?'rgba(255,255,255,.14)':'rgba(29,43,37,.14)');r.setProperty('--bdbg',dark?'rgba(0,0,0,.35)':'rgba(255,255,255,.65)');r.setProperty('--bdc',dark?'#fff':'#1D2B25')};
-matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>applySet());
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{applySet();if($('sh').classList.contains('open')&&$('sh').querySelector('#sh .psw'))sheet()});
 applySet();
-document.body.insertAdjacentHTML('beforeend','<button class="g ib" id="gear" data-a="set" aria-label="الإعدادات">'+ICO.g+'</button>');
+document.documentElement.classList.add('gq');
+$('app').insertAdjacentHTML('beforebegin','<button class="g ib" id="gear" data-a="set" aria-label="الإعدادات">'+ICO.g+'</button>');
 const gBtn=document.getElementById('gear');
-Promise.all([window.__WORDS__?Promise.resolve(window.__WORDS__):fetch('words.json').then(r=>r.json()),window.__CH__?Promise.resolve(window.__CH__):fetch('challenge.json').then(r=>r.json()).catch(()=>[])]).then(a=>{build(a[0]);CHM=Array.isArray(a[1])?{}:(a[1]||{});CH=Array.isArray(a[1])?a[1]:(CHM.days||[]);render();const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}}).catch(()=>{const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}$('app').innerHTML=failView()});
+Promise.all([window.__WORDS__?Promise.resolve(window.__WORDS__):fetch('words.json').then(r=>r.json()),window.__CH__?Promise.resolve(window.__CH__):fetch('challenge.json').then(r=>r.json()).catch(()=>[])]).then(a=>{build(a[0]);CHM=Array.isArray(a[1])?{}:(a[1]||{});CH=Array.isArray(a[1])?a[1]:(CHM.days||[]);CH.forEach(c=>{if(c)c.d=+c.d});render();{const y=SP.m[spId()];if(y>0)scrollTo(0,y)}const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}}).catch(()=>{const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}$('app').innerHTML=failView()});
 if('serviceWorker' in navigator&&!window.__WORDS__)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </body>

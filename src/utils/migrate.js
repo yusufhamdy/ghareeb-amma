@@ -2,7 +2,7 @@
  * migrate.js - shared Firestore migration helpers.
  *
  * The authoritative Mushaf ORDER for Juz Amma (surah 78..114). Word-for-word
- * identical to the list in functions/index.js, public/index.html (NAMES) and
+ * identical to the list in public/index.html (NAMES) and
  * public/admin/index.html (fix), so the `no` field computed here matches the
  * number the client, the seo function and the admin fall back to.
  */

@@ -9,6 +9,31 @@
     ],
     "headers": [
       {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' 'sha256-9R4xCBLY8JMll2parSH79CB4vA9sNZ1Rhfp3OZ8cJ5g=' 'sha256-YJFCqpkaFeMsGE8JKoYS+Ka083J1vVNxcc5nHbTkqX0=' 'sha256-rHMjxcFCkiCcCr4oKgSeRz9ILrhsN7k6y/Y5O5OkgkE=' https://js-de.sentry-cdn.com https://browser.sentry-cdn.com https://www.gstatic.com/firebasejs/ https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google.com; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://o4512305775443968.ingest.de.sentry.io; frame-src https://ghareebalquran-d9ae5.firebaseapp.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+          }
+        ]
+      },
+      {
         "source": "/admin/**",
         "headers": [
           {
@@ -49,7 +74,6 @@
         ]
       }
     ],
-
     "redirects": [
       {
         "source": "/word/الخناس.html",
@@ -411,12 +435,6 @@
   "firestore": {
     "rules": "firestore.rules"
   },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default"
-    }
-  ],
   "emulators": {
     "firestore": {
       "port": 8080

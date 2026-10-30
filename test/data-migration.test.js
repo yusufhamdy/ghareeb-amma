@@ -47,17 +47,10 @@ test('deriveSurahNo matches the authoritative ORDER (client/admin/seo shared lis
   assert.strictEqual(deriveSurahNo('سورة البقرة'), null, 'non-Juz-surah names must return null');
 });
 
-test('the seo function ORDER and the client NAMES never drift from migrate util', () => {
-  const fns = fs.readFileSync(path.join(ROOT, 'functions/index.js'), 'utf8');
+test('the client NAMES never drift from migrate util', () => {
   const idx = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
-  const mOrder = /const ORDER = "([^"]+)"/.exec(fns);
   const mNames = /const NAMES='([^']+)'\.split\(' '\)/.exec(idx);
-  assert.ok(mOrder && mNames, 'must find ORDER in functions/index.js and NAMES in public/index.html');
-  assert.deepStrictEqual(
-    mOrder[1].split(','),
-    SURAH_ORDER,
-    'functions ORDER must equal migrate SURAH_ORDER',
-  );
+  assert.ok(mNames, 'must find NAMES in public/index.html');
   assert.deepStrictEqual(
     mNames[1].split(' '),
     SURAH_ORDER,

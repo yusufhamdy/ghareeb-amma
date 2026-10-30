@@ -1,0 +1,87 @@
+{
+ "note": "Pre-fix values of the ayah text fields corrected on 2026-10-27 from the official Hafs text (data/quran). test/quran-text.test.js puts these values back into public/words.json and requires the result to be byte-identical to the file before the fix (originalSha256), so nothing else in words.json may change.",
+ "originalSha256": "c96d158b315a1ca754c8dc0cebd905a25e6ac57abef15fd5557c04b12f243ad9",
+ "fields": [
+  {
+   "si": 1,
+   "ai": 1,
+   "gi": 0,
+   "surah": 113,
+   "num": 4,
+   "field": "hl",
+   "from": "\u0671\u0644\u0646\u064e\u0651\u0641\u064e\u0651\u0640\u0670\u062b\u064e\u0670\u062a\u0650 \u0641\u0650\u064a \u0671\u0644\u06e1\u0639\u064f\u0642\u064e\u062f\u0650"
+  },
+  {
+   "si": 9,
+   "ai": 3,
+   "gi": 0,
+   "surah": 100,
+   "num": 4,
+   "field": "hl",
+   "from": "\u0641\u064e\u0623\u064e\u062b\u064e\u0631\u06e1\u0646\u064e \u0628\u0650\u0647\u0650\u06e6 \u0646\u064e\u0642\u0652\u0639\u0657\u0627"
+  },
+  {
+   "si": 24,
+   "ai": 0,
+   "gi": 0,
+   "surah": 81,
+   "num": 2,
+   "field": "hl",
+   "from": "\u0627\u0646\u0652\u0643\u064e\u062f\u064e\u0631\u064e\u062a\u0652"
+  },
+  {
+   "si": 24,
+   "ai": 2,
+   "gi": 0,
+   "surah": 81,
+   "num": 6,
+   "field": "hl",
+   "from": "\u0627\u0644\u0652\u0628\u0650\u062d\u064e\u0627\u0631\u064f \u0633\u064f\u062c\u0651\u0650\u0631\u064e\u062a\u0652"
+  },
+  {
+   "si": 26,
+   "ai": 0,
+   "gi": 0,
+   "surah": 79,
+   "num": 1,
+   "field": "hl",
+   "from": "\u0648\u064e\u0627\u0644\u0646\u0651\u064e\u0627\u0632\u0650\u0639\u064e\u0627\u062a\u0650 \u063a\u064e\u0631\u0652\u0642\u064b\u0627"
+  },
+  {
+   "si": 26,
+   "ai": 1,
+   "gi": 0,
+   "surah": 79,
+   "num": 2,
+   "field": "hl",
+   "from": "\u0648\u064e\u0627\u0644\u0646\u0651\u064e\u0627\u0634\u0650\u0637\u064e\u0627\u062a\u0650 \u0646\u064e\u0634\u0652\u0637\u064b\u0627"
+  },
+  {
+   "si": 26,
+   "ai": 2,
+   "gi": 0,
+   "surah": 79,
+   "num": 3,
+   "field": "hl",
+   "from": "\u0648\u064e\u0627\u0644\u0633\u0651\u064e\u0627\u0628\u0650\u062d\u064e\u0627\u062a\u0650 \u0633\u064e\u0628\u0652\u062d\u064b\u0627"
+  },
+  {
+   "si": 26,
+   "ai": 3,
+   "gi": 0,
+   "surah": 79,
+   "num": 4,
+   "field": "hl",
+   "from": "\u0641\u064e\u0627\u0644\u0633\u0651\u064e\u0627\u0628\u0650\u0642\u064e\u0627\u062a\u0650 \u0633\u064e\u0628\u0652\u0642\u064b\u0627"
+  },
+  {
+   "si": 26,
+   "ai": 4,
+   "gi": 0,
+   "surah": 79,
+   "num": 5,
+   "field": "hl",
+   "from": "\u0641\u064e\u0627\u0644\u0652\u0645\u064f\u062f\u064e\u0628\u0651\u0650\u0631\u064e\u0627\u062a\u0650 \u0623\u064e\u0645\u0652\u0631\u064b\u0627"
+  }
+ ]
+}

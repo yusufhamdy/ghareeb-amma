@@ -1,10 +1,26 @@
-﻿/* Self-hosted fonts (Phase 5B T2).
- * Sources: @fontsource/ibm-plex-sans-arabic (400/500/600), @fontsource/ibm-plex-mono (400/500),
- *          @fontsource/amiri-quran (400) - all SIL OFL 1.1, licenses in this folder.
- * KFGQPC Uthmanic Hafs is NOT embedded: its license requires express written approval to
- * reproduce/modify, so the self-hosted Amiri Quran is the Quranic font at launch
- * (see DECISIONS-LOG.md). font-display: swap everywhere.
+﻿/* Self-hosted fonts.
+ * Quran text: KFGQPC Uthmanic Hafs v22 (kfgqpc-uthmanic-hafs-v22.ttf), the King Fahd Glorious Quran Printing
+ *   Complex's official font file, used exactly as published (no conversion, subsetting, renaming or edits; terms in
+ *   LICENSE-KFGQPC.txt). It is the only face that draws the stored Hafs encoding (U+06E1 sukun, open tanween
+ *   U+0657 / U+065E / U+0656) correctly, so it is used for Quran text only (class .q). font-display: block, so that
+ *   text never paints in a fallback face; if the file cannot load, /qfont.js shows .q text in Amiri Quran with the
+ *   standard open-tanween code points (see DECISIONS-LOG.md).
+ *   Its metrics are matched to Amiri Quran with descriptors only: size-adjust makes the letters (ink height of the
+ *   site's ayah text without marks) the same size as Amiri Quran's at the same font-size, and the ascent / descent /
+ *   line-gap overrides give it Amiri Quran's own line metrics (1.815 / 0.634 / 0 em after size-adjust), so line
+ *   boxes and baselines do not move.
+ * Interface: IBM Plex Sans Arabic (400/500/600), IBM Plex Mono (400/500) and Amiri Quran (400, non-Quran
+ *   headings), from @fontsource - all SIL OFL 1.1, licenses in this folder. font-display: swap.
+ * Site name: Amiri Bold (700, Arabic subset, @fontsource/amiri, SIL OFL 1.1, LICENSE-Amiri-OFL.txt), for the site
+ *   name only (class .sn). font-display: swap.
  */
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('amiri-arabic-700-normal.woff2') format('woff2');
+}
 @font-face {
   font-family: 'IBM Plex Sans Arabic';
   font-style: normal;
@@ -74,4 +90,15 @@
   font-weight: 400;
   font-display: swap;
   src: url('amiri-quran-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'KFGQPC Uthmanic Hafs';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('kfgqpc-uthmanic-hafs-v22.ttf') format('truetype');
+  size-adjust: 115.9%;
+  ascent-override: 156.6%;
+  descent-override: 54.7%;
+  line-gap-override: 0%;
 }

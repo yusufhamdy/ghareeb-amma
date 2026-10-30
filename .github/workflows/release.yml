@@ -1,19 +1,18 @@
 name: Release
 
-# Phase 5B T6 - production release.
+# Production release of the static site (Firebase Hosting only).
 #
-# Triggered ONLY by a push to `main`. It can never fire from `rebuild` or any
-# other branch. The job additionally refuses to run unless the triggering commit
-# is the current tip of origin/main, so an older run can never overwrite a
-# newer release.
+# Triggered ONLY by a push to `main`. The job refuses to run unless the triggering commit is the current tip of
+# origin/main, so an older run can never overwrite a newer release. It installs exactly the locked dependencies,
+# runs the full test suite (with Chromium for the browser tests) and deploys nothing if anything fails. After
+# the deploy it runs a smoke check against the live site and fails loudly if the site, its security headers or
+# its Quran font are not right.
 #
-# Authentication prefers Workload Identity Federation (no long-lived key). If
-# WIF is not configured yet, replace the auth step with the commented
-# credentials_json fallback below and store the protected repo secret
-# FIREBASE_SERVICE_ACCOUNT.
+# Not deployed here: the Firestore rules (deployed by hand, with the owner's approval) and Cloud Functions (none:
+# the project is on the free Spark plan; firebase.json has no functions entry).
 #
-# Deployment policy: GitHub Actions is the single official deployment path from
-# this point on. Do not run `firebase deploy` locally in parallel with a run.
+# Authentication: Workload Identity Federation, limited to refs/heads/main (no long-lived key).
+# Do not run `firebase deploy` locally in parallel with a run.
 
 on:
   push:
@@ -44,18 +43,6 @@ jobs:
           node-version: "20"
           cache: npm
 
-      - name: Authenticate to Google Cloud (Workload Identity Federation)
-        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
-        with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-        # Fallback (long-lived key) - use only if WIF is unavailable:
-        # with:
-        #   credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Verify this commit is the latest origin/main
         run: |
           git fetch --no-tags origin main
@@ -64,11 +51,26 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy Firestore rules
-        run: npx firebase deploy --only firestore:rules --project ghareebalquran-d9ae5 --non-interactive
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Deploy Cloud Functions
-        run: npx firebase deploy --only functions --project ghareebalquran-d9ae5 --non-interactive
+      - name: Install Chromium for the browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the full test suite (no deploy on any failure)
+        run: npm test
+
+      - name: Check the CSP hashes match the pages being deployed
+        run: node scripts/csp-update.mjs --check
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Deploy Hosting
         run: npx firebase deploy --only hosting --project ghareebalquran-d9ae5 --non-interactive
+
+      - name: Smoke check the live site
+        run: node scripts/smoke-live.mjs https://ghareebalquran.com

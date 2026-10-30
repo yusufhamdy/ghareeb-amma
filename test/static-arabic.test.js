@@ -5,12 +5,16 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
-const seo = require("../functions/seo.js");
+const seo = require("../shared/seo.js");
+// The visible headword is the mushaf's spelling taken from the ayah (qtext.js displayWord); the stored word stays in
+// the page's data (JSON-LD), titles and URLs.
+const QText = require("../public/qtext.js");
+const asJsonLd = (s) => s.replace(/[\u0080-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
 
 const ROOT = path.join(__dirname, "..");
-const OPEN_SITE = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u0642\u0639"; // "open on the site"
+const OPEN_SITE = "\u062a\u0635\u0641\u0651\u062d \u0627\u0644\u0645\u0648\u0642\u0639"; // "browse the site"
 const OPEN_APP = "\u0627\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"; // removed label
-const SOURCE_LABEL = "\u0627\u0644\u0645\u0635\u062f\u0631"; // the removed source line's label
+const SOURCE_LABEL = "\u0627\u0644\u0645\u0635\u062f\u0631"; // the source line's label (word pages only)
 const SURAH_PREFIX_RE = /^\u0633\u0648\u0631\u0629\s*/; // leading "surah "
 
 // Minimal text-node scanner (skips comments, script/style and all tags; the
@@ -59,13 +63,14 @@ function loadRecords() {
         slug: slugs[si++],
         surahSlug,
         word: String(words[i]),
+        dw: QText.displayWord(ayahs[i]) || String(words[i]),
         rawMeaning,
         bodyMeaning: rawMeaning.startsWith(prefix) ? rawMeaning.slice(prefix.length).trim() : rawMeaning,
         verseSegments: segs,
         surahShort: short,
         surahFull: String(s.surah),
       });
-      itemWords.push(String(words[i]));
+      itemWords.push(QText.displayWord(ayahs[i]) || String(words[i]));
     }
     surahList.push({ slug: surahSlug, short, full: String(s.surah), words: itemWords });
   });
@@ -75,7 +80,9 @@ function loadRecords() {
 function pageChecks(file, html) {
   assert.ok(!html.includes(OPEN_APP), file + ": old open-in-app label is gone");
   const text = textNodes(html);
-  assert.ok(!text.includes(SOURCE_LABEL), file + ": source line label is gone");
+  // word pages show the same source line as the app; surah pages have none
+  if (file.startsWith("word/")) assert.ok(text.includes(SOURCE_LABEL), file + ": source line label is shown");
+  else assert.ok(!text.includes(SOURCE_LABEL), file + ": source line label is gone");
   const pill = html.match(/<a class="pill"[^>]*>([\s\S]*?)<\/a>/);
   assert.ok(pill, file + ": has the open-on-site pill");
   const pillText = pill[1].replace(/<svg[\s\S]*?<\/svg>/g, "").trim();
@@ -93,7 +100,8 @@ test("static word pages carry every record's word/verse/meaning/surah byte-ident
     const file = "word/" + r.slug + ".html";
     const html = fs.readFileSync(path.join(ROOT, "public", "word", r.slug + ".html"), "utf8");
     const text = pageChecks(file, html);
-    assert.ok(text.includes(r.word), file + ": word text");
+    assert.ok(text.includes(r.dw), file + ": headword shown in the mushaf spelling");
+    assert.ok(html.includes(asJsonLd(r.word)), file + ": the stored word is kept in the page data");
     for (const seg of r.verseSegments) assert.ok(text.includes(seg), file + ": verse segment");
     assert.ok(text.includes(r.bodyMeaning) || text.includes(r.rawMeaning), file + ": meaning text");
     assert.ok(text.includes(r.surahShort) || text.includes(r.surahFull), file + ": surah name");
