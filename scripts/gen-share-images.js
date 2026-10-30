@@ -1,5 +1,5 @@
 // Renders the favicon PNG and the share images from the real site pages, in the site's green palette:
-//   public/favicon-32.png, public/og.png (general), public/og/word/<slug>.png (one per word, 1200x630).
+//   public/favicon-32.png, public/og-2026-10.png (general), public/og/word/<slug>.png (one per word, 1200x630).
 // The palette is set only in this renderer's own localStorage. Nothing here changes the site, its default palette or
 // anyone's settings. Before each screenshot the computed fonts are checked, and the run fails if any differ or if a
 // word's card does not fit between the header and the domain.
@@ -24,7 +24,7 @@ const BASE_CSS = `
 html,body{overflow:hidden!important}
 #bg i{animation:none!important}
 #gear,#nv,#sh{display:none!important}
-.share-domain{font-family:'${PLEX}',sans-serif;font-size:17px;font-weight:500;color:var(--ac);direction:ltr;text-align:center}
+.share-domain{font-family:'${PLEX}',sans-serif;font-size:17px;font-weight:500;color:var(--mu);direction:ltr;text-align:center}
 `;
 // only the word card, 640px wide and centred; the header at the top and the domain at the bottom
 const WORD_CSS = BASE_CSS + `
@@ -138,7 +138,7 @@ async function favicon(br, base) {
   const page = await ctx.newPage();
   await page.setContent(`<!doctype html><style>html,body{margin:0}img{display:block;width:32px;height:32px}</style><img src="${base}/favicon.svg">`);
   await page.waitForFunction(() => document.images[0].complete && document.images[0].naturalWidth > 0);
-  await page.screenshot({ path: path.join(ROOT, "favicon-32.png") });
+  await page.screenshot({ path: path.join(ROOT, "favicon-32.png"), omitBackground: true }); // transparent corners
   const [w, h] = pngSize(path.join(ROOT, "favicon-32.png"));
   if (w !== 32 || h !== 32) throw new Error("favicon-32.png is " + w + "x" + h);
   await ctx.close();
@@ -156,7 +156,7 @@ async function general(br, base) {
   await page.evaluate(async () => { await Promise.all([document.fonts.load("700 84px Amiri", "غريب"), document.fonts.load("400 24px 'IBM Plex Sans Arabic'", "معاني"), document.fonts.load("500 17px 'IBM Plex Sans Arabic'", "ghareebalquran.com")]); });
   await checkColors(page, "general");
   await checkFonts(page, [["#s-name", AMIRI, "700"], ["#s-sub", PLEX, null], ["#s-domain", PLEX, "500"]], "general");
-  const out = path.join(ROOT, "og.png");
+  const out = path.join(ROOT, "og-2026-10.png");
   await shot(page, out);
   await ctx.close();
 }
@@ -216,7 +216,7 @@ async function words(br, base) {
     if (tall.length) console.log("does not fit:\n  " + tall.join("\n  "));
     if (bad.length) console.log("failed:\n  " + bad.join("\n  "));
     if (bad.length || tall.length) process.exitCode = 1;
-    else console.log("share images written" + (ONLY ? " (" + ONLY.join(",") + ")" : ": favicon-32.png, og.png, og/word/ x 73"));
+    else console.log("share images written" + (ONLY ? " (" + ONLY.join(",") + ")" : ": favicon-32.png, og-2026-10.png, og/word/ x 73"));
   } finally {
     await br.close();
     server.close();

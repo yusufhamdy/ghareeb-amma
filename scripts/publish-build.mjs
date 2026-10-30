@@ -300,7 +300,7 @@ export function buildRecords(surahs) {
 // HTML-escaped here (they come from admin-written data); callers pass raw text.
 function staticHead(o) {
   // a page with its own share image (a word) names it and its alt text; every other page has the general image
-  const img = o.ogImage || SITE + "/og.png";
+  const img = o.ogImage || SITE + "/og-2026-10.png";
   const alt = (k) => (o.ogImageAlt ? '<meta ' + k + ':image:alt" content="' + esc(o.ogImageAlt) + '">' : "");
   return (
     "<!doctype html>\n" +
@@ -522,8 +522,8 @@ export function renderLegalPage(entry) {
     "<title>" + title + "</title>\n" +
     '<meta name="description" content="' + esc(entry.title) + '">\n' +
     '<link rel="canonical" href="' + SITE + "/" + entry.slug + '/">\n' +
-    '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
+    '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og-2026-10.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og-2026-10.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     "<style>" + LEGACY_CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style>\n" +

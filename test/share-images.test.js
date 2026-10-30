@@ -55,7 +55,7 @@ test("the generator writes the same word-page tags, and the general image for ot
     assert.strictEqual(files[k], fs.readFileSync(path.join(PUBLIC, k), "utf8"), k + " is what the generator writes");
   }
   const surah = Object.keys(files).find((k) => k.startsWith("surah/") && k.endsWith(".html"));
-  assert.strictEqual(meta(files[surah], "property", "og:image"), SITE + "/og.png", "a surah page keeps the general image");
+  assert.strictEqual(meta(files[surah], "property", "og:image"), SITE + "/og-2026-10.png", "a surah page keeps the general image");
   assert.strictEqual(meta(files[surah], "property", "og:image:alt"), null);
 });
 
@@ -67,9 +67,27 @@ test("the favicon: green by default, night when dark, the letter as a path", () 
   assert.ok(dark > 0, "has a dark variant");
   for (const c of ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"]) assert.ok(svg.indexOf(c) >= 0 && svg.indexOf(c) < dark, c + " in the default");
   for (const c of ["#0A0E1F", "#9FB4FF", "#4B5BDB", "#2FB5A8"]) assert.ok(svg.indexOf(c) > dark, c + " under dark");
+  assert.strictEqual((svg.match(/<rect width="100" height="100" rx="22\.83"/g) || []).length, 3, "the background has the general icon's corner radius (21/92)");
   assert.deepStrictEqual(pngSize(path.join(PUBLIC, "favicon-32.png")), [32, 32]);
+  assert.strictEqual(fs.readFileSync(path.join(PUBLIC, "favicon-32.png"))[25], 6, "favicon-32.png has alpha, for its rounded corners");
+});
+
+test("the service worker precaches no share image", () => {
+  const sw = fs.readFileSync(path.join(PUBLIC, "sw.js"), "utf8");
+  const list = sw.match(/assetsToCache = \[([\s\S]*?)\]/)[1];
+  assert.ok(!/\/og/.test(list), "no og image in the precache list");
+});
+
+test("the general image has its new name everywhere, and the old file is gone", () => {
+  assert.ok(!fs.existsSync(path.join(PUBLIC, "og.png")), "og.png is deleted");
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
+  const old = walk(PUBLIC).filter((f) => /\.(html|js|json|xml|css)$/.test(f) && /\/og\.png/.test(fs.readFileSync(f, "utf8")));
+  assert.deepStrictEqual(old, [], "nothing in public/ points at /og.png");
+  const home = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
+  assert.strictEqual(meta(home, "property", "og:image"), SITE + "/og-2026-10.png");
+  assert.strictEqual(meta(home, "name", "twitter:image"), SITE + "/og-2026-10.png");
 });
 
 test("the general image is 1200x630", () => {
-  assert.deepStrictEqual(pngSize(path.join(PUBLIC, "og.png")), [1200, 630]);
+  assert.deepStrictEqual(pngSize(path.join(PUBLIC, "og-2026-10.png")), [1200, 630]);
 });

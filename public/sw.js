@@ -5,7 +5,6 @@ const assetsToCache = [
     '/icon-192.png',
     '/icon-512.png',
     '/apple-touch-icon.png',
-    '/og-image.png',
     '/css/app.css',
     '/theme-boot.js',
     '/quiz-core.js',

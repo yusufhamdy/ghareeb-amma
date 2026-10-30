@@ -21,6 +21,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 FONT = os.path.join(ROOT, "public", "fonts", "amiri-arabic-700-normal.woff2")
 OUT = os.path.join(ROOT, "public", "favicon.svg")
 S = 100  # the viewBox side: every length below is its fraction of s times 100
+RX = 22.83  # the corner radius: the general share image's icon, 21px on 92px
 
 GREEN = {"bg": "#F2F0E8", "ac": "#1E6B50", "g1": "#8FCBAE", "o1": 0.70, "g2": "#EBC98A", "o2": 0.60}
 NIGHT = {"bg": "#0A0E1F", "ac": "#9FB4FF", "g1": "#4B5BDB", "o1": 0.55, "g2": "#2FB5A8", "o2": 0.35}
@@ -61,8 +62,8 @@ def main():
         + '<stop offset="0" class="a a0"/><stop offset="1" class="a" stop-opacity="0"/></radialGradient>'
         + '<radialGradient id="g2" gradientUnits="userSpaceOnUse" cx="0" cy="100" r="72">'
         + '<stop offset="0" class="c c0"/><stop offset="1" class="c" stop-opacity="0"/></radialGradient></defs>'
-        + '<rect width="100" height="100" class="b"/><rect width="100" height="100" fill="url(#g1)"/>'
-        + '<rect width="100" height="100" fill="url(#g2)"/>'
+        + '<rect width="100" height="100" rx="%g" class="b"/><rect width="100" height="100" rx="%g" fill="url(#g1)"/>' % (RX, RX)
+        + '<rect width="100" height="100" rx="%g" fill="url(#g2)"/>' % RX
         + square % (corner, corner, side, side, "")
         + square % (corner, corner, side, side, ' transform="rotate(45 50 50)"')
         + '<circle cx="50" cy="50" r="25.5" fill="none" class="l" stroke-width="2.2"/>'
