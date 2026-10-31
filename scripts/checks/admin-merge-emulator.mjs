@@ -93,14 +93,15 @@ console.log("== today's case: open, another write, edit the meaning only, save =
   check("the source is the newer version", s.source === "newer source");
   const copy = JSON.parse(JSON.stringify(a.surahs)); copy[SI].meanings[WI] = b.meanings[WI];
   check("every other field in every surah is the newer version", JSON.stringify(copy) === JSON.stringify(before.surahs));
-  const pv = await raw("public/prev");
-  check("public/prev is the newer version, for undo", pv.rev === 5 && JSON.stringify(pv.surahs) === JSON.stringify(before.surahs) && !("by" in pv));
+  const pv = await raw("snapshots/5"), hv = await raw("history/6");
+  check("the newer version is recorded (a write with no record gets the baseline)", pv.rev === 5 && JSON.stringify(pv.surahs) === JSON.stringify(before.surahs));
+  check("the merged save has its own row and snapshot", hv.kind === "edit" && JSON.stringify((await raw("snapshots/6")).surahs) === JSON.stringify(a.surahs));
   await p.click('[data-a="tab"][data-v="t"]');
-  await p.click('[data-a="undo"]');
+  await p.click('[data-a="hRestore"][data-v="5"]');
   await p.click('[data-cd="yes"]');
   await p.waitForFunction(() => D.rev === 7, null, { timeout: 20000 });
   const u = await raw("public/data");
-  check("undo restores the newer version", JSON.stringify(u.surahs) === JSON.stringify(before.surahs));
+  check("restore brings back the newer version", JSON.stringify(u.surahs) === JSON.stringify(before.surahs));
   await ctx.close();
 }
 

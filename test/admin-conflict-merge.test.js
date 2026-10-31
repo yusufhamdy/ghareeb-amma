@@ -6,7 +6,7 @@
  *   - both changed a field differently: nothing saved until a value is picked per field; the pick applies, the rest merges;
  *   - a third write while the conflict window is open: the field conflicts again, with the newest value;
  *   - focus / before opening an editor: reloads silently with no unsaved edits, shows a banner with unsaved edits;
- *   - undo still restores the version before the merged save.
+ *   - restoring from the version history brings back the version before the merged save.
  * ASCII only.
  */
 const test = require("node:test");
@@ -44,7 +44,7 @@ function staleData() {
 }
 const THEM = "\u0645\u0639\u0646\u0649 \u0645\u0646 \u0646\u0627\u0641\u0630\u0629 \u0623\u062e\u0631\u0649", ME = "\u0645\u0639\u0646\u0649 \u0645\u0646\u064a";
 
-test("admin word editor: three-way merge, conflict window, focus reload and banner, undo", { timeout: 240000 }, async (t) => {
+test("admin word editor: three-way merge, conflict window, focus reload and banner, restore", { timeout: 240000 }, async (t) => {
   let chromium;
   try { ({ chromium } = require("playwright")); } catch (e) { t.skip("playwright not installed"); return; }
   let br;
@@ -90,12 +90,13 @@ test("admin word editor: three-way merge, conflict window, focus reload and bann
       assert.strictEqual(after.surahs[SI].source, "newer source");
       after.surahs[SI].meanings[WI] = before.surahs[SI].meanings[WI];
       assert.strictEqual(JSON.stringify(after.surahs), JSON.stringify(before.surahs), "nothing else changed");
-      // undo keeps working: back to the version before my save
+      // the version history: back to the version before my save (the other window's write has no record yet, so my save
+      // recorded it as the baseline)
       await p.click('[data-a="tab"][data-v="t"]');
-      await p.click('[data-a="undo"]');
+      await p.click(`[data-a="hRestore"][data-v="${before.rev}"]`);
       await p.click('[data-cd="yes"]');
       await p.waitForFunction((r) => JSON.parse(localStorage.getItem("gqad")).rev === r, before.rev + 2);
-      assert.strictEqual(JSON.stringify((await stored(p)).surahs), JSON.stringify(before.surahs), "undo restores the newer version");
+      assert.strictEqual(JSON.stringify((await stored(p)).surahs), JSON.stringify(before.surahs), "restore brings back the newer version");
       assert.deepStrictEqual(errs, []);
       await ctx.close();
     }
@@ -148,7 +149,7 @@ test("admin word editor: three-way merge, conflict window, focus reload and bann
       await p.check('.cf input[value="theirs"]');
       await p.click('[data-a="saveC"]');
       await p.waitForFunction(() => !document.querySelector("#md .mb"));
-      // every field is the newer version: nothing to write, the revision stays (undo keeps its version)
+      // every field is the newer version: nothing to write, the revision stays
       const a = await stored(p);
       assert.strictEqual(a.surahs[SI].meanings[WI], THEM);
       assert.strictEqual(a.rev, 6);

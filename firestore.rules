@@ -13,8 +13,9 @@ service cloud.firestore {
       return mail() == 'yusufhamdy20@gmail.com';
     }
     function isAdmin() {
+      // no exists() first: a missing list makes get() fail, which refuses just the same, and a save with its history
+      // has to stay inside Firestore's limit of 20 document lookups per transaction
       return isOwner() || (mail() != null
-        && exists(/databases/$(database)/documents/config/admins)
         && mail() in get(/databases/$(database)/documents/config/admins).data.emails);
     }
 
@@ -28,7 +29,7 @@ service cloud.firestore {
         && (!('updatedAt' in d) || d.updatedAt is timestamp)
         && (!('by' in d) || (d.by is string && d.by == request.auth.uid));
     }
-    // public/prev: the previous words list (one undo step)
+    // public/prev: the last copy from before the version history. The admin page no longer writes it; it stays as a last resort.
     function validPrev(d) {
       return d.keys().hasAll(['rev', 'surahs']) && d.keys().hasOnly(['rev', 'surahs', 'savedAt'])
         && d.rev is int && d.rev >= 0
@@ -55,16 +56,77 @@ service cloud.firestore {
         && (d.emails.size() == 0 || d.emails.join(' ').matches('[^@ ]+@[^@ ]+[.][^@ ]+( [^@ ]+@[^@ ]+[.][^@ ]+)*'));
     }
 
+    // --- version history of public/data: snapshots/{rev} (the full words) and history/{rev} (the list's metadata) ---
+    // Both are create-only and written in the same transaction as the save of public/data they record.
+    function dataDoc() { return /databases/$(database)/documents/public/data; }
+    function snapDoc(r) { return /databases/$(database)/documents/snapshots/$(string(r)); }
+    function histDoc(r) { return /databases/$(database)/documents/history/$(string(r)); }
+    // public/data: every save moves the revision up by exactly one, names its writer and time, and records itself. The
+    // version it replaces must have its record too (the first save after release adds that record as the baseline).
+    function savedWithHistory() {
+      let d = request.resource.data;
+      return d.by == request.auth.uid && d.updatedAt == request.time
+        && (resource == null ? d.rev == 1 : d.rev == resource.data.rev + 1 && existsAfter(histDoc(resource.data.rev)))
+        && existsAfter(histDoc(d.rev))
+        && getAfter(snapDoc(d.rev)).data.surahs == d.surahs;
+    }
+    // this request moves public/data to revision r: at r after it, at r - 1 before it
+    function movesDataTo(r) {
+      return getAfter(dataDoc()).data.rev == r
+        && (r == 1 && !exists(dataDoc()) || get(dataDoc()).data.rev == r - 1);
+    }
+    // the baseline: the revision and words public/data holds now, before this request
+    function isCurrentData(r, surahs) {
+      return get(dataDoc()).data.rev == r && get(dataDoc()).data.surahs == surahs;
+    }
+    function validSnapshot(id, d) {
+      return d.keys().hasAll(['rev', 'surahs']) && d.keys().hasOnly(['rev', 'surahs'])
+        && d.rev is int && d.rev >= 0 && id == string(d.rev)
+        && d.surahs is list && d.surahs.size() <= 114;
+    }
+    function validHistory(id, d) {
+      return d.keys().hasAll(['rev', 'kind', 'summary', 'by', 'byEmail', 'at'])
+        && d.keys().hasOnly(['rev', 'kind', 'summary', 'by', 'byEmail', 'at', 'restoredFrom'])
+        && d.rev is int && d.rev >= 0 && id == string(d.rev)
+        && d.kind in ['edit', 'import', 'restore', 'baseline']
+        && d.summary is string && d.summary.size() <= 300
+        && d.by == request.auth.uid
+        && d.byEmail == request.auth.token.email
+        && d.at == request.time
+        && (d.kind == 'restore') == ('restoredFrom' in d)
+        && (!('restoredFrom' in d) || (d.restoredFrom is int && d.restoredFrom >= 0 && d.restoredFrom < d.rev));
+    }
+
     // Working copies of the site's data: only admins read them (visitors get the published words.json and challenge.json
     // from Hosting); admins write only the three known documents, in their shapes; nobody deletes.
     match /public/{doc} {
       allow read: if isAdmin();
       allow create, update: if isAdmin() && (
-        (doc == 'data' && validWords(request.resource.data))
+        (doc == 'data' && validWords(request.resource.data) && savedWithHistory())
         || (doc == 'prev' && validPrev(request.resource.data))
         || (doc == 'challenge' && validChallenge(request.resource.data)));
       allow delete: if false;
     }
+    // The version history: admins read and add; nobody changes or deletes a version, not even the owner.
+    match /snapshots/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && validSnapshot(id, request.resource.data) && (
+        (getAfter(histDoc(request.resource.data.rev)).data.kind != 'baseline'
+          && movesDataTo(request.resource.data.rev)
+          && request.resource.data.surahs == getAfter(dataDoc()).data.surahs)
+        || (getAfter(histDoc(request.resource.data.rev)).data.kind == 'baseline'
+          && isCurrentData(request.resource.data.rev, request.resource.data.surahs)));
+      allow update, delete: if false;
+    }
+    match /history/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && validHistory(id, request.resource.data) && (
+        request.resource.data.kind == 'baseline'
+          ? isCurrentData(request.resource.data.rev, getAfter(snapDoc(request.resource.data.rev)).data.surahs)
+          : movesDataTo(request.resource.data.rev) && existsAfter(snapDoc(request.resource.data.rev)));
+      allow update, delete: if false;
+    }
+
     // The admins list: admins read it; only the owner changes it.
     match /config/admins {
       allow read: if isAdmin();

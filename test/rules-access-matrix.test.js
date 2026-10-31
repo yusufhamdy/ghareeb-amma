@@ -2,7 +2,7 @@
  * rules-access-matrix.test.js
  *
  * Emulator-only access matrix for firestore.rules: what each kind of visitor can and cannot do with every document the
- * site uses (public/data = the words, public/prev = the previous words for undo, public/challenge, admin/challengeNotes =
+ * site uses (public/data = the words, public/prev = the last copy from before the version history, public/challenge, admin/challengeNotes =
  * the private notes, config/admins = the admins list) plus documents that do not exist yet (a "settings" document under
  * public/ and config/, other collections).
  *
@@ -40,10 +40,22 @@ const OWNER = { email: 'yusufhamdy20@gmail.com', email_verified: true };
 const ADMIN2 = { email: 'admin2@example.com', email_verified: true };
 const USER = { email: 'visitor@gmail.com', email_verified: true, firebase: { sign_in_provider: 'google.com' } };
 const PROJECT_ID = 'demo-ghareeb-matrix';
+const { serverTimestamp } = require('firebase/firestore');
+// a save of the words as the admin page commits it: public/data with its snapshot and its row. data's rev and surahs are
+// used as they are, so a wrong one is refused for what it is. (rules-history.test.js covers the records themselves.)
+function saveWords(db, uid, tok, data) {
+  const b = db.batch(), full = Object.assign({ updatedAt: serverTimestamp(), by: uid }, data);
+  b.set(db.doc('snapshots/' + data.rev), { rev: data.rev, surahs: data.surahs });
+  b.set(db.doc('history/' + data.rev), { rev: data.rev, kind: 'edit', summary: 'x', by: uid, byEmail: tok.email, at: serverTimestamp() });
+  b.set(db.doc('public/data'), full);
+  return b.commit();
+}
 
 // documents and what they hold before each test
 const SEED = {
   'public/data': { rev: 1, surahs: [{ surah: 'سورة الناس', no: 114, words: ['الخناس'], meanings: ['m'], ayahs: [], source: 's' }] },
+  'snapshots/1': { rev: 1, surahs: [{ surah: 'سورة الناس', no: 114, words: ['الخناس'], meanings: ['m'], ayahs: [], source: 's' }] },
+  'history/1': { rev: 1, kind: 'edit', summary: 's', by: 'x', byEmail: 'x@example.com', at: 'x' },
   'public/prev': { rev: 0, surahs: [] },
   'public/challenge': { startDate: '2026-01-01', releasedUpTo: 1, days: [] },
   'admin/challengeNotes': { 1: 'private note' },
@@ -101,6 +113,14 @@ async function deniedEverything(db, who) {
   await assertFails(db.doc('config/admins').set({ emails: [who] }, { merge: true }));
   await assertFails(db.doc('config/admins').delete());
   await assertFails(db.doc('config/settings').set({ hacked: who }));
+  // version history: no read, no list, no write, no delete
+  for (const c of ['snapshots', 'history']) {
+    await assertFails(db.doc(c + '/1').get());
+    await assertFails(db.collection(c).get());
+    await assertFails(db.doc(c + '/1').set({ hacked: who }));
+    await assertFails(db.doc(c + '/2').set({ rev: 2, surahs: [] }));
+    await assertFails(db.doc(c + '/1').delete());
+  }
   // anything else
   await assertFails(db.doc('users/x').get());
   await assertFails(db.doc('users/x').set({ hacked: who }));
@@ -154,7 +174,7 @@ test('addresses compare case-insensitively: the owner and an admin in other lett
   await assertSucceeds(owner.doc('config/admins').get());
   await assertSucceeds(owner.doc('config/admins').set({ emails: [ADMIN2.email, 'friend@gmail.com'] }));
   await assertSucceeds(admin.doc('admin/challengeNotes').get());
-  await assertSucceeds(admin.doc('public/data').update({ rev: 7 }));
+  await assertSucceeds(saveWords(admin, 'case-admin', { email: 'Admin2@Example.com' }, { rev: 2, surahs: [] }));
   // the admin is still not the owner, in any letter case
   await assertFails(admin.doc('config/admins').set({ emails: [ADMIN2.email] }));
   // and an unverified address in other letter case is nobody
@@ -171,7 +191,7 @@ test('custom claims give nothing: a non-admin token with admin: true is refused'
 test('admin who is not the owner: manages words, challenge and notes, but never the admins list', async () => {
   const db = track(env.authenticatedContext('admin2', ADMIN2)).firestore();
   // allowed
-  await assertSucceeds(db.doc('public/data').set({ rev: 2, surahs: [] }));
+  await assertSucceeds(saveWords(db, 'admin2', ADMIN2, { rev: 2, surahs: [] }));
   await assertSucceeds(db.doc('public/challenge').update({ releasedUpTo: 2 }));
   await assertSucceeds(db.doc('admin/challengeNotes').get());
   await assertSucceeds(db.doc('admin/challengeNotes').set({ 2: 'note' }, { merge: true }));
@@ -193,9 +213,9 @@ test('admin who is not the owner: manages words, challenge and notes, but never 
 test('only the owner changes the admins list; a removed admin loses access at once', async () => {
   const owner = track(env.authenticatedContext('owner', OWNER)).firestore();
   const admin = track(env.authenticatedContext('admin2b', ADMIN2)).firestore();
-  await assertSucceeds(admin.doc('public/data').update({ rev: 5 }));
+  await assertSucceeds(saveWords(admin, 'admin2b', ADMIN2, { rev: 2, surahs: [] }));
   await assertSucceeds(owner.doc('config/admins').set({ emails: [] }));
-  await assertFails(admin.doc('public/data').update({ rev: 6 }));
+  await assertFails(saveWords(admin, 'admin2b', ADMIN2, { rev: 3, surahs: [] }));
   for (const p of PUBLIC_DOCS) await assertFails(admin.doc(p).get());
   await assertFails(admin.doc('admin/challengeNotes').get());
   await assertFails(admin.doc('config/admins').get());
@@ -210,9 +230,9 @@ test('the owner is not locked out when the admins list is missing', async () => 
   const owner = track(env.authenticatedContext('owner2', OWNER)).firestore();
   const admin = track(env.authenticatedContext('admin2c', ADMIN2)).firestore();
   for (const p of PUBLIC_DOCS) await assertSucceeds(owner.doc(p).get());
-  await assertSucceeds(owner.doc('public/data').update({ rev: 9 }));
+  await assertSucceeds(saveWords(owner, 'owner2', OWNER, { rev: 2, surahs: [] }));
   await assertFails(admin.doc('public/data').get());
-  await assertFails(admin.doc('public/data').update({ rev: 10 }));
+  await assertFails(saveWords(admin, 'admin2c', ADMIN2, { rev: 3, surahs: [] }));
   await assertSucceeds(owner.doc('config/admins').set({ emails: [ADMIN2.email] }));
 });
 
@@ -220,7 +240,7 @@ test('admins write only the known public documents, in their shapes, and delete 
   const db = track(env.authenticatedContext('admin2-shapes', ADMIN2)).firestore();
   const ts = require('firebase/firestore').serverTimestamp;
   // the shapes the admin page writes
-  await assertSucceeds(db.doc('public/data').set({ rev: 2, surahs: SEED['public/data'].surahs, updatedAt: ts(), by: 'admin2-shapes' })); // by = the writer's own uid
+  await assertSucceeds(saveWords(db, 'admin2-shapes', ADMIN2, { rev: 2, surahs: SEED['public/data'].surahs })); // by = the writer's own uid
   await assertSucceeds(db.doc('public/prev').set({ rev: 1, surahs: [], savedAt: ts() }));
   await assertSucceeds(db.doc('public/challenge').set({ startDate: '2026-11-01', releasedUpTo: 3, days: [{ d: 1, w: [{ no: 114, word: 'w' }], reelIg: 'https://www.instagram.com/p/x/' }] }));
   await assertSucceeds(db.doc('public/challenge').set({ startDate: null, releasedUpTo: null, days: [] }));
@@ -229,16 +249,18 @@ test('admins write only the known public documents, in their shapes, and delete 
   // deletes
   for (const p of PUBLIC_DOCS) await assertFails(db.doc(p).delete());
   // words: missing or extra keys, wrong types, too many surahs, someone else as author
+  const asShape = (data) => saveWords(db, 'admin2-shapes', ADMIN2, data);
   await assertFails(db.doc('public/data').set({ surahs: [] }));
-  await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], extra: 1 }));
-  await assertFails(db.doc('public/data').set({ rev: '3', surahs: [] }));
-  await assertFails(db.doc('public/data').set({ rev: -1, surahs: [] }));
-  await assertFails(db.doc('public/data').set({ rev: 3, surahs: 'all' }));
-  await assertFails(db.doc('public/data').set({ rev: 3, surahs: Array.from({ length: 115 }, () => ({})) }));
-  await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by: 'owner-uid' })); // someone else's uid
+  await assertFails(db.doc('public/data').set({ rev: 3, surahs: [] })); // right shape, but no record of the save
+  await assertFails(asShape({ rev: 3, surahs: [], extra: 1 }));
+  await assertFails(asShape({ rev: '3', surahs: [] }));
+  await assertFails(asShape({ rev: -1, surahs: [] }));
+  await assertFails(asShape({ rev: 3, surahs: 'all' }));
+  await assertFails(asShape({ rev: 3, surahs: Array.from({ length: 115 }, () => ({})) }));
+  await assertFails(asShape({ rev: 3, surahs: [], by: 'owner-uid' })); // someone else's uid
   // an address is never accepted as the author, not even the writer's own
-  for (const by of [ADMIN2.email, 'Admin2@Example.com', 'yusufhamdy20@gmail.com']) await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by }));
-  await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], updatedAt: 'today' }));
+  for (const by of [ADMIN2.email, 'Admin2@Example.com', 'yusufhamdy20@gmail.com']) await assertFails(asShape({ rev: 3, surahs: [], by }));
+  await assertFails(asShape({ rev: 3, surahs: [], updatedAt: 'today' }));
   await assertFails(db.doc('public/data').update({ html: '<script>' }));
   // previous words: only its own keys
   await assertFails(db.doc('public/prev').set({ rev: 1, surahs: [], by: ADMIN2.email }));
