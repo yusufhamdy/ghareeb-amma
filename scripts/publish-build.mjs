@@ -299,6 +299,9 @@ export function buildRecords(surahs) {
 // the synchronous theme bootstrap (applied before first paint). Every value is
 // HTML-escaped here (they come from admin-written data); callers pass raw text.
 function staticHead(o) {
+  // a page with its own share image (a word) names it and its alt text; every other page has the general image
+  const img = o.ogImage || SITE + "/og-2026-10.png";
+  const alt = (k) => (o.ogImageAlt ? '<meta ' + k + ':image:alt" content="' + esc(o.ogImageAlt) + '">' : "");
   return (
     "<!doctype html>\n" +
     '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n' +
@@ -306,8 +309,8 @@ function staticHead(o) {
     "<title>" + esc(o.title) + "</title>\n" +
     '<meta name="description" content="' + esc(o.desc) + '">\n' +
     '<link rel="canonical" href="' + esc(o.canonical) + '">\n' +
-    '<meta property="og:type" content="' + esc(o.type || "website") + '"><meta property="og:title" content="' + esc(o.ogTitle) + '"><meta property="og:description" content="' + esc(o.ogDesc) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(o.ogTitle) + '"><meta name="twitter:description" content="' + esc(o.ogDesc) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
+    '<meta property="og:type" content="' + esc(o.type || "website") + '"><meta property="og:title" content="' + esc(o.ogTitle) + '"><meta property="og:description" content="' + esc(o.ogDesc) + '"><meta property="og:image" content="' + img + '"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' + alt('property="og') + '<meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(o.ogTitle) + '"><meta name="twitter:description" content="' + esc(o.ogDesc) + '"><meta name="twitter:image" content="' + img + '">' + alt('name="twitter') + '\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     // the Quran face (word and surah pages show Quran text): preloaded, and guarded by qfont.js
@@ -447,7 +450,7 @@ export function renderWordPage(r) {
     '<div class="acts"><a class="btn o g" href="/surah/' + r.surahSlug + '.html">' + BOOK + A.ALL_SURAH + "</a></div></div>";
   const year = new Date().getFullYear();
   return (
-    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld }) +
+    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld, ogImage: SITE + "/og/word/" + r.slug + ".png", ogImageAlt: ogTitle }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
     '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
@@ -519,8 +522,8 @@ export function renderLegalPage(entry) {
     "<title>" + title + "</title>\n" +
     '<meta name="description" content="' + esc(entry.title) + '">\n' +
     '<link rel="canonical" href="' + SITE + "/" + entry.slug + '/">\n' +
-    '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og.png">\n' +
+    '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og-2026-10.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og-2026-10.png">\n' +
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     "<style>" + LEGACY_CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style>\n" +

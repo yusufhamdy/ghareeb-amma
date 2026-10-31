@@ -411,9 +411,7 @@ const FAV_TAGS = ['href="/favicon.svg"', 'href="/favicon-32.png"', 'href="/apple
 test("D6: favicon and icons exist and every head links the svg, 32px png and apple-touch-icon", { timeout: 120000 }, async (t) => {
   // Files on disk.
   const svg = fs.readFileSync(path.join(PUBLIC, "favicon.svg"), "utf8");
-  assert.ok(/rx="225"/.test(svg), "rounded square uses a ~22% corner radius: " + (svg.match(/rx="\d+"/) || ["none"])[0]);
-  assert.ok(svg.includes('fill="#1E6B50"'), "tile uses the default palette accent");
-  assert.ok(svg.includes('fill-rule="evenodd"'), "glyph path uses the even-odd rule for its counters");
+  assert.ok(/<path /.test(svg), "the glyph is a path (its design: share-images.test.js)");
   for (const [f, size] of Object.entries({ "favicon-32.png": 32, "apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512 })) {
     const b = fs.readFileSync(path.join(PUBLIC, f));
     assert.equal(b.readUInt32BE(16), size, f + " is " + size + "px wide");
@@ -473,23 +471,23 @@ test("D6: favicon and icons exist and every head links the svg, 32px png and app
 const OG_TAGS = [
   '<meta property="og:title"',
   '<meta property="og:description"',
-  '<meta property="og:image" content="https://ghareebalquran.com/og.png">',
+  '<meta property="og:image" content="https://ghareebalquran.com/og-2026-10.png">',
   '<meta property="og:image:width" content="1200">',
   '<meta property="og:image:height" content="630">',
   '<meta property="og:locale" content="ar_AR">',
   '<meta name="twitter:card" content="summary_large_image">',
   '<meta name="twitter:title"',
   '<meta name="twitter:description"',
-  '<meta name="twitter:image" content="https://ghareebalquran.com/og.png">',
+  '<meta name="twitter:image" content="https://ghareebalquran.com/og-2026-10.png">',
 ];
 
-test("D7: og.png is a 1200x630 share image and every public head carries og/twitter tags", { timeout: 120000 }, async (t) => {
+test("D7: og-2026-10.png is a 1200x630 share image and every public head carries og/twitter tags", { timeout: 120000 }, async (t) => {
   // The share image itself.
-  const og = path.join(PUBLIC, "og.png");
+  const og = path.join(PUBLIC, "og-2026-10.png");
   const b = fs.readFileSync(og);
-  assert.equal(b.readUInt32BE(16), 1200, "og.png is 1200px wide");
-  assert.equal(b.readUInt32BE(20), 630, "og.png is 630px high");
-  assert.ok(b.length < 300 * 1024, "og.png is under 300 KB (" + b.length + " bytes)");
+  assert.equal(b.readUInt32BE(16), 1200, "og-2026-10.png is 1200px wide");
+  assert.equal(b.readUInt32BE(20), 630, "og-2026-10.png is 630px high");
+  assert.ok(b.length < 300 * 1024, "og-2026-10.png is under 300 KB (" + b.length + " bytes)");
 
   // Static heads (home + 404).
   for (const f of ["index.html", "404.html"]) {
@@ -507,7 +505,8 @@ test("D7: og.png is a 1200x630 share image and every public head carries og/twit
   );
   const wordKey = Object.keys(files).find((k) => k.startsWith("word/"));
   assert.ok(files[wordKey].includes('<meta property="og:type" content="article">'), "word page declares og:type article");
-  for (const tag of OG_TAGS) assert.ok(files[wordKey].includes(tag), "word page carries " + tag);
+  // a word page has its own image (see share-images.test.js); the other tags are the same
+  for (const tag of OG_TAGS.filter((t) => !t.includes("og-2026-10.png"))) assert.ok(files[wordKey].includes(tag), "word page carries " + tag);
   const legalKey = Object.keys(files).find((k) => /^about\/index\.html$/.test(k));
   assert.ok(files[legalKey].includes('<meta property="og:type" content="website">'), "legal page declares og:type website");
   for (const tag of OG_TAGS) assert.ok(files[legalKey].includes(tag), "legal page carries " + tag);
@@ -515,6 +514,6 @@ test("D7: og.png is a 1200x630 share image and every public head carries og/twit
   // The committed pages match the generator (only the head grew; body untouched).
   for (const n of fs.readdirSync(path.join(PUBLIC, "word")).slice(0, 5)) {
     const committed = fs.readFileSync(path.join(PUBLIC, "word", n), "utf8");
-    assert.ok(committed.includes('content="https://ghareebalquran.com/og.png"'), "committed word page " + n + " points at og.png");
+    assert.ok(committed.includes('content="https://ghareebalquran.com/og/word/' + n.replace(/\.html$/, "") + '.png"'), "committed word page " + n + " points at its own image");
   }
 });
