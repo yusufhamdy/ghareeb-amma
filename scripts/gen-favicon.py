@@ -6,10 +6,15 @@ load web fonts. Green ("zumurrudi nahar") by default, the turquoise night palett
 
     pip install fonttools brotli
     python scripts/gen-favicon.py
+    python scripts/gen-favicon.py --full
 
-Then run scripts/gen-share-images.js, which renders favicon-32.png and uses this design in the general share image.
+Then run scripts/gen-share-images.js, which renders favicon-32.png from public/favicon.svg.
+
+--full writes the full variant instead, for the general share image only: thin lines and two faint outer squares, too
+fine for a favicon. It goes to scripts/share-icon-full.svg and is not served. public/favicon.svg stays as it is.
 """
 import os
+import sys
 
 from fontTools.misc.transform import Transform
 from fontTools.pens.boundsPen import BoundsPen
@@ -20,6 +25,7 @@ from fontTools.ttLib import TTFont
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 FONT = os.path.join(ROOT, "public", "fonts", "amiri-arabic-700-normal.woff2")
 OUT = os.path.join(ROOT, "public", "favicon.svg")
+OUT_FULL = os.path.join(ROOT, "scripts", "share-icon-full.svg")
 S = 100  # the viewBox side: every length below is its fraction of s times 100
 RX = 22.83  # the corner radius: the general share image's icon, 21px on 92px
 
@@ -51,27 +57,43 @@ def palette_css(p):
     )
 
 
-def main():
+def outer_squares():
+    side = 1.12 * 0.60 * S
+    corner = S / 2 - side / 2
+    square = '<rect x="%g" y="%g" width="%g" height="%g" fill="none" stroke="rgba(30,107,80,.35)" stroke-width="0.8"%s/>'
+    return square % (corner, corner, side, side, "") + square % (corner, corner, side, side, ' transform="rotate(45 50 50)"')
+
+
+def build(css, line, ring, under=""):
     side, half = 0.60 * S, 0.30 * S
     corner = S / 2 - half
-    square = '<rect x="%g" y="%g" width="%g" height="%g" fill="none" class="l" stroke-width="4.2"%s/>'
-    svg = (
+    square = '<rect x="%g" y="%g" width="%g" height="%g" fill="none" class="l" stroke-width="%g"%s/>'
+    return (
         '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">' % (S, S, S, S)
-        + "<style>" + palette_css(GREEN) + "@media (prefers-color-scheme:dark){" + palette_css(NIGHT) + "}</style>"
+        + "<style>" + css + "</style>"
         + '<defs><radialGradient id="g1" gradientUnits="userSpaceOnUse" cx="95" cy="0" r="78">'
         + '<stop offset="0" class="a a0"/><stop offset="1" class="a" stop-opacity="0"/></radialGradient>'
         + '<radialGradient id="g2" gradientUnits="userSpaceOnUse" cx="0" cy="100" r="72">'
         + '<stop offset="0" class="c c0"/><stop offset="1" class="c" stop-opacity="0"/></radialGradient></defs>'
         + '<rect width="100" height="100" rx="%g" class="b"/><rect width="100" height="100" rx="%g" fill="url(#g1)"/>' % (RX, RX)
         + '<rect width="100" height="100" rx="%g" fill="url(#g2)"/>' % RX
-        + square % (corner, corner, side, side, "")
-        + square % (corner, corner, side, side, ' transform="rotate(45 50 50)"')
-        + '<circle cx="50" cy="50" r="25.5" fill="none" class="l" stroke-width="2.2"/>'
+        + under
+        + square % (corner, corner, side, side, line, "")
+        + square % (corner, corner, side, side, line, ' transform="rotate(45 50 50)"')
+        + '<circle cx="50" cy="50" r="25.5" fill="none" class="l" stroke-width="%g"/>' % ring
         + '<path class="f" d="' + ghain_path() + '"/></svg>\n'
     )
-    with open(OUT, "w", encoding="utf-8", newline="\n") as f:
+
+
+def main():
+    if "--full" in sys.argv[1:]:
+        out, svg = OUT_FULL, build(palette_css(GREEN), 2, 0.9, outer_squares())
+    else:
+        css = palette_css(GREEN) + "@media (prefers-color-scheme:dark){" + palette_css(NIGHT) + "}"
+        out, svg = OUT, build(css, 4.2, 2.2)
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
         f.write(svg)
-    print("wrote", OUT, len(svg), "bytes")
+    print("wrote", out, len(svg), "bytes")
 
 
 if __name__ == "__main__":

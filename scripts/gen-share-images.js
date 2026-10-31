@@ -3,8 +3,8 @@
 // The palette is set only in this renderer's own localStorage. Nothing here changes the site, its default palette or
 // anyone's settings. Before each screenshot the computed fonts are checked, and the run fails if any differ or if a
 // word's card does not fit between the header and the domain.
-//   node scripts/gen-share-images.js [--only 79-6,83-0]
-// Run scripts/gen-favicon.py first if the favicon design changed.
+//   node scripts/gen-share-images.js [--only general,79-6,83-0]
+// Run scripts/gen-favicon.py first if the favicon design changed, or with --full for the general image's icon.
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -18,6 +18,7 @@ const VIEW = { width: 900, height: 473 }, DSF = 1.3334;
 const DOMAIN = "ghareebalquran.com";
 const AMIRI = "Amiri", PLEX = "IBM Plex Sans Arabic", KFGQPC = "KFGQPC";
 const ONLY = (() => { const i = process.argv.indexOf("--only"); return i < 0 ? null : process.argv[i + 1].split(","); })();
+const FULL_ICON = "data:image/svg+xml;base64," + fs.readFileSync(path.join(__dirname, "share-icon-full.svg")).toString("base64");
 
 // common to both kinds of image: no animation, no scrollbars, the domain line
 const BASE_CSS = `
@@ -41,7 +42,7 @@ const WORD_CSS = BASE_CSS + `
 const GENERAL_CSS = BASE_CSS + `
 #app{display:none!important}
 .share-general{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.share-general img{width:92px;height:92px;border-radius:21px;display:block;margin-bottom:10px}
+.share-general img{width:92px;height:92px;border-radius:21px;display:block;margin-bottom:10px;box-shadow:0 10px 30px rgba(29,43,37,.14)}
 .share-general .sn{font-size:84px;line-height:1.25;color:var(--ac)}
 .share-general .share-sub{font-family:'${PLEX}',sans-serif;font-size:24px;color:var(--mu);margin-bottom:16px}
 `;
@@ -147,11 +148,11 @@ async function favicon(br, base) {
 async function general(br, base) {
   const { ctx, page } = await openSite(br, base);
   await page.addStyleTag({ content: GENERAL_CSS });
-  await page.evaluate((domain) => {
+  await page.evaluate(([domain, icon]) => {
     const d = document.createElement("div"); d.className = "share-general";
-    d.innerHTML = '<img src="/favicon.svg" alt=""><div class="sn" id="s-name">غريب القرآن</div><div class="share-sub" id="s-sub">معاني الكلمات الغريبة في جزء عمّ، بأسلوب مبسّط</div><div class="share-domain" id="s-domain">' + domain + "</div>";
+    d.innerHTML = '<img src="' + icon + '" alt=""><div class="sn" id="s-name">غريب القرآن</div><div class="share-sub" id="s-sub">معاني الكلمات الغريبة في جزء عمّ، بأسلوب مبسّط</div><div class="share-domain" id="s-domain">' + domain + "</div>";
     document.body.appendChild(d);
-  }, DOMAIN);
+  }, [DOMAIN, FULL_ICON]);
   await page.waitForFunction(() => document.querySelector(".share-general img").complete && document.querySelector(".share-general img").naturalWidth > 0);
   await page.evaluate(async () => { await Promise.all([document.fonts.load("700 84px Amiri", "غريب"), document.fonts.load("400 24px 'IBM Plex Sans Arabic'", "معاني"), document.fonts.load("500 17px 'IBM Plex Sans Arabic'", "ghareebalquran.com")]); });
   await checkColors(page, "general");
@@ -211,8 +212,9 @@ async function words(br, base) {
   const { server, base } = await serve();
   const br = await chromium.launch();
   try {
-    if (!ONLY) { await favicon(br, base); await general(br, base); }
-    const { bad, tall } = await words(br, base);
+    if (!ONLY) await favicon(br, base);
+    if (!ONLY || ONLY.includes("general")) await general(br, base);
+    const { bad, tall } = ONLY && ONLY.every((id) => id === "general") ? { bad: [], tall: [] } : await words(br, base);
     if (tall.length) console.log("does not fit:\n  " + tall.join("\n  "));
     if (bad.length) console.log("failed:\n  " + bad.join("\n  "));
     if (bad.length || tall.length) process.exitCode = 1;
