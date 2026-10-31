@@ -51,6 +51,12 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Java 21 (Firestore emulator runtime)
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Install dependencies
         run: npm ci
 
