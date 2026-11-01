@@ -14,6 +14,15 @@ const LOCK = path.join(os.tmpdir(), "ghareeb-emulator-setup.lock");
 const STALE_MS = 10 * 60 * 1000;
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
+// The setup command always downloads, and copies over the cached jar in place: done while another suite's emulator is
+// running from that jar, it can fail or damage it. So it runs only when this version's complete jar is not there yet.
+function hasCompleteJar() {
+  try {
+    const d = require("firebase-tools/lib/emulator/downloadableEmulators").getDownloadDetails("firestore");
+    return fs.statSync(d.downloadPath).size === d.opts.expectedSize;
+  } catch (_) { return false; }
+}
+
 function ensureFirestoreEmulator(cwd) {
   for (;;) {
     try { fs.mkdirSync(LOCK); break; } catch (e) {
@@ -25,6 +34,7 @@ function ensureFirestoreEmulator(cwd) {
     }
   }
   try {
+    if (hasCompleteJar()) return;
     const r = spawnSync("npx firebase setup:emulators:firestore", { cwd, encoding: "utf8", shell: true, timeout: STALE_MS - 60000 });
     if (r.status !== 0) throw new Error("could not set up the Firestore emulator\n" + (r.stdout || "") + (r.stderr || ""));
   } finally {

@@ -20,9 +20,23 @@
 
   var FIELDS = ["surah", "word", "meaning", "label", "segments"];
 
-  // exact comparison, byte for byte: stored Quran text is never normalized
+  /*
+   * One text for one value, whatever order its map keys arrived in: Firestore does not keep a map's key order, and on
+   * production it differs from one read to the next. Keys are sorted at every level; arrays stay in their order, and
+   * strings and numbers are left exactly as they are. Used only to compare: nothing stored ever passes through it.
+   */
+  function canon(v) {
+    return JSON.stringify(v === undefined ? null : v, function (_, x) {
+      if (!x || typeof x !== "object" || Array.isArray(x)) return x;
+      var o = Object.create(null);
+      Object.keys(x).sort().forEach(function (k) { o[k] = x[k]; });
+      return o;
+    });
+  }
+
+  // exact comparison of the values, byte for byte: stored Quran text is never normalized
   function same(a, b) {
-    return JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+    return canon(a) === canon(b);
   }
 
   /*
@@ -76,5 +90,5 @@
     return found.length === 1 ? found[0] : null;
   }
 
-  return { FIELDS: FIELDS, same: same, merge: merge, locate: locate };
+  return { FIELDS: FIELDS, canon: canon, same: same, merge: merge, locate: locate };
 });

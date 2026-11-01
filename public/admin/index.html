@@ -181,7 +181,7 @@ function askDiscard(go,onKeep){ask({title:"لديك تعديلات غير محف
    edits); focus moves in, stays in, and returns to the opener; the page behind does not scroll */
 let MD=null,POPSKIP=false,MDDOWN=null;
 function lock(){document.documentElement.classList.toggle("lock",!!MD||dlgOpen())}
-function winState(){if(!MD)return"";if(MD.kind==="word"||MD.kind==="surah"){if(!ED)return"";const{err,base,warned,gone,conf,res,...r}=ED;return JSON.stringify(r)}if(MD.kind==="day")return JSON.stringify(EDD?{w:EDD.w,links:EDD.links,note:EDD.note}:null);return""}
+function winState(){if(!MD)return"";if(MD.kind==="word"||MD.kind==="surah"){if(!ED)return"";const{err,base,warned,gone,conf,res,...r}=ED;return WordMerge.canon(r)}if(MD.kind==="day")return WordMerge.canon(EDD?{w:EDD.w,links:EDD.links,note:EDD.note}:null);return""}
 const dirty=()=>!!MD&&winState()!==MD.base0;
 function selOf(el){if(!el||!el.getAttribute)return null;if(el.id&&el.id!=="app")return"#"+el.id;const f=el.getAttribute("data-f");if(f)return'[data-f="'+f+'"]';const a=el.getAttribute("data-a"),v=el.getAttribute("data-v");if(a)return'[data-a="'+a+'"]'+(v!=null?'[data-v="'+v+'"]':"");return null}
 function winHtml(title,body,foot){return`<div class="mb" role="dialog" aria-modal="true" aria-labelledby="mdt"><div class="mh"><h2 id="mdt">${title}</h2><button class="ib x" data-a="close" aria-label="إغلاق">${IC_X}</button></div><div class="mbd">${NEWER?`<div class="g demo wnew" role="status"><span>توجد نسخة أحدث من البيانات، ولديك هنا تعديلات غير محفوظة. يمكنك الحفظ فتُدمج تعديلاتك مع النسخة الأحدث، أو إعادة التحميل مع تجاهل تعديلاتك.</span><button class="g sm2" data-a="reloadNewer">${IC_RETRY}إعادة التحميل</button></div>`:""}${MD&&MD.err?`<div class="werr" role="alert"><span>${esc(MD.err)}</span>${MD.retry?`<button class="g sm2" data-a="retry">${IC_RETRY}إعادة المحاولة</button>`:""}</div>`:""}${body}</div><div class="mft">${foot}</div></div>`}
@@ -357,7 +357,7 @@ function linkNames(d){return RL.filter(r=>d[r[0]]).map(r=>r[3])}
 function existSet(){const s=new Set();D.surahs.forEach(e=>e.words.forEach(w=>s.add((e.no||0)+"::"+NM(w))));return s}
 function wordOk(ref){return existSet().has(ref[0]+"::"+NM(ref[1]))}
 function suraNameByNo(no){const e=D.surahs.find(x=>x.no===no);return e?nm(e):"سورة "+no}
-const dayKey=d=>JSON.stringify([d.w||[],d.reel||"",...RL.map(r=>d[r[0]]||"")]);
+const dayKey=d=>WordMerge.canon([d.w||[],d.reel||"",...RL.map(r=>d[r[0]]||"")]);
 function tabC(){
  if(!CH)return '<div class="g card" style="padding:16px">جارٍ تحميل التحدي…</div>';
  const bad=CL.validateDayReferences(CH,r=>wordOk(r)).map(p=>({d:p.day,ref:p.ref}));
@@ -456,7 +456,7 @@ function diffBody(x){
  if(!b)return'<div class="sm" style="padding:16px 0">هذه النسخة غير موجودة في السجل.</div>';
  if(!a)return'<div class="sm" style="padding:16px 0">لا توجد في السجل نسخة قبل هذه النسخة.</div>';
  let d;try{d=HL.diff(fix({surahs:clone(a)}).surahs,fix({surahs:clone(b)}).surahs,nm)}catch(e){return`<div class="werr" role="alert"><span>${esc(errMsg(e,"عرض التغييرات"))}</span></div>`}
- if(!d.surahs.length&&!d.words.length)return`<div class="sm" style="padding:16px 0">${x.mode==="prev"?"لا فرق بين هذه النسخة والنسخة التي قبلها.":"لا فرق بين هذه النسخة والنسخة الحالية."}</div>`;
+ if(!d.surahs.length&&!d.words.length)return`<div class="sm" style="padding:16px 0">${x.mode==="prev"?"لم يتغيّر شيء في هذه النسخة.":"لم يتغيّر شيء منذ هذه النسخة."}</div>`;
  return diffCards(d)+`<div class="sm" style="margin-top:4px">${x.mode==="prev"?"لم يتغيّر شيء آخر في هذه النسخة.":"لم يتغيّر شيء آخر منذ هذه النسخة."}</div>`;
 }
 function diffHtml(){
@@ -511,7 +511,7 @@ function conflictHtml(x){
 ${x.conf.fields.map((c,i)=>`<fieldset class="cf"${er[c.field]?` aria-describedby="fe-cf${i}"`:""}><legend>${CF_LABEL[c.field]||esc(c.field)}</legend>
 <label class="cfo"><input type="radio" name="cf${i}" data-f="cf.${c.field}" value="mine"${x.conf.picks[c.field]==="mine"?" checked":""}><span><b>نسختك</b>${cfValue(c.field,c.mine)}</span></label>
 <label class="cfo"><input type="radio" name="cf${i}" data-f="cf.${c.field}" value="theirs"${x.conf.picks[c.field]==="theirs"?" checked":""}><span><b>النسخة الأحدث</b>${cfValue(c.field,c.theirs)}</span></label>
-${String(JSON.stringify(c.mine)).normalize("NFC")===String(JSON.stringify(c.theirs)).normalize("NFC")?'<div class="sm">الفرق بين القيمتين في ترميز الحروف فقط، ولا يظهر في الشكل.</div>':""}
+${WordMerge.canon(c.mine).normalize("NFC")===WordMerge.canon(c.theirs).normalize("NFC")?'<div class="sm">الفرق بين القيمتين في ترميز الحروف فقط، ولا يظهر في الشكل.</div>':""}
 ${er[c.field]?`<div class="sm dg ferr" id="fe-cf${i}" role="alert">${esc(er[c.field])}</div>`:""}</fieldset>`).join("")}`,
 `<button class="pill btn" data-a="saveC">${IC_CHECK}حفظ</button><button class="g pill" data-a="backC">${IC_PEN}رجوع إلى التعديل</button>`);
 }
@@ -525,7 +525,7 @@ function wordForm(e,si,wi){
  else{const a=e.ayahs[wi]||{label:"",segments:[]},s=clone(a.segments);x={si,wi,w:e.words[wi],m:meaning(e,wi),label:a.label,af:s.map(g=>g.before+g.hl+g.after).join(" "),ah:(s[0]||{}).hl||"",segs:s.length?s:[{num:"",before:"",hl:"",after:""}],err:{}};
   // what was stored when the editor opened: the base of the three-way merge at save, and the exact bytes of every
   // field the editor did not touch
-  x.base={sName:nm(e),no:e.no,w:e.words[wi],m:e.meanings[wi],ay:e.ayahs[wi],mShown:x.m,label0:String(a.label),segs0:JSON.stringify(x.segs)}}
+  x.base={sName:nm(e),no:e.no,w:e.words[wi],m:e.meanings[wi],ay:e.ayahs[wi],mShown:x.m,label0:String(a.label),segs0:WordMerge.canon(x.segs)}}
  return x;
 }
 /* The server's revision: checked when the tab regains focus and before an editor opens. A newer revision reloads silently
@@ -573,7 +573,7 @@ async function saveW(btn){
  const m=b&&!isNew&&x.m.trim()===String(b.mShown).trim()?b.m:x.m.trim();
  const ay0=(b&&b.ay)||{};
  const label=b&&!isNew&&String(x.label).trim()===b.label0.trim()?ay0.label:String(x.label).trim();
- const segments=b&&!isNew&&JSON.stringify(x.segs)===b.segs0?ay0.segments:x.segs.map(g=>({num:+g.num||+x.label||0,before:g.before,hl:g.hl.trim(),after:g.after}));
+ const segments=b&&!isNew&&WordMerge.canon(x.segs)===b.segs0?ay0.segments:x.segs.map(g=>({num:+g.num||+x.label||0,before:g.before,hl:g.hl.trim(),after:g.after}));
  let ref;try{ref=await quranRef()}catch(e){return winFail(e,"الحفظ",bb=>saveW(bb))}
  if(!isNew&&!x.warned){const used=daysUsing(b.no,b.w),moved=tName!==b.sName,renamed=NM(w)!==NM(b.w);
   if(used.length&&(moved||renamed))return ask({title:"الكلمة «"+b.w+"» مستخدمة في التحدي",body:"تستخدمها: "+DAYS(used)+". بعد تغيير "+(moved?"سورتها":"نصها")+" لن تجدها هذه الأيام، ولن تظهر فيها على الموقع حتى تعدّلها من تبويب «التحدي».",yes:"حفظ رغم ذلك",no:"رجوع",noIcon:IC_PEN,trig:btn,onYes:()=>{x.warned=true;saveW($('#md [data-a="saveW"]'))}})}
@@ -589,7 +589,7 @@ async function saveW(btn){
      const ti=ss.findIndex(e=>nm(e)===tName);if(ti<0)throw errOf("conflict","حُذفت السورة المختارة في نافذة أخرى. اختر سورة أخرى ثم احفظ.");
      checkAyah(segments,tName,ss[ti].no);
      const t=ss[ti],a={label,segments},j=t.words.indexOf(w);
-     if(j>=0){if(JSON.stringify([t.words[j],t.meanings[j],t.ayahs[j]])===JSON.stringify([w,m,a]))return ss;throw errOf("dup")}
+     if(j>=0){if(WordMerge.same([t.words[j],t.meanings[j],t.ayahs[j]],[w,m,a]))return ss;throw errOf("dup")}
      t.words.push(w);t.meanings.push(m);t.ayahs.push(a);return ss}
     const at=WordMerge.locate(ss,base,nm);if(!at)throw errOf("conflict","gone");
     const o=ss[at.si],j=at.wi,a0=o.ayahs[j]||{},theirs={surah:nm(o),word:o.words[j],meaning:o.meanings[j],label:a0.label,segments:a0.segments};
