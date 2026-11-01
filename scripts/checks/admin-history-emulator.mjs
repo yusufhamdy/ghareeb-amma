@@ -130,7 +130,7 @@ await p.selectOption('[data-f="fs"]', "all");
 
 // surah add, edit, delete
 await tab(p, "s");
-const free = await p.$$eval("#ns option", (o) => o.map((x) => x.value).filter((v) => v && v !== "*"));
+const free = await p.$$eval("#ns option", (o) => o.filter((x) => !x.disabled).map((x) => x.value).filter((v) => v && v !== "*"));
 const newS = free[0];
 await p.selectOption("#ns", newS); await p.click('[data-a="addS"]'); await p.waitForSelector("#e-name");
 await p.click('[data-a="saveS"]'); await closed(p);
@@ -319,6 +319,33 @@ for (const scheme of ["light", "dark"]) {
   const nwd = await s.p.evaluate(() => [...document.querySelectorAll("#md .nw")].map((e) => ({ one: (() => { const t = [...e.getClientRects()].map((r) => r.top); return Math.max(...t) - Math.min(...t) < 8; })(), ws: getComputedStyle(e).whiteSpace, inside: e.getBoundingClientRect().right <= innerWidth && e.getBoundingClientRect().left >= 0 })));
   check(scheme + " 390: the window's date is in a no-wrap span, on one line, on the screen", nwd.length >= 1 && nwd.every((x) => x.one && x.ws === "nowrap" && x.inside), nwd);
   await s.ctx.close();
+}
+
+console.log("\n== signed out with a window open, and what stays in memory ==");
+{
+  await seed(official, 4);
+  const a = await login(OWNER, "owner-sub"); await tab(a.p, "w");
+  const b = await a.ctx.newPage(); b.on("pageerror", (e) => pageErrors.push(e.message.slice(0, 160)));
+  await b.goto(base + "/admin/index.html"); await b.waitForFunction(() => U && D && document.querySelector('[data-a="tab"]'), null, { timeout: 20000 });
+  await tab(b, "w"); await b.click('[data-a="editW"][data-v="' + SI + '.0"]'); await b.waitForSelector("#e-m"); await b.fill("#e-m", "typed-before-sign-out");
+  const before = (await raw("public/data")).rev;
+  await a.p.evaluate(() => FB.au.signOut(FB.auth));
+  await b.waitForFunction(() => !U && document.querySelector("#cd.open"), null, { timeout: 15000 });
+  await b.click('[data-cd="no"]'); await b.waitForSelector("#e-m");
+  await b.click('[data-a="saveW"]'); await b.waitForSelector("#md .werr", { timeout: 10000 });
+  const m = await b.evaluate(() => ({ err: document.querySelector("#md .werr").textContent, raw: /Cannot read|null|undefined/.test(document.querySelector("#md .werr").textContent), text: document.querySelector("#e-m").value, login: !!document.querySelector('#md [data-a="login"]') }));
+  check("SEC-7: Save says to sign in, with no raw error", m.err.length > 10 && !m.raw && m.login, m.raw);
+  check("SEC-7: the typed text stays", m.text === "typed-before-sign-out");
+  check("SEC-7: nothing is written", (await raw("public/data")).rev === before);
+  await b.evaluate(async (e) => { const { GoogleAuthProvider, signInWithCredential } = FB.au; await signInWithCredential(FB.auth, GoogleAuthProvider.credential(JSON.stringify({ sub: "owner-sub", email: e, email_verified: true }))); }, OWNER);
+  await b.waitForFunction(() => U && D && !document.querySelector("#md .werr"), null, { timeout: 15000 });
+  await b.click('[data-a="saveW"]'); await b.waitForFunction(() => !document.querySelector("#e-m"), null, { timeout: 25000 });
+  const d = await raw("public/data");
+  check("SEC-7: back signed in, the same window saves the text", d.rev === before + 1 && d.surahs[SI].meanings[0] === "typed-before-sign-out");
+  await b.evaluate(() => FB.au.signOut(FB.auth)); await b.waitForSelector('[data-a="login"]');
+  const mem = await b.evaluate(() => ({ D: D === null, AD: AD.length === 0, CH: CH === null, CHN: Object.keys(CHN).length === 0, ED: ED === null, EDD: EDD === null, META: META === null, HIST: HIST === null, SNAPS: Object.keys(SNAPS).length === 0 }));
+  check("SEC-9: sign-out clears the words, admins, challenge, notes and history from memory", Object.values(mem).every(Boolean), mem);
+  await a.ctx.close();
 }
 
 console.log("\n== the drop-down: admin, and the public pages ==");
