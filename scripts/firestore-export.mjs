@@ -2,13 +2,15 @@
 /*
  * firestore-export.mjs - READ-ONLY copy of the production documents the site and the admin use, to a local folder.
  *
- *   node scripts/firestore-export.mjs [--project ID] [--out DIR]
+ *   node scripts/firestore-export.mjs [--project ID] [--out DIR] [--quiet]
  *
- * Reads public/data, public/prev, public/challenge, admin/challengeNotes and config/admins (each may be missing) with
- * the firebase-admin SDK (application default credentials) and writes one JSON file per document plus index.json to
- * DIR (default backup/firestore/export-<time>/, git-ignored). Timestamps are kept as {"__ts": [seconds, nanos]} so
+ * Reads public/data, public/prev, public/challenge, admin/challengeNotes, config/admins (each may be missing) and every
+ * document of snapshots/ and history/ with the firebase-admin SDK (application default credentials) and writes one JSON
+ * file per document plus index.json to DIR (default backup/firestore/export-<time>/, git-ignored). --quiet prints counts
+ * only, for the backup workflow, whose logs are public. Timestamps are kept as {"__ts": [seconds, nanos]} so
  * scripts/checks/rules-real-data.mjs can load the documents into the emulator with their original types.
- * Only get() is called; it refuses to run when FIRESTORE_EMULATOR_HOST is set (that would read the emulator).
+ * Only reads are called. It refuses to run when FIRESTORE_EMULATOR_HOST is set (that would read the emulator), unless
+ * --emulator is given for the backup's own test, which then refuses anything but a local emulator.
  * ASCII-only.
  */
 import fs from "node:fs";
@@ -21,9 +23,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const argv = process.argv.slice(2), opt = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
 const PROJECT = opt("--project") || "ghareebalquran-d9ae5";
 const OUT = opt("--out") || path.join(ROOT, "backup", "firestore", "export-" + new Date().toISOString().replace(/[:.]/g, "-"));
+const QUIET = argv.includes("--quiet"), EMULATOR = argv.includes("--emulator");
+const say = (m) => { if (!QUIET) console.log(m); };
 export const DOCS = ["public/data", "public/prev", "public/challenge", "admin/challengeNotes", "config/admins"];
+export const COLLECTIONS = ["snapshots", "history"];
 
-if (process.env.FIRESTORE_EMULATOR_HOST) { console.error("firestore-export: FIRESTORE_EMULATOR_HOST is set; refusing (this script reads production)"); process.exit(1); }
+if (EMULATOR && !/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST || "")) { console.error("firestore-export: --emulator needs a local FIRESTORE_EMULATOR_HOST"); process.exit(1); }
+if (process.env.FIRESTORE_EMULATOR_HOST && !EMULATOR) { console.error("firestore-export: FIRESTORE_EMULATOR_HOST is set; refusing (this script reads production)"); process.exit(1); }
 const admin = require("firebase-admin");
 if (!admin.apps.length) admin.initializeApp({ projectId: PROJECT });
 const db = admin.firestore();
@@ -34,14 +40,20 @@ const tag = (v) => {
   return v;
 };
 fs.mkdirSync(OUT, { recursive: true });
-const index = { project: PROJECT, at: new Date().toISOString(), docs: {} };
+const index = { project: PROJECT, at: new Date().toISOString(), docs: {}, collections: {} };
 for (const d of DOCS) {
   const s = await db.doc(d).get();
-  if (!s.exists) { index.docs[d] = { exists: false }; console.log(d + ": does not exist"); continue; }
+  if (!s.exists) { index.docs[d] = { exists: false }; say(d + ": does not exist"); continue; }
   const file = d.replace("/", "-") + ".json";
   fs.writeFileSync(path.join(OUT, file), JSON.stringify(tag(s.data()), null, 1));
   index.docs[d] = { exists: true, file, updateTime: s.updateTime.toDate().toISOString(), keys: Object.keys(s.data()).sort() };
-  console.log(d + ": " + file + " (updated " + index.docs[d].updateTime + ", keys " + index.docs[d].keys.join(",") + ")");
+  say(d + ": " + file + " (updated " + index.docs[d].updateTime + ", keys " + index.docs[d].keys.join(",") + ")");
+}
+for (const c of COLLECTIONS) {
+  const docs = (await db.collection(c).get()).docs; index.collections[c] = {};
+  for (const s of docs) { const file = c + "-" + s.id + ".json"; fs.writeFileSync(path.join(OUT, file), JSON.stringify(tag(s.data()), null, 1)); index.collections[c][s.id] = file; }
+  say(c + ": " + docs.length + " documents");
 }
 fs.writeFileSync(path.join(OUT, "index.json"), JSON.stringify(index, null, 1));
-console.log("written to " + path.relative(ROOT, OUT));
+if (QUIET) console.log("exported " + Object.values(index.docs).filter((x) => x.exists).length + " documents and " + COLLECTIONS.map((c) => Object.keys(index.collections[c]).length + " " + c).join(", "));
+else console.log("written to " + path.relative(ROOT, OUT));

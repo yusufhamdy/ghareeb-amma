@@ -1,0 +1,79 @@
+name: Backup
+
+# Phase 2 - a dated, encrypted copy of the Firestore data, off this repository and off the owner's PC.
+#
+# Runs daily and on manual dispatch (run it by hand before every Firestore rules deploy). INERT until the owner sets the
+# repository variable BACKUP_ENABLED to "true". See BACKUP-RESTORE.md for the owner's setup.
+#
+#   - Read-only on Firestore: the service account holds roles/datastore.viewer. Nothing here writes to Firestore.
+#   - The Workload Identity provider accepts only this repository on refs/heads/main, so another branch gets no identity.
+#   - Encrypted with age to a PUBLIC key before anything leaves the runner. No private key exists anywhere in CI.
+#   - Stored in a PRIVATE repository through a deploy key limited to that repository. Never as an Actions artifact: this
+#     repository is public, and its artifacts could be downloaded.
+#   - Logs show sizes and counts only.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Encrypted backup
+    if: vars.BACKUP_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node 20
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Export (read-only)
+        run: node scripts/firestore-export.mjs --quiet --out "$RUNNER_TEMP/export"
+
+      - name: Encrypt to the public key, then delete the plaintext
+        id: seal
+        env:
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: node scripts/backup.mjs seal --from "$RUNNER_TEMP/export" --out "$RUNNER_TEMP/sealed"
+
+      - name: Upload to the private repository, and apply retention
+        env:
+          BACKUP_DEPLOY_KEY: ${{ secrets.BACKUP_DEPLOY_KEY }}
+          BACKUP_REPO: ${{ vars.BACKUP_REPO }}
+          FILE: ${{ steps.seal.outputs.file }}
+        run: |
+          umask 077
+          ssh_dir="$RUNNER_TEMP/ssh"; mkdir -p "$ssh_dir"
+          printf '%s\n' "$BACKUP_DEPLOY_KEY" > "$ssh_dir/key"
+          # GitHub's published host key (api.github.com/meta), so a machine pretending to be GitHub is refused
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$ssh_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$ssh_dir/known_hosts"
+          node scripts/backup.mjs upload --file "$FILE" --remote "git@github.com:$BACKUP_REPO.git"
+
+      - name: Remove everything the run left behind
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/export" "$RUNNER_TEMP/sealed" "$RUNNER_TEMP/ssh"
