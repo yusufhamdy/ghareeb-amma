@@ -14,10 +14,11 @@ const path = require('node:path');
 
 const RULES = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 
-test('public challenge data is world-readable', () => {
-  const block = /match \/public\/\{document\}/.test(RULES) || /match \/public\/\{database\}/.test(RULES) || /match \/public\/\{/.test(RULES);
-  assert.ok(block, 'a public/{...} match block must exist');
-  assert.ok(/match \/public\b[\s\S]*?allow read:[^;]*true/.test(RULES), 'public data must be readable');
+test('the public/ documents are readable by admins only: visitors get the published files from Hosting', () => {
+  const block = /match \/public\/\{doc\} \{([\s\S]*?)\n    \}/.exec(RULES);
+  assert.ok(block, 'public/{doc} block must be parseable');
+  assert.match(block[1], /allow read: if isAdmin\(\);/);
+  assert.ok(!/allow [^;]*if true/.test(block[1]), 'nothing under public/ may be open to everyone');
 });
 
 test('public data is only writable by admins, for the known documents in their shapes, and never deleted', () => {

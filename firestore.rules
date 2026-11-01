@@ -55,9 +55,10 @@ service cloud.firestore {
         && (d.emails.size() == 0 || d.emails.join(' ').matches('[^@ ]+@[^@ ]+[.][^@ ]+( [^@ ]+@[^@ ]+[.][^@ ]+)*'));
     }
 
-    // Public documents: anyone reads; admins write only the three known documents, in their shapes; nobody deletes.
+    // Working copies of the site's data: only admins read them (visitors get the published words.json and challenge.json
+    // from Hosting); admins write only the three known documents, in their shapes; nobody deletes.
     match /public/{doc} {
-      allow read: if true;
+      allow read: if isAdmin();
       allow create, update: if isAdmin() && (
         (doc == 'data' && validWords(request.resource.data))
         || (doc == 'prev' && validPrev(request.resource.data))

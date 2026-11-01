@@ -12,7 +12,7 @@
  * Contexts follow the production auth model in firestore.rules:
  *   - owner  : yusufhamdy20@gmail.com (email_verified = true)
  *   - admin  : any verified email listed in config/admins.emails
- *   - public : world-readable; writes only for admins
+ *   - public : reads and writes only for admins (visitors use the published JSON files)
  *   - admin/challengeNotes: admin-only
  */
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
@@ -64,11 +64,12 @@ after(async () => {
   if (env) await env.cleanup();
 });
 
-test('unauthenticated can read every public document', async () => {
+test('unauthenticated cannot read any public document, or list them', async () => {
   const u = track(env.unauthenticatedContext());
-  for (const p of ['public/data', 'public/challenge']) {
-    await assertSucceeds(u.firestore().doc(p).get());
+  for (const p of ['public/data', 'public/prev', 'public/challenge']) {
+    await assertFails(u.firestore().doc(p).get());
   }
+  await assertFails(u.firestore().collection('public').get());
 });
 
 test('unauthenticated cannot write or delete public documents', async () => {
@@ -120,6 +121,9 @@ test('granted admin manages public + notes but cannot write config/admins', asyn
 
 test('plain verified user is not an admin and gets no admin access', async () => {
   const u = track(env.authenticatedContext('user', USER));
+  for (const p of ['public/data', 'public/prev', 'public/challenge']) {
+    await assertFails(u.firestore().doc(p).get());
+  }
   await assertFails(u.firestore().doc('public/data').set({ rev: 3, surahs: [] }));
   await assertFails(u.firestore().doc('admin/challengeNotes').get());
   await assertFails(u.firestore().doc('admin/challengeNotes').set({ x: 1 }));
@@ -128,7 +132,7 @@ test('plain verified user is not an admin and gets no admin access', async () =>
 
 test('email_verified=false is treated as unauthenticated for admin checks', async () => {
   const o = track(env.authenticatedContext('unverified', { email: OWNER.email, email_verified: false }));
-  await assertSucceeds(o.firestore().doc('public/data').get());
+  await assertFails(o.firestore().doc('public/data').get());
   await assertFails(o.firestore().doc('public/data').set({ rev: 4, surahs: [] }));
   await assertFails(o.firestore().doc('admin/challengeNotes').get());
 });
