@@ -299,6 +299,24 @@ test('a version cannot be recorded without moving the data, even with the curren
   assert.strictEqual(await raw('snapshots/3'), null);
 });
 
+test('public/data alone cannot go back to a recorded version, or be written again at its revision', async () => {
+  await put('snapshots/4', { rev: 4, surahs: NEXT });
+  await put('history/4', { rev: 4, kind: 'edit', summary: 's', by: 'someone', byEmail: 'a@b.c', at: new Date() });
+  await assertFails(asOwner({ rev: 4, surahs: NEXT, snap: null, hist: null }));
+  await assertFails(asOwner({ rev: 5, surahs: WORDS, snap: null, hist: null }));
+  assert.strictEqual((await raw('public/data')).rev, 5);
+  assert.strictEqual((await raw('public/data')).by, 'someone');
+});
+
+test('a snapshot left over for the next revision does not stand in for the save\'s own record', async () => {
+  await put('snapshots/6', { rev: 6, surahs: NEXT });
+  // no history row for the new revision
+  await assertFails(asOwner({ surahs: NEXT, snap: null, hist: null }));
+  // a row, but the leftover snapshot holds other words than the save
+  await assertFails(asOwner({ surahs: WORDS, snap: null }));
+  assert.strictEqual((await raw('public/data')).rev, 5);
+});
+
 test('public/data and public/prev are readable by admins only, and never deleted', async () => {
   const a = ACTORS();
   for (const [name, who] of Object.entries(a)) {
