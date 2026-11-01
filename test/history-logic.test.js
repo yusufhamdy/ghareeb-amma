@@ -173,3 +173,51 @@ test("time: relative under 24 hours, then the date alone", () => {
   const later = new Date(now.getTime() + 60000); // a clock behind the server's: the date, never a negative time
   assert.strictEqual(H.rowTime(later, now), abs(later));
 });
+
+// ---- map key order: every read of the same version may return its map keys in another order
+
+const fsx = require("fs"), pathx = require("path");
+const REAL = JSON.parse(fsx.readFileSync(pathx.resolve(__dirname, "..", "public", "words.json"), "utf8"));
+function reorder(v, n) {
+  if (Array.isArray(v)) return v.map((x, i) => reorder(x, n + i + 1));
+  if (!v || typeof v !== "object") return v;
+  const keys = Object.keys(v), r = n % keys.length, o = {};
+  keys.slice(r).concat(keys.slice(0, r)).reverse().forEach((k, i) => { o[k] = reorder(v[k], n + i + 1); });
+  return o;
+}
+const NO_CHANGE = H.summary("edit", [], []);
+
+test("key order: the real words against their own permuted reads have no changes", () => {
+  for (let n = 0; n < 12; n++) {
+    const d = H.diff(reorder(REAL, n), reorder(REAL, n + 5));
+    assert.strictEqual(d.words.length + d.surahs.length, 0, "permutation " + n);
+    assert.strictEqual(H.summary("edit", reorder(REAL, n), reorder(REAL, n + 5)), NO_CHANGE);
+  }
+});
+
+test("key order: one real change among permuted reads is listed, and only that", () => {
+  const si = REAL.findIndex((s) => s.words.length), next = JSON.parse(JSON.stringify(REAL));
+  next[si].meanings[0] += " x";
+  const d = H.diff(reorder(REAL, 1), reorder(next, 4));
+  assert.strictEqual(d.surahs.length, 0);
+  assert.strictEqual(d.words.length, 1);
+  assert.deepStrictEqual(d.words[0].fields.map((f) => f.field), ["meaning"]);
+  const seg = JSON.parse(JSON.stringify(REAL));
+  seg[si].ayahs[0].segments[0].before += " x";
+  const e = H.diff(reorder(REAL, 2), reorder(seg, 7));
+  assert.strictEqual(e.words.length, 1);
+  assert.deepStrictEqual(e.words[0].fields.map((f) => f.field), ["segments"]);
+});
+
+test("key order: a moved word is found by a permuted read of its meaning or ayah, and a deleted word stays deleted", () => {
+  const si = REAL.findIndex((s) => s.words.length >= 2), next = JSON.parse(JSON.stringify(REAL));
+  next[si].words[0] += " x";
+  const d = H.diff(reorder(REAL, 3), reorder(next, 6));
+  assert.strictEqual(d.words.length, 1);
+  assert.strictEqual(d.words[0].type, "edit");
+  assert.deepStrictEqual(d.words[0].fields.map((f) => f.field), ["word"]);
+  const del = JSON.parse(JSON.stringify(REAL));
+  del[si].words.splice(1, 1); del[si].meanings.splice(1, 1); del[si].ayahs.splice(1, 1);
+  const e = H.diff(reorder(REAL, 4), reorder(del, 9));
+  assert.deepStrictEqual(e.words.map((w) => w.type), ["del"]);
+});
