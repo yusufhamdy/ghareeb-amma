@@ -109,14 +109,7 @@ test("H1: client:verify's UI checks pass against the Firestore emulator", { time
     cwd: ROOT, encoding: "utf8", shell: true, timeout: 400000,
     env: Object.assign({}, process.env),
   });
-  let r = run();
-  // migrate.js declares the json fallback if Firestore has not answered inside its
-  // bounded 800ms, so a cold emulator can lose the race once; one retry absorbs it
-  const out0 = (r.stdout || "") + (r.stderr || "");
-  if (r.status !== 0 && out0.includes("CLIENT-VERIFY FAIL: expected window.__DATA_SRC__ === 'firestore'")) {
-    t.diagnostic("client:verify lost the __DATA_SRC__ race once; retrying once");
-    r = run();
-  }
+  const r = run();
   if (r.error) { t.skip("npm not runnable here: " + r.error.code); return; }
   const out = (r.stdout || "") + (r.stderr || "");
   const tail = out.split(/\r?\n/).filter(Boolean).slice(-25).join("\n");
@@ -135,19 +128,9 @@ test("H1: client:verify's UI checks pass against the Firestore emulator", { time
     "client:verify reported client-side errors\n" + tail
   );
 
-  // Pre-existing, environment-sensitive race that is NOT part of H1: migrate.js
-  // declares the json fallback when Firestore has not answered inside its bounded
-  // 800ms, while the real client path on this machine measures ~690ms from
-  // 'pending' to 'firestore' (probe: 710ms total) - so the emulator/disk/CPU can
-  // and does lose that race. Any other failure is a real failure.
-  const fails = out.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith("CLIENT-VERIFY FAIL:"));
-  const raceOnly = fails.length > 0 && fails.every((l) => l.includes("expected window.__DATA_SRC__ === 'firestore'"));
-  if (raceOnly) {
-    t.diagnostic("client:verify lost the pre-existing __DATA_SRC__ 800ms race; the H1 day-card checks passed");
-  } else {
-    assert.equal(r.status, 0, "client:verify failed:\n" + tail);
-    assert.ok(out.includes("CLIENT-VERIFY PASS"), "client:verify printed CLIENT-VERIFY PASS\n" + tail);
-  }
+  assert.equal(r.status, 0, "client:verify failed:\n" + tail);
+  assert.ok(out.includes("CLIENT-VERIFY PASS"), "client:verify printed CLIENT-VERIFY PASS\n" + tail);
+  assert.ok(out.includes("CLIENT-VERIFY: 0 requests to gstatic/firebasejs or Firestore"), "client:verify checked the requests\n" + tail);
 });
 
 // ---------------------------------------------------------------------------

@@ -2,14 +2,12 @@
 /*
  * smoke-ui.mjs - Phase 5B T7 local pre-flight smoke.
  *
- * Serves public/ over a static server, routes the two Firebase SDK modules to
- * locally cached copies, drives Chromium through the required product surfaces
- * at three viewports, and requires the application to read its data from the
- * Firestore EMULATOR (window.__DATA_SRC__ === 'firestore').
+ * Serves public/ over a static server, drives Chromium through the required
+ * product surfaces at three viewports, and requires the application to read its
+ * data from the published files (window.__DATA_SRC__ === 'json') with no request
+ * to the Firebase SDK or Firestore.
  *
- * Run inside the emulator (see PHASE-5B.md T7):
- *   npx firebase emulators:exec --project demo-ghareeb --only firestore \
- *     "node scripts/seed-emulator.js && node scripts/smoke-ui.mjs"
+ *   node scripts/smoke-ui.mjs
  *
  * Covers: home, search, surahs, surah, word, challenge, day, quiz, the settings
  * sheet, the four legal pages, and the custom 404. Fails on any page/console
@@ -18,13 +16,10 @@
 import { chromium } from 'playwright';
 import http from 'node:http';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 
 const ROOT = path.resolve('public');
 const PORT = 5181;
-const SDK_BASE = 'https://www.gstatic.com/firebasejs/10.14.1/';
-const SDK_CACHE = path.join(os.tmpdir(), 'ghareeb-fb-sdk-10.14.1');
 const VIEWPORTS = [
   { name: '400', width: 400, height: 860 },
   { name: '820', width: 820, height: 1180 },
@@ -49,24 +44,13 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-async function ensureSdk(name) {
-  fs.mkdirSync(SDK_CACHE, { recursive: true });
-  const dest = path.join(SDK_CACHE, name);
-  if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) return dest;
-  const res = await fetch(SDK_BASE + name);
-  if (!res.ok) throw new Error(`failed to fetch ${name}: HTTP ${res.status}`);
-  fs.writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
-  return dest;
-}
-
 const failures = [];
 const log = (m) => console.log(m);
 
 async function main() {
-  const [appJs, fsJs] = await Promise.all([ensureSdk('firebase-app.js'), ensureSdk('firebase-firestore.js')]);
   await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
   const browser = await chromium.launch();
-  const base = `http://127.0.0.1:${PORT}/?emul=1`;
+  const base = `http://127.0.0.1:${PORT}/`;
 
   try {
     for (const vp of VIEWPORTS) {
@@ -75,14 +59,13 @@ async function main() {
       const errs = [];
       page.on('pageerror', (e) => errs.push('pageerror: ' + String(e)));
       page.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-      await page.route(/firebasejs\/10\.14\.1\/firebase-app\.js$/, (r) => r.fulfill({ path: appJs, contentType: 'text/javascript' }));
-      await page.route(/firebasejs\/10\.14\.1\/firebase-firestore\.js$/, (r) => r.fulfill({ path: fsJs, contentType: 'text/javascript' }));
+      page.on('request', (q) => { if (/gstatic\.com\/firebasejs|firestore\.googleapis\.com/.test(q.url())) failures.push(prefix + 'requested ' + new URL(q.url()).hostname); });
 
       await page.goto(base + '#/', { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => typeof window.__DATA_SRC__ === 'string' && window.__DATA_SRC__ !== 'pending', { timeout: 30000 });
 
       const src = await page.evaluate(() => window.__DATA_SRC__);
-      if (src !== 'firestore') failures.push(prefix + `data source is '${src}', expected 'firestore'`);
+      if (src !== 'json') failures.push(prefix + `data source is '${src}', expected 'json'`);
 
       const go = async (hash) => { await page.evaluate((h) => { location.hash = h; }, hash); };
 
@@ -149,10 +132,10 @@ async function main() {
       await go('#/');
       await page.waitForSelector('#q', { timeout: 15000 });
       const term = await page.evaluate(() => {
-        const w = (window.__WORDS__ || [])[0];
-        return w && w.words && w.words[0];
+        const w = (typeof W !== 'undefined' ? W : [])[0];
+        return w && w.word;
       });
-      if (!term) failures.push(prefix + 'search: no term available from migrated data');
+      if (!term) failures.push(prefix + 'search: no term available from the published data');
       else {
         await page.fill('#q', term);
         await page.waitForSelector('#res .row', { timeout: 8000 });

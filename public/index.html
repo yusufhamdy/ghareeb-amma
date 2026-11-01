@@ -20,7 +20,7 @@
 <meta name="twitter:image" content="https://ghareebalquran.com/og-2026-10.png">
 <link rel="canonical" href="https://ghareebalquran.com/">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646","url":"https://ghareebalquran.com/","inLanguage":"ar"}</script>
-<link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/firebase-config.js"></script><script src="/migrate.js"></script><script src="/quiz-core.js"></script><script src="/qtext.js"></script><script src="/word-gap.js" defer></script>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><script src="/quiz-core.js"></script><script src="/qtext.js"></script><script src="/word-gap.js" defer></script>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>
 <script src="/qfont.js"></script>
@@ -1014,7 +1014,7 @@ applySet();
 document.documentElement.classList.add('gq');
 $('app').insertAdjacentHTML('beforebegin','<button class="g ib" id="gear" data-a="set" aria-label="الإعدادات">'+ICO.g+'</button>');
 const gBtn=document.getElementById('gear');
-Promise.all([window.__WORDS__?Promise.resolve(window.__WORDS__):fetch('words.json').then(r=>r.json()),window.__CH__?Promise.resolve(window.__CH__):fetch('challenge.json').then(r=>r.json()).catch(()=>[])]).then(a=>{build(a[0]);CHM=Array.isArray(a[1])?{}:(a[1]||{});CH=Array.isArray(a[1])?a[1]:(CHM.days||[]);CH.forEach(c=>{if(c)c.d=+c.d});render();{const y=SP.m[spId()];if(y>0)scrollTo(0,y)}const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}}).catch(()=>{const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}$('app').innerHTML=failView()});
+window.__DATA_SRC__='json';Promise.all([window.__WORDS__?Promise.resolve(window.__WORDS__):fetch('words.json').then(r=>r.json()),window.__CH__?Promise.resolve(window.__CH__):fetch('challenge.json').then(r=>r.json()).catch(()=>[])]).then(a=>{build(a[0]);CHM=Array.isArray(a[1])?{}:(a[1]||{});CH=Array.isArray(a[1])?a[1]:(CHM.days||[]);CH.forEach(c=>{if(c)c.d=+c.d});render();{const y=SP.m[spId()];if(y>0)scrollTo(0,y)}const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}}).catch(()=>{const l=$('ld');if(l){l.classList.add('gone');setTimeout(()=>l.remove(),450)}$('app').innerHTML=failView()});
 if('serviceWorker' in navigator&&!window.__WORDS__)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </body>
