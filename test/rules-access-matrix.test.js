@@ -76,10 +76,10 @@ after(async () => {
 });
 
 // everything a non-admin must be refused, whoever they are
-async function deniedEverythingBeyondPublicReads(db, who) {
-  // reads: the public documents and the public collection are readable
-  for (const p of PUBLIC_DOCS) await assertSucceeds(db.doc(p).get());
-  await assertSucceeds(db.collection('public').get());
+async function deniedEverything(db, who) {
+  // reads: the public documents and the public collection are for admins only
+  for (const p of PUBLIC_DOCS) await assertFails(db.doc(p).get());
+  await assertFails(db.collection('public').get());
   // no writes, updates, deletes or new documents under public/ (words, challenge, a settings document)
   for (const p of PUBLIC_DOCS) {
     await assertFails(db.doc(p).set({ hacked: who }));
@@ -119,26 +119,33 @@ async function unchanged() {
   });
 }
 
-test('anonymous visitor: public reads only', async () => {
-  await deniedEverythingBeyondPublicReads(track(env.unauthenticatedContext()).firestore(), 'anon');
+test('anonymous visitor: no access at all', async () => {
+  await deniedEverything(track(env.unauthenticatedContext()).firestore(), 'anon');
   await unchanged();
 });
 
-test('Firebase anonymous sign-in (no email): public reads only', async () => {
+test('Firebase anonymous sign-in (no email): no access at all', async () => {
   const c = track(env.authenticatedContext('anon-auth', { firebase: { sign_in_provider: 'anonymous' } }));
-  await deniedEverythingBeyondPublicReads(c.firestore(), 'anon-auth');
+  await deniedEverything(c.firestore(), 'anon-auth');
   await unchanged();
 });
 
-test('signed-in Google user who is not an admin: public reads only', async () => {
-  await deniedEverythingBeyondPublicReads(track(env.authenticatedContext('visitor', USER)).firestore(), USER.email);
+test('signed-in Google user who is not an admin: no access at all', async () => {
+  await deniedEverything(track(env.authenticatedContext('visitor', USER)).firestore(), USER.email);
   await unchanged();
 });
 
-test('the owner\'s address without a verified email: public reads only', async () => {
+test('the owner\'s address without a verified email: no access at all', async () => {
   const c = track(env.authenticatedContext('fake-owner', { email: OWNER.email, email_verified: false }));
-  await deniedEverythingBeyondPublicReads(c.firestore(), 'fake-owner');
+  await deniedEverything(c.firestore(), 'fake-owner');
   await unchanged();
+});
+
+test('the owner and an admin read every public document and list them', async () => {
+  for (const c of [track(env.authenticatedContext('owner-read', OWNER)), track(env.authenticatedContext('admin-read', ADMIN2))]) {
+    for (const p of PUBLIC_DOCS) await assertSucceeds(c.firestore().doc(p).get());
+    await assertSucceeds(c.firestore().collection('public').get());
+  }
 });
 
 test('addresses compare case-insensitively: the owner and an admin in other letter case keep their access', async () => {
@@ -152,12 +159,12 @@ test('addresses compare case-insensitively: the owner and an admin in other lett
   await assertFails(admin.doc('config/admins').set({ emails: [ADMIN2.email] }));
   // and an unverified address in other letter case is nobody
   const fake = track(env.authenticatedContext('case-fake', { email: 'YUSUFHAMDY20@GMAIL.COM', email_verified: false })).firestore();
-  await deniedEverythingBeyondPublicReads(fake, 'case-fake');
+  await deniedEverything(fake, 'case-fake');
 });
 
 test('custom claims give nothing: a non-admin token with admin: true is refused', async () => {
   const c = track(env.authenticatedContext('claims', { email: 'claims@gmail.com', email_verified: true, admin: true, owner: true, role: 'admin' }));
-  await deniedEverythingBeyondPublicReads(c.firestore(), 'claims');
+  await deniedEverything(c.firestore(), 'claims');
   await unchanged();
 });
 
@@ -189,6 +196,7 @@ test('only the owner changes the admins list; a removed admin loses access at on
   await assertSucceeds(admin.doc('public/data').update({ rev: 5 }));
   await assertSucceeds(owner.doc('config/admins').set({ emails: [] }));
   await assertFails(admin.doc('public/data').update({ rev: 6 }));
+  for (const p of PUBLIC_DOCS) await assertFails(admin.doc(p).get());
   await assertFails(admin.doc('admin/challengeNotes').get());
   await assertFails(admin.doc('config/admins').get());
   // the owner can always add an admin again, and does not depend on the list
@@ -201,7 +209,9 @@ test('the owner is not locked out when the admins list is missing', async () => 
   await env.withSecurityRulesDisabled(async (ctx) => { await ctx.firestore().doc('config/admins').delete(); });
   const owner = track(env.authenticatedContext('owner2', OWNER)).firestore();
   const admin = track(env.authenticatedContext('admin2c', ADMIN2)).firestore();
+  for (const p of PUBLIC_DOCS) await assertSucceeds(owner.doc(p).get());
   await assertSucceeds(owner.doc('public/data').update({ rev: 9 }));
+  await assertFails(admin.doc('public/data').get());
   await assertFails(admin.doc('public/data').update({ rev: 10 }));
   await assertSucceeds(owner.doc('config/admins').set({ emails: [ADMIN2.email] }));
 });
@@ -226,7 +236,7 @@ test('admins write only the known public documents, in their shapes, and delete 
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: 'all' }));
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: Array.from({ length: 115 }, () => ({})) }));
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by: 'owner-uid' })); // someone else's uid
-  // an address is never accepted as the author, not even the writer's own (public/data is world-readable)
+  // an address is never accepted as the author, not even the writer's own
   for (const by of [ADMIN2.email, 'Admin2@Example.com', 'yusufhamdy20@gmail.com']) await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], by }));
   await assertFails(db.doc('public/data').set({ rev: 3, surahs: [], updatedAt: 'today' }));
   await assertFails(db.doc('public/data').update({ html: '<script>' }));

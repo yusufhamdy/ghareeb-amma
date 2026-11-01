@@ -58,5 +58,5 @@ jobs:
       - name: Firestore emulator rules tests
         run: npm run rules:test
 
-      - name: Migrated client read-path verification (T4d)
+      - name: Public page falls back to the published JSON when Firestore refuses it
         run: npm run client:verify

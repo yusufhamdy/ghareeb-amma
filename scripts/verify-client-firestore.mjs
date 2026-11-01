@@ -1,26 +1,33 @@
 #!/usr/bin/env node
 /*
- * verify-client-firestore.mjs - proves the migrated client reads the migrated
- * data from the Firestore EMULATOR (not from JSON).
+ * verify-client-firestore.mjs - proves the public page keeps working from the
+ * published JSON when firestore.rules refuses its read of the public/ documents
+ * (those are admin-only: nothing unpublished may reach a visitor).
  *
- * Run inside `firebase emulators:exec --project demo-ghareeb --only firestore`
- * via `npm run client:verify`. The emulator has already been seeded by
- * scripts/seed-emulator.js.
+ * Emulator only: it refuses to run without a local Firestore emulator host. Run
+ * inside `firebase emulators:exec --project demo-ghareeb --only firestore` via
+ * `npm run client:verify`. The emulator has already been seeded by
+ * scripts/seed-emulator.js; this script then replaces the words and challenge
+ * documents with small unpublished canaries.
  *
  * What it asserts:
- *   1. the SPA resolves its data through Firestore (window.__DATA_SRC__ == 'firestore')
- *   2. the surah list renders the 28 migrated surahs in Mushaf order with `no` 78..114
- *   3. the app shows all 73 words ("73 كلمة في 28 سورة")
- *   4. a word deep link works (word id derived from the migrated `no`)
- *   5. the challenge renders 30 day tiles and day 1 resolves its word refs
- *      (proves the Firestore {no,word} object refs normalize back to tuples)
- *   6. no uncaught page/console errors occurred
+ *   1. the page's own Firestore client is refused public/data, public/prev and
+ *      public/challenge, and the page settles on window.__DATA_SRC__ == 'json'
+ *   2. no canary reached the page: neither override global is set, no canary in the
+ *      app's data or the document
+ *   3. the surah list renders the 28 surahs in Mushaf order with `no` 78..114
+ *   4. the app shows all 73 words ("73 كلمة في 28 سورة")
+ *   5. a word deep link works
+ *   6. the challenge renders 30 day tiles and day 1 resolves its word refs
+ *   7. no page errors, and no console errors other than the refused read
  *
  * The two Firebase CDN modules the client imports are fetched once by Node and
  * served to the browser through routing, so the test is hermetic and does not
  * depend on browser network access to gstatic (production still uses the CDN).
  */
 import { chromium } from 'playwright';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -30,6 +37,7 @@ const ROOT = path.resolve('public');
 const PORT = 5179;
 const SDK_BASE = 'https://www.gstatic.com/firebasejs/10.14.1/';
 const SDK_CACHE = path.join(os.tmpdir(), 'ghareeb-fb-sdk-10.14.1');
+const CANARY = 'CANARY-UNPUBLISHED-DRAFT';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -84,6 +92,16 @@ function die(msg) {
 }
 
 try {
+  const EMULATOR = process.env.FIRESTORE_EMULATOR_HOST || '';
+  if (!/^(127\.0\.0\.1|localhost|\[::1\]):\d+$/.test(EMULATOR)) {
+    throw new Error('no local Firestore emulator host set; refusing to run (use npm run client:verify)');
+  }
+  // unpublished drafts, each visibly different from the published files
+  const admin = getFirestore(initializeApp({ projectId: 'demo-ghareeb' }));
+  await admin.doc('public/data').set({ rev: 2, surahs: [{ surah: CANARY, no: 114, words: [CANARY], meanings: [CANARY], ayahs: [], source: CANARY }] });
+  await admin.doc('public/prev').set({ rev: 1, surahs: [{ surah: CANARY, no: 114, words: [CANARY], meanings: [CANARY], ayahs: [], source: CANARY }] });
+  await admin.doc('public/challenge').set({ startDate: null, releasedUpTo: null, days: [{ d: 1, w: [{ no: 114, word: CANARY }], reel: '', reelIg: `https://www.instagram.com/p/${CANARY}/` }] });
+
   const [appJs, fsJs] = await Promise.all([ensureSdk('firebase-app.js'), ensureSdk('firebase-firestore.js')]);
 
   await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
@@ -91,26 +109,56 @@ try {
   const page = await browser.newPage({ viewport: { width: 400, height: 860 } });
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   page.on('console', (m) => {
-    if (m.type() === 'error') consoleErrors.push(m.text());
+    // the only error a visitor's browser may log: the refused read of the admin-only documents
+    if (m.type() === 'error' && !/permission-denied|Missing or insufficient permissions/i.test(m.text())) consoleErrors.push(m.text());
   });
   await page.route(/firebasejs\/10\.14\.1\/firebase-app\.js$/, (r) => r.fulfill({ path: appJs, contentType: 'text/javascript' }));
   await page.route(/firebasejs\/10\.14\.1\/firebase-firestore\.js$/, (r) => r.fulfill({ path: fsJs, contentType: 'text/javascript' }));
 
   await page.goto(`http://127.0.0.1:${PORT}/?emul=1`, { waitUntil: 'domcontentloaded' });
-  // migrate.js starts at 'pending' and may report the 'json' fallback first when
-  // the emulator answers after its 800ms first-render deadline; a late Firestore
-  // reply then upgrades it to 'firestore'. Wait for that settled value instead of
-  // reading the first one, and fail if it never reaches 'firestore'.
+  // migrate.js starts at 'pending' and settles on 'json' once its read is refused
   const SETTLE_MS = 15000;
   const settled = await page
-    .waitForFunction(() => window.__DATA_SRC__ === 'firestore', null, { timeout: SETTLE_MS })
+    .waitForFunction(() => window.__DATA_SRC__ && window.__DATA_SRC__ !== 'pending', null, { timeout: SETTLE_MS })
     .then(() => true, () => false);
 
   const dataSrc = await page.evaluate(() => window.__DATA_SRC__);
-  if (!settled || dataSrc !== 'firestore') {
-    die(`expected window.__DATA_SRC__ to settle on 'firestore' within ${SETTLE_MS}ms, got '${dataSrc}'`);
+  if (!settled || dataSrc !== 'json') {
+    die(`expected window.__DATA_SRC__ to settle on 'json' within ${SETTLE_MS}ms, got '${dataSrc}'`);
   } else {
-    console.log(`CLIENT-VERIFY: data source = ${dataSrc} (Firestore, emulator)`);
+    console.log(`CLIENT-VERIFY: data source = ${dataSrc} (published files, emulator refused the read)`);
+  }
+
+  // The page's own Firestore client is refused every public/ document, by the rules in this repository.
+  await page.waitForFunction(() => typeof W !== 'undefined' && W.length > 0, null, { timeout: 15000 });
+  const refused = await page.evaluate(async (sdk) => {
+    const [a, f] = await Promise.all([import(sdk + 'firebase-app.js'), import(sdk + 'firebase-firestore.js')]);
+    // migrate.js sets up its app and the emulator connection once its own imports have finished
+    for (let i = 0; i < 100 && !a.getApps().length; i++) await new Promise((r) => setTimeout(r, 100));
+    const db = f.getFirestore(a.getApp());
+    const out = {};
+    for (const id of ['data', 'prev', 'challenge']) {
+      out[id] = await f.getDoc(f.doc(db, 'public', id)).then(() => 'READ', (e) => e.code);
+    }
+    return out;
+  }, SDK_BASE);
+  if (Object.values(refused).some((c) => c !== 'permission-denied')) {
+    die(`expected every public/ read to be refused, got ${JSON.stringify(refused)}`);
+  } else {
+    console.log(`CLIENT-VERIFY: public/data, public/prev and public/challenge refused`);
+  }
+
+  // Nothing unpublished reached the page.
+  const leak = await page.evaluate((c) => ({
+    words: window.__WORDS__ !== undefined,
+    challenge: window.__CH__ !== undefined,
+    inApp: JSON.stringify(W, (k, x) => (k === 's' ? x && x.surah : x)).includes(c) || JSON.stringify(CH).includes(c),
+    inPage: document.documentElement.outerHTML.includes(c),
+  }), CANARY);
+  if (Object.values(leak).some(Boolean)) {
+    die(`an unpublished canary reached the page: ${JSON.stringify(leak)}`);
+  } else {
+    console.log('CLIENT-VERIFY: no canary in the page');
   }
 
   // Surah list: 28 rows, first no=78, last no=114
@@ -154,7 +202,7 @@ try {
     console.log(`CLIENT-VERIFY: word deep link ok ("${word.trim()}")`);
   }
 
-  // Challenge: object-form refs from Firestore must normalize back to tuples
+  // Challenge: the 30 published days
   await page.goto(`http://127.0.0.1:${PORT}/?emul=1#/challenge`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#app .cg .dy', { timeout: 15000 });
   const dayTiles = await page.$$eval('#app .cg .dy', (els) => els.length);
@@ -164,13 +212,12 @@ try {
     console.log(`CLIENT-VERIFY: challenge day tiles = ${dayTiles}`);
   }
 
-  // Day 1 must resolve its word refs (proves {no,word} objects -> tuples works).
-  // Since Phase D the day screen is collapsible cards, not list rows.
+  // Day 1 must resolve its word refs. Since Phase D the day screen is collapsible cards, not list rows.
   await page.goto(`http://127.0.0.1:${PORT}/?emul=1#/day/1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#dw .dcard', { timeout: 15000 });
   const dayCards = await page.$$eval('#dw .dcard', (els) => els.length);
   if (dayCards < 1) {
-    die('day 1 rendered no word cards (challenge refs did not resolve)');
+    die('day 1 rendered no word cards');
   } else {
     console.log(`CLIENT-VERIFY: challenge day-1 word cards = ${dayCards}`);
   }
@@ -179,9 +226,10 @@ try {
     await c.click().catch(() => {});
   }
 
-  // The source must still be Firestore at the end (it never falls back once settled).
+  // The source must still be the published files at the end, after every reload above.
+  await page.waitForFunction(() => window.__DATA_SRC__ !== 'pending', null, { timeout: SETTLE_MS }).catch(() => {});
   const finalSrc = await page.evaluate(() => window.__DATA_SRC__);
-  if (finalSrc !== 'firestore') die(`window.__DATA_SRC__ ended as '${finalSrc}', expected 'firestore'`);
+  if (finalSrc !== 'json') die(`window.__DATA_SRC__ ended as '${finalSrc}', expected 'json'`);
 
   if (pageErrors.length) die('page errors occurred');
   if (consoleErrors.length) die('console errors occurred');
