@@ -4,14 +4,15 @@
 //   npx firebase emulators:exec --config <config> --project demo-ghareeb --only auth,firestore \
 //     "node scripts/checks/rules-real-data.mjs backup/firestore/<export dir>"
 // 1. Loads every exported document into the emulator; as the owner, writes each one back unchanged (set and update).
-//    public/data is written back with "by" set to the owner's uid (the rules accept only the writer's own uid there;
-//    production still holds an address, which the owner can no longer write back - checked as refused).
+//    public/data alone is refused (a save must record itself), and the same words saved with their records pass: the first
+//    save after release, its baseline holding these exact bytes (production still holds an address as "by", which the
+//    owner can no longer write back - checked as refused).
 // 2. Runs scripts/fix-ayat-firestore.mjs --apply --confirm against the emulator (project demo-ghareeb), checks it made
 //    the 9 listed text corrections (plus the encoding-only rewrites to the official bytes) and that a second
 //    --dry-run finds 0; then, as the owner, writes public/data and
 //    public/prev back unchanged again.
 // 3. The real admin page (public/admin/index.html, Firebase SDK pointed at the emulators, owner signed in) on the
-//    corrected documents: a save that edits one meaning, undo, a challenge save and a note save.
+//    corrected documents: a save that edits one meaning (with its baseline), a restore, a challenge save and a note save.
 // Prints every write with "allowed" or "DENIED" and the error; exit 1 if anything that must be allowed was denied.
 import fs from "node:fs";
 import os from "node:os";
@@ -53,14 +54,27 @@ const owner = () => env.authenticatedContext(OWNER_UID, { email: OWNER, email_ve
 // what the owner writes back: the document itself, with "by" as the owner's uid when it records an author
 const asOwner = (k, d) => (k === "public/data" && d && "by" in d ? Object.assign({}, d, { by: OWNER_UID }) : d);
 let bad = 0;
+// the first save after release, of the same words: the baseline and the new version, in one commit
+const firstSave = (d) => {
+  const o = owner(), { serverTimestamp } = require("firebase/firestore"), b = o.batch(), row = (rev, kind) => ({ rev, kind, summary: "x", by: OWNER_UID, byEmail: OWNER, at: serverTimestamp() });
+  b.set(o.doc("snapshots/" + d.rev), { rev: d.rev, surahs: d.surahs }); b.set(o.doc("history/" + d.rev), row(d.rev, "baseline"));
+  b.set(o.doc("snapshots/" + (d.rev + 1)), { rev: d.rev + 1, surahs: d.surahs }); b.set(o.doc("history/" + (d.rev + 1)), row(d.rev + 1, "edit"));
+  b.set(o.doc("public/data"), { ...d, rev: d.rev + 1, updatedAt: serverTimestamp(), by: OWNER_UID });
+  return b.commit();
+};
+const loneRefused = async (id, fn) => { let refused = false; try { await fn(); } catch (e) { refused = true; } console.log("  " + (refused ? "refused  " : "ALLOWED! ") + id); if (!refused) bad++; };
 
 // ---- 1. every real document written back unchanged by the owner
 console.log("\n== 1. production documents written back unchanged, as the owner ==");
 await seed(DOCS);
 for (const k of Object.keys(DOCS)) {
-  const tag = asOwner(k, DOCS[k]) === DOCS[k] ? " (unchanged)" : " (unchanged but by = the owner's uid)";
-  await attempt(k + " set" + tag, () => owner().doc(k).set(asOwner(k, DOCS[k])));
-  await attempt(k + " update" + tag, () => owner().doc(k).update(asOwner(k, DOCS[k])));
+  if (k === "public/data") {
+    await loneRefused(k + " set alone, with no record of the save", () => owner().doc(k).set(asOwner(k, DOCS[k])));
+    await attempt(k + " first save: the baseline holds these exact bytes", () => firstSave(DOCS[k]));
+    continue;
+  }
+  await attempt(k + " set (unchanged)", () => owner().doc(k).set(DOCS[k]));
+  await attempt(k + " update (unchanged)", () => owner().doc(k).update(DOCS[k]));
 }
 if (DOCS["public/data"] && typeof DOCS["public/data"].by === "string" && DOCS["public/data"].by !== OWNER_UID) {
   let refused = false; try { await owner().doc("public/data").set(DOCS["public/data"]); } catch (e) { refused = true; }
@@ -95,12 +109,13 @@ if (fixed["public/data"].by !== OWNER_UID) { bad++; console.log("  by is not the
   if (!ok) bad++;
 }
 for (const k of Object.keys(fixed)) {
+  if (k === "public/data") { await attempt(k + " (corrected) first save: the baseline holds these exact bytes", () => firstSave(fixed[k])); continue; }
   await attempt(k + " (corrected) set (unchanged)", () => owner().doc(k).set(fixed[k]));
   await attempt(k + " (corrected) update (unchanged)", () => owner().doc(k).update(fixed[k]));
 }
 
 // ---- 3. the real admin page on the corrected documents
-console.log("\n== 3. the admin page (owner) on the corrected documents: save, undo, challenge save, note save ==");
+console.log("\n== 3. the admin page (owner) on the corrected documents: save with its baseline, restore, challenge save, note save ==");
 await seed(Object.assign({}, DOCS, fixed));
 const SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
 const CACHE = path.join(os.tmpdir(), "ghareeb-fb-sdk-10.14.1"); fs.mkdirSync(CACHE, { recursive: true });
@@ -132,10 +147,10 @@ const diffs = [];
 afterSave.surahs.forEach((s, i) => { const b = JSON.stringify(before.surahs[i]), a = JSON.stringify(s); if (a !== b) diffs.push(i); });
 console.log("    saved: rev " + before.rev + " -> " + afterSave.rev + ", by " + afterSave.by + ", surahs changed: " + diffs.length + " (expected 1), the meaning ends with (test): " + /\(test\)$/.test(afterSave.surahs[diffs[0]] && afterSave.surahs[diffs[0]].meanings[0]));
 if (diffs.length !== 1 || afterSave.by !== pageUid) bad++;
-await inPage("admin undo", `store.undo()`);
+await inPage("admin restore of the baseline", `store.snapshot(${before.rev}).then((s) => store.update(() => clone(s), { kind: "restore", restoredFrom: ${before.rev} }))`);
 const afterUndo = await raw("public/data");
 const restored = JSON.stringify(afterUndo.surahs) === JSON.stringify(before.surahs);
-console.log("    undone: rev " + afterUndo.rev + ", by " + afterUndo.by + ", surahs identical to before the save: " + restored);
+console.log("    restored: rev " + afterUndo.rev + ", by " + afterUndo.by + ", surahs identical to before the save: " + restored);
 if (!restored || afterUndo.by !== pageUid) bad++;
 await inPage("admin challenge save (unchanged)", `store.chUpdate((c) => c)`);
 const chA = await raw("public/challenge");

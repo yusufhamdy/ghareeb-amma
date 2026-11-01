@@ -256,13 +256,12 @@ try {
     const english = shown.replace(TECH, "").match(/[A-Za-z]{4,}/g) || [];
     check("S11 no colloquial or English UI text", BAD.every((b) => !src.includes(b)) && !english.length, BAD.filter((b) => src.includes(b)).concat(english));
     check("rename: admin link label", shown.includes("رابط إنستجرام"), "");
-    // S14: undo and import ask in the app's dialog
-    await tab(p, "t"); await p.click('[data-a="undo"]'); await p.waitForTimeout(150);
-    const u = await dlg(p); if (u) await p.click('#cd [data-cd="no"]');
+    // S14: import asks in the app's dialog
+    await tab(p, "t");
     const tmp = path.join(OUT, "import.json"); fs.writeFileSync(tmp, JSON.stringify(SEED.data.surahs));
     await p.setInputFiles('[data-f="imp"]', tmp); await p.waitForTimeout(300);
     const im = await dlg(p); if (im) await p.click('#cd [data-cd="no"]');
-    check("S14 undo and import use the app dialog", !!u && !!im && natives.length === 0, { undo: u, import: im, natives });
+    check("S14 import uses the app dialog", !!im && natives.length === 0, { import: im, natives });
     await ctx.close();
   }
 

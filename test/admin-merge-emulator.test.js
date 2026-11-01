@@ -11,11 +11,14 @@ const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
+const { ensureFirestoreEmulator } = require("../scripts/checks/emulator-setup.js");
+
 const ROOT = path.resolve(__dirname, "..");
 
 test("the admin merge against the emulators: an edit of the meaning only keeps the newer ayah text", { timeout: 300000 }, (t) => {
   const java = spawnSync("java", ["-version"], { encoding: "utf8" });
   if (java.error || java.status !== 0) { t.skip("java not available"); return; }
+  ensureFirestoreEmulator(ROOT);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ghareeb-merge-"));
   fs.copyFileSync(path.join(ROOT, "firestore.rules"), path.join(dir, "firestore.rules"));
   fs.writeFileSync(path.join(dir, "firebase.json"), JSON.stringify({ firestore: { rules: "firestore.rules" }, emulators: { auth: { port: 9199 }, firestore: { port: 8180 }, hub: { port: 4410 }, logging: { port: 4510 }, ui: { enabled: false } } }));

@@ -11,6 +11,9 @@
 <link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>
 <script src="/qfont.js"></script>
 <style>
+/* native controls and the drop-down's popup follow the page's light or dark (admin only: the public pages never load this) */
+:root{color-scheme:light;--hgb:#d9ebe1;--hgt:#1f6f4e;--hab:#f3e5cf;--hat:#8a5a10;--hrb:#f5dcd6;--hrt:#a8321f;--hvt:#1D2B25}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--hgb:#1d3a36;--hgt:#7fd6a8;--hab:#3f3322;--hat:#f0c27b;--hrb:#43262c;--hrt:#ff9a86;--hvt:#ECEFFA}}
 :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 #app{max-width:760px}
 .in{width:100%;min-height:46px;border-radius:14px;padding:10px 14px;border:1px solid var(--gbr);background:var(--gb);color:var(--tx);font:inherit;font-size:16px}
@@ -18,6 +21,7 @@
 .in.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif;font-size:20px}
 textarea.in{min-height:84px;resize:vertical;line-height:1.7}
 select.in{appearance:auto}
+select.in option{background-color:var(--bg);color:var(--tx)}
 .in[aria-invalid="true"]{border-color:var(--dg,#b8402c);box-shadow:0 0 0 1px var(--dg,#b8402c)}
 .ferr{margin-top:6px}
 .tabs{display:flex;gap:8px;overflow:auto;margin:0 0 16px;padding-bottom:4px}
@@ -70,6 +74,31 @@ button[aria-busy="true"]{opacity:.8;cursor:progress}
 .cd-yes.safe{background:var(--ac);color:var(--btf)}
 .cd-yes svg{flex:none}
 @media(max-width:600px){.cd{align-items:flex-end;padding:0}.cdc{width:100%;border-radius:26px 26px 0 0;padding:22px 22px calc(24px + env(safe-area-inset-bottom,0px))}}
+/* version history: the list on the Tools tab, and the changes window. Nothing here is ever cut off with an ellipsis. */
+.hh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:20px 0 10px}
+.hh h2{margin:0;font-size:16px;font-weight:600}
+.hr .ht{flex:1;min-width:0}
+.hs,.hm{display:block;overflow-wrap:anywhere;line-height:1.7}
+.nw{white-space:nowrap}
+.hs .q{font-size:20px}
+.hact{flex:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hcur{font-size:12px;line-height:1.6;padding:3px 10px 1px;border-radius:12px;background:color-mix(in srgb,var(--ac) 14%,transparent);color:var(--ac)}
+.hmore{display:flex;justify-content:center;padding:12px 0}
+.seg{display:flex;gap:6px;padding:4px;margin:10px 0 14px;border-radius:26px;border:1px solid var(--gbr);background:var(--gb)}
+.seg button{flex:1;min-width:0;min-height:44px;padding:4px 12px;border-radius:22px;font-size:13px;line-height:1.4}
+.seg .on{background:var(--ac);color:var(--btf);font-weight:500}
+.dc{padding:16px 18px}
+.dch{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+.dch .q{font-size:28px;line-height:1.6;overflow-wrap:anywhere}
+.tg{font-size:12px;line-height:1.6;padding:3px 10px 1px;border-radius:12px}
+.tg.add{background:var(--hgb);color:var(--hgt)}.tg.edit{background:var(--hab);color:var(--hat)}.tg.del{background:var(--hrb);color:var(--hrt)}
+.dv{display:flex;gap:10px;align-items:baseline;padding:8px 12px;margin-bottom:6px;border-radius:12px;color:var(--hvt);line-height:1.7}
+.dv.add{background:var(--hgb)}.dv.del{background:var(--hrb)}
+.dv b{flex:none;font-size:12px;font-weight:500}
+.dv .v{flex:1;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.dv.del .v{text-decoration:line-through}
+.dv .ay{font-size:22px;margin:0;line-height:1.9}
+@media(max-width:600px){.hr{flex-wrap:wrap}.hr .hact{flex-basis:100%;padding-inline-start:52px}}
 /* phones: a word's meaning stacks under the word; a surah's word count gets its own line */
 @media(max-width:600px){
 .wl .row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"w e d" "t t t";column-gap:8px;row-gap:4px;align-items:center}
@@ -89,6 +118,7 @@ button[aria-busy="true"]{opacity:.8;cursor:progress}
 <script src="/admin/challenge-logic.js"></script>
 <script src="/admin/ayah-check.js"></script>
 <script src="/admin/word-merge.js"></script>
+<script src="/admin/history-logic.js"></script>
 <script src="/qtext.js"></script>
 <script>
 
@@ -116,7 +146,10 @@ const meaning=(e,i)=>{let m=e.meanings[i]||"";const k=m.indexOf(":");return k>0&
 const COUNT=n=>n===1?"كلمة واحدة":n===2?"كلمتان":n>=3&&n<=10?n+" كلمات":n+" كلمة";
 const DAYS=l=>l.map(d=>"اليوم "+d).join("، ");
 const LATER="وسيظهر على الموقع بعد النشر التالي";
-const UNDO_NOTE=" يمكنك التراجع من تبويب «أدوات» ما لم تحفظ تعديلًا آخر بعده، ويظهر الحذف على الموقع بعد النشر التالي.";
+const HIST_NOTE=" يمكنك الرجوع إلى ما قبله من «سجل النسخ» في تبويب «أدوات»، ويظهر الحذف على الموقع بعد النشر التالي.";
+const HL=window.HistoryLogic;
+let HIST=null,DF=null;
+const SNAPS={};
 let FB={},U=null,ADM=false,OWN=false,D=null,AD=[],TAB="s",FS="all",FQ="",ED=null,READY=false,LOADERR=null,SAVING=false,META=null,AERR="",SERR="";
 const CL=(typeof window!=="undefined"&&window.ChallengeLogic)||{NOTE:"",SPIN_LABEL:"",validateDayReferences:function(){return[]},rouletteSelect:function(){return null},toTuples:function(x){return Array.isArray(x)?x:[]},toObjects:function(x){return Array.isArray(x)?x:[]}};
 let CH=null,CHN={},EDD=null,NEWER=false,SYNCING=null;
@@ -155,7 +188,7 @@ function winHtml(title,body,foot){return`<div class="mb" role="dialog" aria-moda
 function paint(focusSel,fresh){const m=$("#md"),ob=m.querySelector(".mbd"),st=fresh||!ob?0:ob.scrollTop,ae=document.activeElement,keep=focusSel||(!fresh&&ae&&m.contains(ae)?selOf(ae):null);m.innerHTML=MD.render();m.style.display="flex";const nb=m.querySelector(".mbd");if(nb)nb.scrollTop=st;const t=(keep&&m.querySelector(keep))||m.querySelector('[data-a="close"]');if(t)try{t.focus({preventScroll:true})}catch(e){}if(nb)nb.scrollTop=st}
 function openWin(kind,render,opener){MD={kind,render,opener:selOf(opener),err:"",retry:null};if(!(history.state&&history.state.win))history.pushState({win:1},"");paint(null,true);MD.base0=winState();lock();fitVV()}
 const repaint=focusSel=>{if(MD)paint(focusSel,false)};
-function closeWin(fromPop){if(!MD)return;const op=MD.opener;MD=null;ED=null;EDD=null;const m=$("#md");m.innerHTML="";m.style.display="none";lock();if(!fromPop&&history.state&&history.state.win){POPSKIP=true;history.back()}const t=op&&document.querySelector("#app "+op);if(t)try{t.focus()}catch(e){}if(NEWER){NEWER=false;sync()}}
+function closeWin(fromPop){if(!MD)return;const op=MD.opener;MD=null;ED=null;EDD=null;DF=null;const m=$("#md");m.innerHTML="";m.style.display="none";lock();if(!fromPop&&history.state&&history.state.win){POPSKIP=true;history.back()}const t=op&&document.querySelector("#app "+op);if(t)try{t.focus()}catch(e){}if(NEWER){NEWER=false;sync()}}
 function requestClose(after){if(!MD){if(after)after();return}if(SAVING)return;const go=()=>{closeWin(false);if(after)after()};if(dirty())askDiscard(go);else go()}
 function winFail(e,what,retry){const msg=e&&e.code==="conflict"?e.message:errMsg(e,what);if(!MD)return toast(msg,true);MD.err=msg;MD.retry=retry||null;repaint('[data-a="retry"]');toast(msg,true)}
 if(history.state&&history.state.win)history.replaceState(null,"");
@@ -193,32 +226,54 @@ const store={
   const s=await withTimeout(FB.fs.getDoc(FB.fs.doc(FB.db,"public","data")),T);
   return fix(s.exists()?{rev:s.data().rev||0,surahs:s.data().surahs||[]}:{rev:0,surahs:[]});
  },
- // fn(latest surahs) returns the next surahs, or throws (conflict, duplicate...) to change nothing
- async update(fn){
-  if(!live()){const x=localStorage.getItem("gqad"),cur=x?JSON.parse(x):{rev:D.rev,surahs:D.surahs};const next=fn(fix({surahs:clone(cur.surahs)}).surahs);chkSize(next);localStorage.setItem("gqap",JSON.stringify(cur));const r=(cur.rev||0)+1;localStorage.setItem("gqad",JSON.stringify({rev:r,surahs:next}));return fix({rev:r,surahs:next})}
+ /* Every save of the words goes through here, and records itself in the same transaction: snapshots/{rev} (the full words)
+    and history/{rev} (the list's row). A version with no record yet (the first save after release, or a write made
+    outside this page) gets one first, as the baseline, holding exactly the bytes that were stored.
+    fn(latest surahs) returns the next surahs, or throws (conflict, duplicate...) to change nothing.
+    meta: { kind ("edit" unless given), restoredFrom, expectRev (refuse if the data has moved on since) } */
+ async update(fn,meta){
+  const m=meta||{},kind=m.kind||"edit",row=(rev,k,summary,at)=>Object.assign({rev,kind:k,summary,by:live()?U.uid:"demo",byEmail:U.email,at},k==="restore"?{restoredFrom:m.restoredFrom}:{});
+  const sum=(old,next)=>HL.summary(kind,old,next,{nameOf:nm,restoredFrom:m.restoredFrom});
+  if(!live()){
+   const x=localStorage.getItem("gqad"),cur=x?JSON.parse(x):{rev:D.rev,surahs:D.surahs},cr=cur.rev||0;
+   if(m.expectRev!=null&&cr!==m.expectRev)throw errOf("stale");
+   const old=fix({surahs:clone(cur.surahs)}).surahs,next=fn(clone(old));chkSize(next);
+   const h=JSON.parse(localStorage.getItem("gqh")||"{}"),s=JSON.parse(localStorage.getItem("gqs")||"{}"),r=cr+1,at=new Date().toISOString();
+   if(!h[cr]){s[cr]=cur.surahs;h[cr]=row(cr,"baseline",HL.summary("baseline"),at)}
+   s[r]=next;h[r]=row(r,kind,sum(old,next),at);
+   localStorage.setItem("gqs",JSON.stringify(s));localStorage.setItem("gqh",JSON.stringify(h));localStorage.setItem("gqad",JSON.stringify({rev:r,surahs:next}));
+   return fix({rev:r,surahs:next});
+  }
   if(offline())throw errOf("offline");
   const{doc,runTransaction,serverTimestamp}=FB.fs;let out;
   await withTimeout(runTransaction(FB.db,async tx=>{
    const ref=doc(FB.db,"public","data"),cur=await tx.get(ref),ex=cur.exists(),cs=ex?cur.data().surahs||[]:[],cr=ex?cur.data().rev||0:0;
-   const next=fn(fix({surahs:clone(cs)}).surahs);chkSize(next);
-   if(ex)tx.set(doc(FB.db,"public","prev"),{rev:cr,surahs:cs,savedAt:serverTimestamp()});
-   out={rev:cr+1,surahs:next};tx.set(ref,{rev:cr+1,surahs:next,updatedAt:serverTimestamp(),by:U.uid});
+   if(m.expectRev!=null&&cr!==m.expectRev)throw errOf("stale");
+   const recorded=ex?(await tx.get(doc(FB.db,"history",String(cr)))).exists():true;
+   const old=fix({surahs:clone(cs)}).surahs,next=fn(clone(old));chkSize(next);
+   const r=cr+1,at=serverTimestamp();
+   if(!recorded){tx.set(doc(FB.db,"snapshots",String(cr)),{rev:cr,surahs:cs});tx.set(doc(FB.db,"history",String(cr)),row(cr,"baseline",HL.summary("baseline"),at))}
+   tx.set(doc(FB.db,"snapshots",String(r)),{rev:r,surahs:next});
+   tx.set(doc(FB.db,"history",String(r)),row(r,kind,sum(old,next),at));
+   out={rev:r,surahs:next};tx.set(ref,{rev:r,surahs:next,updatedAt:at,by:U.uid});
   }),T);
   return fix(out);
  },
- async undo(){
-  if(!live()){const p=localStorage.getItem("gqap"),c=localStorage.getItem("gqad");if(!p)throw errOf("noprev");localStorage.setItem("gqad",JSON.stringify({rev:D.rev+1,surahs:JSON.parse(p).surahs}));localStorage.setItem("gqap",c);return fix(JSON.parse(localStorage.getItem("gqad")))}
-  if(offline())throw errOf("offline");
-  const{doc,runTransaction,serverTimestamp}=FB.fs;let out;
-  await withTimeout(runTransaction(FB.db,async tx=>{
-   const rp=doc(FB.db,"public","prev"),rd=doc(FB.db,"public","data"),p=await tx.get(rp),c=await tx.get(rd);
-   if(!p.exists())throw errOf("noprev");
-   const r=(c.data().rev||0)+1;
-   tx.set(rp,{rev:c.data().rev||0,surahs:c.data().surahs,savedAt:serverTimestamp()});
-   tx.set(rd,{rev:r,surahs:p.data().surahs,updatedAt:serverTimestamp(),by:U.uid});
-   out={rev:r,surahs:p.data().surahs};
-  }),T);
-  return fix(out);
+ // one page of the version list, newest first: { rows, more }. Rows only: opening the list never loads a snapshot.
+ async histPage(before,n){
+  let l;
+  if(!live())l=Object.values(JSON.parse(localStorage.getItem("gqh")||"{}")).filter(r=>before==null||r.rev<before).sort((a,b)=>b.rev-a.rev).slice(0,n+1);
+  else{const{collection,query,orderBy,limit,startAfter,getDocs}=FB.fs,c=[orderBy("rev","desc")];if(before!=null)c.push(startAfter(before));c.push(limit(n+1));l=(await withTimeout(getDocs(query(collection(FB.db,"history"),...c)),T)).docs.map(x=>x.data())}
+  return{rows:l.slice(0,n),more:l.length>n};
+ },
+ // the words of one version, or null when the history does not hold it. A version never changes, so it is kept once read.
+ async snapshot(k){
+  if(SNAPS[k])return SNAPS[k];
+  let s=null;
+  if(!live())s=JSON.parse(localStorage.getItem("gqs")||"{}")[k]||null;
+  else{const x=await withTimeout(FB.fs.getDoc(FB.fs.doc(FB.db,"snapshots",String(k))),T);s=x.exists()?x.data().surahs||[]:null}
+  if(s)SNAPS[k]=s;
+  return s;
  },
  async admins(){
   if(!live())return JSON.parse(localStorage.getItem("gqaa")||"[]");
@@ -344,10 +399,92 @@ function tabA(){
 <div class="g card">${AD.map(m=>`<div class="row"><span class="t" dir="ltr" style="text-align:right"><div>${esc(m)}</div></span>${OWN?`<button class="g sm2 dg" data-a="delA" data-v="${esc(m)}">${IC_TRASH}إزالة</button>`:""}</div>`).join("")||'<div class="sm" style="padding:16px">لا يوجد مشرفون إضافيون.</div>'}</div>
 ${OWN?`<div class="bar" style="margin-top:14px"><input class="in" id="ae" data-f="ae" type="email" dir="ltr" placeholder="email@gmail.com" aria-label="البريد الإلكتروني للمشرف الجديد"${AERR?' aria-invalid="true" aria-describedby="fe-ae"':""}><button class="pill btn" data-a="addA">إضافة مشرف</button></div>${AERR?`<div class="sm dg ferr" id="fe-ae" role="alert">${esc(AERR)}</div>`:""}<div class="sm">يجب أن يكون حساب جوجل ذا بريد إلكتروني مُفعَّل. لا يضيف المشرفين إلا مالك الموقع.</div>`:'<div class="sm" style="margin-top:12px">لا يضيف المشرفين إلا مالك الموقع.</div>'}`;
 }
+const HIST_PAGE=20;
 function tabT(){
+ if(!HIST||HIST.forRev!==D.rev)histLoad();
+ const h=HIST;
  return`<div class="g c2"><div class="sm">رقم نسخة البيانات الحالية: ${esc(D.rev)}</div>
-<div class="acts"><button class="g pill" data-a="exp">تصدير ملف الكلمات</button><label class="g pill" style="cursor:pointer" tabindex="0">استيراد من ملف<input type="file" accept=".json" data-f="imp" hidden></label><button class="g pill dg" data-a="undo" data-busy="جارٍ الاستعادة…">تراجع عن آخر تعديل</button></div>
-<div class="sm">يستبدل الاستيراد كل البيانات الحالية، وتُحفظ النسخة السابقة فيمكنك الرجوع إليها بزر «تراجع عن آخر تعديل».</div></div>`;
+<div class="acts"><button class="g pill" data-a="exp">تصدير ملف الكلمات</button><label class="g pill" style="cursor:pointer" tabindex="0">استيراد من ملف<input type="file" accept=".json" data-f="imp" hidden></label></div>
+<div class="sm">يستبدل الاستيراد كل البيانات الحالية، وتُسجَّل النسخة الجديدة في «سجل النسخ» فيمكنك الرجوع لأي نسخة قبلها.</div></div>
+<div class="hh"><h2>سجل النسخ</h2><span class="sm">كل حفظ يُسجَّل هنا كنسخة كاملة، ولا يمكن تعديل أي نسخة أو حذفها.</span></div>
+<div class="g card hl">${h.rows.map(histRow).join("")}${h.loading?'<div class="sm" role="status" style="padding:16px">جارٍ تحميل السجل…</div>':""}${h.err?`<div class="werr" role="alert"><span>${esc(h.err)}</span><button class="g sm2" data-a="hRetry">${IC_RETRY}إعادة المحاولة</button></div>`:""}${!h.loading&&!h.err&&!h.rows.length?'<div class="sm" style="padding:16px">لا توجد نسخ مسجّلة بعد. تبدأ مع أول حفظ.</div>':""}${h.more&&!h.loading?'<div class="hmore"><button class="g pill" data-a="hMore">عرض نسخ أقدم</button></div>':""}</div>`;
+}
+const rowDate=r=>r.at&&r.at.toDate?r.at.toDate():new Date(r.at);
+const rowWhen=r=>r.at?HL.rowTime(rowDate(r),new Date()).replace(/ (ص|م)$/," $1"):"";
+/* each part stays whole on a phone: the line breaks only between "how long ago" and the date */
+const whenHtml=r=>rowWhen(r).split(" · ").filter(Boolean).map(t=>`<span class="nw">${esc(t)}</span>`).join(" · ");
+/* the word between the marks is shown in the Quran face, as the mock does; esc() runs first, so the text stays inert */
+const sumHtml=s=>esc(s).replace(/«([^«»]+)»/g,'<span class="q">$1</span>');
+function histRow(r){
+ const cur=r.rev===D.rev,k=esc(r.rev);
+ return`<div class="row hr"><span class="nb">${k}</span><span class="ht"><span class="hs">${sumHtml(r.summary)}</span><span class="sm hm"><bdi dir="ltr">${esc(r.byEmail)}</bdi> · ${whenHtml(r)}</span></span><span class="hact">${cur?'<span class="hcur">الحالية</span>':""}<button class="g sm2" data-a="hDiff" data-v="${k}">التغييرات</button>${cur?"":`<button class="g sm2" data-a="hRestore" data-v="${k}" data-busy="جارٍ الاسترجاع…">استرجاع</button>`}</span></div>`;
+}
+function histPaint(h,focusSel){if(HIST!==h||TAB!=="t"||!U)return;render();const t=focusSel&&$(focusSel);if(t)try{t.focus()}catch(e){}}
+async function histLoad(){
+ const h=HIST={forRev:D.rev,rows:[],more:false,loading:true,err:""};
+ try{const p=await store.histPage(null,HIST_PAGE);h.rows=p.rows;h.more=p.more}catch(e){h.err=errMsg(e,"تحميل السجل")}
+ h.loading=false;histPaint(h);
+}
+async function histMore(){
+ const h=HIST;if(!h||h.loading||!h.rows.length)return;
+ h.loading=true;h.err="";render();
+ const first=h.rows.length;
+ try{const p=await store.histPage(h.rows[first-1].rev,HIST_PAGE);h.rows=h.rows.concat(p.rows);h.more=p.more}catch(e){h.err=errMsg(e,"تحميل السجل")}
+ h.loading=false;
+ const nx=h.rows[first];histPaint(h,nx?`[data-a="hDiff"][data-v="${nx.rev}"]`:null);
+}
+/* the changes window: the snapshots are read only now, when it opens */
+function openDiff(k,btn){const row=HIST&&HIST.rows.find(r=>r.rev===k);if(!row)return;DF={k,row,mode:"prev",loading:true,err:""};openWin("diff",diffHtml,btn);diffLoad(DF)}
+async function diffLoad(x){
+ x.loading=true;x.err="";
+ try{await Promise.all((x.mode==="prev"?[x.k-1,x.k]:[x.k]).filter(n=>n>=0).map(n=>store.snapshot(n)))}catch(e){x.err=errMsg(e,"تحميل النسخة")}
+ x.loading=false;if(DF===x)repaint();
+}
+const DS_LABEL={name:"اسم السورة",no:"رقمها في المصحف",source:"المصدر"},DT_WORD={add:"أُضيفت",edit:"تعدّلت",del:"حُذفت"};
+function dvRow(c,f,v,vHtml){return`<div class="dv ${c}"><b>${c==="del"?"قبل":f?"بعد":"جديد"}</b>${vHtml(v)}</div>`}
+function diffFields(fields,labels,vHtml){return fields.map(c=>{const lb=labels[c.field]||esc(c.field),two="before" in c&&"after" in c;return`<div class="lb">${lb}</div>${"before" in c?dvRow("del",true,c.before,vHtml):""}${"after" in c?dvRow("add",two,c.after,vHtml):""}`}).join("")}
+function diffCards(d){
+ const plain=v=>`<div class="v">${esc(v)}</div>`;
+ const s=d.surahs.map(x=>`<div class="g c2 dc"><div class="dch"><span class="q">${esc(x.name)}</span><span class="sm">سورة</span><span class="tg ${x.type}">${DT_WORD[x.type]}</span></div>${diffFields(x.fields,DS_LABEL,plain)}</div>`);
+ const w=d.words.map(x=>`<div class="g c2 dc"><div class="dch"><span class="q">${esc(x.word)}</span><span class="sm">${esc(x.surah)} · آية ${esc(x.label)}</span><span class="tg ${x.type}">${DT_WORD[x.type]}</span></div>${x.fields.map(c=>diffFields([c],CF_LABEL,v=>cfValue(c.field,v))).join("")}</div>`);
+ return s.concat(w).join("");
+}
+function diffBody(x){
+ if(x.loading)return'<div class="sm" role="status" style="padding:16px 0">جارٍ تحميل النسخة…</div>';
+ if(x.err)return`<div class="werr" role="alert"><span>${esc(x.err)}</span><button class="g sm2" data-a="dRetry">${IC_RETRY}إعادة المحاولة</button></div>`;
+ const a=x.mode==="prev"?SNAPS[x.k-1]:SNAPS[x.k],b=x.mode==="prev"?SNAPS[x.k]:D.surahs;
+ if(!b)return'<div class="sm" style="padding:16px 0">هذه النسخة غير موجودة في السجل.</div>';
+ if(!a)return'<div class="sm" style="padding:16px 0">لا توجد في السجل نسخة قبل هذه النسخة.</div>';
+ let d;try{d=HL.diff(fix({surahs:clone(a)}).surahs,fix({surahs:clone(b)}).surahs,nm)}catch(e){return`<div class="werr" role="alert"><span>${esc(errMsg(e,"عرض التغييرات"))}</span></div>`}
+ if(!d.surahs.length&&!d.words.length)return`<div class="sm" style="padding:16px 0">${x.mode==="prev"?"لا فرق بين هذه النسخة والنسخة التي قبلها.":"لا فرق بين هذه النسخة والنسخة الحالية."}</div>`;
+ return diffCards(d)+`<div class="sm" style="margin-top:4px">${x.mode==="prev"?"لم يتغيّر شيء آخر في هذه النسخة.":"لم يتغيّر شيء آخر منذ هذه النسخة."}</div>`;
+}
+function diffHtml(){
+ const x=DF,r=x.row,k=x.k,cur=k===D.rev;
+ return winHtml(`التغييرات في النسخة ${esc(k)}`,`<p class="sm" style="margin:0">${r.kind==="baseline"?"سجّلها":"حفظها"} <bdi dir="ltr">${esc(r.byEmail)}</bdi> · ${whenHtml(r)}</p>
+<div class="seg" role="group" aria-label="المقارنة"><button class="g${x.mode==="prev"?" on":""}" aria-pressed="${x.mode==="prev"}" data-a="dMode" data-v="prev"${k<1?" disabled":""}>مقارنة بالنسخة ${esc(k-1)} (قبلها)</button>${cur?"":`<button class="g${x.mode==="cur"?" on":""}" aria-pressed="${x.mode==="cur"}" data-a="dMode" data-v="cur">مقارنة بالحالية (${esc(D.rev)})</button>`}</div>
+${diffBody(x)}`,`${cur?"":`<button class="pill btn" data-a="hRestore" data-v="${esc(k)}" data-busy="جارٍ الاسترجاع…">استرجاع هذه النسخة</button>`}<button class="g pill" data-a="close">إغلاق</button>`);
+}
+/* restoring is a normal save: a new version with the old words, refused if the data moved on after the dialog was shown */
+async function restoreAsk(k,btn){
+ await sync();
+ const row=HIST&&HIST.rows.find(r=>r.rev===k);if(!row||k===D.rev)return;
+ const go=()=>{const rev0=D.rev;ask({title:`استرجاع النسخة ${k}؟`,body:`تحلّ النسخة ${k} (${HL.absTime(rowDate(row))}) محلّ الكلمات الحالية، وتُسجَّل كنسخة جديدة رقم ${rev0+1}، فلا يضيع شيء ويمكنك الرجوع عنها من السجل. يظهر ذلك على الموقع بعد النشر التالي.`,yes:"استرجاع",trig:btn,onYes:()=>restoreDo(k,rev0)})};
+ if(dirty()||META)askDiscard(()=>{META=null;if(dirty())closeWin(false);go()});else go();
+}
+function restoreDo(k,rev0){
+ const b=$('#md [data-a="hRestore"]')||$(`#app [data-a="hRestore"][data-v="${k}"]`);
+ return saving(b,async()=>{
+  try{
+   const s=await store.snapshot(k);if(!s)throw errOf("conflict","هذه النسخة غير موجودة في السجل.");
+   D=await store.update(()=>clone(s),{kind:"restore",restoredFrom:k,expectRev:rev0});
+   closeWin(false);render();toast("تم استرجاع النسخة "+k+"، "+LATER.replace("وسيظهر","وستظهر")+".");
+  }catch(e){
+   if(e.code==="stale"){D=await store.load().catch(()=>D);render();if(MD)repaint();return toast("تغيّرت البيانات في نافذة أو جهاز آخر، فلم يُسترجَع شيء. راجع السجل ثم أعد المحاولة.",true)}
+   if(e.code==="conflict")return toast(e.message,true);
+   toast(errMsg(e,"الاسترجاع"),true);
+  }
+ });
 }
 function ayHtml(s){return"﴿"+s.map(g=>{const k=QText.markParts(g);return`${esc(k.pre)}<mark>${esc(k.mark)}</mark>${esc(k.post)}`}).join(" … ")+"﴾"}
 function wordHtml(){
@@ -544,12 +681,12 @@ async function act(a,v,btn){
  else if(a==="editS"){const name=nm(D.surahs[+v]||{surah:""});await sync();if(MD)return;const i=D.surahs.findIndex(e=>nm(e)===name);if(i<0)return toast("حُذفت هذه السورة في نافذة أو جهاز آخر.",true);surahModal(i,null,btn)}
  else if(a==="saveS")saveS(btn,false);
  else if(a==="delS"){const e=D.surahs[+v];if(!e)return;const name=nm(e),n=e.words.length,used=daysUsingSurah(e.no);
-  ask({title:"حذف سورة «"+name+"» وكل كلماتها؟",body:(n?"تُحذف السورة مع "+COUNT(n)+" ومعانيها وآياتها.":"تُحذف السورة، ولا توجد فيها كلمات.")+(used.length?" وكلماتها مستخدمة في التحدي: "+DAYS(used)+"، ولن تظهر في هذه الأيام بعد حذفها.":"")+UNDO_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
+  ask({title:"حذف سورة «"+name+"» وكل كلماتها؟",body:(n?"تُحذف السورة مع "+COUNT(n)+" ومعانيها وآياتها.":"تُحذف السورة، ولا توجد فيها كلمات.")+(used.length?" وكلماتها مستخدمة في التحدي: "+DAYS(used)+"، ولن تظهر في هذه الأيام بعد حذفها.":"")+HIST_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
    onYes:()=>saving(null,async()=>{try{D=await store.update(ss=>ss.filter(x=>nm(x)!==name));toast("تم حذف السورة، ويُطبَّق الحذف على الموقع بعد النشر التالي.");render()}catch(x){toast(errMsg(x,"الحذف"),true)}})})}
  else if(a==="addW"){await sync();if(MD)return;if(!D.surahs.length)return toast("أضف سورة أولًا.",true);openW(FS==="all"?rows()[0].i:+FS,-1,btn)}
  else if(a==="editW"){const[s,wi]=v.split(".").map(Number),e=D.surahs[s],name=e&&nm(e),w=e&&e.words[wi];await sync();if(MD)return;const i=D.surahs.findIndex(z=>nm(z)===name),j=i<0?-1:D.surahs[i].words.indexOf(w);if(j<0)return toast("تغيّرت هذه الكلمة في نافذة أو جهاز آخر. راجع القائمة ثم افتحها من جديد.",true);openW(i,j,btn)}
  else if(a==="delW"){const[s,wi]=v.split(".").map(Number),e=D.surahs[s];if(!e)return;const w=e.words[wi],name=nm(e),used=daysUsing(e.no,w);
-  ask({title:"حذف الكلمة «"+w+"»؟",body:"تُحذف الكلمة ومعناها وآيتها من سورة "+name+"."+(used.length?" وهي مستخدمة في التحدي: "+DAYS(used)+"، ولن تظهر في هذه الأيام بعد حذفها.":"")+UNDO_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
+  ask({title:"حذف الكلمة «"+w+"»؟",body:"تُحذف الكلمة ومعناها وآيتها من سورة "+name+"."+(used.length?" وهي مستخدمة في التحدي: "+DAYS(used)+"، ولن تظهر في هذه الأيام بعد حذفها.":"")+HIST_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
    onYes:()=>saving(null,async()=>{try{D=await store.update(ss=>{const t=ss.find(x=>nm(x)===name),j=t?t.words.indexOf(w):-1;if(j>=0){t.words.splice(j,1);t.meanings.splice(j,1);t.ayahs.splice(j,1)}return ss});toast("تم حذف الكلمة، ويُطبَّق الحذف على الموقع بعد النشر التالي.");render()}catch(x){toast(errMsg(x,"الحذف"),true)}})})}
  else if(a==="split"){const x=ED,i=x.af.indexOf(x.ah);x.err=x.err||{};if(!x.ah||i<0){x.err.ah="الجزء المظلل غير موجود داخل نص الآية. اكتب الأجزاء يدويًا.";return repaint('[data-f="e.ah"]')}delete x.err.ah;x.segs=[{num:x.label,before:x.af.slice(0,i),hl:x.ah,after:x.af.slice(i+x.ah.length)}];repaint('[data-a="split"]')}
  else if(a==="addG"){ED.segs.push({num:ED.label,before:"",hl:"",after:""});repaint(`[data-f="g.${ED.segs.length-1}.before"]`)}
@@ -562,7 +699,12 @@ async function act(a,v,btn){
   ask({title:"إضافة المشرف "+m+"؟",body:"سيتمكن هذا الحساب من الدخول إلى لوحة التحكم وتعديل الكلمات والتحدي اليومي. يمكنك إزالته في أي وقت.",yes:"إضافة",trig:btn,onYes:()=>saving(null,async()=>{try{AD=await store.setAdmin(m,true);toast("تمت إضافة المشرف.");render()}catch(e){toast(errMsg(e,"الإضافة"),true)}})})}
  else if(a==="delA"){ask({title:"إزالة المشرف "+v+"؟",body:"لن يتمكن هذا الحساب من الدخول إلى لوحة التحكم. يمكنك إضافته مرة أخرى في أي وقت.",yes:"إزالة",danger:true,trig:btn,onYes:()=>saving(null,async()=>{try{AD=await store.setAdmin(v,false);toast("تمت إزالة المشرف.");render()}catch(e){toast(errMsg(e,"الإزالة"),true)}})})}
  else if(a==="exp"){const b=new Blob([JSON.stringify(D.surahs,null,1)],{type:"application/json"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download="words.json";l.click()}
- else if(a==="undo"){ask({title:"استعادة النسخة السابقة من الكلمات؟",body:"تحلّ النسخة المحفوظة قبل آخر تعديل محلّ الكلمات الحالية، وتصبح الحالية هي النسخة السابقة فيمكنك الرجوع إليها بالزر نفسه. يظهر ذلك على الموقع بعد النشر التالي.",yes:"استعادة",trig:btn,onYes:()=>saving($('[data-a="undo"]'),async()=>{try{D=await store.undo();toast("تمت استعادة النسخة السابقة، "+LATER.replace("وسيظهر","وستظهر")+".");render()}catch(e){toast(e.code==="noprev"?"لا توجد نسخة سابقة.":errMsg(e,"الاستعادة"),true)}})})}
+ else if(a==="hRetry"){HIST=null;render()}
+ else if(a==="hMore")await histMore();
+ else if(a==="hDiff"){await sync();if(MD)return;openDiff(+v,btn)}
+ else if(a==="hRestore")await restoreAsk(+v,btn);
+ else if(a==="dMode"){if(!DF||DF.mode===v)return;DF.mode=v;DF.loading=true;paint(`[data-a="dMode"][data-v="${v}"]`,true);diffLoad(DF)}
+ else if(a==="dRetry"){if(DF)diffLoad(DF)}
  else if(a==="chSaveMeta"){if(!CH)return;const M=META||{startDate:CH.startDate||"",releasedUpTo:CH.releasedUpTo==null?"":String(CH.releasedUpTo),err:{}},raw=String(M.releasedUpTo).trim(),n=raw===""?null:+raw;
   if(n!=null&&(!Number.isInteger(n)||n<0||n>CH.days.length)){META=Object.assign(M,{err:{releasedUpTo:"اكتب رقمًا صحيحًا من 0 إلى "+CH.days.length+"، أو اتركه فارغًا."}});render();const i=$('[data-f="m.releasedUpTo"]');if(i)i.focus();return}
   const sd=M.startDate||null;
@@ -605,8 +747,12 @@ document.addEventListener("change",async e=>{
  const badL=d.reduce((s,x)=>s+x.words.filter((w,i)=>{const a=(Array.isArray(x.ayahs)?x.ayahs:[])[i];return !(a&&LABEL_RE.test(String(a.label).trim()))}).length,0);
  if(badL)return toast("الملف غير صالح: رقم الآية في "+COUNT(badL)+" ليس رقمًا ولا نطاقًا مثل 5-6.",true);
  const n=d.reduce((s,x)=>s+x.words.length,0);
- ask({title:"استبدال كل الكلمات بمحتوى الملف «"+file.name+"»؟",body:"يحلّ الملف ("+d.length+" سورة، "+COUNT(n)+") محلّ كل السور والكلمات الحالية. تُحفظ النسخة الحالية ويمكنك الرجوع إليها بزر «تراجع عن آخر تعديل».",yes:"استبدال",danger:true,
-  onYes:()=>saving(null,async()=>{try{D=await store.update(()=>fix({surahs:d}).surahs);toast("تم الاستيراد، "+LATER+".");render()}catch(x){toast(errMsg(x,"الاستيراد"),true)}})});
+ await sync();
+ const rev0=D.rev; // refused if the data moves on after the dialog is shown, as a restore is
+ ask({title:"استبدال كل الكلمات بمحتوى الملف «"+file.name+"»؟",body:"يحلّ الملف ("+d.length+" سورة، "+COUNT(n)+") محلّ كل السور والكلمات الحالية. وتُسجَّل النسخة الجديدة في «سجل النسخ» فيمكنك الرجوع لأي نسخة قبلها.",yes:"استبدال",danger:true,
+  onYes:()=>saving(null,async()=>{try{D=await store.update(()=>fix({surahs:clone(d)}).surahs,{kind:"import",expectRev:rev0});toast("تم الاستيراد، "+LATER+".");render()}catch(x){
+   if(x.code==="stale"){D=await store.load().catch(()=>D);render();return toast("تغيّرت البيانات في نافذة أو جهاز آخر، فلم يُستورد شيء. راجع السجل ثم أعد المحاولة.",true)}
+   toast(errMsg(x,"الاستيراد"),true)}})});
 });
 /* sign-in state: a failed load shows a load error with a retry, never "not authorized" for an admin */
 async function resolveUser(x){

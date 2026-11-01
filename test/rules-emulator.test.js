@@ -31,6 +31,15 @@ if (!EMULATOR_HOST) {
 const OWNER = { email: 'yusufhamdy20@gmail.com', email_verified: true };
 const ADMIN2 = { email: 'admin2@example.com', email_verified: true };
 const USER = { email: 'user@example.com', email_verified: true };
+const { serverTimestamp } = require('firebase/firestore');
+// a save of the words as the admin page commits it: public/data with its snapshot and its row
+function saveWords(db, uid, tok, rev, surahs) {
+  const b = db.batch();
+  b.set(db.doc('snapshots/' + rev), { rev, surahs });
+  b.set(db.doc('history/' + rev), { rev, kind: 'edit', summary: 'x', by: uid, byEmail: tok.email, at: serverTimestamp() });
+  b.set(db.doc('public/data'), { rev, surahs, updatedAt: serverTimestamp(), by: uid });
+  return b.commit();
+}
 const PROJECT_ID = 'demo-ghareeb';
 
 let env;
@@ -95,7 +104,8 @@ test('catch-all denies any other collection (read, list, write)', async () => {
 test('owner has full public + admin + config/admins control', async () => {
   const o = track(env.authenticatedContext('owner', OWNER));
   const publicData = { rev: 1, surahs: [{ surah: 'سورة الناس', no: 114, words: ['x'], meanings: ['m'], ayahs: [], source: 's' }] };
-  await assertSucceeds(o.firestore().doc('public/data').set(publicData));
+  await assertFails(o.firestore().doc('public/data').set(publicData)); // never without its record
+  await assertSucceeds(saveWords(o.firestore(), 'owner', OWNER, publicData.rev, publicData.surahs));
   const snap = await assertSucceeds(o.firestore().doc('public/data').get());
   assert.strictEqual(snap.data().surahs[0].no, 114, 'owner-written public data round-trips with no field');
   await assertSucceeds(o.firestore().doc('admin/challengeNotes').set({ 1: 'private' }));
@@ -112,7 +122,7 @@ test('granted admin manages public + notes but cannot write config/admins', asyn
 
   const a = track(env.authenticatedContext('admin2', ADMIN2));
   await assertSucceeds(a.firestore().doc('public/data').get());
-  await assertSucceeds(a.firestore().doc('public/data').set({ rev: 2, surahs: [] }));
+  await assertSucceeds(saveWords(a.firestore(), 'admin2', ADMIN2, 2, []));
   await assertSucceeds(a.firestore().doc('admin/challengeNotes').get());
   await assertSucceeds(a.firestore().doc('admin/challengeNotes').set({ 2: 'allowed' }));
   await assertFails(a.firestore().doc('config/admins').set({ emails: [ADMIN2.email] }));
