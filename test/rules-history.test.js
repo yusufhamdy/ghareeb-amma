@@ -284,13 +284,29 @@ test('the first save ever: revision 1, recorded', async () => {
   assert.strictEqual((await raw('public/data')).rev, 1);
 });
 
-test('public/data is still world-readable and never deleted; public/prev stays readable', async () => {
+test('a version cannot be recorded without moving the data, even with the current words', async () => {
+  await assertFails(asOwner({ data: null, surahs: WORDS }));
+  // half of a version already there (never written by the page): the other half is still refused
+  await put('snapshots/6', { rev: 6, surahs: WORDS });
+  await assertFails(asOwner({ data: null, snap: null, surahs: WORDS }));
+  await env.withSecurityRulesDisabled(async (c) => { await c.firestore().doc('snapshots/6').delete(); });
+  await put('history/6', { rev: 6, kind: 'edit', summary: 's', by: 'someone', byEmail: 'a@b.c', at: new Date() });
+  await assertFails(asOwner({ data: null, hist: null, surahs: WORDS }));
+  await assertFails(asOwner({ data: null, hist: null, surahs: NEXT }));
+  // a baseline's row with no words: only the words the data holds at that revision can complete it, and it has moved on
+  await put('history/3', { rev: 3, kind: 'baseline', summary: 's', by: 'someone', byEmail: 'a@b.c', at: new Date() });
+  await assertFails(db('owner', OWNER_T).doc('snapshots/3').set({ rev: 3, surahs: WORDS }));
+  assert.strictEqual(await raw('snapshots/3'), null);
+});
+
+test('public/data and public/prev are readable by admins only, and never deleted', async () => {
   const a = ACTORS();
-  for (const who of Object.values(a)) {
-    await assertSucceeds(who.doc('public/data').get());
-    await assertSucceeds(who.doc('public/prev').get());
-    await assertFails(who.doc('public/data').delete());
-    await assertFails(who.doc('public/prev').delete());
+  for (const [name, who] of Object.entries(a)) {
+    for (const p of ['public/data', 'public/prev']) {
+      if (name === 'owner' || name === 'admin') await assertSucceeds(who.doc(p).get());
+      else await assertFails(who.doc(p).get());
+      await assertFails(who.doc(p).delete());
+    }
   }
 });
 

@@ -247,6 +247,18 @@ await p.click('[data-cd="no"]');
 check("keeping the edits restores nothing", (await raw("public/data")).rev === 19 && (await p.evaluate(() => META && META.startDate)) === "2027-01-01");
 await p.evaluate(() => { META = null; });
 
+console.log("\n== import: refused when the data moved on ==");
+await p.setInputFiles('[data-f="imp"]', { name: "words.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imp)) });
+await p.waitForSelector("#cd.open");
+await other.p.evaluate(() => store.update((ss) => { ss[0].source = "moved-on-again"; return ss; }));
+const rowsI = await revs("history");
+await p.click('[data-cd="yes"]');
+await p.waitForFunction(() => D.rev === 20 && !SAVING);
+const staleI = await raw("public/data");
+check("a stale import writes nothing: the other admin's save stands", staleI.rev === 20 && staleI.surahs[0].source === "moved-on-again");
+check("a stale import adds no version", JSON.stringify(await revs("history")) === JSON.stringify(rowsI));
+check("and says so clearly", (await p.locator("#toast").getAttribute("class")).includes("bad") && (await p.locator("#toast").textContent()).includes("فلم يُستورد شيء"));
+
 console.log("\n== a word in a row is inert, whatever it holds ==");
 const HOSTILE = '<img src=x onerror="window.__x=1"><svg onload="window.__x=1">';
 await write("history/19", { rev: 19, kind: "edit", summary: EDIT_M + Q(HOSTILE), by: "x", byEmail: HOSTILE, at: new Date() });
@@ -298,10 +310,14 @@ for (const scheme of ["light", "dark"]) {
   check(scheme + " 390: the buttons wrap under the text", m.rows.every((r) => r.under), m.rows);
   check(scheme + " 390: every row fits the card", m.rows.every((r) => r.inside), m.rows);
   check(scheme + " 390: touch targets at least 44 px", m.tooSmall === 0, m.tooSmall);
+  const nw = await s.p.evaluate(() => [...document.querySelectorAll(".hl .hm .nw")].map((e) => ({ one: (() => { const t = [...e.getClientRects()].map((r) => r.top); return Math.max(...t) - Math.min(...t) < 8; })(), ws: getComputedStyle(e).whiteSpace, inside: e.getBoundingClientRect().right <= innerWidth && e.getBoundingClientRect().left >= 0 })));
+  check(scheme + " 390: each row's date is in no-wrap spans, on one line, on the screen", nw.length >= 7 && nw.every((x) => x.one && x.ws === "nowrap" && x.inside), nw.slice(0, 2));
   await s.p.click('[data-a="hDiff"][data-v="6"]'); await s.p.waitForFunction(() => DF && !DF.loading);
   await s.p.click('[data-a="dMode"][data-v="cur"]'); await s.p.waitForFunction(() => DF && DF.mode === "cur" && !DF.loading);
   const w = await s.p.evaluate(() => { const b = document.querySelector("#md .mbd"); return { hs: b.scrollWidth - b.clientWidth, page: document.documentElement.scrollWidth - innerWidth, foot: !!document.querySelector("#md .mft") }; });
   check(scheme + " 390: the window does not scroll sideways", w.hs <= 0 && w.page <= 0, w);
+  const nwd = await s.p.evaluate(() => [...document.querySelectorAll("#md .nw")].map((e) => ({ one: (() => { const t = [...e.getClientRects()].map((r) => r.top); return Math.max(...t) - Math.min(...t) < 8; })(), ws: getComputedStyle(e).whiteSpace, inside: e.getBoundingClientRect().right <= innerWidth && e.getBoundingClientRect().left >= 0 })));
+  check(scheme + " 390: the window's date is in a no-wrap span, on one line, on the screen", nwd.length >= 1 && nwd.every((x) => x.one && x.ws === "nowrap" && x.inside), nwd);
   await s.ctx.close();
 }
 

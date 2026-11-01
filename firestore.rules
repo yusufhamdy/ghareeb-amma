@@ -70,14 +70,27 @@ service cloud.firestore {
         && existsAfter(histDoc(d.rev))
         && getAfter(snapDoc(d.rev)).data.surahs == d.surahs;
     }
-    // this request moves public/data to revision r: at r after it, at r - 1 before it
-    function movesDataTo(r) {
-      return getAfter(dataDoc()).data.rev == r
+    // A save with its baseline writes five documents, and a transaction has 20 document lookups: each lookup below is made
+    // once for each write, its result bound with let (or passed in) wherever a write needs it twice.
+    // this request moves public/data to revision r (after = public/data after it): at r after it, at r - 1 before it
+    function movesDataTo(r, after) {
+      return after.data.rev == r
         && (r == 1 && !exists(dataDoc()) || get(dataDoc()).data.rev == r - 1);
     }
     // the baseline: the revision and words public/data holds now, before this request
     function isCurrentData(r, surahs) {
-      return get(dataDoc()).data.rev == r && get(dataDoc()).data.surahs == surahs;
+      let now = get(dataDoc());
+      return now.data.rev == r && now.data.surahs == surahs;
+    }
+    // the words of a save's version: the same words public/data holds after the request
+    function snapshotOfSave(d) {
+      let after = getAfter(dataDoc());
+      return movesDataTo(d.rev, after) && d.surahs == after.data.surahs;
+    }
+    // a version is written with its history row: the row says whether it is a save or the baseline
+    function snapshotRecorded(d) {
+      let kind = getAfter(histDoc(d.rev)).data.kind;
+      return kind == 'baseline' ? isCurrentData(d.rev, d.surahs) : snapshotOfSave(d);
     }
     function validSnapshot(id, d) {
       return d.keys().hasAll(['rev', 'surahs']) && d.keys().hasOnly(['rev', 'surahs'])
@@ -110,12 +123,7 @@ service cloud.firestore {
     // The version history: admins read and add; nobody changes or deletes a version, not even the owner.
     match /snapshots/{id} {
       allow read: if isAdmin();
-      allow create: if isAdmin() && validSnapshot(id, request.resource.data) && (
-        (getAfter(histDoc(request.resource.data.rev)).data.kind != 'baseline'
-          && movesDataTo(request.resource.data.rev)
-          && request.resource.data.surahs == getAfter(dataDoc()).data.surahs)
-        || (getAfter(histDoc(request.resource.data.rev)).data.kind == 'baseline'
-          && isCurrentData(request.resource.data.rev, request.resource.data.surahs)));
+      allow create: if isAdmin() && validSnapshot(id, request.resource.data) && snapshotRecorded(request.resource.data);
       allow update, delete: if false;
     }
     match /history/{id} {
@@ -123,7 +131,7 @@ service cloud.firestore {
       allow create: if isAdmin() && validHistory(id, request.resource.data) && (
         request.resource.data.kind == 'baseline'
           ? isCurrentData(request.resource.data.rev, getAfter(snapDoc(request.resource.data.rev)).data.surahs)
-          : movesDataTo(request.resource.data.rev) && existsAfter(snapDoc(request.resource.data.rev)));
+          : movesDataTo(request.resource.data.rev, getAfter(dataDoc())) && existsAfter(snapDoc(request.resource.data.rev)));
       allow update, delete: if false;
     }
 
