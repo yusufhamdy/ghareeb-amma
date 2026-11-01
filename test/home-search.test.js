@@ -85,6 +85,11 @@ async function serve(root) {
   return { server, base: "http://127.0.0.1:" + server.address().port, close: () => new Promise((r) => server.close(r)) };
 }
 
+// The nav's drag code ignores clicks for 450 ms after a drag ends (public/index.html, "endT"), and a page that has had no
+// drag counts from 0: any nav click in the page's first 450 ms is dropped and the hash never changes. On a fast run this
+// test could reach its first nav click that early, then time out in onHome. A person's first tap never comes that soon.
+const pastNavGuard = (page) => page.waitForFunction(() => performance.now() >= 500, null, { timeout: 20000 });
+
 async function boot(browser, base, opts) {
   const context = opts.mobile
     ? await browser.newContext({ viewport: opts.viewport, hasTouch: true, isMobile: true, userAgent: IPHONE_UA })
@@ -99,6 +104,7 @@ async function boot(browser, base, opts) {
   });
   await page.goto(base + "/index.html", { waitUntil: "load" });
   await page.waitForSelector("#app .acts", { timeout: 20000 });
+  await pastNavGuard(page);
   return { context, page, errors };
 }
 
