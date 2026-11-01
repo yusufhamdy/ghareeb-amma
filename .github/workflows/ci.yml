@@ -58,5 +58,5 @@ jobs:
       - name: Firestore emulator rules tests
         run: npm run rules:test
 
-      - name: Public page falls back to the published JSON when Firestore refuses it
+      - name: Public page uses only the published JSON, with no Firebase request
         run: npm run client:verify

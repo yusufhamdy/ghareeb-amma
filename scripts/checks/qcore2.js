@@ -15,8 +15,8 @@ const precacheList = async (p) => p.evaluate(async () => { const t = await (awai
     const { name, list } = await precacheList(p);
     const cached = await p.evaluate(async (n) => (await (await caches.open(n)).keys()).map((r) => new URL(r.url).pathname), name);
     const missing = list.filter((f) => !cached.includes(f));
-    ok(name === "ghareeb-pwa-v30", "A: CACHE_NAME " + name);
-    ok(["/quiz-core.js", "/migrate.js", "/firebase-config.js", "/word-gap.js"].every((f) => list.includes(f)), "A: precache list has the four scripts");
+    ok(name === "ghareeb-pwa-v45", "A: CACHE_NAME " + name);
+    ok(["/quiz-core.js", "/word-gap.js"].every((f) => list.includes(f)) && !["/migrate.js", "/firebase-config.js"].some((f) => list.includes(f)), "A: precache list has the app scripts and no Firebase ones");
     ok(!missing.length, "A: all " + list.length + " precache files are in " + name + (missing.length ? " (missing " + missing + ")" : ""));
     await br.close(); }
   // B. just after a cache bump (cache = precache list only), network dropped -> quiz opens from cache

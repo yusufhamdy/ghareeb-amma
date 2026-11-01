@@ -9,7 +9,7 @@
  * The policy allows only what the pages load, as observed on the preview with scripts/checks/csp.js (2026-10-27):
  *   - scripts: the site itself, the inline scripts by their sha256 hash (no 'unsafe-inline'), the Sentry loader
  *     (js-de.sentry-cdn.com) and the Sentry SDK it loads (browser.sentry-cdn.com), the Firebase SDK
- *     (www.gstatic.com/firebasejs, used by migrate.js and the admin) and, for the admin's Google sign-in,
+ *     (www.gstatic.com/firebasejs, used by the admin only) and, for the admin's Google sign-in,
  *     apis.google.com;
  *   - connections: the site, Firestore, Firebase Auth (identitytoolkit, and securetoken for token refresh) and the
  *     Sentry ingest host of this project;

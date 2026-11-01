@@ -218,7 +218,7 @@ async function main() {
     check('home: floating nav has 4 tabs', navCount === 4, navCount);
     await page.waitForFunction(() => window.__DATA_SRC__ && window.__DATA_SRC__ !== 'pending', { timeout: 15000 }).catch(() => {});
     const src = await page.evaluate(() => window.__DATA_SRC__).catch(() => '?');
-    check('home: data source silently falls back to json', src === 'json', src);
+    check('home: data source is the published json', src === 'json', src);
     const bodyTxt = await textOf(page, '#app');
     check('home: no visible load error message', !/\u062a\u0639\u0630\u0631/.test(bodyTxt));
     await sleep(900);
