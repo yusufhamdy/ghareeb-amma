@@ -15,11 +15,11 @@
 //    corrected documents: a save that edits one meaning (with its baseline), a restore, a challenge save and a note save.
 // Prints every write with "allowed" or "DENIED" and the error; exit 1 if anything that must be allowed was denied.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { SDK, sdk } from "./firebase-sdk-local.mjs";
 const require = createRequire(import.meta.url);
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { initializeTestEnvironment } = require("@firebase/rules-unit-testing");
@@ -117,9 +117,7 @@ for (const k of Object.keys(fixed)) {
 // ---- 3. the real admin page on the corrected documents
 console.log("\n== 3. the admin page (owner) on the corrected documents: save with its baseline, restore, challenge save, note save ==");
 await seed(Object.assign({}, DOCS, fixed));
-const SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
-const CACHE = path.join(os.tmpdir(), "ghareeb-fb-sdk-10.14.1"); fs.mkdirSync(CACHE, { recursive: true });
-const sdk = async (n) => { const f = path.join(CACHE, n); if (!fs.existsSync(f)) { const r = await fetch(SDK + n); if (!r.ok) throw new Error(n + " " + r.status); fs.writeFileSync(f, Buffer.from(await r.arrayBuffer())); } return fs.readFileSync(f); };
+// The SDK comes from the vendored, hash-pinned copy: no download at test time (see firebase-sdk-local.mjs).
 const WRAP = {
   "firebase-auth.js": `export * from "${SDK}firebase-auth.real.js";import {getAuth as g,connectAuthEmulator as c} from "${SDK}firebase-auth.real.js";export function getAuth(a){const x=g(a);if(!x.__emu){c(x,"http://${AUH}",{disableWarnings:true});x.__emu=1}return x}`,
   "firebase-firestore.js": `export * from "${SDK}firebase-firestore.real.js";import {getFirestore as g,connectFirestoreEmulator as c} from "${SDK}firebase-firestore.real.js";export function getFirestore(a){const x=g(a);if(!x.__emu){c(x,"${host}",${port});x.__emu=1}return x}`,
