@@ -130,6 +130,7 @@ const SECRET_PATTERNS = [
   { name: 'google-api-key', re: /AIza[0-9A-Za-z_-]{20,}/, allow: new Set(['public/firebase-config.js']) },
   { name: 'private-key-block', re: /-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----/ },
   { name: 'github-pat', re: /ghp_[0-9A-Za-z]{20,}/ },
+  { name: 'age-private-key', re: /AGE-SECRET-KEY-1[0-9A-Z]{50,}/ },
   { name: 'client-secret', re: /client_secret["']?\s*[:=]\s*["'][A-Za-z0-9_\-]{12,}/ },
   { name: 'service-account-json', re: /"type"\s*:\s*"service_account"/ },
 ];

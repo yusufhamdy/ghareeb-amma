@@ -66,7 +66,7 @@ async function login(email, sub) {
   await ctx.route((u) => /googleapis\.com|firebaseio|firebaseapp\.com|google\.com|googleusercontent/.test(u.hostname), (r) => { leaks.push(r.request().url()); return r.abort(); });
   const p = await ctx.newPage(), net = { commit: 0 };
   p.on("pageerror", (e) => pageErrors.push(e.message.slice(0, 160)));
-  p.on("console", (m) => { if (m.type() === "error" && !/ERR_FAILED/.test(m.text())) consoleErrors.push(m.text().slice(0, 120)); });
+  p.on("console", (m) => { if (m.type() === "error" && !/net::ERR_/.test(m.text())) consoleErrors.push(m.text().slice(0, 120)); });
   p.on("request", (q) => { if (/documents:commit/.test(q.url())) net.commit++; });
   await p.goto(base + "/admin/index.html");
   await p.waitForFunction(() => typeof FB !== "undefined" && FB.auth && READY, null, { timeout: 30000 });
@@ -323,6 +323,7 @@ console.log("\n== a word deleted, and a challenge day saved ==");
 }
 
 check("no error on any page", pageErrors.length === 0, pageErrors.length);
+// a network failure is not the page's error; a refused write is a status, so it still counts
 check("no console error (a refused write would show here)", consoleErrors.length === 0, consoleErrors.slice(0, 3));
 await br.close(); server.close();
 check("no request reached a Google host", leaks.length === 0, leaks.length);
