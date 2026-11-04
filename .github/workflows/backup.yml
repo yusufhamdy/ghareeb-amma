@@ -5,7 +5,8 @@ name: Backup
 # Runs daily and on manual dispatch (run it by hand before every Firestore rules deploy). INERT until the owner sets the
 # repository variable BACKUP_ENABLED to "true". See BACKUP-RESTORE.md for the owner's setup.
 #
-#   - Read-only on Firestore: the service account holds roles/datastore.viewer. Nothing here writes to Firestore.
+#   - Read-only on Firestore: its own service account, ghareeb-backup, holds only roles/datastore.viewer and has no keys.
+#     It cannot deploy Hosting or write anything. Nothing here writes to Firestore.
 #   - The Workload Identity provider accepts only this repository on refs/heads/main, so another branch gets no identity.
 #   - Encrypted with age to a PUBLIC key before anything leaves the runner. No private key exists anywhere in CI.
 #   - Stored in a PRIVATE repository through a deploy key limited to that repository. Never as an Actions artifact: this
@@ -49,7 +50,7 @@ jobs:
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          service_account: ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com
 
       - name: Export (read-only)
         run: node scripts/firestore-export.mjs --quiet --out "$RUNNER_TEMP/export"

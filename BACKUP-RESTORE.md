@@ -24,7 +24,10 @@
    | Variable | `BACKUP_REPO` | `yusufhamdy/ghareeb-amma-backups` |
    | Variable | `BACKUP_ENABLED` | `true`, only after merging |
 
-   `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` already exist.
+   `WIF_PROVIDER` already exists. The workflow signs in as its own service account,
+   `ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com`: only `roles/datastore.viewer` on the project, no keys,
+   and `roles/iam.workloadIdentityUser` for this repository through the `github` pool, whose provider accepts only
+   `refs/heads/main`.
 6. **Run it once by hand,** from the Actions tab on `main`, and check that one `.age` file appeared in the private repository.
 7. **Rehearse a restore** (below) with that file.
 
