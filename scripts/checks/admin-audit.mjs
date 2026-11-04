@@ -50,6 +50,7 @@ const WRAP = {
 const CONFIG = 'window.FIREBASE_CONFIG={apiKey:"demo-key",authDomain:"demo-ghareeb.firebaseapp.com",projectId:"demo-ghareeb",appId:"1:1:web:1"};';
 
 const R = {}, fails = [], leaks = [], pageErrors = [], natives = [];
+const SEARCH_WAIT = 400; // the admin filters the word list 180 ms after the last keystroke (PR #10, UX-6)
 const check = (id, ok, detail) => { R[id] = { ok: !!ok, detail }; if (!ok) fails.push(id + ": " + JSON.stringify(detail).slice(0, 500)); console.log((ok ? "  ok   " : "  FAIL ") + id + (ok ? "" : " " + JSON.stringify(detail).slice(0, 300))); };
 const { server, base } = await serve(undefined, { liveFirebase: true });
 const br = await chromium.launch();
@@ -214,10 +215,10 @@ try {
     await tab(p, "c");
     const banner = await p.textContent("#app .demo");
     check("M3 challenge notice is true", banner.includes("بعد النشر التالي") && !/دقيقة|فورًا|فورا/.test(banner), banner);
-    // S10 search
-    await tab(p, "w"); await p.fill('[data-f="fq"]', "شانيك"); await p.waitForTimeout(150);
+    // S10 search. Since PR #10 (UX-6) the admin filters 180 ms after the last keystroke, not on each one: wait past that.
+    await tab(p, "w"); await p.fill('[data-f="fq"]', "شانيك"); await p.waitForTimeout(SEARCH_WAIT);
     const ya = await p.evaluate(() => document.querySelectorAll(".wl .row").length);
-    await p.fill('[data-f="fq"]', "شانئك"); await p.waitForTimeout(150);
+    await p.fill('[data-f="fq"]', "شانئك"); await p.waitForTimeout(SEARCH_WAIT);
     const hamza = await p.evaluate(() => document.querySelectorAll(".wl .row").length);
     await shot(p, "s10-search");
     check("S10 search matches ي and ئ", ya === 1 && hamza === 1, { ya, hamza });
@@ -225,7 +226,7 @@ try {
     // S13 + S11 inside windows
     await p.click('[data-a="addW"]'); await p.waitForSelector("#md .mb");
     await p.click('[data-a="saveW"]'); await p.waitForTimeout(200);
-    const marks = await p.evaluate(() => [...document.querySelectorAll('#md [aria-invalid="true"]')].map((i) => { const e = document.getElementById(i.getAttribute("aria-describedby")); return { f: i.dataset.f, near: !!e && (i.nextElementSibling === e || (i.parentElement.classList.contains("sg") && i.parentElement.nextElementSibling === e)), text: e && e.textContent }; }));
+    const marks = await p.evaluate(() => [...document.querySelectorAll('#md [aria-invalid="true"]')].map((i) => { const e = document.getElementById(i.getAttribute("aria-describedby")); return { f: i.dataset.f, near: !!e && (i.nextElementSibling === e || (!!i.closest(".sg") && i.closest(".sg").nextElementSibling === e)), text: e && e.textContent }; }));
     await shot(p, "s13-word-errors");
     check("S13 word window marks each invalid field", marks.length >= 4 && marks.every((m) => m.near && /[؀-ۿ]/.test(m.text)), marks);
     texts.push(await p.textContent("#md"));
@@ -268,7 +269,7 @@ try {
     await reset();
     const ctx = await ctxFor(1440);
     const p = await page(ctx, "save", OWNER);
-    await tab(p, "w"); await p.fill('[data-f="fq"]', "ثجاجا"); await p.waitForTimeout(150);
+    await tab(p, "w"); await p.fill('[data-f="fq"]', "ثجاجا"); await p.waitForTimeout(SEARCH_WAIT);
     const before = wordOf(await readData(), "ثَجَّاجًا");
     await p.click('[data-a="editW"]'); await p.waitForSelector("#md .mb"); await p.click('[data-a="saveW"]'); await p.waitForTimeout(1500);
     const msg = await toastText(p); await shot(p, "m3-save-message");

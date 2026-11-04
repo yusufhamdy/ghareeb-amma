@@ -81,8 +81,8 @@ if (DOCS["public/data"] && typeof DOCS["public/data"].by === "string" && DOCS["p
   console.log("  " + (refused ? "refused  " : "ALLOWED! ") + "public/data set with its current by " + JSON.stringify(DOCS["public/data"].by) + " (an address: must be refused)");
   if (!refused) bad++;
 }
-console.log("-- for reference: the public reads, and an unauthenticated write (must be refused)");
-await attempt("public/data read (unauthenticated)", () => env.unauthenticatedContext().firestore().doc("public/data").get());
+console.log("-- unauthenticated reads and an unauthenticated write (all must be refused: public/* is readable by admins only since 6fa8246)");
+for (const k of ["public/data", "public/prev", "public/challenge"]) { let refused = false; try { await env.unauthenticatedContext().firestore().doc(k).get(); } catch (e) { refused = true; } console.log("  " + (refused ? "refused  " : "ALLOWED! ") + k + " read (unauthenticated)"); if (!refused) bad++; }
 { let refused = false; try { await env.unauthenticatedContext().firestore().doc("public/data").set(DOCS["public/data"]); } catch (e) { refused = true; } console.log("  " + (refused ? "refused  " : "ALLOWED! ") + "public/data set (unauthenticated)"); if (!refused) bad++; }
 
 // ---- 2. the fix script against the emulator, then the corrected documents written back unchanged
