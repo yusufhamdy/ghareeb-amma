@@ -30,9 +30,10 @@ export const COLLECTIONS = ["snapshots", "history"];
 
 if (EMULATOR && !/^(127\.0\.0\.1|localhost):\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST || "")) { console.error("firestore-export: --emulator needs a local FIRESTORE_EMULATOR_HOST"); process.exit(1); }
 if (process.env.FIRESTORE_EMULATOR_HOST && !EMULATOR) { console.error("firestore-export: FIRESTORE_EMULATOR_HOST is set; refusing (this script reads production)"); process.exit(1); }
-const admin = require("firebase-admin");
-if (!admin.apps.length) admin.initializeApp({ projectId: PROJECT });
-const db = admin.firestore();
+// The Firestore client itself, not admin.initializeApp(): firebase-admin 12 refuses the short-lived Workload Identity
+// credential file that the backup workflow signs in with, while the client accepts it (and a local gcloud login).
+const { Firestore } = require("firebase-admin").firestore;
+const db = new Firestore({ projectId: PROJECT });
 const tag = (v) => {
   if (v && typeof v.toDate === "function" && typeof v.seconds === "number") return { __ts: [v.seconds, v.nanoseconds] };
   if (Array.isArray(v)) return v.map(tag);
@@ -57,3 +58,4 @@ for (const c of COLLECTIONS) {
 fs.writeFileSync(path.join(OUT, "index.json"), JSON.stringify(index, null, 1));
 if (QUIET) console.log("exported " + Object.values(index.docs).filter((x) => x.exists).length + " documents and " + COLLECTIONS.map((c) => Object.keys(index.collections[c]).length + " " + c).join(", "));
 else console.log("written to " + path.relative(ROOT, OUT));
+await db.terminate();
