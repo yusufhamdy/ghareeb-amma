@@ -7,10 +7,10 @@
 // Run from the repo root:
 //   npx firebase emulators:exec --config <config with auth> --project demo-ghareeb --only auth,firestore "node scripts/seed-emulator.js && node scripts/checks/admin-audit.mjs"
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { SDK, sdk } from "./firebase-sdk-local.mjs";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const { serve } = require("./lib.js");
@@ -42,9 +42,7 @@ const readData = async () => (await db.doc("public/data").get()).data();
 const wordOf = (data, w) => { for (const s of data.surahs) { const i = s.words.indexOf(w); if (i >= 0) return { m: s.meanings[i], ay: s.ayahs[i], surah: s.surah }; } return null; };
 
 // ---- Firebase SDK from a local cache, wrapped to use the emulators
-const SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
-const CACHE = path.join(os.tmpdir(), "ghareeb-fb-sdk-10.14.1"); fs.mkdirSync(CACHE, { recursive: true });
-const sdk = async (n) => { const f = path.join(CACHE, n); if (!fs.existsSync(f)) { const r = await fetch(SDK + n); if (!r.ok) throw new Error(n + " " + r.status); fs.writeFileSync(f, Buffer.from(await r.arrayBuffer())); } return fs.readFileSync(f); };
+// The SDK comes from the vendored, hash-pinned copy: no download at test time (see firebase-sdk-local.mjs).
 const WRAP = {
   "firebase-auth.js": `export * from "${SDK}firebase-auth.real.js";import {getAuth as g,connectAuthEmulator as c} from "${SDK}firebase-auth.real.js";export function getAuth(a){const x=g(a);if(!x.__emu){c(x,"http://${AUH}",{disableWarnings:true});x.__emu=1}return x}`,
   "firebase-firestore.js": `export * from "${SDK}firebase-firestore.real.js";import {getFirestore as g,connectFirestoreEmulator as c} from "${SDK}firebase-firestore.real.js";export function getFirestore(a){const x=g(a);if(!x.__emu){const [h,p]="${FSH}".split(":");c(x,h,+p);x.__emu=1}return x}`,
