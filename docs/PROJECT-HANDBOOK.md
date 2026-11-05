@@ -270,7 +270,7 @@ How they are tested:
 
 Repository secrets (names only): `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `BACKUP_DEPLOY_KEY`.
 Repository variables: `BACKUP_AGE_RECIPIENT` (the age public key), `BACKUP_REPO`, `BACKUP_ENABLED` (`true`),
-`PUBLISH_ENABLED` (`false`), and `PREVIEW_ENABLED` (`true`), which nothing reads since `preview.yml` was removed.
+`PUBLISH_ENABLED` (`false`). (`PREVIEW_ENABLED` was deleted on 2026-11-05: nothing read it after `preview.yml` was removed.)
 
 **Workload Identity Federation** (keyless sign-in from GitHub Actions to Google Cloud):
 - Pool `github`, provider `github` (ACTIVE), issuer `https://token.actions.githubusercontent.com`.
