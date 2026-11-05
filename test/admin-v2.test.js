@@ -84,7 +84,12 @@ test("A11Y-4: import is a real button that opens the file picker from the keyboa
   const p = await open(t); if (!p) return;
   await tab(p, "t"); await p.focus('[data-a="impPick"]');
   assert.strictEqual(await p.evaluate(() => document.activeElement.tagName), "BUTTON");
-  for (const key of ["Enter", "Space"]) { const c = p.waitForEvent("filechooser", { timeout: 10000 }); await p.keyboard.press(key); await c; }
+  // Start waiting for the chooser together with the key press, and focus the button again before each press: the tab can
+  // re-render while it settles, which replaces the button and drops the focus, and a key press then reaches nothing.
+  for (const key of ["Enter", "Space"]) {
+    await p.focus('[data-a="impPick"]');
+    await Promise.all([p.waitForEvent("filechooser", { timeout: 10000 }), p.keyboard.press(key)]);
+  }
 });
 
 test("A11Y-5: one active tab marked aria-current, and one heading on each screen", async (t) => {
