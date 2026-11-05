@@ -10,23 +10,37 @@
  * Functions, no Blaze, no billing. The static pages stay the SEO source.
  *
  * Input:
- *   (default)            Firestore via firebase-admin (public/data,
- *                        public/challenge)
+ *   (default)            Firestore, read-only, with the Firestore client (public/data and public/challenge only; it
+ *                        works with the Workload Identity credential, unlike admin.initializeApp())
  *   --from-json PATH     read the surah list from a local JSON file
  *   --challenge-json P   read the challenge doc from a local JSON file
- *   --out DIR            output directory (required)
- *   --current-url URL    fetch the live rev.json; skip (no-change) when the
- *                        content hash matches
- *   --project ID         Firebase project id for the admin SDK path
+ *   --project ID         Firebase project id for the Firestore path
  *
- * Output (written only under --out; never over the committed public/ tree):
- *   words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
+ * Two modes:
+ *   --out DIR            the old mode: write the generated files under DIR (never over public/)
+ *     --current-url URL  fetch the live rev.json; skip (no-change) when the content hash matches
+ *   --publish            Phase 5: update the site tree (default public/) and firebase.json in place, for a pull
+ *                        request. Writes only what changed, deletes stale word and surah pages and share images,
+ *                        adds a 301 redirect for each removed page (to its surah page, or the home page when the
+ *                        surah is gone too), writes rev.json, and regenerates the share images whose word, surah or
+ *                        ayah changed. Prints "publish-build: no-change" and writes nothing when the site is current.
+ *     --site DIR         the site tree to update (default public/)
+ *     --firebase-json P  the Hosting config whose redirects are updated (default firebase.json)
+ *     --report FILE      write the review report (Markdown, scripts/publish-report.mjs) to FILE
+ *     --summary FILE     write the change summary (file names and counts only) as JSON to FILE
+ *     --no-images        skip the share images (tests)
+ *   Both modes:
+ *     --allow-removals N        how many words this publish may remove (default 0); it must be exact
+ *     --allow-surah-removals L  comma-separated surah numbers this publish may remove (default none)
+ *
+ * Output (--out mode): words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
  *   plus the static legal pages about/index.html, privacy/index.html,
  *   terms/index.html, rights/index.html (copy verbatim from shared/legal.js).
  *
- * Safety: the whole site is built in memory, validated, and only then written.
- * It aborts with a non-zero exit and no output on empty data, fewer than 73
- * words, or any invalid word - a partial or empty site is never published.
+ * Safety: the input is checked against a strict shape (no unknown keys), put in the committed shape and order, compared
+ * with the committed public/words.json (the removal guard), and its challenge references are resolved. The whole site is
+ * built in memory, validated, and only then written. Any failure exits non-zero with nothing written. Messages name
+ * positions, surah numbers, day numbers, slugs and field names, never document content.
  *
  * ASCII-ONLY: every Arabic fragment is a \u escape (see
  * test/arabic-guard.test.js, which treats literal Arabic in new files as
@@ -38,6 +52,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
@@ -51,7 +66,6 @@ const QText = require("../public/qtext.js");
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const SITE = "https://ghareebalquran.com";
-const MIN_WORDS = 73;
 
 // --- Arabic fragments (escaped so this module stays ASCII-only) ------------
 const A = {
@@ -570,14 +584,14 @@ export function hashFiles(files) {
   return h.digest("hex");
 }
 
+// Empty data is always refused. How far the data may shrink is decided against the committed site (guardRemovals),
+// not by a fixed minimum, so a deliberate, counted deletion is possible.
 export function validateInput(surahs) {
   if (!Array.isArray(surahs) || !surahs.length) {
     throw new Error("no surah data (empty input)");
   }
   const total = surahs.reduce((n, e) => n + (Array.isArray(e.words) ? e.words.length : 0), 0);
-  if (total < MIN_WORDS) {
-    throw new Error("refusing to publish: only " + total + " words (< " + MIN_WORDS + ")");
-  }
+  if (!total) throw new Error("refusing to publish: no words");
 }
 
 // The ayah label format: an ayah number or a range. Also enforced in the admin (wordErrors and the JSON import).
@@ -622,8 +636,9 @@ export function publicChallenge(state) {
   const src = state && Array.isArray(state.days) ? state.days : [];
   out.days.forEach((day, i) => {
     const s = src[i] || {};
-    // a word reference keeps only its surah number and word, in the shape it came in: no other field can reach the file
-    day.w = day.w.map((r) => (Array.isArray(r) ? [r[0], r[1]] : { no: r && r.no, word: r && r.word }));
+    // a word reference keeps only its surah number and word, as the [no, word] pair of the committed file (Firestore,
+    // which can't hold a list inside a list, stores it as {no, word}): no other field can reach the file
+    day.w = day.w.map((r) => (Array.isArray(r) ? [r[0], r[1]] : [r && r.no, r && r.word]));
     for (const [key, hosts] of REEL_LINKS) {
       if (typeof s[key] !== "string" || !s[key]) continue;
       if (!reelLinkOk(s[key], hosts)) throw new Error("refusing to publish; day " + day.d + " has an invalid " + key + ": " + s[key]);
@@ -631,6 +646,263 @@ export function publicChallenge(state) {
     }
   });
   return out;
+}
+
+// --- Phase 5: the committed shape, strict checks, and the guards against the committed site --------------------------
+
+// The committed public/words.json: surahs from 114 down, each with exactly these keys in this order.
+export const SURAH_KEYS = ["surah", "words", "meanings", "ayahs", "source"];
+export const AYAH_KEYS = ["label", "segments"];
+export const SEGMENT_KEYS = ["num", "before", "hl", "after"];
+// Hard ceiling on the words one publish may remove, whatever --allow-removals says: 10% of the committed words.
+export const MAX_REMOVAL_SHARE = 0.1;
+
+export const surahNumber = (name) => SURAH_NO[shortSurah(name)];
+const isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
+
+// The strict shape of public/data's surah list (Firestore's, which may also carry "no", or the committed file's).
+// Messages name positions and field names only.
+export function validateShape(surahs) {
+  if (!Array.isArray(surahs) || !surahs.length) throw new Error("no surah data (empty input)");
+  const p = [];
+  if (surahs.length > 114) p.push("more than 114 surahs");
+  const seen = new Set();
+  surahs.forEach((s, i) => {
+    const at = "surah#" + i;
+    if (!isObj(s)) return p.push(at + ": not an object");
+    for (const k of Object.keys(s)) if (!SURAH_KEYS.includes(k) && k !== "no") p.push(at + ": unknown key " + JSON.stringify(k));
+    const no = typeof s.surah === "string" ? surahNumber(s.surah) : undefined;
+    if (!no) p.push(at + ": the surah name is not one of the known surahs");
+    else {
+      if (seen.has(no)) p.push(at + ": surah " + no + " appears twice");
+      seen.add(no);
+    }
+    if ("no" in s && (!Number.isInteger(s.no) || s.no < 1 || s.no > 114)) p.push(at + ": no is not a whole number from 1 to 114");
+    else if ("no" in s && no && s.no !== no) p.push(at + ": no (" + s.no + ") does not match the surah name (" + no + ")");
+    if (typeof s.source !== "string") p.push(at + ": source is not a string");
+    const lists = ["words", "meanings", "ayahs"];
+    for (const k of lists) if (!Array.isArray(s[k])) p.push(at + ": " + k + " is not a list");
+    if (!lists.every((k) => Array.isArray(s[k]))) return;
+    if (!s.words.length) p.push(at + ": no words");
+    if (s.words.length !== s.meanings.length || s.words.length !== s.ayahs.length) p.push(at + ": words, meanings and ayahs differ in length");
+    s.words.forEach((w, j) => { if (typeof w !== "string" || !w.trim()) p.push(at + " word#" + j + ": the word is not a non-empty string"); });
+    s.meanings.forEach((m, j) => { if (typeof m !== "string" || !m.trim()) p.push(at + " word#" + j + ": the meaning is not a non-empty string"); });
+    s.ayahs.forEach((a, j) => {
+      const aw = at + " ayah#" + j;
+      if (!isObj(a)) return p.push(aw + ": not an object");
+      for (const k of Object.keys(a)) if (!AYAH_KEYS.includes(k)) p.push(aw + ": unknown key " + JSON.stringify(k));
+      if (typeof a.label !== "string" || !AYAH_LABEL_RE.test(a.label)) p.push(aw + ": the label is not a number or a range");
+      if (!Array.isArray(a.segments) || !a.segments.length) return p.push(aw + ": segments is not a non-empty list");
+      a.segments.forEach((g, n) => {
+        const gw = aw + " segment#" + n;
+        if (!isObj(g)) return p.push(gw + ": not an object");
+        for (const k of Object.keys(g)) if (!SEGMENT_KEYS.includes(k)) p.push(gw + ": unknown key " + JSON.stringify(k));
+        if (!Number.isInteger(g.num)) p.push(gw + ": num is not a whole number");
+        for (const k of ["before", "after"]) if (typeof g[k] !== "string") p.push(gw + ": " + k + " is not a string");
+        if (typeof g.hl !== "string" || !g.hl) p.push(gw + ": hl is not a non-empty string");
+      });
+    });
+  });
+  if (p.length) throw new Error("refusing to publish; the data does not have the expected shape:\n" + p.join("\n"));
+}
+
+// Put the surah list in the committed shape: surahs from 114 down, keys in the committed order, no "no" field.
+// Every text value is copied exactly as it is; nothing is trimmed or normalised.
+export function normaliseSurahs(surahs) {
+  validateShape(surahs);
+  return surahs
+    .map((s) => ({ s, no: surahNumber(s.surah) }))
+    .sort((a, b) => b.no - a.no)
+    .map(({ s }) => ({
+      surah: s.surah,
+      words: s.words.slice(),
+      meanings: s.meanings.slice(),
+      ayahs: s.ayahs.map((a) => ({ label: a.label, segments: a.segments.map((g) => ({ num: g.num, before: g.before, hl: g.hl, after: g.after })) })),
+      source: s.source,
+    }));
+}
+
+// One entry per word, keyed by its page slug: the identity of a word on the site.
+export function wordIndex(surahs) {
+  const slugs = seo.buildSlugs(surahs.map((s) => ({ ...s, no: surahNumber(s.surah) })));
+  const out = new Map();
+  let k = 0;
+  surahs.forEach((s) => {
+    const no = surahNumber(s.surah);
+    s.words.forEach((w, i) => {
+      const slug = slugs[k++];
+      out.set(slug, { slug, no, i, id: no + "-" + i, surah: s.surah, word: w, meaning: s.meanings[i], ayah: s.ayahs[i], source: s.source });
+    });
+  });
+  return out;
+}
+
+// The large-removal guard. Removed words are counted against the committed site: the count must equal
+// allowRemovals exactly, it may never exceed 10% of the committed words, and a surah may disappear only when its
+// number is listed in allowSurahRemovals.
+export function guardRemovals(committed, next, opt = {}) {
+  const allow = opt.allowRemovals == null ? 0 : Number(opt.allowRemovals);
+  const allowSurahs = (opt.allowSurahRemovals || []).map(Number);
+  if (!Number.isInteger(allow) || allow < 0) throw new Error("refusing to publish: allow-removals must be a whole number, 0 or more");
+  const before = wordIndex(committed), after = wordIndex(next);
+  const removed = [...before.keys()].filter((s) => !after.has(s));
+  const added = [...after.keys()].filter((s) => !before.has(s));
+  const nosBefore = new Set(committed.map((s) => surahNumber(s.surah)));
+  const nosAfter = new Set(next.map((s) => surahNumber(s.surah)));
+  const removedSurahs = [...nosBefore].filter((n) => !nosAfter.has(n)).sort((a, b) => a - b);
+  const ceiling = Math.floor(before.size * MAX_REMOVAL_SHARE);
+  const p = [];
+  if (!after.size) p.push("the new data has no words");
+  if (removed.length > ceiling) p.push(removed.length + " words would be removed, more than the ceiling of " + ceiling + " (10% of " + before.size + "), whatever allow-removals says");
+  else if (removed.length !== allow) p.push(removed.length + " words would be removed (" + removed.join(", ") + ") but allow-removals is " + allow + "; it must match exactly");
+  const unlisted = removedSurahs.filter((n) => !allowSurahs.includes(n));
+  if (unlisted.length) p.push("surahs " + unlisted.join(", ") + " would be removed; list them in allow-surah-removals to allow it");
+  if (p.length) throw new Error("refusing to publish; removal guard:\n" + p.join("\n"));
+  return { removed, added, removedSurahs, before, after };
+}
+
+// The site's own word key (public/index.html, `k:norm(word)`): a challenge reference [no, key] names the word of surah
+// no whose key is exactly that. test/publish-build.test.js keeps this copy identical to the site's.
+export const siteWordKey = (s) =>
+  String(s)
+    .replace(/[\u0640\u064B-\u065F\u0670\u06D6-\u06ED]/g, "")
+    .replace(/[\u0623\u0625\u0622\u0671]/g, "\u0627")
+    .replace(/\u0649/g, "\u064A")
+    .replace(/\u0629/g, "\u0647")
+    .replace(/\u0624/g, "\u0648")
+    .replace(/\u0626/g, "\u064A")
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Challenge integrity: the days are numbered 1..N with N as committed, every word reference resolves to a word of the
+// new data, and the dates are null or valid. Messages name days and positions, never the words.
+export function checkChallenge(pub, surahs, committedChallenge) {
+  const p = [];
+  const bySurah = new Map(surahs.map((s) => [surahNumber(s.surah), new Set(s.words.map(siteWordKey))]));
+  const days = Array.isArray(pub && pub.days) ? pub.days : [];
+  const want = committedChallenge && Array.isArray(committedChallenge.days) ? committedChallenge.days.length : days.length;
+  if (days.length !== want) p.push("the challenge has " + days.length + " days, the site has " + want);
+  days.forEach((day, i) => {
+    if (day.d !== i + 1) p.push("day #" + (i + 1) + " is numbered " + JSON.stringify(day.d));
+    (day.w || []).forEach((r, k) => {
+      const set = bySurah.get(r[0]);
+      if (!set || !set.has(r[1])) p.push("day " + day.d + ": word reference " + (k + 1) + " (surah " + r[0] + ") is not a word of the new data");
+    });
+  });
+  if (pub.startDate != null && !(/^\d{4}-\d{2}-\d{2}$/.test(pub.startDate) && !isNaN(Date.parse(pub.startDate)))) p.push("startDate is not a date");
+  if (pub.releasedUpTo != null && !(Number.isInteger(pub.releasedUpTo) && pub.releasedUpTo >= 0 && pub.releasedUpTo <= days.length)) p.push("releasedUpTo is not a day number");
+  if (p.length) throw new Error("refusing to publish; challenge:\n" + p.join("\n"));
+}
+
+// The generated site must hang together: one page per word, and the sitemap lists exactly the generated pages.
+export function checkSiteFiles(files, wordCount) {
+  const p = [];
+  const pages = Object.keys(files).filter((f) => /^word\/[^/]+\.html$/.test(f));
+  if (pages.length !== wordCount) p.push(pages.length + " word pages for " + wordCount + " words");
+  const locs = [...String(files["sitemap.xml"] || "").matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1].replace(SITE, ""));
+  const fileOf = (u) => (u === "/" ? null : u.endsWith("/") ? u.slice(1) + "index.html" : u.slice(1));
+  for (const u of locs) { const f = fileOf(u); if (f && !(f in files)) p.push("the sitemap lists " + u + ", which is not generated"); }
+  const listed = new Set(locs.map(fileOf));
+  for (const f of Object.keys(files)) if (/^(word|surah)\/[^/]+\.html$/.test(f) && !listed.has(f)) p.push(f + " is not in the sitemap");
+  if (p.length) throw new Error("refusing to publish; generated site:\n" + p.join("\n"));
+}
+
+// The redirects for removed pages (owner decision D-4): a removed word page goes to its surah page, or to the home page
+// when the surah is gone too; a removed surah page goes to the home page. A redirect whose source is a live page again
+// is dropped, and one that pointed at a page removed now is pointed at that page's new destination.
+export function updateRedirects(redirects, { removedPages, livePages }) {
+  const out = [];
+  for (const r of redirects || []) {
+    if (livePages.has(r.source)) continue;
+    out.push(removedPages.has(r.destination) ? { ...r, destination: removedPages.get(r.destination) } : r);
+  }
+  const sources = new Set(out.map((r) => r.source));
+  for (const [source, destination] of removedPages) if (!sources.has(source)) out.push({ source, destination, type: 301 });
+  return out;
+}
+
+// Which share images to make again: new words, and words whose image inputs (the word, its surah, its ayah) changed.
+// The meaning is not on the image, so a meaning-only edit keeps the image as it is.
+export function imagesToMake(before, after) {
+  const key = (w) => JSON.stringify([w.surah, w.word, w.ayah]);
+  return [...after.values()].filter((w) => !before.has(w.slug) || key(before.get(w.slug)) !== key(w));
+}
+
+const GENERATED_DIRS = [["word", ".html"], ["surah", ".html"], ["og/word", ".png"]];
+
+// Phase 5 publish: update the site tree and the Hosting config in place. Returns a summary of file names and counts.
+export function publishToTree(input, opt) {
+  const site = path.resolve(opt.site);
+  const committed = JSON.parse(fs.readFileSync(path.join(site, "words.json"), "utf8"));
+  const committedChallenge = JSON.parse(fs.readFileSync(path.join(site, "challenge.json"), "utf8"));
+  const surahs = normaliseSurahs(input.surahs);
+  const g = guardRemovals(committed, surahs, opt);
+  const pub = publicChallenge(input.challenge);
+  checkChallenge(pub, surahs, committedChallenge);
+  const built = buildSite(surahs, input.challenge);
+  checkSiteFiles(built.files, built.wordCount);
+
+  // what changes in the tree
+  const write = Object.keys(built.files).filter((f) => {
+    const p = path.join(site, f);
+    return !fs.existsSync(p) || fs.readFileSync(p, "utf8") !== built.files[f];
+  });
+  const slugs = new Set(g.after.keys());
+  const remove = [];
+  for (const [dir, ext] of GENERATED_DIRS) {
+    const d = path.join(site, dir);
+    if (!fs.existsSync(d)) continue;
+    for (const f of fs.readdirSync(d)) {
+      if (!f.endsWith(ext)) continue;
+      const rel = dir + "/" + f;
+      const keep = dir === "og/word" ? slugs.has(f.slice(0, -ext.length)) : rel in built.files;
+      if (!keep) remove.push(rel);
+    }
+  }
+  remove.sort();
+  const surahSlugOf = new Map(built.surahs.map((s) => [s.no, s.slug]));
+  const removedPages = new Map();
+  for (const f of remove) {
+    if (f.startsWith("word/")) {
+      const was = g.before.get(f.slice(5, -5));
+      const to = was && surahSlugOf.get(was.no);
+      removedPages.set("/" + f, to ? "/surah/" + to + ".html" : "/");
+    } else if (f.startsWith("surah/")) removedPages.set("/" + f, "/");
+  }
+  const livePages = new Set(Object.keys(built.files).filter((f) => /^(word|surah)\//.test(f)).map((f) => "/" + f));
+  const fbPath = path.resolve(opt.firebaseJson);
+  const fbText = fs.readFileSync(fbPath, "utf8");
+  const fb = JSON.parse(fbText);
+  const redirects = updateRedirects(fb.hosting.redirects, { removedPages, livePages });
+  const redirectsChanged = JSON.stringify(redirects) !== JSON.stringify(fb.hosting.redirects || []);
+  const images = imagesToMake(g.before, g.after).map((w) => ({ slug: w.slug, id: w.id }));
+
+  const summary = {
+    changed: !!(write.length || remove.length || redirectsChanged || images.length),
+    rev: input.rev == null ? null : input.rev,
+    words: { before: g.before.size, after: g.after.size, added: g.added, removed: g.removed },
+    surahs: { before: committed.length, after: surahs.length, removed: g.removedSurahs },
+    write, remove, images: images.map((x) => x.slug),
+    redirects: { added: [...removedPages.keys()].filter((s) => !(fb.hosting.redirects || []).some((r) => r.source === s)), changed: redirectsChanged },
+  };
+  if (!summary.changed) return { summary, surahs, committed, pub, committedChallenge };
+
+  for (const f of remove) fs.rmSync(path.join(site, f));
+  writeSite(site, Object.fromEntries(write.map((f) => [f, built.files[f]])), null);
+  fs.writeFileSync(path.join(site, "rev.json"), JSON.stringify({ rev: summary.rev, hash: built.hash, words: built.wordCount }, null, 1) + "\n", "utf8");
+  summary.write.push("rev.json");
+  if (redirectsChanged) {
+    fb.hosting.redirects = redirects;
+    fs.writeFileSync(fbPath, JSON.stringify(fb, null, 2) + "\n", "utf8");
+  }
+  if (images.length && !opt.noImages) makeShareImages(site, images.map((x) => x.id));
+  return { summary, surahs, committed, pub, committedChallenge };
+}
+
+// The share images, made by scripts/gen-share-images.js in Chromium from the updated tree.
+export function makeShareImages(site, ids) {
+  const r = spawnSync(process.execPath, [path.join(ROOT, "scripts", "gen-share-images.js"), "--root", site, "--only", ids.join(",")], { encoding: "utf8", timeout: 600000 });
+  if (r.status !== 0) throw new Error("share images failed (exit " + r.status + ")\n" + String(r.stdout || "").slice(-2000) + String(r.stderr || "").slice(-2000));
 }
 
 // Build the whole site in memory. Returns { files, hash, wordCount }.
@@ -659,6 +931,7 @@ export function writeSite(outDir, files, meta) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, content, "utf8");
   }
+  if (!meta) return; // the publish mode writes its own rev.json
   const revJson = {
     rev: meta.rev == null ? null : meta.rev,
     hash: meta.hash,
@@ -674,7 +947,11 @@ function readJson(p) {
 }
 
 function parseArgs(argv) {
-  const args = {};
+  const args = { allowRemovals: 0, allowSurahRemovals: [] };
+  const num = (v, name) => {
+    if (!/^[0-9]+$/.test(String(v))) throw new Error(name + " must be a whole number, 0 or more");
+    return Number(v);
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--from-json") args.fromJson = argv[++i];
@@ -682,20 +959,35 @@ function parseArgs(argv) {
     else if (a === "--out") args.out = argv[++i];
     else if (a === "--current-url") args.currentUrl = argv[++i];
     else if (a === "--project") args.project = argv[++i];
+    else if (a === "--publish") args.publish = true;
+    else if (a === "--site") args.site = argv[++i];
+    else if (a === "--firebase-json") args.firebaseJson = argv[++i];
+    else if (a === "--report") args.report = argv[++i];
+    else if (a === "--summary") args.summary = argv[++i];
+    else if (a === "--no-images") args.noImages = true;
+    else if (a === "--allow-removals") args.allowRemovals = num(argv[++i], "--allow-removals");
+    else if (a === "--allow-surah-removals") args.allowSurahRemovals = String(argv[++i] || "").split(",").filter(Boolean).map((v) => num(v.trim(), "--allow-surah-removals"));
     else throw new Error("unknown argument: " + a);
   }
   return args;
 }
 
-async function loadFromFirestore(projectId) {
-  const admin = require("firebase-admin");
-  if (!admin.apps.length) admin.initializeApp(projectId ? { projectId } : undefined);
-  const db = admin.firestore();
-  const [dataSnap, chSnap] = await Promise.all([db.doc("public/data").get(), db.doc("public/challenge").get()]);
-  const d = dataSnap.exists ? dataSnap.data() : {};
-  const c = chSnap.exists ? chSnap.data() : {};
-  const surahs = Array.isArray(d.surahs) ? d.surahs : Array.isArray(d) ? d : [];
-  return { surahs, rev: d.rev == null ? null : d.rev, challenge: c };
+// Read-only: the two public documents and nothing else (never admin/challengeNotes). The Firestore client itself, not
+// admin.initializeApp(): firebase-admin 12 refuses the short-lived Workload Identity credential file, while the client
+// accepts it (see scripts/firestore-export.mjs). It also follows FIRESTORE_EMULATOR_HOST, which the tests use.
+export const READ_DOCS = ["public/data", "public/challenge"];
+export async function loadFromFirestore(projectId) {
+  const { Firestore } = require("firebase-admin").firestore;
+  const db = new Firestore(projectId ? { projectId } : {});
+  try {
+    const [dataSnap, chSnap] = await Promise.all(READ_DOCS.map((d) => db.doc(d).get()));
+    const d = dataSnap.exists ? dataSnap.data() : {};
+    const c = chSnap.exists ? chSnap.data() : {};
+    const surahs = Array.isArray(d.surahs) ? d.surahs : [];
+    return { surahs, rev: d.rev == null ? null : d.rev, challenge: c };
+  } finally {
+    await db.terminate();
+  }
 }
 
 async function fetchRev(url) {
@@ -710,7 +1002,7 @@ async function fetchRev(url) {
 
 export async function main(argv) {
   const args = parseArgs(argv);
-  if (!args.out) throw new Error("--out DIR is required");
+  if (!args.out && !args.publish) throw new Error("--out DIR or --publish is required");
 
   let surahs = null;
   let challengeState = null;
@@ -732,7 +1024,35 @@ export async function main(argv) {
     if (!challengeState) challengeState = loaded.challenge;
   }
 
+  if (args.publish) {
+    const site = args.site || path.join(ROOT, "public");
+    const res = publishToTree({ surahs, challenge: challengeState, rev }, {
+      site, firebaseJson: args.firebaseJson || path.join(ROOT, "firebase.json"), noImages: !!args.noImages,
+      allowRemovals: args.allowRemovals, allowSurahRemovals: args.allowSurahRemovals,
+    });
+    // file names and counts only: this goes to the (public) Actions log
+    if (args.summary) fs.writeFileSync(path.resolve(args.summary), JSON.stringify(res.summary, null, 1) + "\n", "utf8");
+    if (!res.summary.changed) {
+      console.log("publish-build: no-change");
+      return 0;
+    }
+    if (args.report) {
+      const { buildReport } = await import("./publish-report.mjs");
+      fs.writeFileSync(path.resolve(args.report), buildReport({ before: res.committed, after: res.surahs, beforeChallenge: res.committedChallenge, afterChallenge: res.pub, summary: res.summary }), "utf8");
+    }
+    const sm = res.summary;
+    console.log("publish-build: changed (rev " + sm.rev + "; words " + sm.words.before + " -> " + sm.words.after + "; " + sm.write.length + " written, " + sm.remove.length + " removed, " + sm.images.length + " share images)");
+    return 0;
+  }
+
+  // the --out mode puts the data in the committed shape and applies the same guards before building
+  const committedDir = path.join(ROOT, "public");
+  const committed = JSON.parse(fs.readFileSync(path.join(committedDir, "words.json"), "utf8"));
+  surahs = normaliseSurahs(surahs);
+  guardRemovals(committed, surahs, args);
+  checkChallenge(publicChallenge(challengeState), surahs, JSON.parse(fs.readFileSync(path.join(committedDir, "challenge.json"), "utf8")));
   const { files, hash, wordCount } = buildSite(surahs, challengeState);
+  checkSiteFiles(files, wordCount);
 
   if (args.currentUrl) {
     const live = await fetchRev(args.currentUrl);
