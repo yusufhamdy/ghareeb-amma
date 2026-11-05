@@ -61,6 +61,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
+          fetch-depth: 0 # test/quran-text.test.js reads words.json from history
           persist-credentials: false
 
       - name: Setup Node 20
@@ -108,6 +109,13 @@ jobs:
           rm -f gha-creds-*.json
           if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then rm -f "$GOOGLE_APPLICATION_CREDENTIALS"; fi
 
+      # The Arabic content guard (test/arabic-guard.test.js) compares every field with a committed fixture of SHA-256
+      # digests (no text). A publish changes reviewed content, so the fixture is rebuilt from it and goes into the same
+      # pull request, where its diff names every changed field by path. Any other pull request still meets the old one.
+      - name: Update the Arabic content baseline to the data being published
+        if: steps.build.outputs.changed == 'true'
+        run: node scripts/arabic-baseline.js
+
       - name: Nothing to publish
         if: steps.build.outputs.changed == 'false'
         run: echo "nothing to publish - the site already matches Firestore" >> "$GITHUB_STEP_SUMMARY"
@@ -144,8 +152,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898237+github-actions[bot]@users.noreply.github.com"
           git checkout -B publish/next
-          # only the generated site and its redirects; anything else in the tree is not part of a publish
-          git add -A public firebase.json
+          # only the generated site, its redirects and the content baseline; anything else in the tree is not part of a publish
+          git add -A public firebase.json test/fixtures/arabic-baseline.json
           if git diff --cached --quiet; then echo "nothing to publish"; exit 0; fi
           git commit -q -m "Publish: Firestore rev $REV"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" publish/next

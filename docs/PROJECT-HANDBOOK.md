@@ -163,15 +163,29 @@ Every path below is readable by admins only; the public site never reads Firesto
   `words.json` and `challenge.json` as committed. They last changed in `3731447` (2026-10-30). Live hashes on
   2026-11-05: `words.json` `06928b7bc6dc700c`, `challenge.json` `5010809535cfb246` (first 16 hex of SHA-256), the same
   as `main`.
-- **The Firestore-to-site generator exists but is turned off.** `scripts/publish-build.mjs` turns `public/data` and
-  `public/challenge` into `words.json`, `challenge.json`, `sitemap.xml`, `word/<slug>.html`, the legal pages and
-  `rev.json`. It refuses to output anything on empty data, fewer than 73 words or any invalid word. `publish.yml` would
-  run it every 15 minutes and deploy, but only when the repository variable `PUBLISH_ENABLED` is `true`; it is `false`,
-  and its recent runs are all `skipped`. So **an admin save does not reach the public site** until someone publishes.
-  The admin's own message says a change appears "after the next publish". The safe publish design is Phase 5
-  (section 13).
-- **Hazard if publishing is ever re-enabled as it is:** `release.yml` deploys the committed JSON, so a Release after a
-  publish would put the older committed data back live. Phase 5 replaces this with one path: publish opens a PR.
+- **An admin save does not reach the public site by itself.** It reaches it only through a publish pull request
+  that the owner reviews and merges (Phase 5, runbook 10.4). The admin's own message says a change appears "after the
+  next publish".
+- **The generator:** `scripts/publish-build.mjs --publish` turns `public/data` and `public/challenge` into the site:
+  `words.json`, `challenge.json`, `sitemap.xml`, `word/<slug>.html`, `surah/<slug>.html`, the legal pages, the share
+  images and `rev.json`.
+  - It reads only those two documents, read-only, with the Firestore client, so it works under Workload Identity.
+  - It puts the data in the committed shape: surahs from 114 down, the committed key order, no `no` field, and challenge
+    references as `[no, word]`. Text is copied exactly.
+- **Its safeguards** (any failure stops it, with nothing written):
+  - **strict shape:** no unknown keys, types and lengths checked, label format;
+  - **removal guard:** checked against the committed `words.json`. The number of removed words must equal
+    `allow_removals` exactly, never more than 10% of the words (7 of 73), and a removed surah must be listed;
+  - **challenge integrity:** the same number of days, and every reference resolves under the site's own word key;
+  - **stale files:** word and surah pages, share images and sitemap entries that no longer exist are deleted. Each
+    removed page gets a 301 in `firebase.json`, to its surah page, or to `/` when the surah is gone too (decision D-4);
+  - **private notes:** `admin/challengeNotes` is never read.
+  - There is no Quran-text gate (decision SEC-2). The report shows every changed field.
+- **Share images:** a word's share image is made again only when its word, surah or ayah changes. The image does not
+  show the meaning, so a meaning-only edit keeps the image as it is.
+- **`rev.json`** is `{rev, hash, words}`, with no time in it, so two builds of the same `rev` are identical.
+- **Release is the only deploy path,** and it deploys the committed `public/`. So there is no race between a publish and
+  a Release.
 
 ## 5. Admin panel (`public/admin/index.html`)
 
@@ -258,7 +272,7 @@ How they are tested:
 | `.github/workflows/ci.yml` | CI | `pull_request` (all), and push to branch `rebuild` | Node 20, Java 21, `npm ci`, Playwright Chromium; `npm test`; `node scripts/ci/checks.mjs`; `pwsh scripts/check-private.ps1`; `npm run rules:test`; `npm run client:verify` | nothing |
 | `.github/workflows/release.yml` | Release | push to `main` | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` | **Hosting only** (never rules) |
 | `.github/workflows/backup.yml` | Backup | daily cron `17 3 * * *` (03:17 UTC) and manual | Section 8 | nothing (writes the backups repo) |
-| `.github/workflows/publish.yml` | Publish (free plan) | cron every 15 min and manual | Section 4.2; skipped unless `PUBLISH_ENABLED` is `true` (it is `false`) | Hosting (when enabled) |
+| `.github/workflows/publish.yml` | Publish | manual only (`workflow_dispatch` on `main`), inputs `allow_removals` and `removed_surahs`; runs only when `PUBLISH_ENABLED` is `true` | Signs in as `ghareeb-backup` (read-only); `publish-build.mjs --publish` (section 4.2); `npm test`, rules tests, CSP check, `checks.mjs`, `check-private`; then force-updates `publish/next` and opens or updates one PR "Publish: Firestore rev N" with the review report. Concurrency group `publish`, so runs never overlap | **nothing** (no deploy, no Firestore write) |
 
 - **CI does not run on `main`.** On `main`, Release runs the full test suite before deploying.
 - **No preview workflow.** Previews are deployed from a developer machine with the CLI (runbook 10.2). The old
@@ -266,6 +280,16 @@ How they are tested:
   required a `push` or `pull_request` event), and the secret it needed, `FIREBASE_SERVICE_ACCOUNT`, does not exist.
 - `.github/workflows/README.md` is from the rebuild and out of date (it says Release deploys rules and Functions; it
   does not).
+- **Publish PRs don't start CI.** A PR opened with `GITHUB_TOKEN` does not trigger `ci.yml`. So the Publish job runs
+  the same checks before it opens the PR, and Release runs `npm test` again before deploying. `main` has no required
+  status checks.
+- **Publish permissions:**
+  - `contents: write` to push `publish/next`;
+  - `pull-requests: write` to open or update the PR;
+  - `id-token: write` for the Workload Identity sign-in.
+
+  Opening the PR also needs the repository setting "Allow GitHub Actions to create and approve pull requests"
+  (runbook 10.4). Approving and merging stay with the owner.
 - All actions are pinned to commit SHAs. Runners are `ubuntu-24.04`.
 
 Repository secrets (names only): `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `BACKUP_DEPLOY_KEY`.
@@ -282,8 +306,8 @@ Repository variables: `BACKUP_AGE_RECIPIENT` (the age public key), `BACKUP_REPO`
 
 | Account | Project roles | Who can act as it | Used by |
 |---|---|---|---|
-| `ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com` | `roles/datastore.viewer`, `roles/firebasehosting.admin` | `roles/iam.workloadIdentityUser` for `principalSet://.../workloadIdentityPools/github/attribute.repository/yusufhamdy/ghareeb-amma` | Release and Publish (through the secret `WIF_SERVICE_ACCOUNT`) |
-| `ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com` | `roles/datastore.viewer` only | the same principal set | Backup (named directly in `backup.yml`) |
+| `ghareeb-publish@ghareebalquran-d9ae5.iam.gserviceaccount.com` | `roles/datastore.viewer`, `roles/firebasehosting.admin` | `roles/iam.workloadIdentityUser` for `principalSet://.../workloadIdentityPools/github/attribute.repository/yusufhamdy/ghareeb-amma` | Release (through the secret `WIF_SERVICE_ACCOUNT`). Its `datastore.viewer` role is no longer needed, since Release reads no Firestore; removing it is an optional owner step |
+| `ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com` | `roles/datastore.viewer` only | the same principal set | Backup and Publish (named directly in `backup.yml` and `publish.yml`) |
 | `firebase-adminsdk-fbsvc@ghareebalquran-d9ae5.iam.gserviceaccount.com` | `roles/firebase.sdkAdminServiceAgent`, `roles/firebaseauth.admin`, `roles/iam.serviceAccountTokenCreator` | not bound to the pool | Firebase's default Admin SDK account; not used by any workflow |
 
 Google-managed service agents also hold roles (`firebase.managementServiceAgent`, `firebaserules.system`,
@@ -441,9 +465,41 @@ checks.
 
 ### 10.4 Publishing words from Firestore
 
-Disabled (`PUBLISH_ENABLED=false`) until Phase 5. Do not enable it without the owner. Until then, the published JSON
-changes only by committing new `public/words.json` / `public/challenge.json` and the generated pages through a reviewed
-PR. **Never change Quran text, meanings, sources, headwords or the word list yourself (section 11).**
+The owner publishes. An agent never runs Publish or merges a publish PR without the owner's approval for that step.
+**Never change Quran text, meanings, sources, headwords or the word list yourself (section 11).**
+
+**One-time setup (owner):**
+1. Settings > Actions > General > Workflow permissions: tick **"Allow GitHub Actions to create and approve pull
+   requests"** and save. Leave the default token permission as it is ("Read repository contents and packages
+   permissions"): the workflow asks for the write permissions it needs.
+2. Settings > Secrets and variables > Actions > Variables: set `PUBLISH_ENABLED` to `true`. Set it back to `false` to
+   turn Publish off.
+
+**Each publish:**
+1. Make the edits in `/admin/`.
+2. Actions > **Publish** > Run workflow, on branch `main`.
+   - `allow_removals`: `0`, unless words were deleted on purpose. Then enter exactly how many.
+   - `removed_surahs`: empty, unless a whole surah was deleted on purpose. Then enter its number.
+3. **If the run says "nothing to publish",** the site already matches Firestore and nothing more happens.
+4. **If it fails,** read the failing step:
+   - the removal guard or challenge integrity names the counts, days, slugs or surah numbers involved;
+   - a test failure means the data would break the site.
+
+   Nothing is pushed or opened on a failure.
+5. **Otherwise it opens or updates the PR "Publish: Firestore rev N".** Its description lists, per surah, every word
+   added, removed or changed, with each changed field before and after. The Files tab shows the diff. Check that it is
+   exactly what you meant to publish.
+6. **Merge the PR** (squash). Release tests it and deploys it.
+   - To include edits made after the run, run Publish again: it updates the same PR to the newer rev.
+   - To drop a publish, close the PR.
+
+**Rollback:**
+- Revert the publish PR's merge commit with a new PR. Release deploys the previous files.
+- For an immediate fix, roll Hosting back first (runbook 10.8).
+- Publish never writes to Firestore, so there is nothing to undo there.
+
+**Locally, against the emulator:** `test/publish-emulator.test.js` (in `npm test`). For a backup export,
+`scripts/checks/publish-emulator.mjs --export <folder>` (see `scripts/checks/README.md`).
 
 ### 10.5 Firestore rules deploy (owner)
 
@@ -537,8 +593,9 @@ IDs come from the local audit and plan (`scripts/checks/out/admin-audit/REPORT.m
 
 | ID | Issue | Status |
 |---|---|---|
-| Phase 5 (F-5, F-16, F-22) | Safe publishing: a manual publish that opens a PR with a report, whole-site validation, a large-removal guard, stale pages removed; remove the 15-minute schedule | Not started; `PUBLISH_ENABLED=false` |
-| — | One admin edit in Firestore is not published (section 4.1) | Waits for Phase 5 or a reviewed manual publish |
+| Phase 5 (F-5, F-16, F-22) | Safe publishing: a manual publish that opens a PR with a report, whole-site validation, a large-removal guard, stale pages removed; the 15-minute schedule removed | Built (PR #18: generator, safeguards, tests T-30 to T-38; PR 2: workflow). Waiting for the owner's setup and first run (runbook 10.4); `PUBLISH_ENABLED=false` |
+| — | One admin edit in Firestore is not published (section 4.1). An emulator run from the 2026-11-01 export shows the first publish would be exactly that one meaning: `words.json`, one word page and `rev.json` | Waits for the first Publish run |
+| — | Tests assert 28 surahs and 30 challenge days in several places. A publish that removes a whole surah fails `npm test` until those read the counts from the data. Word counts are read from `words.json` | Open, low (removing a surah is rare) |
 | — | Nav click guard: `endT` starts at 0, so every nav click in a page's first 450 ms is dropped (`public/index.html:1003`) | Known, minor, not fixed |
 | SEC-5 | The admin loads the Firebase SDK from gstatic with no integrity check (dynamic `import()` can't carry SRI) | Open; plan: self-host under `/admin/vendor/` and drop gstatic from the CSP |
 | SEC-6 / F-8 | The admin session never ends (persistent login, no idle timeout) | Open (Phase 6) |
@@ -573,7 +630,7 @@ IDs come from the local audit and plan (`scripts/checks/out/admin-audit/REPORT.m
 | Three-way merge | `WordMerge.merge(base, mine, theirs)`: per-field merge on save |
 | Conflict picker | The admin window that asks, per field, which version to keep when both changed |
 | `canon` | Key-sorted JSON used to compare values whatever order their map keys arrive in |
-| Publish | Turning Firestore data into the public JSON and pages (`scripts/publish-build.mjs`); disabled today |
+| Publish | Turning Firestore data into the public JSON and pages (`scripts/publish-build.mjs --publish`, run by `publish.yml`), delivered as a PR the owner merges (runbook 10.4) |
 | Release | `release.yml`: tests and deploys `main` to live Hosting |
 | Preview channel | The Hosting channel `preview`; uses production Firestore |
 | Live channel | The production Hosting channel |

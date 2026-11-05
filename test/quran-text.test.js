@@ -116,9 +116,20 @@ test("the static word pages show the same segments, and they pass", async () => 
 });
 
 const BYTES = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "ayat-bytes-2026-10-28.json"), "utf8"));
+// The two tests below prove history: what the 2026-10-27 corrections and the 2026-10-28 byte rewrite changed. They
+// check it on words.json as it was right after them (BYTES.afterSha256; committed in 3731447), not on the current file,
+// which a reviewed publish may change since. While the current file is still that file, it is used as it is; otherwise
+// the file is read from git history (CI checks out the full history). Either way its hash must be afterSha256, and a
+// missing commit fails the test: it never skips.
+const AFTER_RAW = sha(WORDS_RAW) === BYTES.afterSha256 ? WORDS_RAW : require("child_process").execFileSync("git", ["show", "3731447:public/words.json"], { cwd: ROOT, encoding: "utf8" });
+const AFTER = JSON.parse(AFTER_RAW);
+test("the history tests read words.json as it was right after the 2026-10-28 rewrite", () => {
+  assert.strictEqual(sha(AFTER_RAW), BYTES.afterSha256, "the file the history tests read is the one the fixture names");
+});
+
 // words.json as it was before the 2026-10-28 rewrite to the official bytes
 function beforeBytes() {
-  const old = JSON.parse(WORDS_RAW);
+  const old = JSON.parse(AFTER_RAW);
   for (const f of BYTES.fields) old[f.si].ayahs[f.ai].segments[f.gi][f.field] = f.from;
   return old;
 }
@@ -126,7 +137,7 @@ function beforeBytes() {
 test("the rewrite to the official bytes changed only segment fields, each to the same text in other bytes", () => {
   assert.ok(BYTES.fields.length > 0);
   for (const f of BYTES.fields) {
-    const e = WORDS[f.si], g = e.ayahs[f.ai].segments[f.gi];
+    const e = AFTER[f.si], g = e.ayahs[f.ai].segments[f.gi];
     assert.strictEqual(quran.surahNumber(e.surah), f.surah);
     assert.strictEqual(g.num, f.num);
     assert.ok(["before", "hl", "after"].includes(f.field));
@@ -143,7 +154,7 @@ test("the ayah corrections changed only the listed fields, to the official text"
   const fx = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "ayat-fix-2026-10-27.json"), "utf8"));
   const old = beforeBytes();
   for (const f of fx.fields) {
-    const e = WORDS[f.si], g = e.ayahs[f.ai].segments[f.gi];
+    const e = AFTER[f.si], g = e.ayahs[f.ai].segments[f.gi];
     assert.strictEqual(quran.surahNumber(e.surah), f.surah, "fixture entry points at surah " + f.surah);
     assert.strictEqual(g.num, f.num);
     assert.notStrictEqual(g[f.field], f.from, f.surah + ":" + f.num + " " + f.field + " was corrected");
