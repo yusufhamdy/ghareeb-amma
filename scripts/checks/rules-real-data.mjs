@@ -7,10 +7,10 @@
 //    public/data alone is refused (a save must record itself), and the same words saved with their records pass: the first
 //    save after release, its baseline holding these exact bytes (production still holds an address as "by", which the
 //    owner can no longer write back - checked as refused).
-// 2. Runs scripts/fix-ayat-firestore.mjs --apply --confirm against the emulator (project demo-ghareeb), checks it made
-//    the 9 listed text corrections (plus the encoding-only rewrites to the official bytes) and that a second
-//    --dry-run finds 0; then, as the owner, writes public/data and
-//    public/prev back unchanged again.
+// 2. Runs scripts/fix-ayat-firestore.mjs --apply --confirm against the emulator (project demo-ghareeb). The 9 listed
+//    corrections are already in the real data, so the run must be an idempotent no-op: 0 corrections, nothing written
+//    (every document keeps its update time), the same rev and the same history and snapshot counts; any write or rev bump
+//    fails. A second --dry-run also finds 0. Then, as the owner, writes public/data and public/prev back unchanged again.
 // 3. The real admin page (public/admin/index.html, Firebase SDK pointed at the emulators, owner signed in) on the
 //    corrected documents: a save that edits one meaning (with its baseline), a restore, a challenge save and a note save.
 // Prints every write with "allowed" or "DENIED" and the error; exit 1 if anything that must be allowed was denied.
@@ -89,6 +89,9 @@ for (const k of ["public/data", "public/prev", "public/challenge"]) { let refuse
 console.log("\n== 2. fix-ayat-firestore.mjs --apply --confirm against the emulator (project " + PROJECT + ") ==");
 await seed(DOCS);
 const run = (args) => spawnSync(process.execPath, [path.join(REPO, "scripts/fix-ayat-firestore.mjs"), ...args, "--project", PROJECT], { cwd: REPO, env: Object.assign({}, process.env, { GHAREEB_OWNER_UID: OWNER_UID }), encoding: "utf8" });
+// the state before, read through the emulator REST API as its admin ("Bearer owner"): every document's update time, and the history and snapshot counts
+const state = async () => { const o = {}, api = "http://" + FSH + "/v1/projects/" + PROJECT + "/databases/(default)/documents/", get = async (p) => (await fetch(api + p, { headers: { Authorization: "Bearer owner" } })).json(); for (const k of Object.keys(DOCS)) { const r = await get(k); o[k] = r.updateTime || null; } for (const col of ["history", "snapshots"]) o[col] = ((await get(col + "?pageSize=300")).documents || []).length; return o; };
+const stBefore = await state();
 const ap = run(["--apply", "--confirm"]);
 const apOut = ap.stdout + ap.stderr;
 const nFix = (apOut.match(/== corrections \((\d+)\) ==/) || [])[1];
@@ -97,14 +100,17 @@ console.log("  apply: exit " + ap.status + ", corrections " + nFix + " (" + kind
 const dr = run(["--dry-run"]), drOut = dr.stdout + dr.stderr;
 const nAfter = (drOut.match(/== corrections \((\d+)\) ==/) || [])[1], same = (drOut.match(/public\/words\.json, ayah text: ([^=]+) ==/) || [])[1];
 console.log("  dry run after: exit " + dr.status + ", corrections " + nAfter + ", vs public/words.json: " + (same || "").trim());
-if (ap.status !== 0 || !(Number(nFix) > 0) || !/: 9 text corrections,/.test(kinds) || dr.status !== 0 || nAfter !== "0") { bad++; console.log(apOut + "\n" + drOut); }
+if (ap.status !== 0 || nFix !== "0" || !/: 0 text corrections, 0 encoding only/.test(kinds) || !/fix-ayat-firestore: nothing to correct\./.test(apOut) || dr.status !== 0 || nAfter !== "0" || (same || "").trim() !== "identical") { bad++; console.log("  <- WRONG: expected 0 corrections and nothing written"); }
+const stAfter = await state(), moved = Object.keys(stBefore).filter((k) => stBefore[k] !== stAfter[k]);
+console.log("  no-op: " + (moved.length ? "CHANGED " + moved.join(", ") + "  <- WRONG" : "no document rewritten, history " + stAfter.history + " and snapshots " + stAfter.snapshots + " unchanged"));
+if (moved.length) bad++;
 const fixed = { "public/data": await raw("public/data"), "public/prev": await raw("public/prev") };
-console.log("  public/data after: rev " + fixed["public/data"].rev + ", by " + JSON.stringify(fixed["public/data"].by) + ", keys " + Object.keys(fixed["public/data"]).sort().join(","));
+console.log("  public/data after: rev " + fixed["public/data"].rev + " (before " + DOCS["public/data"].rev + "), keys " + Object.keys(fixed["public/data"]).sort().join(","));
 console.log("  public/prev after: rev " + fixed["public/prev"].rev + ", keys " + Object.keys(fixed["public/prev"]).sort().join(","));
-if (fixed["public/data"].by !== OWNER_UID) { bad++; console.log("  by is not the owner's uid"); }
+if (fixed["public/data"].rev !== DOCS["public/data"].rev || fixed["public/prev"].rev !== DOCS["public/prev"].rev) { bad++; console.log("  a rev changed  <- WRONG"); }
 { // the run log next to the backup
   const lf = (apOut.match(/^log: (.+)$/m) || [])[1], lg = lf ? JSON.parse(fs.readFileSync(path.join(REPO, lf.trim()), "utf8")) : null;
-  const ok = lg && lg.mode === "apply" && lg.result === "written" && lg.corrections.length === Number(nFix) && lg.corrections.filter((c) => c.kind === "text").length === 9 && lg.revBefore === DOCS["public/data"].rev && lg.revAfter === DOCS["public/data"].rev + 1;
+  const ok = lg && lg.mode === "apply" && lg.result === "nothing to correct" && lg.corrections.length === 0 && lg.revBefore === DOCS["public/data"].rev && lg.revAfter == null;
   console.log("  run log " + (lf || "(none)").trim() + ": " + (lg ? lg.time + ", " + lg.target + ", rev " + lg.revBefore + " -> " + lg.revAfter + ", " + lg.corrections.length + " corrections: " + lg.corrections.map((c) => c.surah + ":" + c.ayah + " " + c.field).join(", ") + ", " + lg.result : "missing") + (ok ? "" : "  <- WRONG"));
   if (!ok) bad++;
 }

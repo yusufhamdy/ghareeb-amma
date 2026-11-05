@@ -34,6 +34,9 @@ const SEED = { data: (await db.doc("public/data").get()).data(), ch: (await db.d
 if (!SEED.data || !SEED.ch) { console.error("not seeded: run scripts/seed-emulator.js first"); process.exit(1); }
 async function reset() {
   for (const d of ["public/data", "public/challenge", "public/prev", "admin/challengeNotes", "config/admins"]) await db.doc(d).delete();
+  // saves record history/ and snapshots/ rows (rules allow create only): clear them too, or a later section's save from rev 1
+  // would try to create a row that already exists and be refused
+  for (const c of ["history", "snapshots"]) for (const x of (await db.collection(c).get()).docs) await x.ref.delete();
   await db.doc("public/data").set(SEED.data); await db.doc("public/challenge").set(SEED.ch);
   await db.doc("admin/challengeNotes").set(NOTES); await db.doc("config/admins").set({ emails: [HELPER] });
 }
@@ -50,6 +53,9 @@ const WRAP = {
 const CONFIG = 'window.FIREBASE_CONFIG={apiKey:"demo-key",authDomain:"demo-ghareeb.firebaseapp.com",projectId:"demo-ghareeb",appId:"1:1:web:1"};';
 
 const R = {}, fails = [], leaks = [], pageErrors = [], natives = [];
+// Pages allowed to leave past the admin's unsaved-edits prompt (PR #10, UX-1). Set only around the two-tab reload; every
+// other dialog, and this prompt at any other moment, is still dismissed and counted as a native dialog.
+const leaveOK = new Set(), leavePrompts = [];
 const SEARCH_WAIT = 400; // the admin filters the word list 180 ms after the last keystroke (PR #10, UX-6)
 const check = (id, ok, detail) => { R[id] = { ok: !!ok, detail }; if (!ok) fails.push(id + ": " + JSON.stringify(detail).slice(0, 500)); console.log((ok ? "  ok   " : "  FAIL ") + id + (ok ? "" : " " + JSON.stringify(detail).slice(0, 300))); };
 const { server, base } = await serve(undefined, { liveFirebase: true });
@@ -71,7 +77,10 @@ const shot = async (p, name) => { const f = path.join(OUT, name + ".png"); await
 async function page(ctx, tag, signInAs) {
   const p = await ctx.newPage();
   p.on("pageerror", (e) => pageErrors.push(tag + ": " + e.message));
-  p.on("dialog", (d) => { natives.push(tag + " " + d.type() + ": " + d.message()); d.dismiss().catch(() => {}); });
+  p.on("dialog", (d) => {
+    if (d.type() === "beforeunload" && leaveOK.has(p)) { leavePrompts.push(tag); d.accept().catch(() => {}); return; }
+    natives.push(tag + " " + d.type() + ": " + d.message()); d.dismiss().catch(() => {});
+  });
   await p.goto(base + "/admin/index.html");
   await p.waitForFunction(() => typeof FB !== "undefined" && FB.auth && READY, null, { timeout: 30000 });
   if (signInAs) await signIn(p, signInAs);
@@ -296,7 +305,12 @@ try {
     check("M1 typed settings stay in the fields after a day save", (await b.inputValue('[data-f="m.releasedUpTo"]')) === "99", await b.inputValue('[data-f="m.releasedUpTo"]'));
     check("M3 day save message is true", (await toastText(b)) === "تم حفظ اليوم، وسيظهر على الموقع بعد النشر التالي.", await toastText(b));
     // the same day in both tabs: a conflict keeps the window and the edit, and retry saves it
-    await a.reload(); await b.reload(); for (const q of [a, b]) { await q.waitForSelector('[data-a="tab"]', { timeout: 20000 }); await tab(q, "c"); }
+    // B still holds typed settings it never saved, so since PR #10 (UX-1) leaving it asks first: accept that prompt for this
+    // reload only, as the owner would to start over.
+    leaveOK.add(a); leaveOK.add(b);
+    try { await a.reload(); await b.reload(); } finally { leaveOK.clear(); }
+    console.log("  (leave-page prompts accepted for the two-tab reload: " + leavePrompts.length + ")");
+    for (const q of [a, b]) { await q.waitForSelector('[data-a="tab"]', { timeout: 20000 }); await tab(q, "c"); }
     await a.click('[data-a="chDay"][data-v="3"]'); await b.click('[data-a="chDay"][data-v="3"]');
     await a.fill('[data-f="c.reelYt"]', "https://youtu.be/A"); await a.click('[data-a="chSaveDay"]'); await a.waitForTimeout(1500);
     await b.fill('[data-f="c.reelYt"]', "https://youtu.be/B"); await b.click('[data-a="chSaveDay"]'); await b.waitForTimeout(1500);
@@ -313,12 +327,15 @@ try {
     // B opens the word, then A saves a change to it, then B saves
     await b.click('[data-a="editW"][data-v="0.0"]'); await b.waitForSelector("#md .mb");
     await a.click('[data-a="editW"][data-v="0.0"]'); await a.fill('[data-f="e.m"]', "معنى ثالث من التبويب الأول"); await a.click('[data-a="saveW"]'); await a.waitForTimeout(1500);
-    await b.fill('[data-f="e.m"]', "معنى يتعارض"); await b.click('[data-a="saveW"]'); await b.waitForTimeout(1500);
-    const c2 = await b.evaluate(() => ({ open: !!document.querySelector("#md .mb"), err: (document.querySelector("#md .werr") || {}).textContent || "", retry: !!document.querySelector('#md [data-a="retry"]'), val: (document.querySelector('[data-f="e.m"]') || {}).value }));
+    const WB = "معنى يتعارض"; // B's edit
+    await b.fill('[data-f="e.m"]', WB); await b.click('[data-a="saveW"]'); await b.waitForTimeout(1500);
+    // since 44da0b7 (three-way merge) the same field changed in both tabs opens a per-field picker in B's window, not an
+    // error with retry: B's edit is kept as one of the two choices, and saving with it chosen stores it
+    const c2 = await b.evaluate((wb) => { const mine = document.querySelector('#md input[data-f="cf.meaning"][value="mine"]'); return { open: !!document.querySelector("#md .mb"), picker: !!document.querySelector("#md fieldset.cf"), mineIsB: !!mine && mine.closest("label").textContent.includes(wb) }; }, JSON.parse(JSON.stringify(WB)));
     await shot(b, "s7-word-conflict");
-    await b.click('#md [data-a="retry"]'); await b.waitForTimeout(1500);
+    if (c2.picker) { await b.click('#md label.cfo:has(input[data-f="cf.meaning"][value="mine"])'); await b.click('#md [data-a="saveC"]'); await b.waitForTimeout(1500); }
     d = await readData();
-    check("S7 word conflict keeps the edit and retry saves it", c2.open && c2.retry && c2.val === "معنى يتعارض" && d.surahs[0].meanings[0] === "معنى يتعارض", c2);
+    check("S7 word conflict keeps the edit and saving B's choice stores it", c2.open && c2.picker && c2.mineIsB && d.surahs[0].meanings[0] === WB && !(await winOpen(b)), c2);
     // L3: sign-out in another tab closes a clean window; a window with edits asks first
     await tab(b, "c"); await b.click('[data-a="chDay"][data-v="5"]'); await b.waitForSelector("#md .mb");
     await a.click('[data-a="out"]'); await b.waitForTimeout(1500);
@@ -382,10 +399,11 @@ try {
     await reset();
     const ctx = await ctxFor(1440);
     const p = await page(ctx, "refs", OWNER);
-    await tab(p, "w"); await p.fill('[data-f="fq"]', "الصمد"); await p.waitForTimeout(150);
+    await tab(p, "w"); await p.fill('[data-f="fq"]', "الصمد"); await p.waitForTimeout(SEARCH_WAIT);
     await p.click('[data-a="delW"]'); await p.waitForSelector("#cd.open");
     const dw = await dlg(p); await p.click('#cd [data-cd="no"]');
-    check("S5/S6 delete word prompt: names it, says what happens, lists the days", dw.title === "حذف الكلمة «الصَّمَدُ»؟" && dw.body.includes("اليوم 2") && dw.body.includes("التراجع"), dw);
+    // since ab2ef6c a deletion is undone from the version history, not an undo button: the prompt points there
+    check("S5/S6 delete word prompt: names it, says what happens, lists the days", dw.title === "حذف الكلمة «الصَّمَدُ»؟" && dw.body.includes("اليوم 2") && dw.body.includes("سجل النسخ"), dw);
     await p.click('[data-a="editW"]'); await p.fill('[data-f="e.w"]', "الصمد2"); await p.click('[data-a="saveW"]'); await p.waitForTimeout(300);
     const rn = await dlg(p); await shot(p, "s6-rename-warning"); if (rn) await p.click('#cd [data-cd="no"]');
     check("S6 renaming a word used by a day warns and lists the days", !!rn && rn.body.includes("اليوم 2") && (await readData()).surahs.some((s) => s.words.includes("الصَّمَدُ")), rn);
