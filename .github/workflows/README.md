@@ -1,5 +1,8 @@
 # GitHub Actions (Phase 5B T6)
 
+> **Out of date.** This page describes the workflows as planned during the rebuild. For what runs now, see section 7 of
+> [docs/PROJECT-HANDBOOK.md](../../docs/PROJECT-HANDBOOK.md).
+
 Prepared only. Nothing here is pushed or enabled yet.
 
 ## Workflows

@@ -53,7 +53,7 @@ Tracked top-level entries (from `git ls-files`). Folders that exist only on a de
 | `firestore.rules` | The Firestore security rules (section 6). |
 | `.firebaserc` | Default project `ghareebalquran-d9ae5`. |
 | `package.json`, `package-lock.json` | Dependencies and the npm scripts (section 9). |
-| `.github/workflows/` | `ci.yml`, `release.yml`, `backup.yml`, `preview.yml`, `publish.yml`, and a `README.md` that is out of date (section 7). |
+| `.github/workflows/` | `ci.yml`, `release.yml`, `backup.yml`, `publish.yml`, and a `README.md` that is out of date (section 7). |
 | `scripts/` | Build, release, data and backup scripts (listed in sections 7 to 10). |
 | `scripts/checks/` | Browser and emulator checks, mostly run by the tests; `README.md` lists them. `vendor/firebasejs-10.14.1/` is the hash-pinned SDK copy used by the tests. |
 | `scripts/ci/checks.mjs` | Static checks run in CI: fonts, redirects, sitemap, secret patterns. |
@@ -214,11 +214,10 @@ Every path below is readable by admins only; the public site never reads Firesto
 - **The 20-lookup rules limit:** Firestore allows at most 20 document lookups (`get`, `exists`, `getAfter`,
   `existsAfter`) per rules evaluation of a transaction. The rules bind repeated lookups with `let` to stay under it,
   and `test/rules-history.test.js` (test "baseline: passes for the listed admin on the real words, within the limit on
-  document lookups") proves a non-owner admin's first save, with its baseline, is accepted. **UNVERIFIED:** the exact
-  counts "owner first save 13, non-owner 18" are not recorded anywhere in the repo or the local reports. The local
-  remediation plan (`scripts/checks/out/remediation-plan/PLAN.md`, F-7) estimates "17 raw" for the owner and "about 18"
-  for a non-owner after the `let` binding, and calls the latter an inference. The emulator merges repeated lookups,
-  so it can't settle the exact number either.
+  document lookups") proves a non-owner admin's first save, with its baseline, is accepted. The exact counts have not
+  been measured. The local remediation plan (`scripts/checks/out/remediation-plan/PLAN.md`, F-7) estimates "17 raw"
+  for the owner and "about 18" for a non-owner after the `let` binding, and calls the latter an inference. The emulator
+  merges repeated lookups, so it can't settle the exact number.
 
 ## 6. Security rules (`firestore.rules`), in plain words
 
@@ -260,20 +259,18 @@ How they are tested:
 | `.github/workflows/release.yml` | Release | push to `main` | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` | **Hosting only** (never rules) |
 | `.github/workflows/backup.yml` | Backup | daily cron `17 3 * * *` (03:17 UTC) and manual | Section 8 | nothing (writes the backups repo) |
 | `.github/workflows/publish.yml` | Publish (free plan) | cron every 15 min and manual | Section 4.2; skipped unless `PUBLISH_ENABLED` is `true` (it is `false`) | Hosting (when enabled) |
-| `.github/workflows/preview.yml` | Preview | manual only | Deploys a 7-day Hosting preview channel with `FirebaseExtended/action-hosting-deploy` | see the note |
 
 - **CI does not run on `main`.** On `main`, Release runs the full test suite before deploying.
-- **Preview workflow is effectively inert:** its only trigger is `workflow_dispatch`, but its job runs only when the event
-  is `push` or a same-repository `pull_request`, so a manual run is skipped. It also needs a secret
-  `FIREBASE_SERVICE_ACCOUNT`, which does not exist. Preview deploys are done from a developer machine with the CLI
-  (runbook 10.2).
+- **No preview workflow.** Previews are deployed from a developer machine with the CLI (runbook 10.2). The old
+  `preview.yml` was removed in PR #15: it could never run (its only trigger was `workflow_dispatch`, but its job
+  required a `push` or `pull_request` event), and the secret it needed, `FIREBASE_SERVICE_ACCOUNT`, does not exist.
 - `.github/workflows/README.md` is from the rebuild and out of date (it says Release deploys rules and Functions; it
   does not).
 - All actions are pinned to commit SHAs. Runners are `ubuntu-24.04`.
 
 Repository secrets (names only): `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `BACKUP_DEPLOY_KEY`.
 Repository variables: `BACKUP_AGE_RECIPIENT` (the age public key), `BACKUP_REPO`, `BACKUP_ENABLED` (`true`),
-`PREVIEW_ENABLED` (`true`), `PUBLISH_ENABLED` (`false`).
+`PUBLISH_ENABLED` (`false`), and `PREVIEW_ENABLED` (`true`), which nothing reads since `preview.yml` was removed.
 
 **Workload Identity Federation** (keyless sign-in from GitHub Actions to Google Cloud):
 - Pool `github`, provider `github` (ACTIVE), issuer `https://token.actions.githubusercontent.com`.
@@ -323,8 +320,12 @@ Firestore rules.
   Expected output, in order: the number of files decrypted with every hash checked; the structure counts (rev, surahs,
   words, challenge days, snapshots, history rows, documents); "loaded into the emulator and read back: all N documents
   identical"; "rules still enforced: a signed-out reader is refused"; then `REHEARSAL PASSED`. Add `--compare <export
-  folder>` to count documents that differ from a fresh export. **UNVERIFIED:** whether the owner has run the rehearsal
-  with the real key (an age-keygen key has not been exercised in this repo's tests, which use a throwaway key from the
+  folder>` to count documents that differ from a fresh export.
+- **Rehearsed with the real key:** on 2026-11-04 the owner ran the rehearsal on their machine with the real
+  `age-keygen` key, on `backups/backup-2026-11-04T20-39-17Z.age`. Result: 9 files decrypted with every hash checked;
+  rev 7, 28 surahs, 73 words, 30 challenge days, 2 snapshots, 2 history rows, 8 documents; all 8 identical after
+  loading; a signed-out reader refused (5 probes); `REHEARSAL PASSED`. This also confirms that keys made by the `age`
+  command-line tool work with `scripts/backup-lib.mjs` (the repo's tests use a throwaway key from the
   `age-encryption` library).
 - **Disaster recovery:**
   1. Stop and look: get a fresh read-only export of the current state (`node scripts/firestore-export.mjs`), so you
@@ -554,10 +555,9 @@ IDs come from the local audit and plan (`scripts/checks/out/admin-audit/REPORT.m
 | F-15 | App Check not enabled | Open |
 | F-21 | HSTS weaker on the custom domain | Open |
 | — | `scripts/qa-phase6.mjs`: 1 of 100 checks fails, also on unchanged `main` ("word: word text, highlighted ayah word and ayah number map correctly") | Open; not in CI |
-| — | `preview.yml` can never run as written, and its secret doesn't exist (section 7) | Open; previews are deployed with the CLI |
 | — | `.github/workflows/README.md` and `ghareeb-handoff/AGENTS.md` are out of date (Cloud Functions, public reads, a `rebuild` branch flow) | Open; this handbook and `AGENTS.md` describe the current setup |
-| — | **API key restriction:** **UNVERIFIED.** No finding or note about restricting the Firebase browser API key exists in the repo or the local reports; check the Google Cloud console's API key restrictions | Unknown |
-| — | **Sentry:** **UNVERIFIED** as a backlog item. Sentry is loaded on the home page and allowed in the CSP; no open item about it is recorded | Unknown |
+| — | **API key restriction:** restrict the Firebase browser API key in the Google Cloud console. Source: the owner's backlog list | To check |
+| — | **Sentry:** review the Sentry setup (loaded on the home page and allowed in the CSP). Source: the owner's backlog list | To check |
 
 ## 14. Glossary
 

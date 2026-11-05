@@ -1,6 +1,8 @@
+> **HISTORICAL: superseded by /AGENTS.md and docs/PROJECT-HANDBOOK.md. Not binding.**
+
 # AGENTS.md: Ghareeb Al-Quran (غريب القرآن)
 
-This file is binding. Read it fully before any work. If anything elsewhere conflicts with it, this file wins. If this file is silent, follow `design/design-spec.html`, then `reference/app`.
+This file is the original rebuild brief and is historical. It is not binding: /AGENTS.md and docs/PROJECT-HANDBOOK.md are authoritative, and they win wherever they differ from this file. For design questions they don't cover, see `design/design-spec.html`, then `reference/app`.
 
 ## 1. Project and owner
 - Site: https://ghareebalquran.com (Firebase Hosting). An OLD site is live there now. Repo: [REPO_URL]. We are rebuilding it.
