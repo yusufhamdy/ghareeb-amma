@@ -3,13 +3,16 @@
 // The palette is set only in this renderer's own localStorage. Nothing here changes the site, its default palette or
 // anyone's settings. Before each screenshot the computed fonts are checked, and the run fails if any differ or if a
 // word's card does not fit between the header and the domain.
-//   node scripts/gen-share-images.js [--only general,79-6,83-0]
+//   node scripts/gen-share-images.js [--only general,79-6,83-0] [--root DIR]
+// --root renders from and writes into another copy of the site (the publish build passes its tree); default public/.
 // Run scripts/gen-favicon.py first if the favicon design changed, or with --full for the general image's icon.
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
-const { chromium, serve, ROOT } = require("./checks/lib.js");
+const lib = require("./checks/lib.js");
+const { chromium, serve } = lib;
+const ROOT = (() => { const i = process.argv.indexOf("--root"); return i < 0 ? lib.ROOT : path.resolve(process.argv[i + 1]); })();
 
 const OG_WORD = path.join(ROOT, "og", "word");
 const SET = { style: "glass", mode: "light", pal: "def", cm: true, sv: 2 };
@@ -168,7 +171,9 @@ async function words(br, base) {
   await page.addStyleTag({ content: WORD_CSS });
   await page.evaluate((domain) => { const d = document.createElement("div"); d.className = "share-domain"; d.id = "s-domain"; d.textContent = domain; document.body.appendChild(d); }, DOMAIN);
   const list = await page.evaluate(() => W.map((w) => [w.id, w.slug]));
-  if (list.length !== 73) throw new Error("expected 73 words, found " + list.length);
+  // every word of this tree's words.json, no more and no fewer
+  const want = JSON.parse(fs.readFileSync(path.join(ROOT, "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0);
+  if (list.length !== want) throw new Error("expected " + want + " words, found " + list.length);
   const bad = [], tall = [];
   for (const [id, slug] of list) {
     if (ONLY && !ONLY.includes(id)) continue;
@@ -209,7 +214,7 @@ async function words(br, base) {
 }
 
 (async () => {
-  const { server, base } = await serve();
+  const { server, base } = await serve(ROOT);
   const br = await chromium.launch();
   try {
     if (!ONLY) await favicon(br, base);
@@ -218,7 +223,7 @@ async function words(br, base) {
     if (tall.length) console.log("does not fit:\n  " + tall.join("\n  "));
     if (bad.length) console.log("failed:\n  " + bad.join("\n  "));
     if (bad.length || tall.length) process.exitCode = 1;
-    else console.log("share images written" + (ONLY ? " (" + ONLY.join(",") + ")" : ": favicon-32.png, og-2026-10.png, og/word/ x 73"));
+    else console.log("share images written" + (ONLY ? " (" + ONLY.join(",") + ")" : ": favicon-32.png, og-2026-10.png, og/word/ x " + fs.readdirSync(OG_WORD).length));
   } finally {
     await br.close();
     server.close();

@@ -196,7 +196,9 @@ test("publish generator refuses to publish an empty or shrunken site", async () 
       source: wordsData[0].source,
     },
   ];
-  assert.throws(() => mod.buildSite(tiny, challengeData), /refusing to publish/);
+  // the shrink is refused against the committed site (the removal guard every publish path runs), not by a fixed minimum
+  assert.throws(() => mod.guardRemovals(wordsData, tiny), /refusing to publish; removal guard/);
+  assert.throws(() => mod.guardRemovals(wordsData, tiny, { allowRemovals: 72 }), /more than the ceiling of 7/);
 });
 
 test("publish generator writes into an output directory (never over public/)", async () => {
