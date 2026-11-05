@@ -19,13 +19,15 @@ const load = () => import(pathToFileURL(path.join(ROOT, "scripts", "publish-buil
 const words = () => JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8"));
 const challenge = () => JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"));
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("publish-build: every current ayah label is a number or a range, and the site builds", async () => {
   const mod = await load();
   const all = words().flatMap((s) => (s.ayahs || []).map((a) => String(a.label)));
-  assert.ok(all.length >= 73);
+  assert.strictEqual(all.length, WORD_COUNT);
   for (const l of all) assert.ok(mod.AYAH_LABEL_RE.test(l), "label " + JSON.stringify(l));
   const { wordCount } = mod.buildSite(words(), challenge());
-  assert.ok(wordCount >= 73);
+  assert.strictEqual(wordCount, WORD_COUNT);
 });
 
 test("publish-build: a label that is not a number or a range is refused before anything is written", async () => {

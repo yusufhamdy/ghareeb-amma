@@ -4,7 +4,7 @@
  * Verifies the Firestore MIGRATION artifacts WITHOUT touching the emulator:
  *  - the shared migrate utility derives the Mushaf `no` for every surah from
  *    the authoritative Juz Amma ORDER used by the client, admin and seo function
- *  - the 30-day challenge joins perfectly against the migrated data (73 words)
+ *  - the 30-day challenge joins perfectly against the migrated data (every word)
  *  - the canonical English slug set (sitemap + redirects) stays consistent
  *    with the static word pages (one page per slug, no stale pages)
  *
@@ -23,7 +23,9 @@ const { SURAH_ORDER, deriveSurahNo, buildFirestoreData, buildFirestoreChallenge,
 const words = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/words.json'), 'utf8'));
 const challenge = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/challenge.json'), 'utf8'));
 
-test('migration adds a Mushaf `no` to every surah (28 surahs, 73 words, unique 78..114 ascending)', () => {
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
+test('migration adds a Mushaf `no` to every surah (28 surahs, every word, unique 78..114 ascending)', () => {
   const doc = buildFirestoreData(words);
   assert.strictEqual(doc.surahs.length, 28, 'expected 28 surahs in Juz Amma data');
   const nos = doc.surahs.map((s) => s.no);
@@ -33,7 +35,7 @@ test('migration adds a Mushaf `no` to every surah (28 surahs, 73 words, unique 7
   assert.strictEqual(nos[0], 78, 'first surah must be 78 (النبأ)');
   assert.strictEqual(nos[nos.length - 1], 114, 'last surah must be 114 (الناس)');
   const wordCount = doc.surahs.reduce((n, s) => n + (s.words || []).length, 0);
-  assert.strictEqual(wordCount, 73, 'expected 73 words in the migrated data');
+  assert.strictEqual(wordCount, WORD_COUNT, 'expected every published word in the migrated data');
   assert.ok(doc.surahs.every((s) => typeof s.words === 'object' && typeof s.meanings === 'object' && typeof s.ayahs === 'object' && typeof s.source === 'string'), 'every surah keeps words/meanings/ayahs/source shape');
   assert.ok(doc.surahs.every((s) => s.words.length === s.meanings.length), 'words and meanings stay parallel by index');
 });
@@ -58,11 +60,11 @@ test('the client NAMES never drift from migrate util', () => {
   );
 });
 
-test('every challenge reference (30 days, 73 refs) resolves against the migrated data', () => {
+test('every challenge reference (30 days, one ref per word) resolves against the migrated data', () => {
   const doc = buildFirestoreData(words);
   const keys = new Set();
   doc.surahs.forEach((s) => (s.words || []).forEach((w) => keys.add(s.no + '::' + normalizeArabic(w))));
-  assert.strictEqual(keys.size, 73, 'migrated data must expose 73 unique no::word keys');
+  assert.strictEqual(keys.size, WORD_COUNT, 'migrated data must expose one unique no::word key per word');
 
   const refs = new Set();
   let total = 0;
@@ -70,8 +72,8 @@ test('every challenge reference (30 days, 73 refs) resolves against the migrated
     total += 1;
     refs.add(Number(ref[0]) + '::' + normalizeArabic(ref[1]));
   }));
-  assert.strictEqual(total, 73, 'challenge must reference 73 words in total');
-  assert.strictEqual(refs.size, 73, 'challenge references must be unique');
+  assert.strictEqual(total, WORD_COUNT, 'challenge must reference every word once in total');
+  assert.strictEqual(refs.size, WORD_COUNT, 'challenge references must be unique');
 
   const missing = [...refs].filter((r) => !keys.has(r));
   assert.deepStrictEqual(missing, [], 'every challenge reference must resolve against migrated data');
@@ -86,11 +88,11 @@ test('every challenge reference (30 days, 73 refs) resolves against the migrated
 test('canonical slugs from sitemap match the static word pages one-to-one', () => {
   const sitemap = fs.readFileSync(path.join(ROOT, 'public/sitemap.xml'), 'utf8');
   const locs = [...sitemap.matchAll(/<loc>https:\/\/ghareebalquran\.com\/word\/([^<]+)<\/loc>/g)].map((m) => m[1]);
-  assert.strictEqual(locs.length, 73, 'sitemap must list exactly the 73 canonical word pages');
-  assert.strictEqual(new Set(locs).size, 73, 'canonical slugs must be unique');
+  assert.strictEqual(locs.length, WORD_COUNT, 'sitemap must list exactly one canonical page per word');
+  assert.strictEqual(new Set(locs).size, WORD_COUNT, 'canonical slugs must be unique');
 
   const files = fs.readdirSync(path.join(ROOT, 'public/word')).filter((f) => f.endsWith('.html'));
-  assert.strictEqual(files.length, 73, `public/word must contain exactly the 73 canonical pages, found ${files.length} — stale/non-canonical pages must be removed (T5 hygiene)`);
+  assert.strictEqual(files.length, WORD_COUNT, `public/word must contain exactly one canonical page per word, found ${files.length} — stale/non-canonical pages must be removed (T5 hygiene)`);
   for (const slug of locs) {
     assert.ok(files.includes(slug), `missing static page for canonical slug ${slug}`);
   }

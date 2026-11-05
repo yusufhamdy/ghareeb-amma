@@ -35,6 +35,8 @@ const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 const WORDS_RAW = fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8");
 const WORDS = JSON.parse(WORDS_RAW);
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("the official text: unmodified file, 114 surahs, 6236 ayat", () => {
   assert.strictEqual(sha(fs.readFileSync(quran.FILE)), OFFICIAL_SHA256, "data/quran/hafsData_v2-0.json is the downloaded file");
   let n = 0;
@@ -110,7 +112,7 @@ test("the static word pages show the same segments, and they pass", async () => 
     });
     pages++;
   }
-  assert.strictEqual(pages, 73);
+  assert.strictEqual(pages, WORD_COUNT);
 });
 
 const BYTES = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "ayat-bytes-2026-10-28.json"), "utf8"));
