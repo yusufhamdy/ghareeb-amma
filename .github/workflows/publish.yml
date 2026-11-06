@@ -15,6 +15,9 @@ name: Publish
 #           release.yml by itself, so this is the only deploy of an auto-publish.
 #   pr      "pr": more than 7 removed words, or words removed by an import or a restore, or anything the history
 #           cannot prove. Opens or updates one pull request from publish/next for the owner. Nothing is deployed.
+#           More removals than the 10% ceiling fail the build instead; the owner then runs Publish by hand with
+#           allow_removals set to the exact count (and removed_surahs), which always opens a pull request and may go
+#           past that ceiling, because the owner reviews it. The exact count must still match.
 #   remember  a run that failed, found nothing to publish or opened a pull request leaves a marker (a cache entry named
 #           after the rev, the challenge and main), so the next runs skip that state instead of building it again
 #           every 15 minutes. Any new save, challenge change or commit to main makes a new state. A run started by hand
@@ -27,6 +30,17 @@ on:
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
+    inputs:
+      allow_removals:
+        description: "Leave empty for the usual run. A number opens a pull request (never an automatic publish) that removes exactly this many words; it may go past the 7-word and 10% ceilings, since you review it."
+        type: string
+        required: false
+        default: ""
+      removed_surahs:
+        description: "With allow_removals: surah numbers this publish may remove, comma-separated (empty = none)"
+        type: string
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -125,7 +139,17 @@ jobs:
       result: ${{ steps.result.outputs.result }}
       rev: ${{ steps.plan.outputs.rev }}
       base: ${{ steps.base.outputs.sha }}
+    env:
+      OWNER_ALLOW: ${{ inputs.allow_removals }}
+      OWNER_SURAHS: ${{ inputs.removed_surahs }}
     steps:
+      - name: Check the inputs of a run started by hand
+        run: |
+          set -euo pipefail
+          [[ "$OWNER_ALLOW" =~ ^[0-9]*$ ]] || { echo "allow_removals must be empty or a whole number, 0 or more"; exit 1; }
+          [[ "$OWNER_SURAHS" =~ ^[0-9,\ ]*$ ]] || { echo "removed_surahs must be surah numbers separated by commas"; exit 1; }
+          if [ -z "$OWNER_ALLOW" ] && [ -n "$OWNER_SURAHS" ]; then echo "removed_surahs needs allow_removals"; exit 1; fi
+
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -167,17 +191,40 @@ jobs:
         id: plan
         run: node scripts/publish-plan.mjs plan --project "$PROJECT" --site public --data-out "$RUNNER_TEMP/data.json" --challenge-out "$RUNNER_TEMP/challenge.json"
 
+      # The automatic publish: the plan's exact count, never more than 7 (--max-removals), and the 10% ceiling.
+      # A run started by hand with allow_removals: the owner's exact count and surahs, always a pull request, and
+      # --owner-review lifts the 10% ceiling (the exact count still must match).
       - name: Build the site from the planned data
         id: build
         env:
           ALLOW: ${{ steps.plan.outputs.allow_removals }}
           SURAHS: ${{ steps.plan.outputs.removed_surahs }}
+          MODE: ${{ steps.plan.outputs.mode }}
         run: |
           set -euo pipefail
+          if [ -n "$OWNER_ALLOW" ]; then
+            ALLOW="$OWNER_ALLOW"; SURAHS="${OWNER_SURAHS// /}"; MODE=pr; extra=(--owner-review)
+            echo "started by hand with allow_removals $ALLOW: a pull request for the owner" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$MODE" = "auto" ]; then extra=(--max-removals 7)
+          else extra=()
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           node scripts/publish-build.mjs --publish --from-json "$RUNNER_TEMP/data.json" --challenge-json "$RUNNER_TEMP/challenge.json" \
-            --allow-removals "$ALLOW" --allow-surah-removals "$SURAHS" \
+            --allow-removals "$ALLOW" --allow-surah-removals "$SURAHS" ${extra[@]+"${extra[@]}"} \
             --summary "$RUNNER_TEMP/summary.json" --report "$RUNNER_TEMP/report.md" | tee "$RUNNER_TEMP/result.txt"
           if grep -q "publish-build: no-change" "$RUNNER_TEMP/result.txt"; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: How to publish more removals than the ceiling
+        if: failure() && steps.build.outcome == 'failure' && steps.plan.outputs.removed != '' && steps.plan.outputs.removed != '0'
+        env:
+          REMOVED: ${{ steps.plan.outputs.removed }}
+          SURAHS: ${{ steps.plan.outputs.removed_surahs }}
+        run: |
+          {
+            echo "The build refused this publish ($REMOVED words removed). If the log names the removal ceiling, review the"
+            echo "removals in the admin's version history and run Publish by hand with allow_removals $REMOVED and"
+            echo "removed_surahs \"$SURAHS\": that opens a pull request for you instead of publishing."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # The credential the sign-in wrote is never needed again, and must never be committed. The sign-in also exported
       # three variables that point at it; GitHub can't unset a variable for later steps, so each is set to empty, which
@@ -259,7 +306,7 @@ jobs:
         id: result
         env:
           CHANGED: ${{ steps.build.outputs.changed }}
-          MODE: ${{ steps.plan.outputs.mode }}
+          MODE: ${{ steps.build.outputs.mode }}
         run: |
           if [ "$CHANGED" != "true" ]; then r=none; elif [ "$MODE" = "auto" ]; then r=auto; else r=pr; fi
           echo "result=$r" >> "$GITHUB_OUTPUT"
@@ -363,7 +410,7 @@ jobs:
           git push --force origin "refs/publish/new:refs/heads/publish/next"
           body="$RUNNER_TEMP/body.md"
           {
-            echo "**Waiting for the owner:** this publish removes words in a way that does not go live by itself (more than 7 words, or words removed by an import or a restore, or a change the history cannot show). Merging it publishes it."
+            echo "**Waiting for the owner:** this publish removes words in a way that does not go live by itself (more than 7 words, or words removed by an import or a restore, or a change the history cannot show), or Publish was run by hand with an exact allow_removals. Merging it publishes it."
             echo
             cat "$RUNNER_TEMP/in/report.md"
             echo

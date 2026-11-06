@@ -176,11 +176,18 @@ Every path below is readable by admins only; the public site never reads Firesto
     every 15 minutes (section 7); a new save, a challenge change or a commit to `main` starts over.
   - The decision is made by `scripts/publish-plan.mjs` from `history/` and `snapshots/`, read-only. It walks every save
     after the published rev (`public/rev.json`) and finds, for each removed word, the save that removed it.
-- **Deleting a published word needs a challenge edit too.** Every published word is used by a challenge day, and the
-  challenge-integrity check refuses a reference to a word that is gone. Delete the word, then remove it from its day in
-  the Challenge tab; until then the publish fails (and says which day).
-- **More than 7 removals can't be built today.** The removal guard's 10% ceiling is 7 of 73 words, so a publish that
-  removes 8 or more fails even in a pull request. Raising the ceiling is an owner decision.
+- **A delete removes the word from the challenge in the same save.** Every published word is used by a challenge day,
+  and the challenge-integrity check refuses a reference to a word that is gone. So deleting a word or a surah in
+  `/admin/` also removes its references from the challenge days, in the same transaction as the words and their history
+  row: one confirmation, and the publish goes through. The confirm dialog names the days that use the word, and any
+  day that would be left with no words. Days are never removed: a day left empty stays in the challenge, and a
+  visitor can't complete it until a word is added to it in the Challenge tab.
+- **Removal ceilings.** An automatic publish never removes more than 7 words: the plan refuses it and the build is run
+  with `--max-removals 7`, on top of the 10% ceiling. A scheduled run that finds more removals than the 10% ceiling
+  allows (8 or more of 73 words today) fails and says how to go on: the owner reviews the removals and runs Publish by
+  hand with `allow_removals` set to the exact number (and `removed_surahs`). That run always opens a pull request,
+  never an automatic publish, and the build skips the 10% ceiling for it (`--owner-review`), because the owner reviews
+  the pull request. The exact count must still match.
 - **The generator:** `scripts/publish-build.mjs --publish` turns `public/data` and `public/challenge` into the site:
   `words.json`, `challenge.json`, `sitemap.xml`, `word/<slug>.html`, `surah/<slug>.html`, the legal pages, the share
   images and `rev.json`.
@@ -190,7 +197,9 @@ Every path below is readable by admins only; the public site never reads Firesto
 - **Its safeguards** (any failure stops it, with nothing written):
   - **strict shape:** no unknown keys, types and lengths checked, label format;
   - **removal guard:** checked against the committed `words.json`. The number of removed words must equal
-    `allow_removals` exactly, never more than 10% of the words (7 of 73), and a removed surah must be listed;
+    `allow_removals` exactly, never more than 10% of the words (7 of 73) except in a pull request the owner asked for
+    by hand (`--owner-review`), never more than 7 in an automatic publish (`--max-removals 7`), and a removed surah must
+    be listed;
   - **challenge integrity:** the same number of days, and every reference resolves under the site's own word key;
   - **stale files:** word and surah pages, share images and sitemap entries that no longer exist are deleted. Each
     removed page gets a 301 in `firebase.json`, to its surah page, or to `/` when the surah is gone too (decision D-4);
@@ -286,9 +295,10 @@ How they are tested:
 | Workflow | Name | Trigger | What it does | Deploys |
 |---|---|---|---|---|
 | `.github/workflows/ci.yml` | CI | `pull_request` (all), and push to branch `rebuild` | Node 20, Java 21, `npm ci`, Playwright Chromium; `npm test`; `node scripts/ci/checks.mjs`; `pwsh scripts/check-private.ps1`; `npm run rules:test`; `npm run client:verify` | nothing |
-| `.github/workflows/release.yml` | Release | push to `main`, and `workflow_call` from Publish (input `sha`) | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` | **Hosting only** (never rules) |
+| `.github/workflows/release.yml` | Release | push to `main`, and `workflow_call` from Publish (input `sha`) | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` (the home page, and the first word of the deployed `words.json` as an app route and as its static page, never a fixed word) | **Hosting only** (never rules) |
 | `.github/workflows/backup.yml` | Backup | daily cron `17 3 * * *` (03:17 UTC) and manual | Section 8 | nothing (writes the backups repo) |
-| `.github/workflows/publish.yml` | Publish | cron `*/15 * * * *` and manual, on `main`, only while `PUBLISH_ENABLED` is `true` | `check`: reads only the Firestore rev and the public challenge (REST, `ghareeb-backup`, read-only) and compares them with `public/rev.json` and `challenge.json` on `main`; the same, and the run ends. `build`: `publish-plan.mjs plan`, `publish-build.mjs --publish`, then `npm test`, rules tests, CSP check, `checks.mjs`, `check-private`, the credential guard. `commit` (auto): pushes "Publish: Firestore rev N" to `main`. `deploy`: calls Release. `pr` (otherwise): opens or updates the PR from `publish/next`. `remember`: marks a failed, unchanged or PR state so it is not rebuilt every 15 minutes. Concurrency group `publish` | **Hosting, through Release** (an automatic publish); never Firestore |
+| `.github/workflows/publish.yml` | Publish | cron `*/15 * * * *` and manual, on `main`, only while `PUBLISH_ENABLED` is `true` | `check`: reads only the Firestore rev and the public challenge (REST, `ghareeb-backup`, read-only) and compares them with `public/rev.json` and `challenge.json` on `main`; the same, and the run ends. `build`: `publish-plan.mjs plan`, `publish-build.mjs --publish`, then `npm test`, rules tests, CSP check, `checks.mjs`, `check-private`, the credential guard. `commit` (auto): pushes "Publish: Firestore rev N" to `main`. `deploy`: calls Release. `pr` (otherwise): opens or updates the PR from `publish/next`. `remember`: marks a failed, unchanged or PR state so it is not rebuilt every 15 minutes. Concurrency group `publish`. Manual inputs `allow_removals` and `removed_surahs` (empty for the usual run): with a count, always a PR, past the 10% ceiling, exact count required (section 4.2) | **Hosting, through Release** (an automatic publish); never Firestore |
+| `.github/workflows/keepalive.yml` | Keepalive | monthly cron `41 5 1 * *` (05:41 UTC on the 1st) and manual, on `main` | Re-enables Publish, Backup and itself through the GitHub API (`gh api -X PUT .../actions/workflows/<file>/enable`). A workflow the owner turned off by hand (`disabled_manually`) is left off. Permissions: `actions: write` only; no checkout, commit, data or deploy | nothing |
 
 - **CI does not run on `main`.** On `main`, Release runs the full test suite before deploying.
 - **No preview workflow.** Previews are deployed from a developer machine with the CLI (runbook 10.2). The old
@@ -310,6 +320,11 @@ How they are tested:
 - **Not rebuilt every 15 minutes:** a run that fails, finds nothing to publish or opens a PR saves a cache entry named
   `publish-seen-<rev>-<challenge hash>-<main commit>`. Scheduled runs skip that state; a manual run ignores it.
 - **Failure e-mails:** GitHub e-mails a scheduled workflow's failures to the person who last changed its schedule.
+- **Scheduled workflows are kept on (Keepalive).** In a public repository GitHub turns off scheduled workflows after
+  60 days without repository activity, which would stop Publish and Backup without any error. Keepalive runs monthly
+  and enables both again; enabling a workflow starts its 60 days again. It also enables itself, since it is scheduled
+  too. If it has been turned off anyway, run it by hand (Actions > Keepalive > Run workflow), or enable each workflow
+  in the Actions tab.
 - Opening the PR also needs the repository setting "Allow GitHub Actions to create and approve pull requests"
   (runbook 10.4). Approving and merging a publish PR stay with the owner.
 - All actions are pinned to commit SHAs. Runners are `ubuntu-24.04`.
@@ -407,8 +422,9 @@ Also run in CI: `node scripts/ci/checks.mjs` and `pwsh -NoProfile -File scripts/
 ### 9.2 Emulator checks run by the tests
 
 `test/admin-history-emulator.test.js`, `admin-keyorder-emulator.test.js`, `admin-merge-emulator.test.js`,
-`admin-concurrent-emulator.test.js` (two tabs saving at the same moment), `publish-auto-emulator.test.js` (the
-automatic publish, case by case),
+`admin-concurrent-emulator.test.js` (two tabs saving at the same moment), `admin-delete-challenge-emulator.test.js`
+(a delete removes its challenge references in the same save), `publish-auto-emulator.test.js` (the automatic publish,
+case by case, and a manual run with an exact count past the ceiling),
 `backup-rehearsal-emulator.test.js` (T-41), and the browser part of `public-isolation.test.js`. Each runs a script from
 `scripts/checks/` inside `firebase emulators:exec`; `scripts/checks/README.md` describes each one.
 
@@ -510,14 +526,22 @@ sources, headwords or the word list yourself (section 11).**
    Release deploys it. To drop it, close it. Newer saves update the same PR. An automatic publish of a newer rev closes
    a PR it replaces.
 4. **A failed run** e-mails the owner and deploys nothing. Read the failing step:
-   - the removal guard or challenge integrity names the counts, days, slugs or surah numbers involved (a deleted word
-     still used by a challenge day is the usual cause: remove it from its day in the Challenge tab);
+   - the removal guard or challenge integrity names the counts, days, slugs or surah numbers involved. A delete made
+     in the admin removes its challenge references itself; a reference to a missing word now comes only from an import,
+     a restore or a challenge edit: fix the day in the Challenge tab;
+   - **more removals than the ceiling** (8 or more of 73 words today): the run summary gives the exact count. Review
+     the removals in the admin's version history, then run Publish by hand (Actions > Publish > Run workflow, on
+     `main`) with `allow_removals` set to that count and `removed_surahs` to any removed surah numbers. That opens the
+     PR (step 3) and never publishes by itself; a count that does not match exactly fails;
    - a test failure means the data would break the site.
 
    The same state is not tried again by the schedule. Fix the data in the admin (a new save starts over), or run
    Publish by hand (Actions > Publish > Run workflow, on `main`) to retry after a passing fix to `main` or a flaky test.
 
-**To publish right away:** Actions > Publish > Run workflow, on `main`.
+**To publish right away:** Actions > Publish > Run workflow, on `main`, with `allow_removals` left empty.
+
+**If Publish or Backup stop running:** GitHub turns off scheduled workflows after 60 days without repository activity.
+Keepalive (section 7) enables them again every month; to do it at once, run Actions > Keepalive > Run workflow.
 
 **Rollback:**
 - Revert the publish commit (or the publish PR's merge commit) with a new PR. Release deploys the previous files.
@@ -577,7 +601,8 @@ These are also in `AGENTS.md`.
 - Nothing goes to `main` or production (merges, Hosting deploys, rules deploys, Firestore writes, IAM, secrets) without
   the owner's explicit approval for that step. **One standing approval (D-6):** the scheduled Publish workflow commits
   and deploys admin saves by itself, within the limits in section 4.2; saving or confirming a delete in `/admin/` is the
-  owner's approval for that publish. It does not cover anything an agent does.
+  owner's approval for that publish. It does not cover anything an agent does, such as running Publish (by hand or
+  with `allow_removals`), merging a publish PR or changing the limits.
 - Use the preview channel only for testing, and never test writes there: it uses the production Firestore.
 - No attribution lines (such as `Co-Authored-By` or "Generated with") in commits or PRs.
 - Never print or commit secrets, keys or tokens. Secrets live only in GitHub secrets or on the owner's machine. Never
@@ -606,7 +631,7 @@ Releases and major changes, newest last. Dates are merge dates on `main`.
 | 2026-11-04 | `a1539a8` (#11), `31d2460` (#12) | **Phase 2:** daily encrypted backups with a dedicated read-only service account; export uses the Firestore client | Off-site recovery (F-2); firebase-admin 12 refused the Workload Identity credential file |
 | 2026-11-05 | `e94ee39` (#13) | Vendored, hash-pinned Firebase SDK for all checks | Test-time downloads from gstatic timed out on runners |
 | 2026-11-05 | `c67dad8` (#14) | `admin-audit` and `rules-real-data` updated to the current admin, rules and data | Both manual checks had gone stale and now pass end to end |
-| (pending) | this PR | **D-6: automatic publish.** Publish runs every 15 minutes; edits, additions, challenge changes and at most 7 words removed by admin saves are committed to `main` and deployed through Release; larger removals, imports and restores open a PR | Owner decision: admin edits and deletions go live without a manual Publish step; saving or confirming a delete in the admin is the approval |
+| (pending) | this PR | **D-6: automatic publish.** Publish runs every 15 minutes; edits, additions, challenge changes and at most 7 words removed by admin saves are committed to `main` and deployed through Release; larger removals, imports and restores open a PR. A delete in the admin removes its challenge references in the same save. A manual run with an exact `allow_removals` always opens a PR and may pass the 10% ceiling. The smoke check takes its word page from `words.json`. Keepalive re-enables Publish and Backup monthly | Owner decision: admin edits and deletions go live without a manual Publish step; saving or confirming a delete in the admin is the approval |
 
 Decisions not to do something:
 - **SEC-2 (import skips the ayah check): not fixed as a security issue.** The owner is the only editor and is
@@ -627,7 +652,8 @@ IDs come from the local audit and plan (`scripts/checks/out/admin-audit/REPORT.m
 |---|---|---|
 | Phase 5 (F-5, F-16, F-22) | Safe publishing: a manual publish that opens a PR with a report, whole-site validation, a large-removal guard, stale pages removed; the 15-minute schedule removed | Built (PR #18: generator, safeguards, tests T-30 to T-38; PR 2: workflow). Waiting for the owner's setup and first run (runbook 10.4); `PUBLISH_ENABLED=false` |
 | — | One admin edit in Firestore is not published (section 4.1). An emulator run from the 2026-11-01 export shows the first publish would be exactly that one meaning: `words.json`, one word page and `rev.json` | Waits for the first Publish run |
-| — | Tests assert 28 surahs and 30 challenge days in several places. A publish that removes a whole surah fails `npm test` until those read the counts from the data. Word counts are read from `words.json` | Open, low (removing a surah is rare) |
+| — | Tests asserted 28 surahs and 30 challenge days in several places, so a publish that removed a whole surah would have failed `npm test` | Fixed with D-6: the tests read the counts from `words.json` and `challenge.json` |
+| — | A delete can leave a challenge day with no words (the admin names it before confirming and keeps the day). Visitors can't mark an empty day done, so the days after it stay locked until a word is added to it | Known; add a word to the day in the Challenge tab |
 | — | Nav click guard: `endT` starts at 0, so every nav click in a page's first 450 ms is dropped (`public/index.html:1003`) | Known, minor, not fixed |
 | SEC-5 | The admin loads the Firebase SDK from gstatic with no integrity check (dynamic `import()` can't carry SRI) | Open; plan: self-host under `/admin/vendor/` and drop gstatic from the CSP |
 | SEC-6 / F-8 | The admin session never ends (persistent login, no idle timeout) | Open (Phase 6) |

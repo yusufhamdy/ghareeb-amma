@@ -245,7 +245,9 @@ const store={
     and history/{rev} (the list's row). A version with no record yet (the first save after release, or a write made
     outside this page) gets one first, as the baseline, holding exactly the bytes that were stored.
     fn(latest surahs) returns the next surahs, or throws (conflict, duplicate...) to change nothing.
-    meta: { kind ("edit" unless given), restoredFrom, expectRev (refuse if the data has moved on since) } */
+    meta: { kind ("edit" unless given), restoredFrom, expectRev (refuse if the data has moved on since),
+            ch (optional: ch(latest challenge, next surahs) returns the next challenge, written in the same transaction, so
+            a delete removes its challenge references in the same save; CH becomes the saved challenge) } */
  async update(fn,meta){
   const m=meta||{},kind=m.kind||"edit",row=(rev,k,summary,at)=>Object.assign({rev,kind:k,summary,by:live()?U.uid:"demo",byEmail:U.email,at},k==="restore"?{restoredFrom:m.restoredFrom}:{});
   const sum=(old,next)=>HL.summary(kind,old,next,{nameOf:nm,restoredFrom:m.restoredFrom});
@@ -256,11 +258,14 @@ const store={
    const h=JSON.parse(localStorage.getItem("gqh")||"{}"),s=JSON.parse(localStorage.getItem("gqs")||"{}"),r=cr+1,at=new Date().toISOString();
    if(!h[cr]){s[cr]=cur.surahs;h[cr]=row(cr,"baseline",HL.summary("baseline"),at)}
    s[r]=next;h[r]=row(r,kind,sum(old,next),at);
+   let c=null;if(m.ch){const y=localStorage.getItem("gqch");c=m.ch(y?chFromLocal(JSON.parse(y)):clone(CH),next)}
+   if(c)localStorage.setItem("gqch",JSON.stringify(c));
    localStorage.setItem("gqs",JSON.stringify(s));localStorage.setItem("gqh",JSON.stringify(h));localStorage.setItem("gqad",JSON.stringify({rev:r,surahs:next}));
+   if(c)CH=c;
    return fix({rev:r,surahs:next});
   }
   if(offline())throw errOf("offline");
-  const{doc,runTransaction,serverTimestamp,getDoc}=FB.fs;let out,tried;
+  const{doc,runTransaction,serverTimestamp,getDoc}=FB.fs;let out,outCh,tried;
   /* Two saves at the same moment both read rev N and both create history/{N+1} and snapshots/{N+1}. The rules allow those
      to be created only, so the second commit is refused with permission-denied, which Firestore never retries. When that
      is the cause (one of them now exists: another save committed first), the whole transaction runs again on the latest
@@ -268,19 +273,22 @@ const store={
      attempts; any other refusal fails at once. */
   const taken=r=>withTimeout(Promise.all(["history","snapshots"].map(c=>getDoc(doc(FB.db,c,String(r))))),T).then(l=>l.some(s=>s.exists()),()=>false);
   for(let attempt=1;;attempt++){
-   tried=null;
+   tried=null;outCh=null;
    try{
     await withTimeout(runTransaction(FB.db,async tx=>{
      const ref=doc(FB.db,"public","data"),cur=await tx.get(ref),ex=cur.exists(),cs=ex?cur.data().surahs||[]:[],cr=ex?cur.data().rev||0:0;
      if(m.expectRev!=null&&cr!==m.expectRev)throw errOf("stale");
      const recorded=ex?(await tx.get(doc(FB.db,"history",String(cr)))).exists():true;
+     const chRef=m.ch?doc(FB.db,"public","challenge"):null,chs=chRef?await tx.get(chRef):null;
      const old=fix({surahs:clone(cs)}).surahs,next=fn(clone(old));chkSize(next);
      const r=cr+1,at=serverTimestamp();tried=r;
      if(!recorded){tx.set(doc(FB.db,"snapshots",String(cr)),{rev:cr,surahs:cs});tx.set(doc(FB.db,"history",String(cr)),row(cr,"baseline",HL.summary("baseline"),at))}
      tx.set(doc(FB.db,"snapshots",String(r)),{rev:r,surahs:next});
      tx.set(doc(FB.db,"history",String(r)),row(r,kind,sum(old,next),at));
      out={rev:r,surahs:next};tx.set(ref,{rev:r,surahs:next,updatedAt:at,by:U.uid});
+     if(chRef){outCh=m.ch(chs.exists()?chFromDoc(chs.data()):clone(CH),next);if(outCh)tx.set(chRef,chDoc(outCh))}
     }),T);
+    if(outCh)CH=outCh;
     return fix(out);
    }catch(e){
     if(attempt>=3||!e||e.code!=="permission-denied"||tried==null||!(await taken(tried)))throw e;
@@ -342,6 +350,14 @@ const rows=()=>D.surahs.map((e,i)=>({e,i,name:nm(e),no:e.no})).sort((a,b)=>a.no-
 // challenge days that use a word (surah number + the word, matched with the site normalization)
 const daysUsing=(no,w)=>CH?CH.days.filter(d=>(d.w||[]).some(r=>+r[0]===+no&&NM(r[1])===NM(w))).map(d=>d.d):[];
 const daysUsingSurah=no=>CH?CH.days.filter(d=>(d.w||[]).some(r=>+r[0]===+no)).map(d=>d.d):[];
+/* A delete takes its challenge references with it, in the same save: a reference to surah no (and word k; every word when
+   k is null) is dropped only when no word of that surah number matches it in the saved words any more. Days are never
+   removed, also when one is left with no words; the confirm dialog names those days first (chLeft). */
+const dropGone=(c,next,no,k)=>{const has=r=>next.some(s=>+s.no===+r[0]&&s.words.some(w=>NM(w)===NM(r[1])));
+ c.days.forEach(d=>{d.w=(d.w||[]).filter(r=>+r[0]!==+no||(k!=null&&NM(r[1])!==NM(k))||has(r))});return c};
+// the days that had words and would have none after dropGone on the words in next (what the dialog reports)
+const chLeft=(next,no,k)=>{if(!CH)return[];const c=dropGone(clone(CH),next,no,k);return CH.days.filter((d,i)=>(d.w||[]).length&&!c.days[i].w.length).map(d=>d.d)};
+const LEFT=l=>l.length?" ولن تبقى في "+DAYS(l)+" أي كلمة. لا يُحذف اليوم؛ أضف إليه كلمات من تبويب «التحدي».":"";
 
 function render(){
  const a=$("#app");
@@ -721,14 +737,15 @@ async function act(a,v,btn){
  else if(a==="addS"){const s=$("#ns").value;if(!s){SERR="اختر سورة أولًا.";render();const n=$("#ns");if(n)n.focus();return}SERR="";await sync();if(MD)return;surahModal(-1,{name:s==="*"?"":s,no:s==="*"?"":78+JUZ.indexOf(s),source:SRC},btn)}
  else if(a==="editS"){const name=nm(D.surahs[+v]||{surah:""});await sync();if(MD)return;const i=D.surahs.findIndex(e=>nm(e)===name);if(i<0)return toast("حُذفت هذه السورة في نافذة أو جهاز آخر.",true);surahModal(i,null,btn)}
  else if(a==="saveS")saveS(btn,false);
- else if(a==="delS"){const e=D.surahs[+v];if(!e)return;const name=nm(e),n=e.words.length,used=daysUsingSurah(e.no),pos=rowPos("delS",btn);
-  ask({title:"حذف سورة «"+name+"» وكل كلماتها؟",body:(n?"تُحذف السورة مع "+COUNT(n)+" ومعانيها وآياتها.":"تُحذف السورة، ولا توجد فيها كلمات.")+(used.length?" وكلماتها مستخدمة في التحدي: "+DAYS(used)+"، ولن تظهر في هذه الأيام بعد حذفها.":"")+HIST_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
-   onYes:()=>saving(null,async()=>{try{D=await store.update(ss=>ss.filter(x=>nm(x)!==name));toast("تم حذف السورة، ويُطبَّق الحذف على الموقع بعد النشر التالي.");render();focusRow("delS",pos,"#ns")}catch(x){toast(errMsg(x,"الحذف"),true)}})})}
+ else if(a==="delS"){const e=D.surahs[+v];if(!e)return;const name=nm(e),no=e.no,n=e.words.length,used=daysUsingSurah(no),pos=rowPos("delS",btn),left=chLeft(D.surahs.filter(x=>nm(x)!==name),no,null);
+  ask({title:"حذف سورة «"+name+"» وكل كلماتها؟",body:(n?"تُحذف السورة مع "+COUNT(n)+" ومعانيها وآياتها.":"تُحذف السورة، ولا توجد فيها كلمات.")+(used.length?" وكلماتها مستخدمة في التحدي: "+DAYS(used)+"، فتُزال من هذه الأيام في الحفظ نفسه."+LEFT(left):"")+HIST_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
+   onYes:()=>saving(null,async()=>{try{D=await store.update(ss=>ss.filter(x=>nm(x)!==name),used.length?{ch:(c,next)=>dropGone(c,next,no,null)}:null);toast("تم حذف السورة، ويُطبَّق الحذف على الموقع بعد النشر التالي.");render();focusRow("delS",pos,"#ns")}catch(x){toast(errMsg(x,"الحذف"),true)}})})}
  else if(a==="addW"){await sync();if(MD)return;if(!D.surahs.length)return toast("أضف سورة أولًا.",true);openW(FS==="all"?rows()[0].i:+FS,-1,btn)}
  else if(a==="editW"){const[s,wi]=v.split(".").map(Number),e=D.surahs[s],name=e&&nm(e),w=e&&e.words[wi];await sync();if(MD)return;const i=D.surahs.findIndex(z=>nm(z)===name),j=i<0?-1:D.surahs[i].words.indexOf(w);if(j<0)return toast("تغيّرت هذه الكلمة في نافذة أو جهاز آخر. راجع القائمة ثم افتحها من جديد.",true);openW(i,j,btn)}
- else if(a==="delW"){const[s,wi]=v.split(".").map(Number),e=D.surahs[s];if(!e)return;const w=e.words[wi],name=nm(e),used=daysUsing(e.no,w),pos=rowPos("delW",btn);
-  ask({title:"حذف الكلمة «"+w+"»؟",body:"تُحذف الكلمة ومعناها وآيتها من سورة "+name+"."+(used.length?" وهي مستخدمة في التحدي: "+DAYS(used)+"، ولن تظهر في هذه الأيام بعد حذفها.":"")+HIST_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
-   onYes:()=>saving(null,async()=>{try{D=await store.update(ss=>{const t=ss.find(x=>nm(x)===name),j=t?t.words.indexOf(w):-1;if(j>=0){t.words.splice(j,1);t.meanings.splice(j,1);t.ayahs.splice(j,1)}return ss});toast("تم حذف الكلمة، ويُطبَّق الحذف على الموقع بعد النشر التالي.");render();focusRow("delW",pos,'[data-a="addW"]')}catch(x){toast(errMsg(x,"الحذف"),true)}})})}
+ else if(a==="delW"){const[s,wi]=v.split(".").map(Number),e=D.surahs[s];if(!e)return;const w=e.words[wi],name=nm(e),no=e.no,used=daysUsing(no,w),pos=rowPos("delW",btn);
+  const drop=ss=>{const t=ss.find(x=>nm(x)===name),j=t?t.words.indexOf(w):-1;if(j>=0){t.words.splice(j,1);t.meanings.splice(j,1);t.ayahs.splice(j,1)}return ss},left=used.length?chLeft(drop(clone(D.surahs)),no,w):[];
+  ask({title:"حذف الكلمة «"+w+"»؟",body:"تُحذف الكلمة ومعناها وآيتها من سورة "+name+"."+(used.length?" وهي مستخدمة في التحدي: "+DAYS(used)+"، فتُزال من هذه الأيام في الحفظ نفسه."+LEFT(left):"")+HIST_NOTE,yes:"نعم، احذف",danger:true,trig:btn,
+   onYes:()=>saving(null,async()=>{try{D=await store.update(drop,used.length?{ch:(c,next)=>dropGone(c,next,no,w)}:null);toast("تم حذف الكلمة، ويُطبَّق الحذف على الموقع بعد النشر التالي.");render();focusRow("delW",pos,'[data-a="addW"]')}catch(x){toast(errMsg(x,"الحذف"),true)}})})}
  else if(a==="split"){const x=ED,i=x.af.indexOf(x.ah);x.err=x.err||{};if(!x.ah||i<0){x.err.ah="الجزء المظلل غير موجود داخل نص الآية. اكتب الأجزاء يدويًا.";return repaint('[data-f="e.ah"]')}delete x.err.ah;x.segs=[{num:x.label,before:x.af.slice(0,i),hl:x.ah,after:x.af.slice(i+x.ah.length)}];repaint('[data-a="split"]')}
  else if(a==="addG"){ED.segs.push({num:ED.label,before:"",hl:"",after:""});repaint(`[data-f="g.${ED.segs.length-1}.before"]`)}
  else if(a==="delG"){ask({title:"حذف الجزء الأخير من الآية؟",body:"يُحذف من هذه النافذة فقط، ولا يُحفظ شيء حتى تضغط «حفظ».",yes:"حذف",danger:true,trig:btn,onYes:()=>{ED.segs.pop();repaint('[data-a="addG"]')}})}

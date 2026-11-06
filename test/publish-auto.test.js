@@ -244,3 +244,69 @@ test("publish.yml: a removal over the limits opens the pull request; the auto pa
   assert.ok(!/refs\/heads\/main/.test(pr), "the PR job never pushes main");
   assert.ok(j.commit.steps.some((s) => /gh pr close/.test(s.run || "")));
 });
+
+test("guardRemovals: --max-removals is a hard ceiling; --owner-review lifts only the 10% ceiling, never the exact count", async () => {
+  const b = await loadBuild();
+  const w = words(), n = w.reduce((k, s) => k + s.words.length, 0);
+  let next = clone(w);
+  for (let k = 0; k < 8; k++) { const si = next.findIndex((s) => s.words.length >= 2); next = removeAt(next, si, 0); }
+  assert.ok(8 > Math.floor(n * b.MAX_REMOVAL_SHARE), "8 is over the 10% ceiling of " + n + " words");
+  assert.throws(() => b.guardRemovals(w, next, { allowRemovals: 8 }), /more than the ceiling .*run Publish by hand with allow_removals 8/s);
+  assert.strictEqual(b.guardRemovals(w, next, { allowRemovals: 8, ownerReview: true }).removed.length, 8, "the owner's exact count passes");
+  assert.throws(() => b.guardRemovals(w, next, { allowRemovals: 7, ownerReview: true }), /must match exactly/);
+  assert.throws(() => b.guardRemovals(w, next, { allowRemovals: 9, ownerReview: true }), /must match exactly/);
+  assert.throws(() => b.guardRemovals(w, next, { allowRemovals: 8, ownerReview: true, maxRemovals: 7 }), /more than the ceiling of 7 for this publish/);
+  const one = removeAt(clone(w), multi()[0], 0);
+  assert.strictEqual(b.guardRemovals(w, one, { allowRemovals: 1, maxRemovals: 7 }).removed.length, 1);
+  assert.throws(() => b.guardRemovals(w, one, { allowRemovals: 1, maxRemovals: 0 }), /ceiling of 0/);
+});
+
+test("publish.yml: a run by hand with allow_removals is always a pull request, may pass the ceiling; the automatic one passes --max-removals 7", () => {
+  const w = workflow("publish.yml"), j = w.jobs;
+  const inp = w.on.workflow_dispatch.inputs;
+  assert.deepStrictEqual(Object.keys(inp).sort(), ["allow_removals", "removed_surahs"]);
+  assert.strictEqual(inp.allow_removals.default, "", "empty: the usual run");
+  assert.strictEqual(j.build.env.OWNER_ALLOW, "${{ inputs.allow_removals }}");
+  const check = j.build.steps[0];
+  assert.match(check.run, /\^\[0-9\]\*\$/, "allow_removals is empty or a whole number");
+  const build = j.build.steps.find((s) => s.id === "build").run;
+  assert.match(build, /if \[ -n "\$OWNER_ALLOW" \]; then\n\s*ALLOW="\$OWNER_ALLOW"; SURAHS="\$\{OWNER_SURAHS\/\/ \/\}"; MODE=pr; extra=\(--owner-review\)/);
+  assert.match(build, /elif \[ "\$MODE" = "auto" \]; then extra=\(--max-removals 7\)/);
+  assert.match(build, /--allow-removals "\$ALLOW" --allow-surah-removals "\$SURAHS" \$\{extra\[@\]\+"\$\{extra\[@\]\}"\}/);
+  assert.match(build, /echo "mode=\$MODE" >> "\$GITHUB_OUTPUT"/);
+  const result = j.build.steps.find((s) => s.name === "Result");
+  assert.strictEqual(result.env.MODE, "${{ steps.build.outputs.mode }}", "the result follows the build's mode, so a run by hand never auto-publishes");
+});
+
+test("smoke-live: the word pages come from the words.json being deployed, not a fixed word", async () => {
+  const { smokePages } = await import(pathToFileURL(path.join(ROOT, "scripts", "smoke-live.mjs")).href);
+  const b = await loadBuild();
+  const w = words(), first = [...b.wordIndex(w).values()][0];
+  assert.deepStrictEqual(smokePages(w), ["/", "/?smoke=word#/word/" + first.id, "/word/" + first.slug + ".html"]);
+  assert.ok(fs.existsSync(path.join(PUBLIC, "word", first.slug + ".html")), "the page is in public/");
+  const gone = removeAt(clone(w), 0, 0);
+  if (!gone[0].words.length) gone.shift();
+  const p = smokePages(gone)[2];
+  assert.notStrictEqual(p, "/word/" + first.slug + ".html", "with that word deleted, another word's page is checked");
+  assert.ok(!fs.readFileSync(path.join(ROOT, "scripts", "smoke-live.mjs"), "utf8").includes("an-nas-4"), "no fixed word");
+  assert.throws(() => smokePages([]), /no words/);
+});
+
+test("keepalive.yml: monthly and by hand, re-enables Publish, Backup and itself, with actions: write only, no commit or deploy", () => {
+  const w = workflow("keepalive.yml");
+  assert.strictEqual(w.on.schedule.length, 1);
+  assert.match(w.on.schedule[0].cron, /^\d+ \d+ 1 \* \*$/, "once a month");
+  assert.ok("workflow_dispatch" in w.on);
+  assert.deepStrictEqual(w.permissions, {});
+  assert.deepStrictEqual(Object.keys(w.jobs), ["enable"]);
+  const j = w.jobs.enable;
+  assert.deepStrictEqual(j.permissions, { actions: "write" });
+  const run = j.steps.map((s) => s.run || "").join("\n");
+  assert.strictEqual(j.steps.length, 1, "one step, no checkout");
+  assert.ok(!j.steps.some((s) => s.uses), "no action, no checkout");
+  assert.match(run, /for wf in publish\.yml backup\.yml keepalive\.yml; do/);
+  assert.match(run, /gh api -X PUT "repos\/\$REPO\/actions\/workflows\/\$wf\/enable"/);
+  assert.match(run, /disabled_manually/, "a workflow the owner turned off stays off");
+  assert.ok(!/git |firebase|deploy|secrets\./.test(JSON.stringify(w)), "no git, no deploy, no secrets");
+  for (const f of ["publish.yml", "backup.yml"]) assert.ok(workflow(f).on.schedule, f + " is a scheduled workflow");
+});

@@ -64,8 +64,10 @@ async function seed({ list, rev, steps = [], challenge = chToFirestore(CH) }) {
 
 const node = (args) => { const r = spawnSync(process.execPath, args, { encoding: "utf8", timeout: 600000, env: process.env }); return { status: r.status, out: (r.stdout || "") + (r.stderr || "") }; };
 const outputs = (out) => Object.fromEntries(out.split("\n").map((l) => l.match(/^  ([a-z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2]]));
-// the workflow, step by step: check, plan, build; returns what it would do next
-function run(work) {
+// the workflow, step by step: check, plan, build; returns what it would do next. owner: a run started by hand with
+// allow_removals ({ allow, surahs }), which the workflow always builds as a pull request with --owner-review; otherwise an
+// automatic publish is built with --max-removals 7, as the workflow does.
+function run(work, owner) {
   const site = path.join(work, "site");
   const c = node([path.join(ROOT, "scripts", "publish-plan.mjs"), "check", "--project", PROJECT, "--site", site]);
   const co = outputs(c.out);
@@ -76,10 +78,11 @@ function run(work) {
   if (p.status !== 0) return { next: "fail", step: "plan", out: p.out };
   const b = node([path.join(ROOT, "scripts", "publish-build.mjs"), "--publish", "--from-json", path.join(work, "data.json"), "--challenge-json", path.join(work, "challenge.json"),
     "--site", site, "--firebase-json", path.join(work, "firebase.json"), "--summary", path.join(work, "summary.json"), "--report", path.join(work, "report.md"), "--no-images",
-    "--allow-removals", po.allow_removals, "--allow-surah-removals", po.removed_surahs]);
+    ...(owner ? ["--allow-removals", owner.allow, "--allow-surah-removals", owner.surahs || "", "--owner-review"]
+      : ["--allow-removals", po.allow_removals, "--allow-surah-removals", po.removed_surahs, ...(po.mode === "auto" ? ["--max-removals", "7"] : [])])]);
   if (b.status !== 0) return { next: "fail", step: "build", plan: po, out: b.out, reasons: p.out.split("\n").filter((l) => /reason:/.test(l)) };
   if (/publish-build: no-change/.test(b.out)) return { next: "nothing", step: "build", plan: po };
-  return { next: po.mode === "auto" ? "commit and deploy" : "pull request", plan: po, summary: readJson(path.join(work, "summary.json")), reasons: p.out.split("\n").filter((l) => /reason:/.test(l)) };
+  return { next: po.mode === "auto" && !owner ? "commit and deploy" : "pull request", plan: po, summary: readJson(path.join(work, "summary.json")), reasons: p.out.split("\n").filter((l) => /reason:/.test(l)) };
 }
 
 async function kase(name, fn) {
@@ -142,6 +145,37 @@ try {
     ok(r.plan && r.plan.mode === "pr", "planned: a pull request (" + (r.plan && r.plan.mode) + ")");
     ok(r.next === "fail" && r.step === "build" && /more than the ceiling/.test(r.out), "the build refuses it: more than 10% of " + WORDS.reduce((n, s) => n + s.words.length, 0) + " words");
     ok(changed(before, treeFiles(path.join(work, "site"))).length === 0, "nothing written");
+  });
+
+  await kase("8 words deleted, on 73 published words: Publish run by hand with the exact count opens a pull request", async (work) => {
+    let list = clone(WORDS); const steps = [], refs = [];
+    for (let k = 0; k < 8; k++) { const si = list.findIndex((s) => s.words.length >= 2); refs.push(keyOf(list, si, 0)); list = removeAt(clone(list), si, 0); steps.push([PUBLISHED + 1 + k, "edit", list]); }
+    await seed({ list, rev: PUBLISHED + 8, steps, challenge: dropRefs(CH, refs) });
+    const before = treeFiles(path.join(work, "site"));
+    const r0 = run(work);
+    ok(r0.next === "fail" && r0.step === "build" && /run Publish by hand with allow_removals 8/.test(r0.out), "the scheduled run fails and says how to go on (" + r0.next + ")");
+    ok(changed(before, treeFiles(path.join(work, "site"))).length === 0, "nothing written by the scheduled run");
+    const r7 = run(work, { allow: "7" });
+    ok(r7.next === "fail" && r7.step === "build" && /must match exactly/.test(r7.out), "by hand with a wrong count (7): refused, the count must match exactly");
+    ok(changed(before, treeFiles(path.join(work, "site"))).length === 0, "nothing written by the wrong count");
+    const r = run(work, { allow: "8" });
+    ok(r.next === "pull request", "by hand with allow_removals 8: a pull request, past the ceiling (" + r.next + ")");
+    ok(r.summary && r.summary.words.after === WORDS.reduce((n, s) => n + s.words.length, 0) - 8, "the pull request removes exactly 8 words");
+  });
+
+  await kase("an automatic publish never removes more than 7, whatever the plan says", async (work) => {
+    // a plan that allows 8 automatically cannot happen (decide() refuses it); the build's own --max-removals 7 is checked
+    // directly, on the 103-word list where the 10% ceiling alone would allow 10
+    const big = clone(WORDS); const bi = multi[0];
+    for (let k = 0; k < 30; k++) { big[bi].words.push(big[bi].words[0]); big[bi].meanings.push(big[bi].meanings[0] + " " + k); big[bi].ayahs.push({ ...clone(big[bi].ayahs[0]), label: String(200 + k) }); }
+    await seed({ list: big, rev: PUBLISHED + 1, steps: [[PUBLISHED + 1, "edit", big]] });
+    ok(run(work).next === "commit and deploy", "103 words published");
+    let list = clone(big);
+    for (let k = 0; k < 8; k++) list = removeAt(clone(list), bi, list[bi].words.length - 1);
+    fs.writeFileSync(path.join(work, "data.json"), JSON.stringify(list));
+    const b = node([path.join(ROOT, "scripts", "publish-build.mjs"), "--publish", "--from-json", path.join(work, "data.json"), "--challenge-json", path.join(work, "challenge.json"),
+      "--site", path.join(work, "site"), "--firebase-json", path.join(work, "firebase.json"), "--no-images", "--allow-removals", "8", "--max-removals", "7"]);
+    ok(b.status !== 0 && /more than the ceiling of 7 for this publish/.test(b.out), "the build refuses 8 removals with --max-removals 7");
   });
 
   await kase("8 words deleted in the admin, on 103 published words: a pull request only", async (work) => {
