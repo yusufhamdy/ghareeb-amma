@@ -59,9 +59,9 @@ async function login(email, sub, opts) {
   return { ctx, p };
 }
 const tab = (p, v) => p.click(`[data-a="tab"][data-v="${v}"]`);
-// Opening the Tools tab starts loading the version history; when the page arrives the tab re-renders and replaces its
-// buttons and the import input. Anything that uses them waits for that load first, or the event can reach a replaced
-// element: setInputFiles then fires its change event on an input that is no longer in the page, and no dialog opens.
+// Opening the Tools tab starts loading the version history. The load now repaints only the history list (it used to
+// re-render the whole tab and replace the import input under setInputFiles); the checks still wait for it so they use
+// the tab in its settled state, with the history loaded for the current revision.
 const toolsReady = (p) => p.waitForFunction(() => TAB === "t" && HIST && HIST.forRev === D.rev && !HIST.loading, null, { timeout: 25000 });
 const revIs = (p, r) => p.waitForFunction((x) => D.rev === x && !SAVING, r, { timeout: 25000 });
 const closed = (p) => p.waitForFunction(() => !document.querySelector("#md .mb"), null, { timeout: 25000 });
