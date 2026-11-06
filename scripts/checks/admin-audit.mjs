@@ -26,6 +26,13 @@ const OWNER = "yusufhamdy20@gmail.com", HELPER = "helper@gmail.com", STRANGER = 
 const DISCARD = "لديك تعديلات غير محفوظة. هل تريد تجاهلها؟";
 
 // ---- emulator data
+// The emulator gets the repo's own rules, whatever config it was started with: a config elsewhere (an old copy beside it)
+// would otherwise test stale rules, and every save would be refused.
+{
+  const r = await fetch("http://" + FSH + "/emulator/v1/projects/demo-ghareeb:securityRules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rules: { files: [{ name: "firestore.rules", content: fs.readFileSync(path.join(REPO, "firestore.rules"), "utf8") }] } }) });
+  if (!r.ok) { console.error("could not load firestore.rules into the emulator: " + r.status); process.exit(1); }
+  console.log("  (rules: the repo's firestore.rules loaded into the emulator)");
+}
 initializeApp({ projectId: "demo-ghareeb" });
 const db = getFirestore();
 const NOTES = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [String(i + 1), "ملاحظة تجريبية لليوم " + (i + 1)]));
@@ -93,6 +100,8 @@ async function signIn(p, email) {
 }
 const tab = async (p, k) => { await p.click(`[data-a="tab"][data-v="${k}"]`); await p.waitForTimeout(120); };
 const winOpen = (p) => p.evaluate(() => !!document.querySelector("#md .mb"));
+// a save has finished: nothing is saving, and its window closed or shows an error or the conflict picker
+const saved = (p) => p.waitForFunction(() => !SAVING && (!document.querySelector("#md .mb") || document.querySelector("#md .werr") || document.querySelector("#md fieldset.cf")), null, { timeout: 30000 });
 const dlg = (p) => p.evaluate(() => document.getElementById("cd").classList.contains("open") ? { title: document.getElementById("cdt").textContent, body: document.getElementById("cdb").textContent, yes: document.querySelector('[data-cd="yes"]').textContent.trim(), no: document.querySelector('[data-cd="no"]').textContent.trim() } : null);
 const toastText = (p) => p.evaluate(() => { const t = document.getElementById("toast"); return getComputedStyle(t).display !== "none" ? t.textContent : ""; });
 const countTx = (p) => p.evaluate(() => { window.__tx = 0; window.__sets = 0; const o = FB.fs.runTransaction, s = FB.fs.setDoc; FB.fs = { ...FB.fs, runTransaction: (...a) => { window.__tx++; return o(...a); }, setDoc: (...a) => { window.__sets++; return s(...a); } }; });
@@ -283,11 +292,11 @@ try {
     const p = await page(ctx, "save", OWNER);
     await tab(p, "w"); await p.fill('[data-f="fq"]', "ثجاجا"); await p.waitForTimeout(SEARCH_WAIT);
     const before = wordOf(await readData(), "ثَجَّاجًا");
-    await p.click('[data-a="editW"]'); await p.waitForSelector("#md .mb"); await p.click('[data-a="saveW"]'); await p.waitForTimeout(1500);
+    await p.click('[data-a="editW"]'); await p.waitForSelector("#md .mb"); await p.click('[data-a="saveW"]'); await saved(p);
     const msg = await toastText(p); await shot(p, "m3-save-message");
     const after = wordOf(await readData(), "ثَجَّاجًا");
     check("M3 word save message is true", msg === "تم الحفظ، وسيظهر على الموقع بعد النشر التالي.", msg);
-    check("saving a word without changes keeps its stored meaning and ayah", JSON.stringify(before) === JSON.stringify(after), { before: before.m, after: after.m });
+    check("saving a word without changes keeps its stored meaning and ayah", JSON.stringify(before) === JSON.stringify(after), { meaningKept: before.m === after.m, ayahKept: JSON.stringify(before.ay) === JSON.stringify(after.ay) }); // booleans only: never print document content
     await ctx.close();
   }
 
@@ -300,8 +309,8 @@ try {
     for (const q of [a, b]) await tab(q, "c");
     // B has typed settings it never saved
     await b.fill('[data-f="m.releasedUpTo"]', "99"); await b.fill('[data-f="m.startDate"]', "2027-01-01");
-    await a.click('[data-a="chDay"][data-v="1"]'); await a.fill('[data-f="c.reelIg"]', "https://www.instagram.com/reel/tabA/"); await a.click('[data-a="chSaveDay"]'); await a.waitForTimeout(1500);
-    await b.click('[data-a="chDay"][data-v="2"]'); await b.fill('[data-f="c.reelTt"]', "https://www.tiktok.com/@b/video/2"); await b.click('[data-a="chSaveDay"]'); await b.waitForTimeout(1500);
+    await a.click('[data-a="chDay"][data-v="1"]'); await a.fill('[data-f="c.reelIg"]', "https://www.instagram.com/reel/tabA/"); await a.click('[data-a="chSaveDay"]'); await saved(a);
+    await b.click('[data-a="chDay"][data-v="2"]'); await b.fill('[data-f="c.reelTt"]', "https://www.tiktok.com/@b/video/2"); await b.click('[data-a="chSaveDay"]'); await saved(b);
     const st = await readCh();
     check("M2 two tabs: both day edits survive", st.days[0].reelIg === "https://www.instagram.com/reel/tabA/" && st.days[1].reelTt === "https://www.tiktok.com/@b/video/2", { day1: st.days[0].reelIg, day2: st.days[1].reelTt });
     check("M1 a day save never writes the settings", st.releasedUpTo == null && st.startDate == null, { releasedUpTo: st.releasedUpTo, startDate: st.startDate });
@@ -315,28 +324,37 @@ try {
     console.log("  (leave-page prompts accepted for the two-tab reload: " + leavePrompts.length + ")");
     for (const q of [a, b]) { await q.waitForSelector('[data-a="tab"]', { timeout: 20000 }); await tab(q, "c"); }
     await a.click('[data-a="chDay"][data-v="3"]'); await b.click('[data-a="chDay"][data-v="3"]');
-    await a.fill('[data-f="c.reelYt"]', "https://youtu.be/A"); await a.click('[data-a="chSaveDay"]'); await a.waitForTimeout(1500);
-    await b.fill('[data-f="c.reelYt"]', "https://youtu.be/B"); await b.click('[data-a="chSaveDay"]'); await b.waitForTimeout(1500);
+    await a.fill('[data-f="c.reelYt"]', "https://youtu.be/A"); await a.click('[data-a="chSaveDay"]'); await saved(a);
+    await b.fill('[data-f="c.reelYt"]', "https://youtu.be/B"); await b.click('[data-a="chSaveDay"]'); await saved(b);
     const c1 = await b.evaluate(() => ({ open: !!document.querySelector("#md .mb"), err: (document.querySelector("#md .werr") || {}).textContent || "", retry: !!document.querySelector('#md [data-a="retry"]'), val: (document.querySelector('[data-f="c.reelYt"]') || {}).value }));
     await shot(b, "s7-day-conflict");
-    await b.click('#md [data-a="retry"]'); await b.waitForTimeout(1500);
+    await b.click('#md [data-a="retry"]'); await saved(b);
     check("S7 day conflict keeps the edit and retry saves it", c1.open && c1.retry && c1.val === "https://youtu.be/B" && (await readCh()).days[2].reelYt === "https://youtu.be/B" && !(await winOpen(b)), c1);
     // words: different words in two tabs both survive; the same word gives a conflict with retry
     for (const q of [a, b]) { await q.reload(); await q.waitForSelector('[data-a="tab"]', { timeout: 20000 }); await tab(q, "w"); }
-    await a.click('[data-a="editW"][data-v="0.0"]'); await a.fill('[data-f="e.m"]', "معنى من التبويب الأول"); await a.click('[data-a="saveW"]'); await a.waitForTimeout(1500);
-    await b.click('[data-a="editW"][data-v="0.1"]'); await b.fill('[data-f="e.m"]', "معنى من التبويب الثاني"); await b.click('[data-a="saveW"]'); await b.waitForTimeout(1500);
+    await a.click('[data-a="editW"][data-v="0.0"]'); await a.fill('[data-f="e.m"]', "معنى من التبويب الأول"); await a.click('[data-a="saveW"]'); await saved(a);
+    await b.click('[data-a="editW"][data-v="0.1"]'); await b.fill('[data-f="e.m"]', "معنى من التبويب الثاني"); await b.click('[data-a="saveW"]'); await saved(b);
     let d = await readData();
-    check("M2 two tabs: edits to different words both survive", d.surahs[0].meanings[0] === "معنى من التبويب الأول" && d.surahs[0].meanings[1] === "معنى من التبويب الثاني", d.surahs[0].meanings.slice(0, 2));
+    check("M2 two tabs: edits to different words both survive", d.surahs[0].meanings[0] === "معنى من التبويب الأول" && d.surahs[0].meanings[1] === "معنى من التبويب الثاني", { firstKept: d.surahs[0].meanings[0] === "معنى من التبويب الأول", secondKept: d.surahs[0].meanings[1] === "معنى من التبويب الثاني" });
+    // the same at the same moment: both tabs press save together, so both may read the same revision; the second commit is
+    // refused (history and snapshot rows are create-only) and the admin runs it again on the newer revision
+    const r0 = d.rev;
+    await a.click('[data-a="editW"][data-v="0.1"]'); await a.fill('[data-f="e.m"]', "معنى متزامن من التبويب الأول");
+    await b.click('[data-a="editW"][data-v="0.0"]'); await b.fill('[data-f="e.m"]', "معنى متزامن من التبويب الثاني");
+    await Promise.all([a.click('[data-a="saveW"]'), b.click('[data-a="saveW"]')]); await Promise.all([saved(a), saved(b)]);
+    d = await readData();
+    const sim = { aClosed: !(await winOpen(a)), bClosed: !(await winOpen(b)), aKept: d.surahs[0].meanings[1] === "معنى متزامن من التبويب الأول", bKept: d.surahs[0].meanings[0] === "معنى متزامن من التبويب الثاني", revUp: d.rev - r0 };
+    check("M2 two tabs: different words saved at the same moment both survive", sim.aClosed && sim.bClosed && sim.aKept && sim.bKept && sim.revUp === 2, sim);
     // B opens the word, then A saves a change to it, then B saves
     await b.click('[data-a="editW"][data-v="0.0"]'); await b.waitForSelector("#md .mb");
-    await a.click('[data-a="editW"][data-v="0.0"]'); await a.fill('[data-f="e.m"]', "معنى ثالث من التبويب الأول"); await a.click('[data-a="saveW"]'); await a.waitForTimeout(1500);
+    await a.click('[data-a="editW"][data-v="0.0"]'); await a.fill('[data-f="e.m"]', "معنى ثالث من التبويب الأول"); await a.click('[data-a="saveW"]'); await saved(a);
     const WB = "معنى يتعارض"; // B's edit
-    await b.fill('[data-f="e.m"]', WB); await b.click('[data-a="saveW"]'); await b.waitForTimeout(1500);
+    await b.fill('[data-f="e.m"]', WB); await b.click('[data-a="saveW"]'); await saved(b);
     // since 44da0b7 (three-way merge) the same field changed in both tabs opens a per-field picker in B's window, not an
     // error with retry: B's edit is kept as one of the two choices, and saving with it chosen stores it
     const c2 = await b.evaluate((wb) => { const mine = document.querySelector('#md input[data-f="cf.meaning"][value="mine"]'); return { open: !!document.querySelector("#md .mb"), picker: !!document.querySelector("#md fieldset.cf"), mineIsB: !!mine && mine.closest("label").textContent.includes(wb) }; }, JSON.parse(JSON.stringify(WB)));
     await shot(b, "s7-word-conflict");
-    if (c2.picker) { await b.click('#md label.cfo:has(input[data-f="cf.meaning"][value="mine"])'); await b.click('#md [data-a="saveC"]'); await b.waitForTimeout(1500); }
+    if (c2.picker) { await b.click('#md label.cfo:has(input[data-f="cf.meaning"][value="mine"])'); await b.click('#md [data-a="saveC"]'); await saved(b); }
     d = await readData();
     check("S7 word conflict keeps the edit and saving B's choice stores it", c2.open && c2.picker && c2.mineIsB && d.surahs[0].meanings[0] === WB && !(await winOpen(b)), c2);
     // L3: sign-out in another tab closes a clean window; a window with edits asks first
@@ -382,7 +400,7 @@ try {
     await ctx.setOffline(true); await p.click('[data-a="saveW"]'); await p.waitForTimeout(800);
     const offW = await p.evaluate(() => ({ open: !!document.querySelector("#md .mb"), err: (document.querySelector("#md .werr") || {}).textContent || "", m: document.querySelector('[data-f="e.m"]').value }));
     await shot(p, "s3-offline-word");
-    check("S3 offline word save: error shown, window and edits kept", offW.open && offW.err.includes("لا يوجد اتصال") && offW.m === "معنى دون اتصال", offW);
+    check("S3 offline word save: error shown, window and edits kept", offW.open && offW.err.includes("لا يوجد اتصال") && offW.m === "معنى دون اتصال", { open: offW.open, err: offW.err });
     await ctx.setOffline(false);
     await ctx.close();
     // M4: a failed load shows a load error with a retry, and the retry loads the admin
@@ -424,8 +442,11 @@ try {
   {
     const { publicChallenge } = await import(pathToFileURL(path.join(REPO, "scripts/publish-build.mjs")).href);
     const s = JSON.parse(JSON.stringify(SEED.ch)); s.notes = { 1: "SECRET-TOP" }; s.days[0].note = "SECRET-DAY"; s.days[0].w[0] = { ...s.days[0].w[0], note: "SECRET-REF" }; s.days[1].w = [[112, "الصمد", "SECRET-TUPLE"]];
-    const out = JSON.stringify(publicChallenge(s));
-    check("L7 no extra field reaches the public challenge", !/SECRET/.test(out) && /"no":114,"word":"الخناس"/.test(out), out.slice(0, 200));
+    const pub = publicChallenge(s), out = JSON.stringify(pub);
+    // since #18 the generator writes each reference as the published file holds it: a [surah number, word] pair
+    const refs = pub.days.flatMap((d) => d.w || []);
+    const pairs = refs.every((r) => Array.isArray(r) && r.length === 2 && typeof r[0] === "number" && typeof r[1] === "string");
+    check("L7 no extra field reaches the public challenge", !/SECRET/.test(out) && /\[114,"الخناس"\]/.test(out) && pairs, { secret: /SECRET/.test(out), kept: /\[114,"الخناس"\]/.test(out), pairs, refs: refs.length });
   }
 } finally {
   await br.close(); server.close();
