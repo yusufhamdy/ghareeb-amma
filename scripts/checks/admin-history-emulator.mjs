@@ -59,6 +59,10 @@ async function login(email, sub, opts) {
   return { ctx, p };
 }
 const tab = (p, v) => p.click(`[data-a="tab"][data-v="${v}"]`);
+// Opening the Tools tab starts loading the version history; when the page arrives the tab re-renders and replaces its
+// buttons and the import input. Anything that uses them waits for that load first, or the event can reach a replaced
+// element: setInputFiles then fires its change event on an input that is no longer in the page, and no dialog opens.
+const toolsReady = (p) => p.waitForFunction(() => TAB === "t" && HIST && HIST.forRev === D.rev && !HIST.loading, null, { timeout: 25000 });
 const revIs = (p, r) => p.waitForFunction((x) => D.rev === x && !SAVING, r, { timeout: 25000 });
 const closed = (p) => p.waitForFunction(() => !document.querySelector("#md .mb"), null, { timeout: 25000 });
 const seed = async (surahs, rev) => {
@@ -141,7 +145,7 @@ await p.click(`[data-a="delS"][data-v="${iNew}"]`); await p.click('[data-cd="yes
 await saved("surah delete", 11, D_SURAH + Q(newS));
 
 // import
-await tab(p, "t");
+await tab(p, "t"); await toolsReady(p);
 const imp = official.slice(0, 5), impN = imp.reduce((n, s) => n + s.words.length, 0);
 await p.setInputFiles('[data-f="imp"]', { name: "words.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imp)) });
 await p.click('[data-cd="yes"]'); await revIs(p, 12);
