@@ -102,12 +102,17 @@ jobs:
             echo "rev=$(node -e 'process.stdout.write(String(require(process.argv[1]).rev))' "$RUNNER_TEMP/summary.json")" >> "$GITHUB_OUTPUT"
           fi
 
-      # The credential file the auth step wrote is never needed again, and must never be committed.
+      # The credential the auth step wrote is never needed again, and must never be committed. The auth step also exported
+      # three variables that point at it; left set, firebase-admin in the tests tries to read the deleted file and fails.
+      # GitHub can't unset a variable for later steps, so each is set to empty, which every Google library treats as unset.
       - name: Remove the Google credential
         if: always()
         run: |
-          rm -f gha-creds-*.json
-          if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then rm -f "$GOOGLE_APPLICATION_CREDENTIALS"; fi
+          for v in GOOGLE_APPLICATION_CREDENTIALS CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE GOOGLE_GHA_CREDS_PATH; do
+            if [ -n "${!v:-}" ]; then rm -f "${!v}"; fi
+            echo "$v=" >> "$GITHUB_ENV"
+          done
+          rm -f "$GITHUB_WORKSPACE"/gha-creds-*.json
 
       # The Arabic content guard (test/arabic-guard.test.js) compares every field with a committed fixture of SHA-256
       # digests (no text). A publish changes reviewed content, so the fixture is rebuilt from it and goes into the same
@@ -119,6 +124,18 @@ jobs:
       - name: Nothing to publish
         if: steps.build.outputs.changed == 'false'
         run: echo "nothing to publish - the site already matches Firestore" >> "$GITHUB_STEP_SUMMARY"
+
+      # Fails the job if the sign-in left anything behind: a credential variable that is still set, or a credential file.
+      - name: No Google credential is left
+        run: |
+          set -euo pipefail
+          bad=0
+          for v in GOOGLE_APPLICATION_CREDENTIALS CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE GOOGLE_GHA_CREDS_PATH; do
+            if [ -n "${!v:-}" ]; then echo "::error::$v is still set"; bad=1; fi
+          done
+          left=$(find "$GITHUB_WORKSPACE" "$RUNNER_TEMP" -name 'gha-creds-*.json' 2>/dev/null | wc -l)
+          if [ "$left" -ne 0 ]; then echo "::error::$left credential file(s) from the sign-in step still exist"; bad=1; fi
+          exit "$bad"
 
       - name: Unit tests
         if: steps.build.outputs.changed == 'true'
