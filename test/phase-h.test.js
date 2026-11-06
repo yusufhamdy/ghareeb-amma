@@ -117,9 +117,9 @@ test("H1: client:verify's UI checks pass against the Firestore emulator", { time
   // What this test is for: the harness must follow the current UI. These are the
   // checks H1 touched, so they must pass no matter what else the script reports.
   for (const line of [
-    "CLIENT-VERIFY: surah rows = 28",
-    "CLIENT-VERIFY: challenge day tiles = 30",
-    "CLIENT-VERIFY: challenge day-1 word cards = 3",
+    "CLIENT-VERIFY: surah rows = " + JSON.parse(read("public/words.json")).length,
+    "CLIENT-VERIFY: challenge day tiles = " + JSON.parse(read("public/challenge.json")).days.length,
+    "CLIENT-VERIFY: challenge day-1 word cards = " + JSON.parse(read("public/challenge.json")).days[0].w.length,
   ]) {
     assert.ok(out.includes(line), "client:verify did not report \"" + line + "\"\n" + tail);
   }
@@ -145,7 +145,7 @@ test("H2: pressing the day-complete button moves nothing but the button", { time
   try { browser = await chromium.launch(); } catch (e) { t.skip("chromium unavailable: " + e.message); return; }
 
   const words = read("public/words.json");
-  const ch = Object.assign(JSON.parse(read("public/challenge.json")), { releasedUpTo: 30 });
+  const ch = (() => { const c = JSON.parse(read("public/challenge.json")); return Object.assign(c, { releasedUpTo: c.days.length }); })();
   const server = staticServer();
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = "http://127.0.0.1:" + server.address().port;
@@ -280,7 +280,7 @@ test("H3: the day-tile legend is a 24px swatch + label row", { timeout: 400000 }
   assert.equal((css.match(/class="li"/g) || []).length, 4, "four legend items");
 
   const words = read("public/words.json");
-  const ch = Object.assign(JSON.parse(read("public/challenge.json")), { releasedUpTo: 30 });
+  const ch = (() => { const c = JSON.parse(read("public/challenge.json")); return Object.assign(c, { releasedUpTo: c.days.length }); })();
   const server = staticServer();
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = "http://127.0.0.1:" + server.address().port;
@@ -422,7 +422,7 @@ test("H4: the surah heading is a name line over a 15px count line, then the word
   try { browser = await chromium.launch(); } catch (e) { t.skip("chromium unavailable: " + e.message); return; }
 
   const words = read("public/words.json");
-  const ch = Object.assign(JSON.parse(read("public/challenge.json")), { releasedUpTo: 30 });
+  const ch = (() => { const c = JSON.parse(read("public/challenge.json")); return Object.assign(c, { releasedUpTo: c.days.length }); })();
   const server = staticServer();
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = "http://127.0.0.1:" + server.address().port;
@@ -449,7 +449,7 @@ test("H4: the surah heading is a name line over a 15px count line, then the word
           name: (r.querySelector(".q") || {}).textContent || "",
           count: (r.querySelector(".m") || {}).textContent || "",
         })));
-        assert.equal(list.length, 28, id + ": the surah list has 28 rows");
+        assert.equal(list.length, JSON.parse(read("public/words.json")).length, id + ": the surah list has a row per surah");
 
         for (const row of list) {
           const num = (row.href || "").split("/").pop();

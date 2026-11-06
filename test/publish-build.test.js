@@ -231,7 +231,8 @@ test("T-34: challenge integrity", async () => {
   assert.throws(() => mod.checkChallenge(mod.publicChallenge(wrongSurah), s, challenge()), /day 1: word reference 1 \(surah 1\)/);
   const fewer = challenge();
   fewer.days.pop();
-  assert.throws(() => mod.checkChallenge(mod.publicChallenge(fewer), s, challenge()), /29 days, the site has 30/);
+  const n = challenge().days.length;
+  assert.throws(() => mod.checkChallenge(mod.publicChallenge(fewer), s, challenge()), new RegExp("the challenge has " + (n - 1) + " days, the site has " + n + "$", "m"));
   const date = challenge();
   date.startDate = "2026-13-45x";
   assert.throws(() => mod.checkChallenge(mod.publicChallenge(date), s, challenge()), /startDate is not a date/);

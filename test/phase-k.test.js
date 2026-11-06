@@ -76,6 +76,8 @@ function ldBlocks(html) {
 // ---------------------------------------------------------------- K1 --------
 
 const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+// the surah slugs of the published data (a surah's slug stem from shared/seo.js, by its name without the "surah" word)
+const dataSurahSlugs = () => { const seo = require("../shared/seo.js"); return JSON.parse(read("words.json")).map((s) => seo.SURAH_SLUG[s.surah.replace(/^\S+\s*/, "")]); };
 
 test("K1: the shared stylesheet is the app's own style block, generated at build time", async () => {
   const mod = await loadPublish();
@@ -155,10 +157,11 @@ test("K1: word pages are rebuilt like the app (source line, browse-the-site pill
   }
 });
 
-test("K1: the 28 static surah pages exist with the slug stems from shared/seo.js", () => {
+test("K1: a static surah page exists for every surah of the data, with the slug stems from shared/seo.js", () => {
   const seo = require("../shared/seo.js");
-  const slugs = Object.values(seo.SURAH_SLUG);
-  assert.strictEqual(slugs.length, 28);
+  const slugs = dataSurahSlugs();
+  assert.strictEqual(slugs.length, JSON.parse(read("words.json")).length);
+  assert.ok(slugs.every((s) => Object.values(seo.SURAH_SLUG).includes(s)), "every surah's slug comes from shared/seo.js");
   const files = surahFiles().map((f) => f.replace(/\.html$/, ""));
   assert.deepStrictEqual([...files].sort(), [...slugs].sort());
   for (const s of slugs) {
@@ -171,14 +174,14 @@ test("K1: the 28 static surah pages exist with the slug stems from shared/seo.js
   }
 });
 
-test("K1: the sitemap lists the home, every word page, 28 surah pages and the legal pages", () => {
+test("K1: the sitemap lists the home, every word page, every surah page and the legal pages", () => {
   const seo = require("../shared/seo.js");
   const legal = require("../shared/legal.js");
   const xml = read("sitemap.xml");
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  assert.strictEqual(locs.length, 1 + WORD_COUNT + Object.keys(seo.SURAH_SLUG).length + legal.LEGAL.length);
+  assert.strictEqual(locs.length, 1 + WORD_COUNT + dataSurahSlugs().length + legal.LEGAL.length);
   assert.strictEqual(locs[0], "https://ghareebalquran.com/");
-  for (const s of Object.values(seo.SURAH_SLUG)) {
+  for (const s of dataSurahSlugs()) {
     assert.ok(locs.includes("https://ghareebalquran.com/surah/" + s + ".html"), "sitemap missing surah " + s);
   }
 });

@@ -2,8 +2,9 @@ name: Release
 
 # Production release of the static site (Firebase Hosting only).
 #
-# Triggered ONLY by a push to `main`. The job refuses to run unless the triggering commit is the current tip of
-# origin/main, so an older run can never overwrite a newer release. It installs exactly the locked dependencies,
+# Triggered by a push to `main` (a merge), and called by publish.yml after an automatic publish (a push made with
+# GITHUB_TOKEN never starts this workflow by itself), so there is one deploy path. The job refuses to run unless the
+# commit it deploys is the current tip of origin/main, so an older run can never overwrite a newer release. It installs exactly the locked dependencies,
 # runs the full test suite (with Chromium for the browser tests) and deploys nothing if anything fails. After
 # the deploy it runs a smoke check against the live site and fails loudly if the site, its security headers or
 # its Quran font are not right.
@@ -17,6 +18,12 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_call:
+    inputs:
+      sha:
+        description: "The commit on main to test and deploy (an automatic publish)"
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -35,6 +42,7 @@ jobs:
       - name: Checkout (full history for latest-main check)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ inputs.sha || github.sha }}
           fetch-depth: 0
 
       - name: Setup Node 20
@@ -44,9 +52,11 @@ jobs:
           cache: npm
 
       - name: Verify this commit is the latest origin/main
+        env:
+          TARGET: ${{ inputs.sha || github.sha }}
         run: |
           git fetch --no-tags origin main
-          if [ "$(git rev-parse origin/main)" != "${GITHUB_SHA}" ]; then
+          if [ "$(git rev-parse origin/main)" != "$TARGET" ] || [ "$(git rev-parse HEAD)" != "$TARGET" ]; then
             echo "Not the latest origin/main; refusing to release."
             exit 1
           fi

@@ -163,9 +163,24 @@ Every path below is readable by admins only; the public site never reads Firesto
   `words.json` and `challenge.json` as committed. They last changed in `3731447` (2026-10-30). Live hashes on
   2026-11-05: `words.json` `06928b7bc6dc700c`, `challenge.json` `5010809535cfb246` (first 16 hex of SHA-256), the same
   as `main`.
-- **An admin save does not reach the public site by itself.** It reaches it only through a publish pull request
-  that the owner reviews and merges (Phase 5, runbook 10.4). The admin's own message says a change appears "after the
-  next publish".
+- **Admin saves go live automatically (owner decision, D-6).** Saving in `/admin/`, or confirming a delete there,
+  counts as the owner's approval to publish, within the limits below. The scheduled Publish workflow (every 15 minutes,
+  section 7) builds, checks and deploys it, usually 30 to 60 minutes after the save. The admin's own message says a
+  change appears "after the next publish".
+  - **Goes live by itself:** edits and additions; challenge changes; and removals of **at most 7 words** when every
+    removed word was removed by an admin save (a history row of kind `edit`, which is what deleting a word or a surah
+    writes) after the published rev. A removed surah follows the same rule. Each removed page gets its D-4 redirect.
+  - **Waits for the owner in a pull request:** more than 7 removed words, words removed by an import or a restore, and
+    any removal the history can't show (a missing history row or snapshot, or a write the admin did not record).
+  - **Any failed check deploys nothing.** The run fails and GitHub e-mails the owner. The same state is not retried
+    every 15 minutes (section 7); a new save, a challenge change or a commit to `main` starts over.
+  - The decision is made by `scripts/publish-plan.mjs` from `history/` and `snapshots/`, read-only. It walks every save
+    after the published rev (`public/rev.json`) and finds, for each removed word, the save that removed it.
+- **Deleting a published word needs a challenge edit too.** Every published word is used by a challenge day, and the
+  challenge-integrity check refuses a reference to a word that is gone. Delete the word, then remove it from its day in
+  the Challenge tab; until then the publish fails (and says which day).
+- **More than 7 removals can't be built today.** The removal guard's 10% ceiling is 7 of 73 words, so a publish that
+  removes 8 or more fails even in a pull request. Raising the ceiling is an owner decision.
 - **The generator:** `scripts/publish-build.mjs --publish` turns `public/data` and `public/challenge` into the site:
   `words.json`, `challenge.json`, `sitemap.xml`, `word/<slug>.html`, `surah/<slug>.html`, the legal pages, the share
   images and `rev.json`.
@@ -184,8 +199,9 @@ Every path below is readable by admins only; the public site never reads Firesto
 - **Share images:** a word's share image is made again only when its word, surah or ayah changes. The image does not
   show the meaning, so a meaning-only edit keeps the image as it is.
 - **`rev.json`** is `{rev, hash, words}`, with no time in it, so two builds of the same `rev` are identical.
-- **Release is the only deploy path,** and it deploys the committed `public/`. So there is no race between a publish and
-  a Release.
+- **Release is the only deploy path,** and it deploys the committed `public/`. An automatic publish commits to `main`
+  and then calls Release for that commit (a push made with `GITHUB_TOKEN` never starts Release by itself). Release
+  refuses any commit that is not the tip of `main`, so there is no race between a publish and a merge.
 
 ## 5. Admin panel (`public/admin/index.html`)
 
@@ -270,9 +286,9 @@ How they are tested:
 | Workflow | Name | Trigger | What it does | Deploys |
 |---|---|---|---|---|
 | `.github/workflows/ci.yml` | CI | `pull_request` (all), and push to branch `rebuild` | Node 20, Java 21, `npm ci`, Playwright Chromium; `npm test`; `node scripts/ci/checks.mjs`; `pwsh scripts/check-private.ps1`; `npm run rules:test`; `npm run client:verify` | nothing |
-| `.github/workflows/release.yml` | Release | push to `main` | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` | **Hosting only** (never rules) |
+| `.github/workflows/release.yml` | Release | push to `main`, and `workflow_call` from Publish (input `sha`) | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` | **Hosting only** (never rules) |
 | `.github/workflows/backup.yml` | Backup | daily cron `17 3 * * *` (03:17 UTC) and manual | Section 8 | nothing (writes the backups repo) |
-| `.github/workflows/publish.yml` | Publish | manual only (`workflow_dispatch` on `main`), inputs `allow_removals` and `removed_surahs`; runs only when `PUBLISH_ENABLED` is `true` | Signs in as `ghareeb-backup` (read-only); `publish-build.mjs --publish` (section 4.2); `npm test`, rules tests, CSP check, `checks.mjs`, `check-private`; then force-updates `publish/next` and opens or updates one PR "Publish: Firestore rev N" with the review report. Concurrency group `publish`, so runs never overlap | **nothing** (no deploy, no Firestore write) |
+| `.github/workflows/publish.yml` | Publish | cron `*/15 * * * *` and manual, on `main`, only while `PUBLISH_ENABLED` is `true` | `check`: reads only the Firestore rev and the public challenge (REST, `ghareeb-backup`, read-only) and compares them with `public/rev.json` and `challenge.json` on `main`; the same, and the run ends. `build`: `publish-plan.mjs plan`, `publish-build.mjs --publish`, then `npm test`, rules tests, CSP check, `checks.mjs`, `check-private`, the credential guard. `commit` (auto): pushes "Publish: Firestore rev N" to `main`. `deploy`: calls Release. `pr` (otherwise): opens or updates the PR from `publish/next`. `remember`: marks a failed, unchanged or PR state so it is not rebuilt every 15 minutes. Concurrency group `publish` | **Hosting, through Release** (an automatic publish); never Firestore |
 
 - **CI does not run on `main`.** On `main`, Release runs the full test suite before deploying.
 - **No preview workflow.** Previews are deployed from a developer machine with the CLI (runbook 10.2). The old
@@ -280,21 +296,27 @@ How they are tested:
   required a `push` or `pull_request` event), and the secret it needed, `FIREBASE_SERVICE_ACCOUNT`, does not exist.
 - `.github/workflows/README.md` is from the rebuild and out of date (it says Release deploys rules and Functions; it
   does not).
-- **Publish PRs don't start CI.** A PR opened with `GITHUB_TOKEN` does not trigger `ci.yml`. So the Publish job runs
-  the same checks before it opens the PR, and Release runs `npm test` again before deploying. `main` has no required
-  status checks.
-- **Publish permissions:**
-  - `contents: write` to push `publish/next`;
-  - `pull-requests: write` to open or update the PR;
-  - `id-token: write` for the Workload Identity sign-in.
-
-  Opening the PR also needs the repository setting "Allow GitHub Actions to create and approve pull requests"
-  (runbook 10.4). Approving and merging stay with the owner.
+- **Publish commits and PRs don't start CI or Release.** Anything pushed or opened with `GITHUB_TOKEN` starts no
+  workflow. So the Publish `build` job runs the same checks first, and an automatic publish calls Release itself, which
+  runs `npm test` again before deploying. `main` has no required status checks or reviews, so the `commit` job can push.
+- **Publish permissions, per job** (the workflow default is none):
+  - `check`, `build`: `contents: read`, `id-token: write` (the read-only sign-in). They can't write the repository.
+  - `commit`: `contents: write` (push to `main`), `pull-requests: write` (close a publish PR it replaces). No sign-in.
+  - `deploy`: `contents: read`, `id-token: write`, passed to Release, which signs in as `WIF_SERVICE_ACCOUNT`.
+  - `pr`: `contents: write` (push `publish/next`), `pull-requests: write`. No sign-in.
+  - `remember`: none (it saves an Actions cache entry).
+- **The credential never reaches the tests:** the `build` job deletes it and sets the three variables to empty before
+  any test, and the step "No Google credential is left" fails the job otherwise. The planned data file is deleted too.
+- **Not rebuilt every 15 minutes:** a run that fails, finds nothing to publish or opens a PR saves a cache entry named
+  `publish-seen-<rev>-<challenge hash>-<main commit>`. Scheduled runs skip that state; a manual run ignores it.
+- **Failure e-mails:** GitHub e-mails a scheduled workflow's failures to the person who last changed its schedule.
+- Opening the PR also needs the repository setting "Allow GitHub Actions to create and approve pull requests"
+  (runbook 10.4). Approving and merging a publish PR stay with the owner.
 - All actions are pinned to commit SHAs. Runners are `ubuntu-24.04`.
 
 Repository secrets (names only): `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `BACKUP_DEPLOY_KEY`.
 Repository variables: `BACKUP_AGE_RECIPIENT` (the age public key), `BACKUP_REPO`, `BACKUP_ENABLED` (`true`),
-`PUBLISH_ENABLED` (`false`). (`PREVIEW_ENABLED` was deleted on 2026-11-05: nothing read it after `preview.yml` was removed.)
+`PUBLISH_ENABLED` (`true` since 2026-11-06; set it to `false` to stop all publishing). (`PREVIEW_ENABLED` was deleted on 2026-11-05: nothing read it after `preview.yml` was removed.)
 
 **Workload Identity Federation** (keyless sign-in from GitHub Actions to Google Cloud):
 - Pool `github`, provider `github` (ACTIVE), issuer `https://token.actions.githubusercontent.com`.
@@ -385,7 +407,8 @@ Also run in CI: `node scripts/ci/checks.mjs` and `pwsh -NoProfile -File scripts/
 ### 9.2 Emulator checks run by the tests
 
 `test/admin-history-emulator.test.js`, `admin-keyorder-emulator.test.js`, `admin-merge-emulator.test.js`,
-`admin-concurrent-emulator.test.js` (two tabs saving at the same moment),
+`admin-concurrent-emulator.test.js` (two tabs saving at the same moment), `publish-auto-emulator.test.js` (the
+automatic publish, case by case),
 `backup-rehearsal-emulator.test.js` (T-41), and the browser part of `public-isolation.test.js`. Each runs a script from
 `scripts/checks/` inside `firebase emulators:exec`; `scripts/checks/README.md` describes each one.
 
@@ -466,40 +489,45 @@ checks.
 
 ### 10.4 Publishing words from Firestore
 
-The owner publishes. An agent never runs Publish or merges a publish PR without the owner's approval for that step.
-**Never change Quran text, meanings, sources, headwords or the word list yourself (section 11).**
+**Admin saves publish themselves (owner decision D-6, section 4.2).** Saving in `/admin/`, or confirming a delete
+there, is the owner's approval to publish it, within the limits in 4.2. An agent never starts a publish, merges a
+publish PR or changes these limits without the owner's approval for that step. **Never change Quran text, meanings,
+sources, headwords or the word list yourself (section 11).**
 
-**One-time setup (owner):**
+**One-time setup (owner, done on 2026-11-06):**
 1. Settings > Actions > General > Workflow permissions: tick **"Allow GitHub Actions to create and approve pull
    requests"** and save. Leave the default token permission as it is ("Read repository contents and packages
-   permissions"): the workflow asks for the write permissions it needs.
-2. Settings > Secrets and variables > Actions > Variables: set `PUBLISH_ENABLED` to `true`. Set it back to `false` to
-   turn Publish off.
+   permissions"): each job asks for the permissions it needs.
+2. Settings > Secrets and variables > Actions > Variables: `PUBLISH_ENABLED` is `true`. **Set it to `false` to stop all
+   publishing**, the automatic one included; edits then wait in Firestore.
 
-**Each publish:**
-1. Make the edits in `/admin/`.
-2. Actions > **Publish** > Run workflow, on branch `main`.
-   - `allow_removals`: `0`, unless words were deleted on purpose. Then enter exactly how many.
-   - `removed_surahs`: empty, unless a whole surah was deleted on purpose. Then enter its number.
-3. **If the run says "nothing to publish",** the site already matches Firestore and nothing more happens.
-4. **If it fails,** read the failing step:
-   - the removal guard or challenge integrity names the counts, days, slugs or surah numbers involved;
+**What happens after a save:**
+1. Within about 15 minutes (GitHub may start scheduled runs late), Publish sees the new rev and builds it.
+2. All checks pass, and it's an edit, an addition, a challenge change, or at most 7 words deleted in the admin: it
+   commits "Publish: Firestore rev N" to `main` and Release deploys it. Nothing for the owner to do.
+3. Otherwise it opens or updates the PR **"Publish: Firestore rev N"** from `publish/next`, with the review report
+   (every word added, removed or changed, each changed field before and after). Review it and **merge it** (squash);
+   Release deploys it. To drop it, close it. Newer saves update the same PR. An automatic publish of a newer rev closes
+   a PR it replaces.
+4. **A failed run** e-mails the owner and deploys nothing. Read the failing step:
+   - the removal guard or challenge integrity names the counts, days, slugs or surah numbers involved (a deleted word
+     still used by a challenge day is the usual cause: remove it from its day in the Challenge tab);
    - a test failure means the data would break the site.
 
-   Nothing is pushed or opened on a failure.
-5. **Otherwise it opens or updates the PR "Publish: Firestore rev N".** Its description lists, per surah, every word
-   added, removed or changed, with each changed field before and after. The Files tab shows the diff. Check that it is
-   exactly what you meant to publish.
-6. **Merge the PR** (squash). Release tests it and deploys it.
-   - To include edits made after the run, run Publish again: it updates the same PR to the newer rev.
-   - To drop a publish, close the PR.
+   The same state is not tried again by the schedule. Fix the data in the admin (a new save starts over), or run
+   Publish by hand (Actions > Publish > Run workflow, on `main`) to retry after a passing fix to `main` or a flaky test.
+
+**To publish right away:** Actions > Publish > Run workflow, on `main`.
 
 **Rollback:**
-- Revert the publish PR's merge commit with a new PR. Release deploys the previous files.
+- Revert the publish commit (or the publish PR's merge commit) with a new PR. Release deploys the previous files.
+  Firestore still holds the edit, so set `PUBLISH_ENABLED` to `false` first, or fix the data in the admin, or the next
+  run publishes it again.
 - For an immediate fix, roll Hosting back first (runbook 10.8).
 - Publish never writes to Firestore, so there is nothing to undo there.
 
-**Locally, against the emulator:** `test/publish-emulator.test.js` (in `npm test`). For a backup export,
+**Locally, against the emulator:** `test/publish-auto-emulator.test.js` (the automatic publish, case by case) and
+`test/publish-emulator.test.js` (T-36), both in `npm test`. For a backup export,
 `scripts/checks/publish-emulator.mjs --export <folder>` (see `scripts/checks/README.md`).
 
 ### 10.5 Firestore rules deploy (owner)
@@ -547,7 +575,9 @@ These are also in `AGENTS.md`.
 
 - Never change Quran text, meanings, tafsir, sources, headwords or the word list.
 - Nothing goes to `main` or production (merges, Hosting deploys, rules deploys, Firestore writes, IAM, secrets) without
-  the owner's explicit approval for that step.
+  the owner's explicit approval for that step. **One standing approval (D-6):** the scheduled Publish workflow commits
+  and deploys admin saves by itself, within the limits in section 4.2; saving or confirming a delete in `/admin/` is the
+  owner's approval for that publish. It does not cover anything an agent does.
 - Use the preview channel only for testing, and never test writes there: it uses the production Firestore.
 - No attribution lines (such as `Co-Authored-By` or "Generated with") in commits or PRs.
 - Never print or commit secrets, keys or tokens. Secrets live only in GitHub secrets or on the owner's machine. Never
@@ -576,6 +606,7 @@ Releases and major changes, newest last. Dates are merge dates on `main`.
 | 2026-11-04 | `a1539a8` (#11), `31d2460` (#12) | **Phase 2:** daily encrypted backups with a dedicated read-only service account; export uses the Firestore client | Off-site recovery (F-2); firebase-admin 12 refused the Workload Identity credential file |
 | 2026-11-05 | `e94ee39` (#13) | Vendored, hash-pinned Firebase SDK for all checks | Test-time downloads from gstatic timed out on runners |
 | 2026-11-05 | `c67dad8` (#14) | `admin-audit` and `rules-real-data` updated to the current admin, rules and data | Both manual checks had gone stale and now pass end to end |
+| (pending) | this PR | **D-6: automatic publish.** Publish runs every 15 minutes; edits, additions, challenge changes and at most 7 words removed by admin saves are committed to `main` and deployed through Release; larger removals, imports and restores open a PR | Owner decision: admin edits and deletions go live without a manual Publish step; saving or confirming a delete in the admin is the approval |
 
 Decisions not to do something:
 - **SEC-2 (import skips the ayah check): not fixed as a security issue.** The owner is the only editor and is

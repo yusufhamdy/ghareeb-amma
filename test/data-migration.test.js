@@ -25,12 +25,12 @@ const challenge = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/challenge.j
 
 const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
 
-test('migration adds a Mushaf `no` to every surah (28 surahs, every word, unique 78..114 ascending)', () => {
+test('migration adds a Mushaf `no` to every surah (every surah, every word, unique 78..114 ascending)', () => {
   const doc = buildFirestoreData(words);
-  assert.strictEqual(doc.surahs.length, 28, 'expected 28 surahs in Juz Amma data');
+  assert.strictEqual(doc.surahs.length, words.length, 'expected every surah of the data');
   const nos = doc.surahs.map((s) => s.no);
   assert.ok(nos.every((n) => Number.isInteger(n) && n >= 78 && n <= 114), 'every no must be an integer in 78..114');
-  assert.strictEqual(new Set(nos).size, 28, 'surah numbers must be unique');
+  assert.strictEqual(new Set(nos).size, words.length, 'surah numbers must be unique');
   assert.deepStrictEqual(nos, [...nos].sort((a, b) => a - b), 'surahs must be ordered ascending by no');
   assert.strictEqual(nos[0], 78, 'first surah must be 78 (النبأ)');
   assert.strictEqual(nos[nos.length - 1], 114, 'last surah must be 114 (الناس)');
@@ -60,7 +60,7 @@ test('the client NAMES never drift from migrate util', () => {
   );
 });
 
-test('every challenge reference (30 days, one ref per word) resolves against the migrated data', () => {
+test('every challenge reference (every day, one ref per word) resolves against the migrated data', () => {
   const doc = buildFirestoreData(words);
   const keys = new Set();
   doc.surahs.forEach((s) => (s.words || []).forEach((w) => keys.add(s.no + '::' + normalizeArabic(w))));
@@ -109,7 +109,7 @@ test('Firestore payloads never contain arrays inside arrays (data + challenge)',
 
 test('buildFirestoreChallenge stores refs as objects and round-trips to tuples', () => {
   const chDoc = buildFirestoreChallenge(challenge);
-  assert.strictEqual(chDoc.days.length, 30, 'challenge keeps 30 days');
+  assert.strictEqual(chDoc.days.length, challenge.days.length, 'challenge keeps every day');
   assert.deepStrictEqual(Object.keys(chDoc), ['startDate', 'releasedUpTo', 'days']);
   // every day keeps d/reel and stores w as plain { no, word } objects
   chDoc.days.forEach((d, i) => {

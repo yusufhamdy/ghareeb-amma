@@ -112,9 +112,10 @@ test("static word pages carry every record's word/verse/meaning/surah byte-ident
 
 test("static surah pages carry the surah name and every word of the surah", () => {
   const { records, surahList } = loadRecords();
-  assert.equal(surahList.length, 28);
+  const SURAH_COUNT = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8")).length; // the published surahs
+  assert.equal(surahList.length, SURAH_COUNT);
   const files = fs.readdirSync(path.join(ROOT, "public", "surah")).filter((f) => f.endsWith(".html"));
-  assert.equal(files.length, 28);
+  assert.equal(files.length, SURAH_COUNT);
   assert.deepEqual([...files].sort(), surahList.map((s) => s.slug + ".html").sort(), "one page per surah slug");
   for (const s of surahList) {
     const file = "surah/" + s.slug + ".html";

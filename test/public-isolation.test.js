@@ -67,7 +67,7 @@ test("browser: every route uses the published files only", { timeout: 180000 }, 
     await page.goto(base + "/", { waitUntil: "load" });
     await page.waitForFunction(() => typeof W !== "undefined" && W.length > 0);
     const s = await page.evaluate(() => ({ src: window.__DATA_SRC__, words: W.length, surahs: S.length, days: CH.length, overrides: window.__WORDS__ !== undefined || window.__CH__ !== undefined }));
-    assert.deepStrictEqual(s, { src: "json", words: WORD_COUNT, surahs: 28, days: 30, overrides: false });
+    assert.deepStrictEqual(s, { src: "json", words: WORD_COUNT, surahs: JSON.parse(read("words.json")).length, days: JSON.parse(read("challenge.json")).days.length, overrides: false });
     for (const [hash, sel] of [["#/surahs", "#app .list.sl .row"], ["#/word/114-0", "#app .wd.q"], ["#/challenge", "#app .cg .dy"], ["#/day/1", "#dw .dcard"], ["#/quiz", "#app"], ["#/about", "#app h1"], ["#/", "#app .acts"]]) {
       await page.evaluate((h) => { location.hash = h; }, hash);
       await page.waitForSelector(sel, { timeout: 15000 });
