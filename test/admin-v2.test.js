@@ -53,6 +53,10 @@ async function open(t, opts = {}) {
   return page;
 }
 const tab = (p, v) => p.click(`[data-a="tab"][data-v="${v}"]`);
+// Opening the Tools tab starts loading the version history, and when it arrives the tab re-renders, which replaces the
+// import button and the file input. A test that focuses the button or sets the input's files waits for that first:
+// otherwise the focus is dropped (a key press then reaches the page body) or the change event fires on a replaced input.
+const toolsTab = async (p) => { await tab(p, "t"); await p.waitForFunction(() => TAB === "t" && HIST && HIST.forRev === D.rev && !HIST.loading); };
 const lum = (rgb) => { const [r, g, b] = rgb.match(/[\d.]+/g).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
 
@@ -82,12 +86,12 @@ test("A11Y-3: focus stays on the active tab after a switch, and moves to the nex
 
 test("A11Y-4: import is a real button that opens the file picker from the keyboard", async (t) => {
   const p = await open(t); if (!p) return;
-  await tab(p, "t"); await p.focus('[data-a="impPick"]');
+  await toolsTab(p); await p.focus('[data-a="impPick"]');
   assert.strictEqual(await p.evaluate(() => document.activeElement.tagName), "BUTTON");
-  // Start waiting for the chooser together with the key press, and focus the button again before each press: the tab can
-  // re-render while it settles, which replaces the button and drops the focus, and a key press then reaches nothing.
+  // The chooser is awaited together with the key press, and before each press the focus must still be on the import
+  // button itself, so the key press really comes from the keyboard on that button.
   for (const key of ["Enter", "Space"]) {
-    await p.focus('[data-a="impPick"]');
+    assert.strictEqual(await p.evaluate(() => document.activeElement.dataset.a), "impPick", key + ": focus on the import button");
     await Promise.all([p.waitForEvent("filechooser", { timeout: 10000 }), p.keyboard.press(key)]);
   }
 });
@@ -126,7 +130,7 @@ test("UI-6: Quran words are in the Quran face in challenge rows, status rows, th
   await p.click('[data-a="chStatus"]'); assert.match(await face("#md .row .t .q"), /KFGQPC/, "status row"); await p.click('#md [data-a="close"]');
   await p.click('[data-a="chDay"][data-v="1"]'); await p.waitForSelector("#c-note"); assert.match(await face("#md .rw"), /KFGQPC/, "day editor"); await p.click('#md [data-a="close"]');
   await tab(p, "w"); await p.click('[data-a="delW"][data-v="0.0"]'); assert.match(await face("#cdt .q"), /KFGQPC/, "dialog title"); await p.click('[data-cd="no"]');
-  await tab(p, "t"); await p.setInputFiles('[data-f="imp"]', { name: "words.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(SURAHS)) });
+  await toolsTab(p); await p.setInputFiles('[data-f="imp"]', { name: "words.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(SURAHS)) });
   await p.waitForSelector("#cd.open"); assert.strictEqual(await p.locator("#cdt .q").count(), 0, "the file name stays in the UI face");
   assert.ok((await p.locator("#cdt").textContent()).includes("words.json"));
 });
