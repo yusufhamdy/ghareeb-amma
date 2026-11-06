@@ -75,6 +75,8 @@ function ldBlocks(html) {
 
 // ---------------------------------------------------------------- K1 --------
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("K1: the shared stylesheet is the app's own style block, generated at build time", async () => {
   const mod = await loadPublish();
   const css = read("css/app.css");
@@ -138,7 +140,7 @@ test("K1: the theme bootstrap applies the saved gq-set record before first paint
 
 test("K1: word pages are rebuilt like the app (source line, browse-the-site pill, prev/next, others card)", () => {
   const files = wordFiles();
-  assert.strictEqual(files.length, 73, "exactly the 73 canonical word pages");
+  assert.strictEqual(files.length, WORD_COUNT, "exactly one canonical page per word");
   for (const f of files) {
     const slug = f.replace(/\.html$/, "");
     const html = read("word/" + f);
@@ -169,12 +171,12 @@ test("K1: the 28 static surah pages exist with the slug stems from shared/seo.js
   }
 });
 
-test("K1: the sitemap lists the home, 73 word pages, 28 surah pages and the legal pages", () => {
+test("K1: the sitemap lists the home, every word page, 28 surah pages and the legal pages", () => {
   const seo = require("../shared/seo.js");
   const legal = require("../shared/legal.js");
   const xml = read("sitemap.xml");
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  assert.strictEqual(locs.length, 1 + 73 + Object.keys(seo.SURAH_SLUG).length + legal.LEGAL.length);
+  assert.strictEqual(locs.length, 1 + WORD_COUNT + Object.keys(seo.SURAH_SLUG).length + legal.LEGAL.length);
   assert.strictEqual(locs[0], "https://ghareebalquran.com/");
   for (const s of Object.values(seo.SURAH_SLUG)) {
     assert.ok(locs.includes("https://ghareebalquran.com/surah/" + s + ".html"), "sitemap missing surah " + s);

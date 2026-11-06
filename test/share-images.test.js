@@ -33,8 +33,10 @@ function checkTags(html, slug, where) {
   assert.ok(meta(html, "name", "twitter:image:alt"), where + " twitter:image:alt");
 }
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("every word page has its own 1200x630 share image", () => {
-  assert.strictEqual(pages.length, 73);
+  assert.strictEqual(pages.length, WORD_COUNT);
   for (const f of pages) {
     const slug = f.replace(/\.html$/, ""), png = path.join(PUBLIC, "og", "word", slug + ".png");
     checkTags(fs.readFileSync(path.join(PUBLIC, "word", f), "utf8"), slug, f);
@@ -42,14 +44,14 @@ test("every word page has its own 1200x630 share image", () => {
     assert.deepStrictEqual(pngSize(png), [1200, 630], slug + ".png is 1200x630");
   }
   const images = fs.readdirSync(path.join(PUBLIC, "og", "word"));
-  assert.strictEqual(images.length, 73, "one image per word, and no others");
+  assert.strictEqual(images.length, WORD_COUNT, "one image per word, and no others");
 });
 
 test("the generator writes the same word-page tags, and the general image for other pages", async () => {
   const mod = await import(pathToFileURL(path.join(ROOT, "scripts/publish-build.mjs")).href);
   const { files } = mod.buildSite(JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8")), JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8")));
   const keys = Object.keys(files).filter((k) => /^word\/.+\.html$/.test(k));
-  assert.strictEqual(keys.length, 73);
+  assert.strictEqual(keys.length, WORD_COUNT);
   for (const k of keys) {
     checkTags(files[k], k.slice(5, -5), k);
     assert.strictEqual(files[k], fs.readFileSync(path.join(PUBLIC, k), "utf8"), k + " is what the generator writes");

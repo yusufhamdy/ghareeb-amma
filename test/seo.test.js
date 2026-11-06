@@ -1,7 +1,7 @@
 /*
  * seo.test.js - canonical SEO verification for the static site.
  *
- * The 73 static word pages, public/sitemap.xml and data/redirects.json are the
+ * The static word pages (one per word), public/sitemap.xml and data/redirects.json are the
  * source of truth for the canonical English URL scheme:
  *
  *     /word/<surah-slug>-<ayah>[-<n>].html
@@ -36,9 +36,11 @@ const fileSlugs = fs
   .filter((f) => f.endsWith(".html"))
   .map((f) => f.slice(0, -5));
 
-test("buildSlugs reproduces the 73 canonical static filenames exactly", () => {
-  assert.strictEqual(slugs.length, 73);
-  assert.strictEqual(fileSlugs.length, 73);
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
+test("buildSlugs reproduces the canonical static filenames exactly", () => {
+  assert.strictEqual(slugs.length, WORD_COUNT);
+  assert.strictEqual(fileSlugs.length, WORD_COUNT);
   assert.deepStrictEqual([...slugs].sort(), [...fileSlugs].sort());
   assert.strictEqual(new Set(slugs).size, slugs.length, "slugs must be unique");
 });
@@ -125,7 +127,7 @@ const loadPublish = () => import(pathToFileURL(publishPath).href);
 test("publish generator reproduces the committed static site byte-for-byte", async () => {
   const mod = await loadPublish();
   const { files, wordCount } = mod.buildSite(wordsData, challengeData);
-  assert.strictEqual(wordCount, 73);
+  assert.strictEqual(wordCount, WORD_COUNT);
   assert.strictEqual(files["words.json"], fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8"));
   assert.strictEqual(files["challenge.json"], fs.readFileSync(path.join(ROOT, "public", "challenge.json"), "utf8"));
   assert.strictEqual(files["sitemap.xml"], fs.readFileSync(path.join(ROOT, "public", "sitemap.xml"), "utf8"));
@@ -212,7 +214,7 @@ test("publish generator writes into an output directory (never over public/)", a
     const rev = JSON.parse(fs.readFileSync(path.join(out, "rev.json"), "utf8"));
     assert.strictEqual(rev.hash, hash);
     assert.strictEqual(rev.rev, 5);
-    assert.strictEqual(rev.words, 73);
+    assert.strictEqual(rev.words, WORD_COUNT);
     assert.strictEqual(
       fs.readFileSync(path.join(out, "words.json"), "utf8"),
       fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8")

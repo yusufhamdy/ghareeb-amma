@@ -1,43 +1,68 @@
-name: Publish (free plan)
+name: Publish
 
-# Phase 7A - free-plan Firestore -> static Hosting publish.
+# Phase 5 - safe publishing. Admin edits reach the site only through a pull request the owner reviews and merges.
 #
-# Runs every 15 minutes (and on manual dispatch) but is INERT until the owner
-# sets the repository variable PUBLISH_ENABLED to the string "true". No Cloud
-# Functions, no Blaze, no billing: the only thing it can do is read Firestore
-# and, when the content hash changed, deploy static Hosting.
+# Started by hand on main (Actions > Publish > Run workflow). It reads Firestore read-only as ghareeb-backup
+# (roles/datastore.viewer only), builds the site with scripts/publish-build.mjs --publish (strict shape, removal guard,
+# challenge integrity, stale pages removed with redirects, share images), runs the full checks itself, and then
+# force-updates the branch publish/next and opens or updates ONE pull request "Publish: Firestore rev N" whose
+# description is the review report (scripts/publish-report.mjs).
 #
-# Required configuration (owner, one time):
-#   - Repository variable: PUBLISH_ENABLED = true
-#   - Secrets: WIF_PROVIDER + WIF_SERVICE_ACCOUNT (preferred), or the commented
-#     FIREBASE_SERVICE_ACCOUNT fallback below.
+# It never deploys and never writes to Firestore. Release (release.yml) is the one deploy path: it deploys when the owner
+# merges the pull request. A pull request opened with GITHUB_TOKEN does not start ci.yml, so this job runs the same checks
+# before it opens one, and Release runs npm test again before deploying.
 #
-# The generator writes to build/site and never touches the committed public/
-# tree; the deploy step assembles a throwaway hosting root under build/hosting.
-#
-# Deployment policy: GitHub Actions is the single official deployment path.
+# Inert until the owner sets the repository variable PUBLISH_ENABLED to "true". Opening the pull request also needs the
+# repository setting "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General).
+# The job log shows file names and counts only; document content appears only in the pull request description.
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
+    inputs:
+      allow_removals:
+        description: "Words this publish may remove (0 = none). It must equal the number removed exactly; never more than 10%."
+        type: number
+        required: true
+        default: 0
+      removed_surahs:
+        description: "Surah numbers this publish may remove, comma-separated (empty = none)"
+        type: string
+        required: false
+        default: ""
 
+# contents: push publish/next; pull-requests: open or update the pull request; id-token: the Workload Identity sign-in
+# (without it the job can't get a Google credential at all). Nothing else.
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
   id-token: write
 
 concurrency:
-  group: publish-free-plan
+  group: publish
   cancel-in-progress: false
 
 jobs:
   publish:
-    name: Publish static site from Firestore
-    if: vars.PUBLISH_ENABLED == 'true'
+    name: Build a publish pull request from Firestore
+    if: vars.PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      ALLOW_REMOVALS: ${{ inputs.allow_removals }}
+      REMOVED_SURAHS: ${{ inputs.removed_surahs }}
     steps:
-      - name: Checkout
+      - name: Check the inputs
+        run: |
+          set -euo pipefail
+          [[ "$ALLOW_REMOVALS" =~ ^[0-9]+$ ]] || { echo "allow_removals must be a whole number, 0 or more"; exit 1; }
+          [[ "$REMOVED_SURAHS" =~ ^[0-9,\ ]*$ ]] || { echo "removed_surahs must be surah numbers separated by commas"; exit 1; }
+
+      - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0 # test/quran-text.test.js reads words.json from history
+          persist-credentials: false
 
       - name: Setup Node 20
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -45,51 +70,111 @@ jobs:
           node-version: "20"
           cache: npm
 
-      - name: Authenticate to Google Cloud (Workload Identity Federation)
-        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+      - name: Setup Java 21 (Firestore emulator runtime, for the tests)
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-        # Fallback (long-lived key) - use only if WIF is unavailable:
-        # with:
-        #   credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          distribution: temurin
+          java-version: "21"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate static site from Firestore
-        id: gen
+      - name: Install Playwright browser (share images and tests)
+        run: npx playwright install --with-deps chromium
+
+      - name: Authenticate to Google Cloud as ghareeb-backup (read-only, Workload Identity)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com
+
+      - name: Build the site from Firestore (read-only)
+        id: build
         run: |
           set -euo pipefail
-          node scripts/publish-build.mjs \
-            --project ghareebalquran-d9ae5 \
-            --out build/site \
-            --current-url https://ghareebalquran.com/rev.json | tee build/result.txt
-          if grep -q "no-change" build/result.txt; then
+          node scripts/publish-build.mjs --publish --project ghareebalquran-d9ae5 \
+            --allow-removals "$ALLOW_REMOVALS" --allow-surah-removals "${REMOVED_SURAHS// /}" \
+            --summary "$RUNNER_TEMP/summary.json" --report "$RUNNER_TEMP/report.md" | tee "$RUNNER_TEMP/result.txt"
+          if grep -q "publish-build: no-change" "$RUNNER_TEMP/result.txt"; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "rev=$(node -e 'process.stdout.write(String(require(process.argv[1]).rev))' "$RUNNER_TEMP/summary.json")" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Assemble hosting root
-        if: steps.gen.outputs.changed == 'true'
+      # The credential file the auth step wrote is never needed again, and must never be committed.
+      - name: Remove the Google credential
+        if: always()
+        run: |
+          rm -f gha-creds-*.json
+          if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then rm -f "$GOOGLE_APPLICATION_CREDENTIALS"; fi
+
+      # The Arabic content guard (test/arabic-guard.test.js) compares every field with a committed fixture of SHA-256
+      # digests (no text). A publish changes reviewed content, so the fixture is rebuilt from it and goes into the same
+      # pull request, where its diff names every changed field by path. Any other pull request still meets the old one.
+      - name: Update the Arabic content baseline to the data being published
+        if: steps.build.outputs.changed == 'true'
+        run: node scripts/arabic-baseline.js
+
+      - name: Nothing to publish
+        if: steps.build.outputs.changed == 'false'
+        run: echo "nothing to publish - the site already matches Firestore" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Unit tests
+        if: steps.build.outputs.changed == 'true'
+        run: npm test
+
+      - name: Firestore emulator rules tests
+        if: steps.build.outputs.changed == 'true'
+        run: npm run rules:test
+
+      - name: CSP allows every inline script
+        if: steps.build.outputs.changed == 'true'
+        run: node scripts/csp-update.mjs --check
+
+      - name: Static checks (fonts, redirects, sitemap, secrets)
+        if: steps.build.outputs.changed == 'true'
+        run: node scripts/ci/checks.mjs
+
+      - name: Privacy check (private notes never in public/)
+        if: steps.build.outputs.changed == 'true'
+        run: pwsh -NoProfile -File scripts/check-private.ps1
+
+      - name: Push publish/next and open or update the pull request
+        if: steps.build.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REV: ${{ steps.build.outputs.rev }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          rm -rf build/hosting
-          mkdir -p build/hosting
-          cp -R public/. build/hosting/
-          cp -R build/site/. build/hosting/
-          # The throwaway root's config is the tracked hosting block (security headers with the CSP, cache
-          # headers, redirects) served from "." - a config without them would drop every header on deploy.
-          node -e 'const j=require("./firebase.json");j.hosting.public=".";require("fs").writeFileSync("build/hosting/firebase.json",JSON.stringify({hosting:j.hosting},null,2))'
-
-      - name: Check the CSP allows every inline script being deployed
-        if: steps.gen.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          node scripts/csp-update.mjs --check
-          node scripts/csp-update.mjs --check-root build/hosting
-
-      - name: Deploy Hosting
-        if: steps.gen.outputs.changed == 'true'
-        run: npx firebase deploy --only hosting --project ghareebalquran-d9ae5 --config build/hosting/firebase.json --non-interactive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898237+github-actions[bot]@users.noreply.github.com"
+          git checkout -B publish/next
+          # only the generated site, its redirects and the content baseline; anything else in the tree is not part of a publish
+          git add -A public firebase.json test/fixtures/arabic-baseline.json
+          if git diff --cached --quiet; then echo "nothing to publish"; exit 0; fi
+          git commit -q -m "Publish: Firestore rev $REV"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" publish/next
+          body="$RUNNER_TEMP/body.md"
+          {
+            cat "$RUNNER_TEMP/report.md"
+            echo
+            echo "### Checks run by the Publish workflow"
+            echo
+            echo "npm test, rules tests, CSP check, checks.mjs and check-private all passed in [this run]($RUN_URL), started by $ACTOR."
+            echo "This pull request was opened by GitHub Actions, so CI does not run on it; Release runs npm test again before deploying."
+            echo "Merging it publishes exactly Firestore rev $REV. To include newer edits, run Publish again: it updates this pull request."
+          } > "$body"
+          # a pull request description holds at most 65536 characters
+          node -e 'const fs=require("fs"),f=process.argv[1];let s=fs.readFileSync(f,"utf8");if(s.length>60000)fs.writeFileSync(f,s.slice(0,60000)+"\n\n(The report is longer than a pull request description allows and was cut here; the diff has every change.)\n")' "$body"
+          title="Publish: Firestore rev $REV"
+          pr=$(gh pr list --head publish/next --base main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body-file "$body"
+            echo "updated pull request #$pr" >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh pr create --base main --head publish/next --title "$title" --body-file "$body"
+            echo "opened a pull request" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -21,6 +21,8 @@ const rel = (f) => path.relative(PUBLIC, f).split(path.sep).join("/");
 const PUBLIC_CODE = walk(PUBLIC).filter((f) => /\.(html|js)$/.test(f)).map(rel).filter((f) => !f.startsWith("admin/") && f !== "firebase-config.js");
 const FORBIDDEN = /firebasejs|firestore\.googleapis|firebase-config|migrate\.js|initializeApp|getFirestore/i;
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("static: no public page or script has Firebase code", () => {
   assert.ok(PUBLIC_CODE.length > 100, "the scan found the pages (" + PUBLIC_CODE.length + ")");
   assert.deepStrictEqual(PUBLIC_CODE.filter((f) => FORBIDDEN.test(read(f))), []);
@@ -65,7 +67,7 @@ test("browser: every route uses the published files only", { timeout: 180000 }, 
     await page.goto(base + "/", { waitUntil: "load" });
     await page.waitForFunction(() => typeof W !== "undefined" && W.length > 0);
     const s = await page.evaluate(() => ({ src: window.__DATA_SRC__, words: W.length, surahs: S.length, days: CH.length, overrides: window.__WORDS__ !== undefined || window.__CH__ !== undefined }));
-    assert.deepStrictEqual(s, { src: "json", words: 73, surahs: 28, days: 30, overrides: false });
+    assert.deepStrictEqual(s, { src: "json", words: WORD_COUNT, surahs: 28, days: 30, overrides: false });
     for (const [hash, sel] of [["#/surahs", "#app .list.sl .row"], ["#/word/114-0", "#app .wd.q"], ["#/challenge", "#app .cg .dy"], ["#/day/1", "#dw .dcard"], ["#/quiz", "#app"], ["#/about", "#app h1"], ["#/", "#app .acts"]]) {
       await page.evaluate((h) => { location.hash = h; }, hash);
       await page.waitForSelector(sel, { timeout: 15000 });

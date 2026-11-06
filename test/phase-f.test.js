@@ -85,6 +85,8 @@ function nav(page, hash) { return page.evaluate((h) => { location.hash = h; }, h
 // ---------------------------------------------------------------------------
 // F1: surah page prev/next arrows
 // ---------------------------------------------------------------------------
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("F1: every surah links to its neighbours and the boundaries are disabled", { timeout: 180000 }, async (t) => {
   const env = await setup(t);
   if (!env) return;
@@ -342,7 +344,7 @@ function coreAndPool() {
 test("F4: wrong options are real other meanings, never equal/containing, length-matched", { timeout: 60000 }, () => {
   const c = coreAndPool();
   const QCORE = c.QCORE, pool = c.pool;
-  assert.equal(pool.length, 73, "the pool holds every word of the data");
+  assert.equal(pool.length, WORD_COUNT, "the pool holds every word of the data");
   assert.equal(new Set(pool.map((x) => x.id)).size, pool.length, "pool ids are unique");
   assert.ok(pool.every((x) => x.sn > 0), "every pool entry knows its surah number");
   const known = new Set(pool.map((x) => x.id));
@@ -450,7 +452,7 @@ test("F5: the audit tool reports weak questions to a file outside the repo", { t
   const p = lines[1].match(/^REPORT=(.+)$/);
   assert.ok(w, "first line is the weak count (" + lines[0] + ")");
   assert.ok(p, "second line is the report path (" + lines[1] + ")");
-  assert.ok(+w[1] > 0 && +w[1] < 73, "the weak count is sensible (" + w[1] + ")");
+  assert.ok(+w[1] > 0 && +w[1] < WORD_COUNT, "the weak count is sensible (" + w[1] + ")");
   const out = p[1];
   assert.ok(!path.resolve(out).startsWith(ROOT + path.sep), "the report is written outside the repo (" + out + ")");
   assert.ok(fs.existsSync(out), "the report exists at " + out);

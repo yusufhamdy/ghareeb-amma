@@ -37,6 +37,8 @@ const segsOf = (a) => (a.segments || []).map((g) => OL + g.before + g.hl + g.aft
 const all = [];
 WORDS.forEach((e) => e.ayahs.forEach((a) => all.push(a)));
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("markParts: whole written words, same text, the 9 split segments widened", () => {
   let widened = 0;
   for (const a of all) for (const g of a.segments) {
@@ -63,7 +65,7 @@ test("static word pages: no mark inside a word, text unchanged", () => {
     n++;
   }
   assert.deepStrictEqual(bad, []);
-  assert.strictEqual(n, 73);
+  assert.strictEqual(n, WORD_COUNT);
 });
 
 function staticServer(root) {
@@ -110,7 +112,7 @@ test("the app (word pages, day cards, quiz) and the save-image layout: no mark i
     const bad = [];
     for (const a of got.ayahs) bad.push(...checkRuns(a.runs, a.where));
     assert.deepStrictEqual(bad, []);
-    assert.ok(got.ayahs.filter((a) => a.where.startsWith("word ")).length >= 73 && got.ayahs.some((a) => a.where.startsWith("day ")) && got.ayahs.some((a) => a.where === "quiz"), "word pages, day cards and the quiz were checked (" + got.ayahs.length + ")");
+    assert.ok(got.ayahs.filter((a) => a.where.startsWith("word ")).length >= WORD_COUNT && got.ayahs.some((a) => a.where.startsWith("day ")) && got.ayahs.some((a) => a.where === "quiz"), "word pages, day cards and the quiz were checked (" + got.ayahs.length + ")");
     const texts = new Set(all.map(segsOf));
     for (const a of got.ayahs) assert.ok(texts.has(a.runs.map((r) => r.text).join("")), a.where + ": the ayah text is before + hl + after");
     assert.deepStrictEqual(got.cards.filter((c) => !c.ok).map((c) => c.id), [], "each card mark is the whole-word mark, drawn as one piece");

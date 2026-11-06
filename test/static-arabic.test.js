@@ -90,11 +90,13 @@ function pageChecks(file, html) {
   return text;
 }
 
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("static word pages carry every record's word/verse/meaning/surah byte-identical", () => {
   const { records } = loadRecords();
-  assert.equal(records.length, 73);
+  assert.equal(records.length, WORD_COUNT);
   const files = fs.readdirSync(path.join(ROOT, "public", "word")).filter((f) => f.endsWith(".html"));
-  assert.equal(files.length, 73);
+  assert.equal(files.length, WORD_COUNT);
   assert.deepEqual([...files].sort(), records.map((r) => r.slug + ".html").sort(), "one page per record slug");
   for (const r of records) {
     const file = "word/" + r.slug + ".html";

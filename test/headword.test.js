@@ -2,7 +2,7 @@
 /*
  * headword.test.js - the headword is shown in the mushaf's (Uthmani) spelling, taken from the ayah itself.
  *
- *   - dw for all 73 words follows the rule: the segments' hl as stored (the official bytes), joined with one space, with an attached
+ *   - dw for every word follows the rule: the segments' hl as stored (the official bytes), joined with one space, with an attached
  *     article (alef wasla + lam, with or without the sukun) from `before` put back in front, and no other attached
  *     particle; every mark in dw is the same code point as in its hl (so 83-0 keeps U+0656, never U+064D);
  *   - no visible headword in the static pages or in the app is in the stored modern spelling (unless the stored
@@ -39,8 +39,10 @@ const all = [];
 WORDS.forEach((e) => e.words.forEach((w, i) => all.push({ surah: e.surah, word: w, ayah: e.ayahs[i], dw: QText.displayWord(e.ayahs[i]) })));
 const isMark = (c) => /[\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed\u08f0-\u08ff]/.test(c);
 
-test("dw follows the rule for all 73 words, marks included", () => {
-  assert.strictEqual(all.length, 73);
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
+test("dw follows the rule for every word, marks included", () => {
+  assert.strictEqual(all.length, WORD_COUNT);
   let articles = 0;
   for (const x of all) {
     assert.strictEqual(x.dw, expected(x.ayah), x.word);

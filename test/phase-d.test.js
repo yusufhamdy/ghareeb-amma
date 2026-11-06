@@ -85,6 +85,8 @@ function cs(page, sel, props) {
 // ---------------------------------------------------------------------------
 // D1: glass draw button keeps its fill and gains a rim/glow on hover
 // ---------------------------------------------------------------------------
+const WORD_COUNT = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0); // the published words: pages, images and sitemap entries must equal it exactly
+
 test("D1: glass filled draw button keeps its background and changes its shadow; shade still inverts", { timeout: 120000 }, async (t) => {
   const env = await setup(t, { set: { style: "glass", mode: "light" } });
   if (!env) return;
@@ -431,7 +433,7 @@ test("D6: favicon and icons exist and every head links the svg, 32px png and app
     JSON.parse(fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8")),
     JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"))
   );
-  assert.ok(wordCount >= 73, "publisher generated the word pages (" + wordCount + ")");
+  assert.ok(wordCount === WORD_COUNT, "publisher generated the word pages (" + wordCount + ")");
   const wordKey = Object.keys(files).find((k) => k.startsWith("word/"));
   const legalKeys = Object.keys(files).filter((k) => /^(about|privacy|terms|rights)\/index\.html$/.test(k));
   assert.equal(legalKeys.length, 4, "publisher generated the four legal pages");

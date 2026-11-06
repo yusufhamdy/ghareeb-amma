@@ -12,7 +12,9 @@ the handbook describe what is deployed now.
 - An Arabic (RTL) static site at https://ghareebalquran.com explaining rare Quranic words. Firebase project
   `ghareebalquran-d9ae5`, free plan, no Cloud Functions.
 - Visitors read only the published `public/words.json` and `public/challenge.json`. No public page loads Firebase.
-- One owner, and any admins the owner adds, edit in `/admin/`, which writes to Firestore with version history.
+- One owner, and any admins the owner adds, edit in `/admin/`, which writes to Firestore with version history. Edits
+  reach the site only through a "Publish: Firestore rev N" PR (`.github/workflows/publish.yml`, run by hand) that the
+  owner reviews and merges (handbook runbook 10.4).
 - Firestore rules allow admins only (`firestore.rules`). Release (`.github/workflows/release.yml`) deploys Hosting
   only when `main` changes.
 - Daily encrypted backups go to a private repository (`.github/workflows/backup.yml`, `BACKUP-RESTORE.md`).
