@@ -385,6 +385,7 @@ Also run in CI: `node scripts/ci/checks.mjs` and `pwsh -NoProfile -File scripts/
 ### 9.2 Emulator checks run by the tests
 
 `test/admin-history-emulator.test.js`, `admin-keyorder-emulator.test.js`, `admin-merge-emulator.test.js`,
+`admin-concurrent-emulator.test.js` (two tabs saving at the same moment),
 `backup-rehearsal-emulator.test.js` (T-41), and the browser part of `public-isolation.test.js`. Each runs a script from
 `scripts/checks/` inside `firebase emulators:exec`; `scripts/checks/README.md` describes each one.
 

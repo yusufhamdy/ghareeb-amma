@@ -260,19 +260,32 @@ const store={
    return fix({rev:r,surahs:next});
   }
   if(offline())throw errOf("offline");
-  const{doc,runTransaction,serverTimestamp}=FB.fs;let out;
-  await withTimeout(runTransaction(FB.db,async tx=>{
-   const ref=doc(FB.db,"public","data"),cur=await tx.get(ref),ex=cur.exists(),cs=ex?cur.data().surahs||[]:[],cr=ex?cur.data().rev||0:0;
-   if(m.expectRev!=null&&cr!==m.expectRev)throw errOf("stale");
-   const recorded=ex?(await tx.get(doc(FB.db,"history",String(cr)))).exists():true;
-   const old=fix({surahs:clone(cs)}).surahs,next=fn(clone(old));chkSize(next);
-   const r=cr+1,at=serverTimestamp();
-   if(!recorded){tx.set(doc(FB.db,"snapshots",String(cr)),{rev:cr,surahs:cs});tx.set(doc(FB.db,"history",String(cr)),row(cr,"baseline",HL.summary("baseline"),at))}
-   tx.set(doc(FB.db,"snapshots",String(r)),{rev:r,surahs:next});
-   tx.set(doc(FB.db,"history",String(r)),row(r,kind,sum(old,next),at));
-   out={rev:r,surahs:next};tx.set(ref,{rev:r,surahs:next,updatedAt:at,by:U.uid});
-  }),T);
-  return fix(out);
+  const{doc,runTransaction,serverTimestamp,getDoc}=FB.fs;let out,tried;
+  /* Two saves at the same moment both read rev N and both create history/{N+1} and snapshots/{N+1}. The rules allow those
+     to be created only, so the second commit is refused with permission-denied, which Firestore never retries. When that
+     is the cause (one of them now exists: another save committed first), the whole transaction runs again on the latest
+     rev, so fn sees the newer words and the three-way merge combines the edits, or shows the conflict picker. At most 3
+     attempts; any other refusal fails at once. */
+  const taken=r=>withTimeout(Promise.all(["history","snapshots"].map(c=>getDoc(doc(FB.db,c,String(r))))),T).then(l=>l.some(s=>s.exists()),()=>false);
+  for(let attempt=1;;attempt++){
+   tried=null;
+   try{
+    await withTimeout(runTransaction(FB.db,async tx=>{
+     const ref=doc(FB.db,"public","data"),cur=await tx.get(ref),ex=cur.exists(),cs=ex?cur.data().surahs||[]:[],cr=ex?cur.data().rev||0:0;
+     if(m.expectRev!=null&&cr!==m.expectRev)throw errOf("stale");
+     const recorded=ex?(await tx.get(doc(FB.db,"history",String(cr)))).exists():true;
+     const old=fix({surahs:clone(cs)}).surahs,next=fn(clone(old));chkSize(next);
+     const r=cr+1,at=serverTimestamp();tried=r;
+     if(!recorded){tx.set(doc(FB.db,"snapshots",String(cr)),{rev:cr,surahs:cs});tx.set(doc(FB.db,"history",String(cr)),row(cr,"baseline",HL.summary("baseline"),at))}
+     tx.set(doc(FB.db,"snapshots",String(r)),{rev:r,surahs:next});
+     tx.set(doc(FB.db,"history",String(r)),row(r,kind,sum(old,next),at));
+     out={rev:r,surahs:next};tx.set(ref,{rev:r,surahs:next,updatedAt:at,by:U.uid});
+    }),T);
+    return fix(out);
+   }catch(e){
+    if(attempt>=3||!e||e.code!=="permission-denied"||tried==null||!(await taken(tried)))throw e;
+   }
+  }
  },
  // one page of the version list, newest first: { rows, more }. Rows only: opening the list never loads a snapshot.
  async histPage(before,n){
