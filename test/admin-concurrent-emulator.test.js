@@ -21,7 +21,7 @@ test("two tabs saving at the same moment: different words both survive, the same
   ensureFirestoreEmulator(ROOT);
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ghareeb-concurrent-"));
   fs.copyFileSync(path.join(ROOT, "firestore.rules"), path.join(dir, "firestore.rules"));
-  fs.writeFileSync(path.join(dir, "firebase.json"), JSON.stringify({ firestore: { rules: "firestore.rules" }, emulators: { auth: { port: 9299 }, firestore: { port: 8280 }, hub: { port: 4420 }, logging: { port: 4520 }, ui: { enabled: false } } }));
+  fs.writeFileSync(path.join(dir, "firebase.json"), JSON.stringify({ firestore: { rules: "firestore.rules" }, emulators: { auth: { port: 9799 }, firestore: { port: 8780 }, hub: { port: 4460 }, logging: { port: 4560 }, ui: { enabled: false } } }));
   const script = path.join(ROOT, "scripts", "checks", "admin-concurrent-emulator.mjs");
   try {
     const r = spawnSync(`npx firebase emulators:exec --config "${path.join(dir, "firebase.json")}" --project demo-ghareeb --only auth,firestore "node \\"${script.replace(/\\/g, "/")}\\""`, { cwd: ROOT, encoding: "utf8", shell: true, timeout: 280000, maxBuffer: 1 << 26 });
