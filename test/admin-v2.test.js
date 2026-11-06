@@ -47,15 +47,19 @@ async function open(t, opts = {}) {
     try { if (!sessionStorage.getItem("seeded")) { sessionStorage.setItem("seeded", "1"); localStorage.setItem("gqad", JSON.stringify({ rev: 6, surahs: d })); localStorage.setItem("gqch", JSON.stringify(c)); localStorage.setItem("gqaa", JSON.stringify(["helper@example.test"])); } } catch (e) {}
   }, [SURAHS, CHALLENGE]);
   const page = await ctx.newPage();
+  // Playwright intercepts file choosers only once a "filechooser" listener exists, and it switches that on
+  // asynchronously. Added together with the key press (waitForEvent inside Promise.all) it can lose the race, and the
+  // chooser then opens unseen. A listener added here, before any key press, keeps interception on for the whole page.
+  page.on("filechooser", () => {});
   await page.goto(base + "/admin/", { waitUntil: "load" });
   await page.waitForSelector("#app .tabs", { timeout: 25000 });
   t.after(() => ctx.close());
   return page;
 }
 const tab = (p, v) => p.click(`[data-a="tab"][data-v="${v}"]`);
-// Opening the Tools tab starts loading the version history, and when it arrives the tab re-renders, which replaces the
-// import button and the file input. A test that focuses the button or sets the input's files waits for that first:
-// otherwise the focus is dropped (a key press then reaches the page body) or the change event fires on a replaced input.
+// Opening the Tools tab starts loading the version history. The load repaints only the history list (tested below); it
+// used to re-render the whole tab, replacing the import button and file input under a test. Tests still use the tab in
+// its settled state, with the history loaded for the current revision.
 const toolsTab = async (p) => { await tab(p, "t"); await p.waitForFunction(() => TAB === "t" && HIST && HIST.forRev === D.rev && !HIST.loading); };
 const lum = (rgb) => { const [r, g, b] = rgb.match(/[\d.]+/g).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
@@ -94,6 +98,20 @@ test("A11Y-4: import is a real button that opens the file picker from the keyboa
     assert.strictEqual(await p.evaluate(() => document.activeElement.dataset.a), "impPick", key + ": focus on the import button");
     await Promise.all([p.waitForEvent("filechooser", { timeout: 10000 }), p.keyboard.press(key)]);
   }
+});
+
+test("the history load repaints only the history list: the import button, its focus and the file input stay the same", async (t) => {
+  const p = await open(t); if (!p) return;
+  // hold the history page until the button is focused and the elements are marked, then let it arrive
+  await p.evaluate(() => { const o = store.histPage; window.__go = null; store.histPage = (...a) => new Promise((r) => { window.__go = r; }).then(() => o.apply(store, a)); });
+  await tab(p, "t");
+  await p.waitForFunction(() => TAB === "t" && HIST && HIST.loading && typeof window.__go === "function");
+  await p.focus('[data-a="impPick"]');
+  await p.evaluate(() => { window.__btn = document.querySelector('[data-a="impPick"]'); window.__inp = document.querySelector('[data-f="imp"]'); window.__list = document.querySelector(".hl"); window.__go(); });
+  await p.waitForFunction(() => HIST && HIST.forRev === D.rev && !HIST.loading);
+  const s = await p.evaluate(() => ({ btn: window.__btn.isConnected && window.__btn === document.querySelector('[data-a="impPick"]'), inp: window.__inp.isConnected && window.__inp === document.querySelector('[data-f="imp"]'), focus: document.activeElement === window.__btn, list: window.__list.isConnected, loading: !!document.querySelector('.hl [role="status"]') }));
+  assert.deepStrictEqual(s, { btn: true, inp: true, focus: true, list: true, loading: false });
+  await Promise.all([p.waitForEvent("filechooser", { timeout: 10000 }), p.keyboard.press("Enter")]);
 });
 
 test("A11Y-5: one active tab marked aria-current, and one heading on each screen", async (t) => {

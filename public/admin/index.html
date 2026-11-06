@@ -427,7 +427,11 @@ function tabT(){
 <div class="acts"><button class="g pill" data-a="exp">تصدير ملف الكلمات</button><button class="g pill" data-a="impPick">استيراد من ملف</button><input type="file" accept=".json" data-f="imp" aria-label="استيراد من ملف" hidden></div>
 <div class="sm">يستبدل الاستيراد كل البيانات الحالية، وتُسجَّل النسخة الجديدة في «سجل النسخ» فيمكنك الرجوع لأي نسخة قبلها.</div></div>
 <div class="hh"><h2>سجل النسخ</h2><span class="sm">كل حفظ يُسجَّل هنا كنسخة كاملة، ولا يمكن تعديل أي نسخة أو حذفها.</span></div>
-<div class="g card hl">${h.rows.map(histRow).join("")}${h.loading?'<div class="sm" role="status" style="padding:16px">جارٍ تحميل السجل…</div>':""}${h.err?`<div class="werr" role="alert"><span>${esc(h.err)}</span><button class="g sm2" data-a="hRetry">${IC_RETRY}إعادة المحاولة</button></div>`:""}${!h.loading&&!h.err&&!h.rows.length?'<div class="sm" style="padding:16px">لا توجد نسخ مسجّلة بعد. تبدأ مع أول حفظ.</div>':""}${h.more&&!h.loading?'<div class="hmore"><button class="g pill" data-a="hMore">عرض نسخ أقدم</button></div>':""}</div>`;
+<div class="g card hl">${histList(h)}</div>`;
+}
+/* the history list only; it is repainted on its own, so a history load never replaces the import button or file input */
+function histList(h){
+ return`${h.rows.map(histRow).join("")}${h.loading?'<div class="sm" role="status" style="padding:16px">جارٍ تحميل السجل…</div>':""}${h.err?`<div class="werr" role="alert"><span>${esc(h.err)}</span><button class="g sm2" data-a="hRetry">${IC_RETRY}إعادة المحاولة</button></div>`:""}${!h.loading&&!h.err&&!h.rows.length?'<div class="sm" style="padding:16px">لا توجد نسخ مسجّلة بعد. تبدأ مع أول حفظ.</div>':""}${h.more&&!h.loading?'<div class="hmore"><button class="g pill" data-a="hMore">عرض نسخ أقدم</button></div>':""}`;
 }
 const rowDate=r=>r.at&&r.at.toDate?r.at.toDate():new Date(r.at);
 const rowWhen=r=>r.at?HL.rowTime(rowDate(r),new Date()).replace(/ (ص|م)$/," $1"):"";
@@ -439,7 +443,7 @@ function histRow(r){
  const cur=r.rev===D.rev,k=esc(r.rev);
  return`<div class="row hr"><span class="nb">${k}</span><span class="ht"><span class="hs">${sumHtml(r.summary)}</span><span class="sm hm"><bdi dir="ltr">${esc(r.byEmail)}</bdi> · ${whenHtml(r)}</span></span><span class="hact">${cur?'<span class="hcur">الحالية</span>':""}<button class="g sm2" data-a="hDiff" data-v="${k}">التغييرات</button>${cur?"":`<button class="g sm2" data-a="hRestore" data-v="${k}" data-busy="جارٍ الاسترجاع…">استرجاع</button>`}</span></div>`;
 }
-function histPaint(h,focusSel){if(HIST!==h||TAB!=="t"||!U)return;render();const t=focusSel&&$(focusSel);if(t)try{t.focus()}catch(e){}}
+function histPaint(h,focusSel){if(HIST!==h||TAB!=="t"||!U)return;const l=$(".hl");if(l)l.innerHTML=histList(h);else render();const t=focusSel&&$(focusSel);if(t)try{t.focus()}catch(e){}}
 async function histLoad(){
  const h=HIST={forRev:D.rev,rows:[],more:false,loading:true,err:""};
  try{const p=await store.histPage(null,HIST_PAGE);h.rows=p.rows;h.more=p.more}catch(e){h.err=errMsg(e,"تحميل السجل")}
@@ -447,7 +451,7 @@ async function histLoad(){
 }
 async function histMore(){
  const h=HIST;if(!h||h.loading||!h.rows.length)return;
- h.loading=true;h.err="";render();
+ h.loading=true;h.err="";histPaint(h);
  const first=h.rows.length;
  try{const p=await store.histPage(h.rows[first-1].rev,HIST_PAGE);h.rows=h.rows.concat(p.rows);h.more=p.more}catch(e){h.err=errMsg(e,"تحميل السجل")}
  h.loading=false;
