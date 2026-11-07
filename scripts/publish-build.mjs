@@ -782,7 +782,8 @@ export const siteWordKey = (s) =>
     .trim();
 
 // Challenge integrity: the days are numbered 1..N with N as committed, every word reference resolves to a word of the
-// new data, and the dates are null or valid. Messages name days and positions, never the words.
+// new data, every day has at least one word, and the dates are null or valid. Messages name days and positions, never
+// the words.
 export function checkChallenge(pub, surahs, committedChallenge) {
   const p = [];
   const bySurah = new Map(surahs.map((s) => [surahNumber(s.surah), new Set(s.words.map(siteWordKey))]));
@@ -791,6 +792,8 @@ export function checkChallenge(pub, surahs, committedChallenge) {
   if (days.length !== want) p.push("the challenge has " + days.length + " days, the site has " + want);
   days.forEach((day, i) => {
     if (day.d !== i + 1) p.push("day #" + (i + 1) + " is numbered " + JSON.stringify(day.d));
+    // visitors finish a day by marking its words; a day with none can't be finished, so every day after it stays locked
+    if (!Array.isArray(day.w) || !day.w.length) p.push("day " + day.d + " has no words; visitors could not finish it and the days after it would stay locked. Add a word to it in the admin's Challenge tab");
     (day.w || []).forEach((r, k) => {
       const set = bySurah.get(r[0]);
       if (!set || !set.has(r[1])) p.push("day " + day.d + ": word reference " + (k + 1) + " (surah " + r[0] + ") is not a word of the new data");

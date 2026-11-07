@@ -179,9 +179,14 @@ Every path below is readable by admins only; the public site never reads Firesto
 - **A delete removes the word from the challenge in the same save.** Every published word is used by a challenge day,
   and the challenge-integrity check refuses a reference to a word that is gone. So deleting a word or a surah in
   `/admin/` also removes its references from the challenge days, in the same transaction as the words and their history
-  row: one confirmation, and the publish goes through. The confirm dialog names the days that use the word, and any
-  day that would be left with no words. Days are never removed: a day left empty stays in the challenge, and a
-  visitor can't complete it until a word is added to it in the Challenge tab.
+  row: one confirmation, and the publish goes through. The confirm dialog names the days that use the word. Days are
+  never removed.
+- **A delete that would leave a challenge day with no words is blocked.** A visitor finishes a day by marking its
+  words, so an empty day could never be finished and every day after it would stay locked. The dialog names the
+  day(s) it would empty and asks to add another word to them in the Challenge tab first; its confirm button stays
+  disabled. The save checks again on the latest challenge inside the transaction, so if another admin changed the
+  challenge after the page loaded, nothing is written and the message names the day. The publish build refuses any
+  challenge with an empty day too (challenge integrity, below), however Firestore was edited.
 - **Removal ceilings.** An automatic publish never removes more than 7 words: the plan refuses it and the build is run
   with `--max-removals 7`, on top of the 10% ceiling. A scheduled run that finds more removals than the 10% ceiling
   allows (8 or more of 73 words today) fails and says how to go on: the owner reviews the removals and runs Publish by
@@ -200,7 +205,8 @@ Every path below is readable by admins only; the public site never reads Firesto
     `allow_removals` exactly, never more than 10% of the words (7 of 73) except in a pull request the owner asked for
     by hand (`--owner-review`), never more than 7 in an automatic publish (`--max-removals 7`), and a removed surah must
     be listed;
-  - **challenge integrity:** the same number of days, and every reference resolves under the site's own word key;
+  - **challenge integrity:** the same number of days, every day has at least one word, and every reference resolves
+    under the site's own word key;
   - **stale files:** word and surah pages, share images and sitemap entries that no longer exist are deleted. Each
     removed page gets a 301 in `firebase.json`, to its surah page, or to `/` when the surah is gone too (decision D-4);
   - **private notes:** `admin/challengeNotes` is never read.
@@ -423,7 +429,7 @@ Also run in CI: `node scripts/ci/checks.mjs` and `pwsh -NoProfile -File scripts/
 
 `test/admin-history-emulator.test.js`, `admin-keyorder-emulator.test.js`, `admin-merge-emulator.test.js`,
 `admin-concurrent-emulator.test.js` (two tabs saving at the same moment), `admin-delete-challenge-emulator.test.js`
-(a delete removes its challenge references in the same save), `publish-auto-emulator.test.js` (the automatic publish,
+(a delete removes its challenge references in the same save, and a delete that would empty a day is blocked), `publish-auto-emulator.test.js` (the automatic publish,
 case by case, and a manual run with an exact count past the ceiling),
 `backup-rehearsal-emulator.test.js` (T-41), and the browser part of `public-isolation.test.js`. Each runs a script from
 `scripts/checks/` inside `firebase emulators:exec`; `scripts/checks/README.md` describes each one.
@@ -528,7 +534,8 @@ sources, headwords or the word list yourself (section 11).**
 4. **A failed run** e-mails the owner and deploys nothing. Read the failing step:
    - the removal guard or challenge integrity names the counts, days, slugs or surah numbers involved. A delete made
      in the admin removes its challenge references itself; a reference to a missing word now comes only from an import,
-     a restore or a challenge edit: fix the day in the Challenge tab;
+     a restore or a challenge edit: fix the day in the Challenge tab. "Day N has no words" means a day was emptied
+     outside a delete (an import, a restore or a direct edit): add a word to it in the Challenge tab;
    - **more removals than the ceiling** (8 or more of 73 words today): the run summary gives the exact count. Review
      the removals in the admin's version history, then run Publish by hand (Actions > Publish > Run workflow, on
      `main`) with `allow_removals` set to that count and `removed_surahs` to any removed surah numbers. That opens the
@@ -631,7 +638,7 @@ Releases and major changes, newest last. Dates are merge dates on `main`.
 | 2026-11-04 | `a1539a8` (#11), `31d2460` (#12) | **Phase 2:** daily encrypted backups with a dedicated read-only service account; export uses the Firestore client | Off-site recovery (F-2); firebase-admin 12 refused the Workload Identity credential file |
 | 2026-11-05 | `e94ee39` (#13) | Vendored, hash-pinned Firebase SDK for all checks | Test-time downloads from gstatic timed out on runners |
 | 2026-11-05 | `c67dad8` (#14) | `admin-audit` and `rules-real-data` updated to the current admin, rules and data | Both manual checks had gone stale and now pass end to end |
-| (pending) | this PR | **D-6: automatic publish.** Publish runs every 15 minutes; edits, additions, challenge changes and at most 7 words removed by admin saves are committed to `main` and deployed through Release; larger removals, imports and restores open a PR. A delete in the admin removes its challenge references in the same save. A manual run with an exact `allow_removals` always opens a PR and may pass the 10% ceiling. The smoke check takes its word page from `words.json`. Keepalive re-enables Publish and Backup monthly | Owner decision: admin edits and deletions go live without a manual Publish step; saving or confirming a delete in the admin is the approval |
+| (pending) | this PR | **D-6: automatic publish.** Publish runs every 15 minutes; edits, additions, challenge changes and at most 7 words removed by admin saves are committed to `main` and deployed through Release; larger removals, imports and restores open a PR. A delete in the admin removes its challenge references in the same save; one that would leave a day with no words is blocked, and the build refuses an empty day. A manual run with an exact `allow_removals` always opens a PR and may pass the 10% ceiling. The smoke check takes its word page from `words.json`. Keepalive re-enables Publish and Backup monthly | Owner decision: admin edits and deletions go live without a manual Publish step; saving or confirming a delete in the admin is the approval |
 
 Decisions not to do something:
 - **SEC-2 (import skips the ayah check): not fixed as a security issue.** The owner is the only editor and is
@@ -653,7 +660,7 @@ IDs come from the local audit and plan (`scripts/checks/out/admin-audit/REPORT.m
 | Phase 5 (F-5, F-16, F-22) | Safe publishing: a manual publish that opens a PR with a report, whole-site validation, a large-removal guard, stale pages removed; the 15-minute schedule removed | Built (PR #18: generator, safeguards, tests T-30 to T-38; PR 2: workflow). Waiting for the owner's setup and first run (runbook 10.4); `PUBLISH_ENABLED=false` |
 | — | One admin edit in Firestore is not published (section 4.1). An emulator run from the 2026-11-01 export shows the first publish would be exactly that one meaning: `words.json`, one word page and `rev.json` | Waits for the first Publish run |
 | — | Tests asserted 28 surahs and 30 challenge days in several places, so a publish that removed a whole surah would have failed `npm test` | Fixed with D-6: the tests read the counts from `words.json` and `challenge.json` |
-| — | A delete can leave a challenge day with no words (the admin names it before confirming and keeps the day). Visitors can't mark an empty day done, so the days after it stay locked until a word is added to it | Known; add a word to the day in the Challenge tab |
+| — | A delete could leave a challenge day with no words. Visitors can't mark an empty day done, so the days after it would stay locked | Fixed before D-6 merged: the admin blocks such a delete (the dialog names the days, confirm disabled; the save checks again in its transaction) and the publish build refuses a challenge with an empty day |
 | — | Nav click guard: `endT` starts at 0, so every nav click in a page's first 450 ms is dropped (`public/index.html:1003`) | Known, minor, not fixed |
 | SEC-5 | The admin loads the Firebase SDK from gstatic with no integrity check (dynamic `import()` can't carry SRI) | Open; plan: self-host under `/admin/vendor/` and drop gstatic from the CSP |
 | SEC-6 / F-8 | The admin session never ends (persistent login, no idle timeout) | Open (Phase 6) |

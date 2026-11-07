@@ -15,7 +15,7 @@ const { ensureFirestoreEmulator } = require("../scripts/checks/emulator-setup.js
 
 const ROOT = path.resolve(__dirname, "..");
 
-test("a delete removes its challenge references in the same save: one confirmation, days kept, a day left with no words named first", { timeout: 300000 }, (t) => {
+test("a delete removes its challenge references in the same save: one confirmation, days kept; a delete that would empty a day is blocked", { timeout: 300000 }, (t) => {
   const java = spawnSync("java", ["-version"], { encoding: "utf8" });
   if (java.error || java.status !== 0) { t.skip("java not available"); return; }
   ensureFirestoreEmulator(ROOT);

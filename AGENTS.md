@@ -16,7 +16,8 @@ the handbook describe what is deployed now.
   go live automatically (owner decision D-6): `.github/workflows/publish.yml` runs every 15 minutes, checks everything,
   commits "Publish: Firestore rev N" to `main` and deploys it through Release. Removals of more than 7 words, or by an
   import or a restore, wait in a PR the owner reviews and merges (handbook 4.2 and runbook 10.4). A delete in the
-  admin removes the word from the challenge in the same save.
+  admin removes the word from the challenge in the same save; a delete that would leave a challenge day with no words
+  is blocked, and the build refuses an empty day.
 - Firestore rules allow admins only (`firestore.rules`). Release (`.github/workflows/release.yml`) deploys Hosting
   when `main` changes, and when Publish calls it after an automatic publish.
 - Daily encrypted backups go to a private repository (`.github/workflows/backup.yml`, `BACKUP-RESTORE.md`).

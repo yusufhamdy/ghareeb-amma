@@ -302,6 +302,9 @@ const FB_STUB = [
 ].join("\n");
 const stubRoute = async (page) => {
   await page.route("https://www.gstatic.com/firebasejs/**", (r) => r.fulfill({ status: 200, contentType: "text/javascript", headers: { "access-control-allow-origin": "*" }, body: FB_STUB }));
+  // a challenge that does not use the stub's words: this test is about the dialog itself, and a delete that would leave a
+  // challenge day with no words is blocked (test/admin-delete-challenge-emulator.test.js covers that)
+  await page.route("**/challenge.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ startDate: null, releasedUpTo: null, days: [] }) }));
 };
 const SR = "[{surah:'Surah',no:78,words:['w0','w1'],meanings:['w0: m','w1: m'],ayahs:[{label:'1',segments:[]},{label:'2',segments:[]}],source:'s'}]";
 const T_WORD = "\u062d\u0630\u0641 \u0627\u0644\u0643\u0644\u0645\u0629 \u00abw0\u00bb\u061f";

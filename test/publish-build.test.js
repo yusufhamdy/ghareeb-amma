@@ -239,12 +239,22 @@ test("T-34: challenge integrity", async () => {
   const rel = challenge();
   rel.releasedUpTo = 31;
   assert.throws(() => mod.checkChallenge(mod.publicChallenge(rel), s, challenge()), /releasedUpTo is not a day number/);
+  const empty = challenge();
+  empty.days[2].w = [];
+  empty.days[6].w = [];
+  assert.throws(() => mod.checkChallenge(mod.publicChallenge(empty), s, challenge()), /day 3 has no words[^]*day 7 has no words/);
+  const missing = challenge();
+  delete missing.days[0].w;
+  assert.throws(() => mod.checkChallenge(mod.publicChallenge(missing), s, challenge()), /day 1 has no words/);
   mod.checkChallenge(mod.publicChallenge(challenge()), s, challenge()); // the committed challenge passes
   // the same through publishToTree, with nothing written
   const c = siteCopy();
   try {
     const before = treeHash(c.dir);
     assert.throws(() => mod.publishToTree({ surahs: s, challenge: bad, rev: 2 }, c.opt()), /day 5/);
+    const empty = challenge();
+    empty.days[3].w = [];
+    assert.throws(() => mod.publishToTree({ surahs: s, challenge: empty, rev: 2 }, c.opt()), /day 4 has no words/, "a challenge with an empty day is refused");
     assert.strictEqual(treeHash(c.dir), before);
   } finally { cleanup(c); }
 });

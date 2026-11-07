@@ -1,7 +1,8 @@
 // A delete in the admin takes its challenge references with it, in the same save, against the real rules, in the
 // EMULATORS only: the real admin page, signed in as a helper admin (the stricter rules path), on the real words and the
 // real challenge. One confirmation writes the words (with its history row, kind "edit") and the challenge in one
-// transaction; days are never removed, and a day the delete would leave with no words is named in the dialog first.
+// transaction; days are never removed. A delete that would leave a day with no words is blocked: the dialog names the
+// days and its confirm button stays disabled, and the save checks again on the latest challenge inside the transaction.
 // Run by test/admin-delete-challenge-emulator.test.js, inside emulators:exec with auth and firestore. Prints ids,
 // booleans and counts only, never document content.
 import fs from "node:fs";
@@ -67,7 +68,10 @@ const dialogText = (p) => p.locator("#cd").textContent();
 const revIs = (p, r) => p.waitForFunction((x) => D.rev === x && !SAVING, r, { timeout: 25000 });
 // day numbers named in a text, in order ("اليوم 3، اليوم 5")
 const daysIn = (t) => [...String(t).matchAll(/اليوم (\d+)/g)].map((m) => +m[1]);
-const LEFT_MARK = "أي كلمة"; // "أي كلمة": only the left-with-no-words sentence has it
+const LEFT_MARK = "أي كلمة"; // only the blocked dialog (and the refused-save message) has it
+const yesDisabled = (p) => p.evaluate(() => { const b = document.querySelector('#cd [data-cd="yes"]'); return b.disabled && b.getAttribute("aria-disabled") === "true"; });
+// clicks on the disabled confirm button sent by a script, as an assistive tool or a stray handler could
+const forceYes = (p) => p.evaluate(() => { const b = document.querySelector('#cd [data-cd="yes"]'); b.click(); b.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
 
 // In the page, with the page's own matching: the surahs and words a choice needs, and which day references they match.
 // Returns indices only.
@@ -75,7 +79,11 @@ const pick = (p, mode) => p.evaluate((mode) => {
   const refsOf = (no, w) => CH.days.map((d) => d.w.map((r, k) => (+r[0] === +no && (w == null || NM(r[1]) === NM(w)) ? k : -1)).filter((k) => k >= 0));
   for (let s = 0; s < D.surahs.length; s++) {
     const e = D.surahs[s];
-    if (mode === "surah") { const m = refsOf(e.no, null); if (m.some((l) => l.length)) return { s, no: e.no, m }; continue; }
+    if (mode === "surah" || mode === "surah-empties") {
+      const m = refsOf(e.no, null), empties = m.map((l, d) => (l.length && l.length === CH.days[d].w.length ? CH.days[d].d : -1)).filter((d) => d > 0);
+      if (m.some((l) => l.length) && (mode === "surah") === !empties.length) return { s, no: e.no, m, empties };
+      continue;
+    }
     if (e.words.length < 2 && mode !== "empties") continue; // the admin allows deleting a surah's last word too
     for (let i = 0; i < e.words.length; i++) {
       const w = e.words[i];
@@ -123,7 +131,7 @@ console.log("== delete a word used by a challenge day: one confirmation, words a
   await ctx.close();
 }
 
-console.log("\n== a delete that leaves a day with no words: named before confirming; cancel writes nothing; the day stays ==");
+console.log("\n== a word delete that would leave a day with no words is blocked: named, confirm disabled, nothing written ==");
 {
   await seed();
   const { ctx, p } = await open();
@@ -132,14 +140,67 @@ console.log("\n== a delete that leaves a day with no words: named before confirm
   check("found a word that is the only word of a day", !!k && k.empties.length > 0);
   await p.click(`[data-a="delW"][data-v="${k.s}.${k.i}"]`); await p.waitForSelector("#cd.open");
   const t = await dialogText(p), at = t.indexOf(LEFT_MARK);
-  check("the dialog says which days are left with no words", at > 0 && JSON.stringify(daysIn(t.slice(t.lastIndexOf(".", at) + 1, at))) === JSON.stringify(k.empties));
+  check("the dialog names exactly the days that would be left with no words", at > 0 && JSON.stringify(daysIn(t.slice(0, at))) === JSON.stringify(k.empties));
+  check("the dialog asks to add another word in the Challenge tab first", t.includes("«التحدي»") && t.includes("أضف أولاً"));
+  check("the confirm button is disabled", await yesDisabled(p));
+  await forceYes(p);
+  await p.waitForTimeout(1500);
+  check("a click on the disabled button does nothing: the dialog is still open", await p.evaluate(() => !!document.querySelector("#cd.open") && !SAVING));
+  const d0 = await raw("public/data"), c0 = await raw("public/challenge");
+  check("blocked: nothing written", d0.rev === START && JSON.stringify(c0) === JSON.stringify(CH) && !(await raw("history/" + (START + 1))));
   await p.click('[data-cd="no"]');
   await p.waitForFunction(() => !document.querySelector("#cd.open"));
+  await p.click(`[data-a="delW"][data-v="${k.s}.${k.i}"]`); await p.waitForSelector("#cd.open");
+  check("the next dialog is blocked again", await yesDisabled(p));
+  await p.click('[data-cd="no"]');
+  await p.waitForFunction(() => !document.querySelector("#cd.open"));
+  // a dialog that is not blocked enables the button again
+  const k2 = await pick(p, "kept");
+  await p.click(`[data-a="delW"][data-v="${k2.s}.${k2.i}"]`); await p.waitForSelector("#cd.open");
+  check("a delete that leaves every day a word: the confirm button is enabled again", await p.evaluate(() => { const b = document.querySelector('#cd [data-cd="yes"]'); return !b.disabled && b.getAttribute("aria-disabled") === "false"; }));
+  await p.click('[data-cd="no"]');
+  check("still nothing written", (await raw("public/data")).rev === START);
+  await ctx.close();
+}
+
+console.log("\n== a surah delete that would leave a day with no words is blocked ==");
+{
+  await seed();
+  const { ctx, p } = await open();
+  await tab(p, "s");
+  const k = await pick(p, "surah-empties");
+  check("found a surah whose words are all of a day's words", !!k && k.empties.length > 0);
+  await p.click(`[data-a="delS"][data-v="${k.s}"]`); await p.waitForSelector("#cd.open");
+  const t = await dialogText(p), at = t.indexOf(LEFT_MARK);
+  check("the dialog names exactly the days that would be left with no words", at > 0 && JSON.stringify(daysIn(t.slice(0, at))) === JSON.stringify(k.empties));
+  check("the confirm button is disabled", await yesDisabled(p));
+  await forceYes(p); await p.waitForTimeout(1500);
   const d0 = await raw("public/data"), c0 = await raw("public/challenge");
-  check("cancel: nothing written", d0.rev === START && JSON.stringify(c0) === JSON.stringify(CH));
-  await p.click(`[data-a="delW"][data-v="${k.s}.${k.i}"]`); await p.waitForSelector("#cd.open"); await p.click('[data-cd="yes"]'); await revIs(p, START + 1);
-  const { c } = await challengeAfter("emptying delete", k.m, START + 1);
-  check("the emptied days are still there, with no words", k.empties.every((n) => { const d = c.days.find((x) => x.d === n); return d && Array.isArray(d.w) && d.w.length === 0; }));
+  check("blocked: nothing written", d0.rev === START && d0.surahs.some((x) => x.no === k.no) && JSON.stringify(c0) === JSON.stringify(CH));
+  await ctx.close();
+}
+
+console.log("\n== the challenge changed after the page loaded: the save checks again and writes nothing ==");
+{
+  await seed();
+  const { ctx, p } = await open();
+  await tab(p, "w");
+  const k = await pick(p, "kept");
+  // another admin removes the other words of one day that uses this word, after this page loaded the challenge
+  const di = k.m.findIndex((l) => l.length), day = CH.days[di].d;
+  const CH2 = Object.assign({}, CH, { days: CH.days.map((d, i) => (i === di ? Object.assign({}, d, { w: d.w.filter((_, j) => k.m[i].includes(j)) }) : d)) });
+  await write("public/challenge", CH2);
+  await p.click(`[data-a="delW"][data-v="${k.s}.${k.i}"]`); await p.waitForSelector("#cd.open");
+  check("the page's older challenge lets the dialog through", !(await yesDisabled(p)));
+  await p.click('[data-cd="yes"]');
+  await p.waitForFunction(() => !SAVING && /أي كلمة/.test(document.querySelector("#toast").textContent), null, { timeout: 25000 }).catch(() => {});
+  const msg = await p.evaluate(() => document.querySelector("#toast").textContent);
+  check("the save is refused with a message naming the day", msg.includes(LEFT_MARK) && daysIn(msg).includes(day), "days named " + daysIn(msg).length);
+  const d0 = await raw("public/data"), c0 = await raw("public/challenge");
+  check("refused: nothing written (words, history, challenge)", d0.rev === START && !(await raw("history/" + (START + 1))) && JSON.stringify(c0) === JSON.stringify(CH2));
+  check("the page now holds the latest challenge, so the dialog is blocked", await p.evaluate(([day]) => CH.days.find((d) => d.d === day).w.length, [day]) === k.m[di].length);
+  await p.click(`[data-a="delW"][data-v="${k.s}.${k.i}"]`); await p.waitForSelector("#cd.open");
+  check("the next dialog for the same word is blocked", await yesDisabled(p));
   await ctx.close();
 }
 
