@@ -233,7 +233,7 @@ test("the add-surah list has all 37 surahs of Juz Amma, the added ones disabled 
   assert.strictEqual(juz.length, 37);
   assert.deepStrictEqual(juz.map((x) => x.v), JUZ, "in Mushaf order");
   const added = new Set(SURAHS.map((s) => s.surah.replace(/^\S+\s*/, "")));
-  assert.strictEqual(added.size, 28);
+  assert.strictEqual(added.size, WORDS.length);
   for (const x of juz) { assert.strictEqual(x.d, added.has(x.v), x.v); assert.strictEqual(x.t.includes(ADDED), added.has(x.v), x.v); }
   const free = juz.find((x) => !x.d);
   await p.selectOption("#ns", free.v); await p.click('[data-a="addS"]'); await p.waitForSelector("#e-name");

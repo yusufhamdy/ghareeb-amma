@@ -196,7 +196,7 @@ async function appQText(page) {
     for (const w of W) await go("#/word/" + w.id);
     await go("#/surahs");
     for (const s of S) await go("#/surah/" + s.num);
-    for (let d = 1; d <= 30; d++) await go("#/day/" + d);
+    for (let d = 1; d <= CH.length; d++) await go("#/day/" + d);
     await go("#/quiz");
     return out;
   });

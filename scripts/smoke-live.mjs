@@ -6,7 +6,8 @@
  *   node scripts/smoke-live.mjs https://<project>--preview-xxxx.web.app
  *
  * Checks, with up to 4 attempts 10s apart (a fresh deploy can take a moment to reach every edge):
- *   - the home page, an app word route and a static word page answer 200 with HTML;
+ *   - the home page, an app word route and a static word page answer 200 with HTML; both word pages are the first word
+ *     of the public/words.json being deployed (smokePages), never a fixed word, so a deleted word can't fail the check;
  *   - each of them carries the Content-Security-Policy written in firebase.json (exactly), and
  *     X-Content-Type-Options, Referrer-Policy, X-Frame-Options and Permissions-Policy with the firebase.json values;
  *   - the Quran font file answers 200 with the size of the committed file.
@@ -15,9 +16,22 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { wordIndex } from "./publish-build.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+// The pages to check, from the words being deployed: the home page, and the first word of words.json as an app route
+// (#/word/<surah no>-<index>) and as its static page (/word/<slug>.html).
+export function smokePages(words) {
+  const first = wordIndex(words).values().next().value;
+  if (!first) throw new Error("smoke-live: words.json has no words");
+  return ["/", "/?smoke=word#/word/" + first.id, "/word/" + first.slug + ".html"];
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) await main();
+
+async function main() {
 const BASE = (process.argv[2] || "").replace(/\/$/, "");
 if (!/^https:\/\//.test(BASE)) { console.error("usage: node scripts/smoke-live.mjs https://<site>"); process.exit(2); }
 
@@ -25,7 +39,8 @@ const fb = JSON.parse(fs.readFileSync(path.join(ROOT, "firebase.json"), "utf8"))
 const want = Object.fromEntries(((fb.hosting.headers || []).find((h) => h.source === "**") || { headers: [] }).headers.map((h) => [h.key.toLowerCase(), h.value]));
 const FONT = "/fonts/kfgqpc-uthmanic-hafs-v22.ttf";
 const fontSize = fs.statSync(path.join(ROOT, "public", FONT)).size;
-const PAGES = ["/", "/?smoke=word#/word/114-0", "/word/an-nas-4.html"];
+const PAGES = smokePages(JSON.parse(fs.readFileSync(path.join(ROOT, "public", "words.json"), "utf8")));
+if (!fs.existsSync(path.join(ROOT, "public", PAGES[2].slice(1)))) { console.error("smoke-live: " + PAGES[2] + " is not in public/"); process.exit(1); }
 
 async function once() {
   const fails = [], ok = [];
@@ -62,3 +77,4 @@ if (res.fails.length) {
   process.exit(1);
 }
 console.log("SMOKE CHECK PASSED against " + BASE);
+}

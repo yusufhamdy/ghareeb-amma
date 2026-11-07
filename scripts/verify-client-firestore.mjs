@@ -17,10 +17,10 @@
  *      public/prev and public/challenge is refused by the emulator
  *   2. no canary reached the page: neither override global is set, no canary in the
  *      app's data or the document
- *   3. the surah list renders the 28 surahs in Mushaf order with `no` 78..114
- *   4. the app shows all 73 words ("73 كلمة في 28 سورة")
+ *   3. the surah list renders every surah of the data in Mushaf order (`no` ascending)
+ *   4. the app shows every word ("N كلمة في M سورة")
  *   5. a word deep link works
- *   6. the challenge renders 30 day tiles and day 1 resolves its word refs
+ *   6. the challenge renders a tile per published day and day 1 resolves its word refs
  *   7. no page errors and no console errors
  */
 import { chromium } from 'playwright';
@@ -29,8 +29,20 @@ import { getFirestore } from 'firebase-admin/firestore';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
 const ROOT = path.resolve('public');
+// What the app must show: counted from the published files the emulator is seeded from (scripts/seed-emulator.js),
+// so a published removal (handbook 4.2) needs no change here.
+const { deriveSurahNo } = createRequire(import.meta.url)('../src/utils/migrate.js');
+const DATA = JSON.parse(fs.readFileSync(path.join(ROOT, 'words.json'), 'utf8'));
+const EXPECT = {
+  surahs: DATA.length,
+  words: DATA.reduce((n, s) => n + s.words.length, 0),
+  days: JSON.parse(fs.readFileSync(path.join(ROOT, 'challenge.json'), 'utf8')).days.length,
+  firstNo: Math.min(...DATA.map((s) => deriveSurahNo(s.surah))),
+  lastNo: Math.max(...DATA.map((s) => deriveSurahNo(s.surah))),
+};
 const PORT = 5179;
 const CANARY = 'CANARY-UNPUBLISHED-DRAFT';
 const MIME = {
@@ -134,7 +146,7 @@ try {
     console.log('CLIENT-VERIFY: no canary in the page');
   }
 
-  // Surah list: 28 rows, first no=78, last no=114
+  // Surah list: one row per surah, in Mushaf order
   await page.goto(`http://127.0.0.1:${PORT}/#/surahs`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#app .list.sl .row', { timeout: 15000 });
   const rows = await page.$$eval('#app .list.sl .row', (els) =>
@@ -143,24 +155,24 @@ try {
       name: el.querySelector('.q')?.textContent || '',
     })),
   );
-  if (rows.length !== 28) {
-    die(`expected 28 surah rows, got ${rows.length}`);
+  if (rows.length !== EXPECT.surahs) {
+    die(`expected ${EXPECT.surahs} surah rows, got ${rows.length}`);
   } else {
     console.log(`CLIENT-VERIFY: surah rows = ${rows.length}`);
   }
-  if (rows[0].no !== 78 || rows[rows.length - 1].no !== 114) {
-    die(`expected first no=78 and last no=114, got first=${rows[0].no} last=${rows[rows.length - 1].no}`);
+  if (rows[0].no !== EXPECT.firstNo || rows[rows.length - 1].no !== EXPECT.lastNo) {
+    die(`expected first no=${EXPECT.firstNo} and last no=${EXPECT.lastNo}, got first=${rows[0].no} last=${rows[rows.length - 1].no}`);
   } else {
     console.log(`CLIENT-VERIFY: Mushaf order ok (first=${rows[0].no} "${rows[0].name}", last=${rows[rows.length - 1].no} "${rows[rows.length - 1].name}")`);
   }
 
-  // Home summary: 73 words in 28 surahs
+  // Home summary: the word and surah counts
   await page.goto(`http://127.0.0.1:${PORT}/#/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#app .sub', { timeout: 15000 });
   const summary = await page.$eval('#app .sub', (el) => el.textContent || '');
   const m = summary.match(/(\d+)\s+كلمة في\s+(\d+)\s+سورة/);
-  if (!m || m[1] !== '73' || m[2] !== '28') {
-    die(`expected "73 كلمة في 28 سورة" summary, got "${summary.trim()}"`);
+  if (!m || m[1] !== String(EXPECT.words) || m[2] !== String(EXPECT.surahs)) {
+    die(`expected "${EXPECT.words} كلمة في ${EXPECT.surahs} سورة" summary, got "${summary.trim()}"`);
   } else {
     console.log(`CLIENT-VERIFY: word count ok ("${m[1]} كلمة في ${m[2]} سورة")`);
   }
@@ -175,12 +187,12 @@ try {
     console.log(`CLIENT-VERIFY: word deep link ok ("${word.trim()}")`);
   }
 
-  // Challenge: the 30 published days
+  // Challenge: every published day
   await page.goto(`http://127.0.0.1:${PORT}/#/challenge`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#app .cg .dy', { timeout: 15000 });
   const dayTiles = await page.$$eval('#app .cg .dy', (els) => els.length);
-  if (dayTiles !== 30) {
-    die(`expected 30 challenge day tiles, got ${dayTiles}`);
+  if (dayTiles !== EXPECT.days) {
+    die(`expected ${EXPECT.days} challenge day tiles, got ${dayTiles}`);
   } else {
     console.log(`CLIENT-VERIFY: challenge day tiles = ${dayTiles}`);
   }

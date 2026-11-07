@@ -27,6 +27,7 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PUBLIC = path.join(ROOT, "public");
+const DAYS = JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8")).days.length; // the published days
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 
 function staticServer(dir) {
@@ -54,7 +55,7 @@ async function env(t) {
   try { browser = await chromium.launch(); } catch (e) { t.skip("chromium unavailable: " + e.message); return null; }
 
   const words = fs.readFileSync(path.join(PUBLIC, "words.json"), "utf8");
-  const chObj = Object.assign(JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8")), { releasedUpTo: 30 });
+  const chObj = (() => { const c = JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8")); return Object.assign(c, { releasedUpTo: c.days.length }); })();
   const server = staticServer(PUBLIC);
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = "http://127.0.0.1:" + server.address().port;
@@ -198,8 +199,8 @@ test("I2: no non-settings click changes the theme on any route (styles/modes/wid
       { name: "surah", hash: "surah/114" },
       { name: "word", hash: "word/" + info.wid },
       { name: "day-1", hash: "day/1" },
-      { name: "day-mid", hash: "day/15" },
-      { name: "day-last", hash: "day/30" },
+      { name: "day-mid", hash: "day/" + Math.ceil(DAYS / 2) },
+      { name: "day-last", hash: "day/" + DAYS },
       { name: "challenge", hash: "challenge" },
       { name: "quiz", hash: "quiz" },
       { name: "about", hash: "about" },

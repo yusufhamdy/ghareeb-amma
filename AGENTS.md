@@ -13,17 +13,25 @@ the handbook describe what is deployed now.
   `ghareebalquran-d9ae5`, free plan, no Cloud Functions.
 - Visitors read only the published `public/words.json` and `public/challenge.json`. No public page loads Firebase.
 - One owner, and any admins the owner adds, edit in `/admin/`, which writes to Firestore with version history. Edits
-  reach the site only through a "Publish: Firestore rev N" PR (`.github/workflows/publish.yml`, run by hand) that the
-  owner reviews and merges (handbook runbook 10.4).
+  go live automatically (owner decision D-6): `.github/workflows/publish.yml` runs every 15 minutes, checks everything,
+  commits "Publish: Firestore rev N" to `main` and deploys it through Release. Removals of more than 7 words, or by an
+  import or a restore, wait in a PR the owner reviews and merges (handbook 4.2 and runbook 10.4). A delete in the
+  admin removes the word from the challenge in the same save; a delete that would leave a challenge day with no words
+  is blocked, and the build refuses an empty day.
 - Firestore rules allow admins only (`firestore.rules`). Release (`.github/workflows/release.yml`) deploys Hosting
-  only when `main` changes.
+  when `main` changes, and when Publish calls it after an automatic publish.
 - Daily encrypted backups go to a private repository (`.github/workflows/backup.yml`, `BACKUP-RESTORE.md`).
+  `.github/workflows/keepalive.yml` re-enables Publish and Backup monthly, so GitHub's 60-day inactivity rule can't
+  turn them off.
 
 ## Hard rules
 
 1. Never change Quran text, meanings, tafsir, sources, headwords or the word list.
 2. Nothing goes to `main` or production without the owner's explicit approval for that step. That covers merges,
-   Hosting deploys, rules deploys, Firestore writes, IAM changes, and secrets or variables.
+   Hosting deploys, rules deploys, Firestore writes, IAM changes, and secrets or variables. The one standing approval:
+   the scheduled Publish workflow publishes admin saves by itself, within the limits in handbook 4.2 (saving or
+   confirming a delete in `/admin/` is the owner's approval). It never covers anything an agent does, including
+   starting Publish (by hand or with `allow_removals`), merging a publish PR or changing those limits.
 3. Use the preview channel only for testing, and never test writes there: it uses the **production** Firestore.
 4. No attribution lines (such as `Co-Authored-By` or "Generated with") in commits or PRs.
 5. Never print or commit secrets, keys or tokens. Secrets live only in GitHub secrets or on the owner's machine.

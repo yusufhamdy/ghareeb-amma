@@ -1,61 +1,154 @@
 name: Publish
 
-# Phase 5 - safe publishing. Admin edits reach the site only through a pull request the owner reviews and merges.
+# Admin edits and deletions go live automatically (owner decision, handbook 4.2 and 10.4): saving, or confirming a
+# delete, in /admin/ is the approval, within the limits below. Everything else waits for the owner in a pull request.
 #
-# Started by hand on main (Actions > Publish > Run workflow). It reads Firestore read-only as ghareeb-backup
-# (roles/datastore.viewer only), builds the site with scripts/publish-build.mjs --publish (strict shape, removal guard,
-# challenge integrity, stale pages removed with redirects, share images), runs the full checks itself, and then
-# force-updates the branch publish/next and opens or updates ONE pull request "Publish: Firestore rev N" whose
-# description is the review report (scripts/publish-report.mjs).
+# Every 15 minutes (and by hand), on main, only while the repository variable PUBLISH_ENABLED is "true":
+#   check   cheap: reads only the Firestore rev (and the public challenge) as ghareeb-backup, read-only, and compares
+#           them with public/rev.json and public/challenge.json on main. The same: the run ends here, successfully.
+#   build   a new rev: plans (scripts/publish-plan.mjs), builds with the PR #18 safeguards (publish-build.mjs), removes
+#           the Google credential, then runs the full checks: npm test, rules tests, CSP, checks.mjs, check-private.
+#           Any failure: nothing is committed, opened or deployed, and the run fails (GitHub e-mails the owner).
+#   commit  "auto": edits and additions, or at most 7 removed words each removed by an admin save (history kind
+#           "edit") after the published rev. Commits the generated files to main ("Publish: Firestore rev N").
+#   deploy  calls release.yml (the one deploy path) for that commit. A push made with GITHUB_TOKEN never starts
+#           release.yml by itself, so this is the only deploy of an auto-publish.
+#   pr      "pr": more than 7 removed words, or words removed by an import or a restore, or anything the history
+#           cannot prove. Opens or updates one pull request from publish/next for the owner. Nothing is deployed.
+#           More removals than the 10% ceiling fail the build instead; the owner then runs Publish by hand with
+#           allow_removals set to the exact count (and removed_surahs), which always opens a pull request and may go
+#           past that ceiling, because the owner reviews it. The exact count must still match.
+#   remember  a run that failed, found nothing to publish or opened a pull request leaves a marker (a cache entry named
+#           after the rev, the challenge and main), so the next runs skip that state instead of building it again
+#           every 15 minutes. Any new save, challenge change or commit to main makes a new state. A run started by hand
+#           ignores the markers.
 #
-# It never deploys and never writes to Firestore. Release (release.yml) is the one deploy path: it deploys when the owner
-# merges the pull request. A pull request opened with GITHUB_TOKEN does not start ci.yml, so this job runs the same checks
-# before it opens one, and Release runs npm test again before deploying.
-#
-# Inert until the owner sets the repository variable PUBLISH_ENABLED to "true". Opening the pull request also needs the
-# repository setting "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General).
-# The job log shows file names and counts only; document content appears only in the pull request description.
+# The job log names revs, counts, slugs, surah numbers and file names only; document content appears only in a
+# publish pull request's description and in the published files.
 
 on:
+  schedule:
+    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       allow_removals:
-        description: "Words this publish may remove (0 = none). It must equal the number removed exactly; never more than 10%."
-        type: number
-        required: true
-        default: 0
+        description: "Leave empty for the usual run. A number opens a pull request (never an automatic publish) that removes exactly this many words; it may go past the 7-word and 10% ceilings, since you review it."
+        type: string
+        required: false
+        default: ""
       removed_surahs:
-        description: "Surah numbers this publish may remove, comma-separated (empty = none)"
+        description: "With allow_removals: surah numbers this publish may remove, comma-separated (empty = none)"
         type: string
         required: false
         default: ""
 
-# contents: push publish/next; pull-requests: open or update the pull request; id-token: the Workload Identity sign-in
-# (without it the job can't get a Google credential at all). Nothing else.
-permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: publish
   cancel-in-progress: false
 
+env:
+  PROJECT: ghareebalquran-d9ae5
+
 jobs:
-  publish:
-    name: Build a publish pull request from Firestore
+  check:
+    name: Is there anything new to publish?
     if: vars.PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    env:
-      ALLOW_REMOVALS: ${{ inputs.allow_removals }}
-      REMOVED_SURAHS: ${{ inputs.removed_surahs }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      changed: ${{ steps.go.outputs.changed }}
+      rev: ${{ steps.compare.outputs.rev }}
+      marker: ${{ steps.key.outputs.marker }}
     steps:
-      - name: Check the inputs
+      - name: Checkout main (only what the check reads)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            scripts/publish-plan.mjs
+            scripts/publish-build.mjs
+            shared/
+            public/qtext.js
+            public/rev.json
+            public/challenge.json
+
+      - name: Setup Node 20
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "20"
+
+      - name: Authenticate to Google Cloud as ghareeb-backup (read-only, Workload Identity)
+        id: auth
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com
+          token_format: access_token
+          create_credentials_file: false
+
+      - name: Compare the Firestore rev and challenge with the published site
+        id: compare
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: node scripts/publish-plan.mjs check --project "$PROJECT" --site public
+
+      - name: Name this state
+        id: key
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          REV: ${{ steps.compare.outputs.rev }}
+          CH: ${{ steps.compare.outputs.challenge_hash }}
+        run: echo "marker=publish-seen-$REV-$CH-$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Skip a state already handled (a failed run, nothing to publish, or a PR waiting for the owner)
+        id: seen
+        if: steps.compare.outputs.changed == 'true' && github.event_name == 'schedule'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .publish-seen
+          key: ${{ steps.key.outputs.marker }}
+          lookup-only: true
+
+      - name: Decide
+        id: go
+        env:
+          CHANGED: ${{ steps.compare.outputs.changed }}
+          SEEN: ${{ steps.seen.outputs.cache-hit }}
+        run: |
+          if [ "$CHANGED" = "true" ] && [ "$SEEN" != "true" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; else echo "changed=false" >> "$GITHUB_OUTPUT"; fi
+          if [ "$CHANGED" != "true" ]; then echo "the site matches Firestore: nothing to publish" >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ "$SEEN" = "true" ]; then echo "this rev was already handled (failed, nothing to publish, or a PR is waiting); run Publish by hand to try again" >> "$GITHUB_STEP_SUMMARY"; fi
+
+  build:
+    name: Build and check the publish
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      result: ${{ steps.result.outputs.result }}
+      rev: ${{ steps.plan.outputs.rev }}
+      base: ${{ steps.base.outputs.sha }}
+    env:
+      OWNER_ALLOW: ${{ inputs.allow_removals }}
+      OWNER_SURAHS: ${{ inputs.removed_surahs }}
+    steps:
+      - name: Check the inputs of a run started by hand
         run: |
           set -euo pipefail
-          [[ "$ALLOW_REMOVALS" =~ ^[0-9]+$ ]] || { echo "allow_removals must be a whole number, 0 or more"; exit 1; }
-          [[ "$REMOVED_SURAHS" =~ ^[0-9,\ ]*$ ]] || { echo "removed_surahs must be surah numbers separated by commas"; exit 1; }
+          [[ "$OWNER_ALLOW" =~ ^[0-9]*$ ]] || { echo "allow_removals must be empty or a whole number, 0 or more"; exit 1; }
+          [[ "$OWNER_SURAHS" =~ ^[0-9,\ ]*$ ]] || { echo "removed_surahs must be surah numbers separated by commas"; exit 1; }
+          if [ -z "$OWNER_ALLOW" ] && [ -n "$OWNER_SURAHS" ]; then echo "removed_surahs needs allow_removals"; exit 1; fi
 
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -63,6 +156,10 @@ jobs:
           ref: main
           fetch-depth: 0 # test/quran-text.test.js reads words.json from history
           persist-credentials: false
+
+      - name: Record the base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node 20
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -88,42 +185,65 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ghareeb-backup@ghareebalquran-d9ae5.iam.gserviceaccount.com
 
-      - name: Build the site from Firestore (read-only)
+      # Reads the data once (the build publishes exactly this), and the history rows and snapshots since the published
+      # rev, and decides: auto, or a PR for the owner.
+      - name: Plan (read-only)
+        id: plan
+        run: node scripts/publish-plan.mjs plan --project "$PROJECT" --site public --data-out "$RUNNER_TEMP/data.json" --challenge-out "$RUNNER_TEMP/challenge.json"
+
+      # The automatic publish: the plan's exact count, never more than 7 (--max-removals), and the 10% ceiling.
+      # A run started by hand with allow_removals: the owner's exact count and surahs, always a pull request, and
+      # --owner-review lifts the 10% ceiling (the exact count still must match).
+      - name: Build the site from the planned data
         id: build
+        env:
+          ALLOW: ${{ steps.plan.outputs.allow_removals }}
+          SURAHS: ${{ steps.plan.outputs.removed_surahs }}
+          MODE: ${{ steps.plan.outputs.mode }}
         run: |
           set -euo pipefail
-          node scripts/publish-build.mjs --publish --project ghareebalquran-d9ae5 \
-            --allow-removals "$ALLOW_REMOVALS" --allow-surah-removals "${REMOVED_SURAHS// /}" \
-            --summary "$RUNNER_TEMP/summary.json" --report "$RUNNER_TEMP/report.md" | tee "$RUNNER_TEMP/result.txt"
-          if grep -q "publish-build: no-change" "$RUNNER_TEMP/result.txt"; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "rev=$(node -e 'process.stdout.write(String(require(process.argv[1]).rev))' "$RUNNER_TEMP/summary.json")" >> "$GITHUB_OUTPUT"
+          if [ -n "$OWNER_ALLOW" ]; then
+            ALLOW="$OWNER_ALLOW"; SURAHS="${OWNER_SURAHS// /}"; MODE=pr; extra=(--owner-review)
+            echo "started by hand with allow_removals $ALLOW: a pull request for the owner" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$MODE" = "auto" ]; then extra=(--max-removals 7)
+          else extra=()
           fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          node scripts/publish-build.mjs --publish --from-json "$RUNNER_TEMP/data.json" --challenge-json "$RUNNER_TEMP/challenge.json" \
+            --allow-removals "$ALLOW" --allow-surah-removals "$SURAHS" ${extra[@]+"${extra[@]}"} \
+            --summary "$RUNNER_TEMP/summary.json" --report "$RUNNER_TEMP/report.md" | tee "$RUNNER_TEMP/result.txt"
+          if grep -q "publish-build: no-change" "$RUNNER_TEMP/result.txt"; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
 
-      # The credential the auth step wrote is never needed again, and must never be committed. The auth step also exported
-      # three variables that point at it; left set, firebase-admin in the tests tries to read the deleted file and fails.
-      # GitHub can't unset a variable for later steps, so each is set to empty, which every Google library treats as unset.
-      - name: Remove the Google credential
+      - name: How to publish more removals than the ceiling
+        if: failure() && steps.build.outcome == 'failure' && steps.plan.outputs.removed != '' && steps.plan.outputs.removed != '0'
+        env:
+          REMOVED: ${{ steps.plan.outputs.removed }}
+          SURAHS: ${{ steps.plan.outputs.removed_surahs }}
+        run: |
+          {
+            echo "The build refused this publish ($REMOVED words removed). If the log names the removal ceiling, review the"
+            echo "removals in the admin's version history and run Publish by hand with allow_removals $REMOVED and"
+            echo "removed_surahs \"$SURAHS\": that opens a pull request for you instead of publishing."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The credential the sign-in wrote is never needed again, and must never be committed. The sign-in also exported
+      # three variables that point at it; GitHub can't unset a variable for later steps, so each is set to empty, which
+      # every Google library treats as unset. The planned data leaves the runner's disk too.
+      - name: Remove the Google credential and the planned data
         if: always()
         run: |
           for v in GOOGLE_APPLICATION_CREDENTIALS CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE GOOGLE_GHA_CREDS_PATH; do
             if [ -n "${!v:-}" ]; then rm -f "${!v}"; fi
             echo "$v=" >> "$GITHUB_ENV"
           done
-          rm -f "$GITHUB_WORKSPACE"/gha-creds-*.json
+          rm -f "$GITHUB_WORKSPACE"/gha-creds-*.json "$RUNNER_TEMP/data.json" "$RUNNER_TEMP/challenge.json"
 
       # The Arabic content guard (test/arabic-guard.test.js) compares every field with a committed fixture of SHA-256
       # digests (no text). A publish changes reviewed content, so the fixture is rebuilt from it and goes into the same
-      # pull request, where its diff names every changed field by path. Any other pull request still meets the old one.
+      # commit, where its diff names every changed field by path.
       - name: Update the Arabic content baseline to the data being published
         if: steps.build.outputs.changed == 'true'
         run: node scripts/arabic-baseline.js
-
-      - name: Nothing to publish
-        if: steps.build.outputs.changed == 'false'
-        run: echo "nothing to publish - the site already matches Firestore" >> "$GITHUB_STEP_SUMMARY"
 
       # Fails the job if the sign-in left anything behind: a credential variable that is still set, or a credential file.
       - name: No Google credential is left
@@ -157,32 +277,148 @@ jobs:
         if: steps.build.outputs.changed == 'true'
         run: pwsh -NoProfile -File scripts/check-private.ps1
 
-      - name: Push publish/next and open or update the pull request
+      # Only the generated site, its redirects and the content baseline; nothing else in the tree is part of a publish.
+      - name: Commit the publish (locally) and bundle it
         if: steps.build.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REV: ${{ steps.build.outputs.rev }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          ACTOR: ${{ github.actor }}
+          REV: ${{ steps.plan.outputs.rev }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898237+github-actions[bot]@users.noreply.github.com"
-          git checkout -B publish/next
-          # only the generated site, its redirects and the content baseline; anything else in the tree is not part of a publish
           git add -A public firebase.json test/fixtures/arabic-baseline.json
-          if git diff --cached --quiet; then echo "nothing to publish"; exit 0; fi
           git commit -q -m "Publish: Firestore rev $REV"
-          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" publish/next
+          git bundle create "$RUNNER_TEMP/publish.bundle" "$(git rev-parse HEAD~1)..HEAD"
+          mkdir -p "$RUNNER_TEMP/out" && mv "$RUNNER_TEMP/publish.bundle" "$RUNNER_TEMP/report.md" "$RUNNER_TEMP/summary.json" "$RUNNER_TEMP/out/"
+          git rev-parse HEAD > "$RUNNER_TEMP/out/head.txt"
+
+      - name: Keep the publish for the next job
+        if: steps.build.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publish
+          path: ${{ runner.temp }}/out/
+          retention-days: 1
+          if-no-files-found: error
+
+      # Reached only when every step above passed: a failed step stops the job, so no result is set and nothing runs.
+      - name: Result
+        id: result
+        env:
+          CHANGED: ${{ steps.build.outputs.changed }}
+          MODE: ${{ steps.build.outputs.mode }}
+        run: |
+          if [ "$CHANGED" != "true" ]; then r=none; elif [ "$MODE" = "auto" ]; then r=auto; else r=pr; fi
+          echo "result=$r" >> "$GITHUB_OUTPUT"
+          echo "result: $r" >> "$GITHUB_STEP_SUMMARY"
+
+  commit:
+    name: Publish to main
+    needs: build
+    if: needs.build.outputs.result == 'auto'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      sha: ${{ steps.push.outputs.sha }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Get the publish
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: publish
+          path: ${{ runner.temp }}/in
+
+      # Only on top of the commit it was built and tested on; if main moved since, nothing is pushed and the next run
+      # builds again on the new main. A plain push (never forced), so a commit that lands meanwhile makes it fail.
+      - name: 'Push "Publish: Firestore rev N" to main'
+        id: push
+        env:
+          BASE: ${{ needs.build.outputs.base }}
+        run: |
+          set -euo pipefail
+          git fetch -q "$RUNNER_TEMP/in/publish.bundle" HEAD:refs/publish/new
+          head=$(cat "$RUNNER_TEMP/in/head.txt")
+          [ "$(git rev-parse refs/publish/new)" = "$head" ] || { echo "::error::the bundle is not the tested commit"; exit 1; }
+          [ "$(git rev-parse "$head^")" = "$BASE" ] || { echo "::error::the publish is not on its base commit"; exit 1; }
+          if [ "$(git rev-parse origin/main)" != "$BASE" ]; then
+            echo "main moved since the build; nothing pushed, the next run builds again" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git push origin "$head:refs/heads/main"
+          echo "sha=$head" >> "$GITHUB_OUTPUT"
+          echo "published $(git log -1 --format=%s "$head") as $head" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close a publish pull request this replaces
+        if: steps.push.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REV: ${{ needs.build.outputs.rev }}
+        run: |
+          pr=$(gh pr list --head publish/next --base main --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then gh pr close "$pr" --comment "Replaced: Firestore rev $REV was published automatically."; fi
+
+  deploy:
+    name: Deploy (Release)
+    needs: commit
+    if: needs.commit.outputs.sha != ''
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    with:
+      sha: ${{ needs.commit.outputs.sha }}
+    secrets: inherit
+
+  pr:
+    name: Open or update the publish pull request
+    needs: build
+    if: needs.build.outputs.result == 'pr'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Get the publish
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: publish
+          path: ${{ runner.temp }}/in
+
+      - name: Push publish/next and open or update the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REV: ${{ needs.build.outputs.rev }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git fetch -q "$RUNNER_TEMP/in/publish.bundle" HEAD:refs/publish/new
+          git push --force origin "refs/publish/new:refs/heads/publish/next"
           body="$RUNNER_TEMP/body.md"
           {
-            cat "$RUNNER_TEMP/report.md"
+            echo "**Waiting for the owner:** this publish removes words in a way that does not go live by itself (more than 7 words, or words removed by an import or a restore, or a change the history cannot show), or Publish was run by hand with an exact allow_removals. Merging it publishes it."
+            echo
+            cat "$RUNNER_TEMP/in/report.md"
             echo
             echo "### Checks run by the Publish workflow"
             echo
-            echo "npm test, rules tests, CSP check, checks.mjs and check-private all passed in [this run]($RUN_URL), started by $ACTOR."
+            echo "npm test, rules tests, CSP check, checks.mjs and check-private all passed in [this run]($RUN_URL)."
             echo "This pull request was opened by GitHub Actions, so CI does not run on it; Release runs npm test again before deploying."
-            echo "Merging it publishes exactly Firestore rev $REV. To include newer edits, run Publish again: it updates this pull request."
+            echo "Merging it publishes exactly Firestore rev $REV. Newer saves update this pull request on the next run."
           } > "$body"
           # a pull request description holds at most 65536 characters
           node -e 'const fs=require("fs"),f=process.argv[1];let s=fs.readFileSync(f,"utf8");if(s.length>60000)fs.writeFileSync(f,s.slice(0,60000)+"\n\n(The report is longer than a pull request description allows and was cut here; the diff has every change.)\n")' "$body"
@@ -195,3 +431,22 @@ jobs:
             gh pr create --base main --head publish/next --title "$title" --body-file "$body"
             echo "opened a pull request" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  remember:
+    name: Remember this state
+    needs: [check, build, pr]
+    if: >-
+      always() && needs.check.outputs.changed == 'true' && (
+        needs.build.result == 'failure' || needs.build.outputs.result == 'none' || needs.pr.result == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Marker
+        run: mkdir -p .publish-seen && echo "${{ needs.check.outputs.rev }}" > .publish-seen/rev
+
+      - name: Save it
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .publish-seen
+          key: ${{ needs.check.outputs.marker }}

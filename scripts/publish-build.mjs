@@ -32,6 +32,9 @@
  *   Both modes:
  *     --allow-removals N        how many words this publish may remove (default 0); it must be exact
  *     --allow-surah-removals L  comma-separated surah numbers this publish may remove (default none)
+ *     --max-removals N          a further hard ceiling on removed words (the automatic publish passes 7)
+ *     --owner-review            a publish the owner reviews in a pull request (Publish run by hand with an exact
+ *                               allow_removals): the 10% ceiling does not apply; the exact count still must match
  *
  * Output (--out mode): words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
  *   plus the static legal pages about/index.html, privacy/index.html,
@@ -738,8 +741,9 @@ export function wordIndex(surahs) {
 }
 
 // The large-removal guard. Removed words are counted against the committed site: the count must equal
-// allowRemovals exactly, it may never exceed 10% of the committed words, and a surah may disappear only when its
-// number is listed in allowSurahRemovals.
+// allowRemovals exactly, it may never exceed 10% of the committed words (unless ownerReview: a pull request the owner
+// reviews, opened by a Publish run started by hand with that exact count), never exceed maxRemovals when given (the
+// automatic publish passes 7), and a surah may disappear only when its number is listed in allowSurahRemovals.
 export function guardRemovals(committed, next, opt = {}) {
   const allow = opt.allowRemovals == null ? 0 : Number(opt.allowRemovals);
   const allowSurahs = (opt.allowSurahRemovals || []).map(Number);
@@ -751,9 +755,12 @@ export function guardRemovals(committed, next, opt = {}) {
   const nosAfter = new Set(next.map((s) => surahNumber(s.surah)));
   const removedSurahs = [...nosBefore].filter((n) => !nosAfter.has(n)).sort((a, b) => a - b);
   const ceiling = Math.floor(before.size * MAX_REMOVAL_SHARE);
+  const max = opt.maxRemovals == null ? null : Number(opt.maxRemovals);
+  if (max != null && !(Number.isInteger(max) && max >= 0)) throw new Error("refusing to publish: max-removals must be a whole number, 0 or more");
   const p = [];
   if (!after.size) p.push("the new data has no words");
-  if (removed.length > ceiling) p.push(removed.length + " words would be removed, more than the ceiling of " + ceiling + " (10% of " + before.size + "), whatever allow-removals says");
+  if (max != null && removed.length > max) p.push(removed.length + " words would be removed, more than the ceiling of " + max + " for this publish, whatever allow-removals says");
+  else if (!opt.ownerReview && removed.length > ceiling) p.push(removed.length + " words would be removed, more than the ceiling of " + ceiling + " (10% of " + before.size + "), whatever allow-removals says; run Publish by hand with allow_removals " + removed.length + " to open a pull request for the owner");
   else if (removed.length !== allow) p.push(removed.length + " words would be removed (" + removed.join(", ") + ") but allow-removals is " + allow + "; it must match exactly");
   const unlisted = removedSurahs.filter((n) => !allowSurahs.includes(n));
   if (unlisted.length) p.push("surahs " + unlisted.join(", ") + " would be removed; list them in allow-surah-removals to allow it");
@@ -775,7 +782,8 @@ export const siteWordKey = (s) =>
     .trim();
 
 // Challenge integrity: the days are numbered 1..N with N as committed, every word reference resolves to a word of the
-// new data, and the dates are null or valid. Messages name days and positions, never the words.
+// new data, every day has at least one word, and the dates are null or valid. Messages name days and positions, never
+// the words.
 export function checkChallenge(pub, surahs, committedChallenge) {
   const p = [];
   const bySurah = new Map(surahs.map((s) => [surahNumber(s.surah), new Set(s.words.map(siteWordKey))]));
@@ -784,6 +792,8 @@ export function checkChallenge(pub, surahs, committedChallenge) {
   if (days.length !== want) p.push("the challenge has " + days.length + " days, the site has " + want);
   days.forEach((day, i) => {
     if (day.d !== i + 1) p.push("day #" + (i + 1) + " is numbered " + JSON.stringify(day.d));
+    // visitors finish a day by marking its words; a day with none can't be finished, so every day after it stays locked
+    if (!Array.isArray(day.w) || !day.w.length) p.push("day " + day.d + " has no words; visitors could not finish it and the days after it would stay locked. Add a word to it in the admin's Challenge tab");
     (day.w || []).forEach((r, k) => {
       const set = bySurah.get(r[0]);
       if (!set || !set.has(r[1])) p.push("day " + day.d + ": word reference " + (k + 1) + " (surah " + r[0] + ") is not a word of the new data");
@@ -966,6 +976,8 @@ function parseArgs(argv) {
     else if (a === "--summary") args.summary = argv[++i];
     else if (a === "--no-images") args.noImages = true;
     else if (a === "--allow-removals") args.allowRemovals = num(argv[++i], "--allow-removals");
+    else if (a === "--max-removals") args.maxRemovals = num(argv[++i], "--max-removals");
+    else if (a === "--owner-review") args.ownerReview = true;
     else if (a === "--allow-surah-removals") args.allowSurahRemovals = String(argv[++i] || "").split(",").filter(Boolean).map((v) => num(v.trim(), "--allow-surah-removals"));
     else throw new Error("unknown argument: " + a);
   }
@@ -1029,6 +1041,7 @@ export async function main(argv) {
     const res = publishToTree({ surahs, challenge: challengeState, rev }, {
       site, firebaseJson: args.firebaseJson || path.join(ROOT, "firebase.json"), noImages: !!args.noImages,
       allowRemovals: args.allowRemovals, allowSurahRemovals: args.allowSurahRemovals,
+      maxRemovals: args.maxRemovals, ownerReview: !!args.ownerReview,
     });
     // file names and counts only: this goes to the (public) Actions log
     if (args.summary) fs.writeFileSync(path.resolve(args.summary), JSON.stringify(res.summary, null, 1) + "\n", "utf8");

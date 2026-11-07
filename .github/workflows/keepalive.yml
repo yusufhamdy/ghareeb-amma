@@ -1,0 +1,46 @@
+name: Keepalive
+
+# GitHub turns off the scheduled workflows of a public repository after 60 days without repository activity. That
+# would silently stop Publish (admin saves going live) and Backup (the daily encrypted backup). Once a month, and by
+# hand, this workflow re-enables both through the GitHub API, and itself, since it is scheduled too: enabling a
+# workflow starts its 60 days again (handbook 7).
+#
+# It makes no commit, opens nothing, deploys nothing and reads no data: one API call per workflow, with a token that
+# can only manage Actions (actions: write). A workflow the owner turned off by hand ("disabled_manually") is left off;
+# only one GitHub turned off, or an active one, is enabled.
+
+on:
+  schedule:
+    - cron: "41 5 1 * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+jobs:
+  enable:
+    name: Keep the scheduled workflows enabled
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable Publish, Backup and Keepalive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for wf in publish.yml backup.yml keepalive.yml; do
+            state=$(gh api "repos/$REPO/actions/workflows/$wf" --jq .state)
+            if [ "$state" = "disabled_manually" ]; then
+              echo "$wf: turned off by hand, left off" | tee -a "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            gh api -X PUT "repos/$REPO/actions/workflows/$wf/enable" --silent
+            echo "$wf: was $state, enabled" | tee -a "$GITHUB_STEP_SUMMARY"
+          done

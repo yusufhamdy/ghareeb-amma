@@ -116,7 +116,7 @@ test("the app: visible headwords, search from both spellings, the challenge, mea
       const grab = () => document.querySelectorAll("#app .wd, #app .w.q, #app .dword, #sh .aw").forEach((e) => shown.push(e.textContent));
       for (const w of W) { location.hash = "#/word/" + w.id; await wait(); grab(); }
       for (const s of S) { location.hash = "#/surah/" + s.num; await wait(); grab(); }
-      for (let d = 1; d <= 30; d++) { location.hash = "#/day/" + d; await wait(); grab(); }
+      for (let d = 1; d <= CH.length; d++) { location.hash = "#/day/" + d; await wait(); grab(); }
       // search rows (the home search box)
       location.hash = "#/"; await wait();
       const q = document.getElementById("q"); q.value = W[5].word; q.dispatchEvent(new Event("input", { bubbles: true })); await new Promise((res) => setTimeout(res, 400)); grab();
