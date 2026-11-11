@@ -191,7 +191,10 @@ async function newPage(browser, opts) {
 async function appQText(page) {
   return page.evaluate(async () => {
     const out = [], wait = () => new Promise((r) => setTimeout(r, 30));
-    const grab = () => document.querySelectorAll("#app .q:not(svg)").forEach((e) => out.push(e.textContent));
+    // the Madinah Mushaf glyph layer (.qcf-g, qcf.js) is drawn only by its own page fonts, never by this face or its
+    // fallback (qcf-dom.js shows it only once those fonts have loaded), so it is left out here
+    const text = (e) => { const c = e.cloneNode(true); c.querySelectorAll(".qcf-g").forEach((g) => g.remove()); return c.textContent; };
+    const grab = () => document.querySelectorAll("#app .q:not(svg)").forEach((e) => out.push(text(e)));
     const go = async (h) => { location.hash = h; await wait(); grab(); };
     for (const w of W) await go("#/word/" + w.id);
     await go("#/surahs");

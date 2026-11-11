@@ -5,7 +5,8 @@
  * For every word page (the app and the static page) at 320, 360, 400, 768 and 1440px: the ayah's characters are
  * grouped into lines by their Range client rects; no line starts with the closing parenthesis U+FD3E and no line
  * ends with the opening one U+FD3F. The same on the save-image card (regular and story), whose layout pieces are
- * grouped by their baseline.
+ * grouped by their baseline. An ayah shown in the Madinah Mushaf page glyphs (qcf.js, class "on") is checked on its
+ * visible glyph layer; its official text layer (.qcf-t) is then visually hidden and skipped.
  *
  * ASCII only.
  */
@@ -37,7 +38,7 @@ const LINES = `(() => {
   const fs = parseFloat(getComputedStyle(ay).fontSize), lines = [], r = document.createRange();
   let cur = null;
   const walk = (n) => n.childNodes.forEach((c) => {
-    if (c.nodeType !== 3) return walk(c);
+    if (c.nodeType !== 3) return c.matches && c.matches(".qcf.on > .qcf-t") ? undefined : walk(c);
     for (let i = 0; i < c.data.length; i++) {
       const ch = c.data[i];
       if (ch === " ") continue;
@@ -75,6 +76,8 @@ test("no ornate parenthesis alone at a line end or start, in the page and on the
       for (const [id] of words) {
         await page.evaluate((i) => { location.hash = "#/word/" + i; }, id);
         await page.waitForFunction((i) => location.hash === "#/word/" + i && document.querySelector(".cols .card .ay"), id);
+        // the page glyphs replace the Hafs text once their fonts load (qcf-dom.js); a font that fails keeps Hafs
+        await page.waitForFunction(() => !document.querySelector(".cols .card .ay .qcf:not(.on)"), null, { timeout: 5000 }).catch(() => {});
         const lines = await page.evaluate(LINES);
         if (lines.length > 1) multi++;
         badLines(lines).forEach((l) => bad.push("app " + id + " @" + w + ": " + JSON.stringify(lines)));

@@ -104,17 +104,52 @@
   }
   window.rasterInk = rasterInk;
 
+  // A mark in the Madinah Mushaf glyph layer (qcf.js, qcf-dom.js) holds glyph words (.w), each in its own page font
+  // and size, so its ink is the union of each word's raster ink, placed at the word's position inside the mark. The
+  // positions are scaled by offsetWidth / rect width, so a running transform (page enter) does not change them.
+  function glyphBox(m, x, fs) {
+    var ws = m.querySelectorAll('.w');
+    if (!ws.length || !m.getClientRects().length) return null;
+    var mr = m.getBoundingClientRect(), k = mr.width ? m.offsetWidth / mr.width : 1, cs0 = getComputedStyle(m);
+    var ox = mr.left + parseFloat(cs0.borderLeftWidth), oy = mr.top + parseFloat(cs0.borderTopWidth);
+    var t = Infinity, l = Infinity, r = -Infinity, bt = -Infinity, s = Math.max(2, window.devicePixelRatio || 1);
+    for (var i = 0; i < ws.length; i++) {
+      var w = ws[i], rs = w.getClientRects();
+      if (!rs.length) return null;
+      var cs = getComputedStyle(w), wf = parseFloat(cs.fontSize), font = cs.fontWeight + ' ' + wf + 'px ' + cs.fontFamily;
+      x.font = font; x.direction = 'rtl'; x.textAlign = 'right';
+      var q = x.measureText(w.textContent);
+      if (q.fontBoundingBoxAscent == null || q.actualBoundingBoxLeft == null) return null;
+      var ink = rasterInk(font, wf, w.textContent, s) ||
+        { left: q.actualBoundingBoxLeft, right: q.actualBoundingBoxRight, asc: q.actualBoundingBoxAscent, desc: q.actualBoundingBoxDescent };
+      // the word's box is its content area: the baseline is its top plus the font's ascent; RTL text ends at its right
+      var wr = rs[rs.length - 1], xr = (wr.right - ox) * k, base = (wr.top - oy) * k + q.fontBoundingBoxAscent;
+      l = Math.min(l, xr - ink.left); r = Math.max(r, xr + ink.right);
+      t = Math.min(t, base - ink.asc); bt = Math.max(bt, base + ink.desc);
+    }
+    var p = PAD * fs;
+    return isFinite(t + l + r + bt) ? { t: t - p, l: l - p, w: r - l + 2 * p, h: bt - t + 2 * p } : null;
+  }
+
   function inkMarks(root) {
-    var ms = (root || document).querySelectorAll('mark');
+    var ms = Array.prototype.filter.call((root || document).querySelectorAll('mark'), function (m) {
+      // the official text of an ayah shown in glyphs is hidden, and the glyphs are hidden until their fonts load
+      return !(m.closest('.qcf.on > .qcf-t') || (m.closest('.qcf-g') && !m.closest('.qcf.on')));
+    });
     if (!ms.length || !document.fonts || !document.fonts.load) return;
     var fonts = {};
-    Array.prototype.forEach.call(ms, function (m) { var cs = getComputedStyle(m); fonts[cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily] = m.textContent; });
+    ms.forEach(function (m) { if (m.closest('.qcf-g')) return; var cs = getComputedStyle(m); fonts[cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily] = m.textContent; });
     Promise.all(Object.keys(fonts).map(function (k) { return document.fonts.load(k, fonts[k]).catch(function () {}); })).then(function () {
       cv2 = cv2 || document.createElement('canvas');
       var x = cv2.getContext('2d'), list = [];
-      Array.prototype.forEach.call(ms, function (m) {
+      ms.forEach(function (m) {
         if (!m.isConnected) return;
         var cs = getComputedStyle(m), fs = parseFloat(cs.fontSize), lh = parseFloat(cs.lineHeight);
+        if (m.closest('.qcf-g')) {
+          var g = isFinite(fs) ? glyphBox(m, x, fs) : null;
+          if (g) { setBox(m, g); list.push([m, g]); }
+          return;
+        }
         x.font = cs.fontWeight + ' ' + fs + 'px ' + cs.fontFamily; x.direction = 'rtl'; x.textAlign = 'right';
         var k = x.measureText(m.textContent);
         if (k.fontBoundingBoxAscent == null || k.actualBoundingBoxLeft == null || !isFinite(lh) || !isFinite(fs)) return;
@@ -139,5 +174,7 @@
   addEventListener('resize', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(function () { fit(); inkMarks(); }); });
   // qfont.js switched the Quran face (fallback or restore): measure again
   document.addEventListener('qfont', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(function () { fit(); inkMarks(); }); });
+  // qcf-dom.js swapped an ayah to its Madinah Mushaf page glyphs: measure again
+  document.addEventListener('qcf', function () { cancelAnimationFrame(raf); raf = requestAnimationFrame(function () { fit(); inkMarks(); }); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { fit(); inkMarks(); }); else { fit(); inkMarks(); }
 })();
