@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v45';
+const CACHE_NAME = 'ghareeb-pwa-v46';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -62,7 +62,7 @@ async function fromCache(req) {
            (await caches.match(req, { ignoreSearch: true }));
 }
 
-const OFFLINE_HTML = '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>غير متصل</title><p style="font-family:sans-serif;text-align:center;margin-top:40vh">لا يوجد اتصال بالإنترنت</p></html>';
+const OFFLINE_HTML = '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#F2F0E8"><title>غير متصل</title><body style="margin:0;background:#F2F0E8;color:#1D2B25"><p style="font-family:sans-serif;text-align:center;margin-top:40vh">لا يوجد اتصال بالإنترنت</p></html>';
 
 self.addEventListener('fetch', event => {
     const req = event.request;

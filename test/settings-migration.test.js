@@ -8,7 +8,8 @@
  * record saved before the settings version (sv 2) is moved to it once and saved back: "def" becomes "neo". Cases:
  *   - old def -> neo (painted in neo, saved back with sv 2);
  *   - old neo -> neo; old min -> the green palette ("def"), as before;
- *   - no saved settings -> neo, and nothing is written;
+ *   - no saved settings -> the first-visit default (glass, light, the green palette "def" since 2026-11-11; it was neo
+ *     and auto), and nothing is written (test/theme-first-visit.test.js covers the first visit in full);
  *   - def saved after the release (sv 2) -> stays green, also after a reload.
  *
  * ASCII only.
@@ -20,7 +21,7 @@ const http = require("http");
 const path = require("path");
 
 const PUBLIC = path.resolve(__dirname, "..", "public");
-const NEO_DARK = "#0A0E1F", GREEN_DARK = "#07140F";
+const NEO_DARK = "#0A0E1F", GREEN_DARK = "#07140F", GREEN_LIGHT = "#F2F0E8";
 
 function staticServer(root) {
   const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ttf": "font/ttf", ".png": "image/png", ".webp": "image/webp" };
@@ -39,7 +40,7 @@ const CASES = [
   { name: "old def", saved: { mode: "dark", pal: "def", gl: 3, cm: false, snd: true, style: "glass" }, pal: "neo", bg: NEO_DARK, written: true },
   { name: "old neo", saved: { mode: "dark", pal: "neo", gl: 3, gv: 2, cm: false, snd: true, style: "glass" }, pal: "neo", bg: NEO_DARK, written: true },
   { name: "old min", saved: { mode: "dark", pal: "min", gl: 3, cm: false, snd: true, style: "glass" }, pal: "def", bg: GREEN_DARK, written: true },
-  { name: "no saved settings", saved: null, pal: "neo", bg: NEO_DARK, written: false },
+  { name: "no saved settings", saved: null, pal: "def", bg: GREEN_LIGHT, written: false },
   { name: "def saved after the release", saved: { mode: "dark", pal: "def", gl: 50, gv: 3, sv: 2, cm: false, snd: true, style: "glass" }, pal: "def", bg: GREEN_DARK, written: false },
 ];
 

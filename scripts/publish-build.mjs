@@ -148,8 +148,8 @@ const SURAH_NO = {
 // from public/index.html at build time by appCss() below and committed as
 // public/css/app.css.
 const LEGACY_CSS =
-  ":root{--bg:#EEF3F6;--tx:#1D2B25;--mu:#55645D;--ac:#0B6E8A;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
-  "@media(prefers-color-scheme:dark){:root{--bg:#0A0E1F;--tx:#ECEFFA;--mu:#A3ABC9;--ac:#9FB4FF;--ln:rgba(255,255,255,.13);--gb:rgba(255,255,255,.07)}}\n" +
+  // the first-visit default: light, the green palette "def"; theme-boot.js applies a saved choice before first paint
+  ":root{--bg:#F2F0E8;--tx:#1D2B25;--mu:#55645D;--ac:#1E6B50;--ln:rgba(29,43,37,.14);--gb:rgba(255,255,255,.62)}\n" +
   "*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans Arabic',sans-serif;line-height:1.8}\n" +
   "main{max-width:680px;margin:0 auto;padding:22px 18px 60px}a{color:var(--ac);text-decoration:none}.q{font-family:'KFGQPC Uthmanic Hafs','Amiri Quran',serif}.aq{font-family:'Amiri Quran',serif}.sn{font-family:'Amiri',serif;font-weight:700}\n" +
   ".m{color:var(--mu);font-size:14px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}\n" +
@@ -322,7 +322,7 @@ function staticHead(o) {
   return (
     "<!doctype html>\n" +
     '<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n' +
-    '<meta name="theme-color" content="#EEF3F6">\n' +
+    '<meta name="theme-color" content="#F2F0E8">\n' +
     "<title>" + esc(o.title) + "</title>\n" +
     '<meta name="description" content="' + esc(o.desc) + '">\n' +
     '<link rel="canonical" href="' + esc(o.canonical) + '">\n' +

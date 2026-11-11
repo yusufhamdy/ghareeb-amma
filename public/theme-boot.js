@@ -22,7 +22,9 @@
       lav: { n: "\u0628\u0646\u0641\u0633\u062c\u064a", l: ["#F1F0F8", "#4B3CD8", "#B9B4FF", "#8FA8FF"], d: ["#0B0D22", "#B7B2FF", "#5B6CF0", "#C6B8FF"], sw: ["#8177EC", "#B7B2FF"] },
       sun: { n: "\u063a\u0631\u0648\u0628", l: ["#F6EFEA", "#A8381F", "#F2A97B", "#E8B5D6"], d: ["#140A1C", "#FFB38A", "#E0689B", "#F2A97B"], sw: ["#D47654", "#FFB38A"] }
     };
-    var ORDER = ["neo", "gold", "def", "lav", "sun"], DEFAULT = "neo", GLASS_DEFAULT = 50, SV = 2;
+    // DEFAULT: the palette of a first visit (no saved palette), "def" (the green palette) since 2026-11-11; it was neo.
+    // A first-visit record carries sv, so migrate() never takes this "def" for the pre-2026-10-28 one.
+    var ORDER = ["neo", "gold", "def", "lav", "sun"], DEFAULT = "def", GLASS_DEFAULT = 50, SV = 2;
     // Glass strength 0..100, piecewise-linear through the old site's five levels (0, 25, 50, 75, 100 are exactly levels
     // 1..5): [blur px, saturate %, fill alpha light, fill alpha dark, rim alpha light, rim alpha dark].
     var GL = [[4, 140, 0.88, 0.26, 0.55, 0.10], [12, 160, 0.80, 0.22, 0.63, 0.13], [22, 180, 0.72, 0.18, 0.71, 0.16], [34, 200, 0.64, 0.15, 0.79, 0.19], [48, 220, 0.56, 0.12, 0.87, 0.22]];
@@ -80,7 +82,8 @@
     }
     return "#" + out;
   }
-  var set = { mode: "auto", pal: DEFAULT, gl: GLASS_DEFAULT, gv: 3, cm: false, style: "glass" };
+  // a first visit (no saved choice): glass, light (day) and the green palette; a saved mode or palette always wins
+  var set = { mode: "light", pal: DEFAULT, sv: GQ_THEME.SV, gl: GLASS_DEFAULT, gv: 3, cm: false, style: "glass" };
   var hasCm = false, hasGl = false;
   try {
     var saved = JSON.parse(localStorage.getItem("gq-set") || "{}");

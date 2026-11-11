@@ -43,9 +43,9 @@ test.after(async () => { if (br) await br.close(); if (server) await new Promise
 async function open(t, opts = {}) {
   if (!br) { t.skip("chromium unavailable"); return null; }
   const ctx = await br.newContext({ viewport: opts.viewport || { width: 1280, height: 900 }, colorScheme: opts.scheme || "light" });
-  await ctx.addInitScript(([d, c]) => {
-    try { if (!sessionStorage.getItem("seeded")) { sessionStorage.setItem("seeded", "1"); localStorage.setItem("gqad", JSON.stringify({ rev: 6, surahs: d })); localStorage.setItem("gqch", JSON.stringify(c)); localStorage.setItem("gqaa", JSON.stringify(["helper@example.test"])); } } catch (e) {}
-  }, [SURAHS, CHALLENGE]);
+  await ctx.addInitScript(([d, c, gq]) => {
+    try { if (!sessionStorage.getItem("seeded")) { sessionStorage.setItem("seeded", "1"); localStorage.setItem("gqad", JSON.stringify({ rev: 6, surahs: d })); localStorage.setItem("gqch", JSON.stringify(c)); localStorage.setItem("gqaa", JSON.stringify(["helper@example.test"])); if (gq) localStorage.setItem("gq", JSON.stringify(gq)); } } catch (e) {}
+  }, [SURAHS, CHALLENGE, opts.gq || null]);
   const page = await ctx.newPage();
   // Playwright intercepts file choosers only once a "filechooser" listener exists, and it switches that on
   // asynchronously. Added together with the key press (waitForEvent inside Promise.all) it can lose the race, and the
@@ -65,8 +65,12 @@ const lum = (rgb) => { const [r, g, b] = rgb.match(/[\d.]+/g).map(Number).map((v
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
 
 test("A11Y-1, A11Y-2: field edges read at 3:1 on the page's own background, placeholders use the muted text colour", async (t) => {
-  for (const scheme of ["light", "dark"]) {
-    const p = await open(t, { scheme }); if (!p) return;
+  // with no saved theme the admin is light (day) on any device (theme.js, since 2026-11-11); its night colours follow
+  // the painted mode (.dk), so a saved night mode, or a saved auto on a dark device, is checked too
+  for (const o of [{ scheme: "light" }, { scheme: "dark" }, { scheme: "light", gq: { mode: "dark" }, night: true }, { scheme: "dark", gq: { mode: "auto" }, night: true }]) {
+    const scheme = o.scheme + (o.gq ? " device, saved " + o.gq.mode : " device");
+    const p = await open(t, o); if (!p) return;
+    assert.strictEqual(await p.evaluate(() => document.documentElement.classList.contains("dk")), !!o.night, scheme + ": night as painted");
     const m = await p.evaluate(() => { const i = document.querySelector("#ns"), c = getComputedStyle(i), s = getComputedStyle(document.body); const q = document.createElement("input"); q.className = "in"; q.placeholder = "x"; document.body.append(q); const ph = getComputedStyle(q, "::placeholder"); const r = { border: c.borderTopColor, bg: s.backgroundColor, ph: ph.color, op: ph.opacity, tx: getComputedStyle(document.documentElement).getPropertyValue("--mu").trim() }; q.remove(); return r; });
     assert.ok(ratio(m.border, m.bg) >= 3, scheme + " border " + ratio(m.border, m.bg).toFixed(2));
     assert.strictEqual(m.op, "1", scheme + " placeholder at full opacity");
