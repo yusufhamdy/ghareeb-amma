@@ -46,7 +46,10 @@ const { server, base } = await serve(undefined, { liveFirebase: true });
 const br = await chromium.launch(), leaks = [], pageErrors = [];
 
 async function login(email, sub, opts) {
-  const ctx = await br.newContext(Object.assign({ viewport: { width: 1280, height: 900 } }, opts));
+  // gq: a saved admin theme record (theme.js), put in place before the first load
+  const { gq, ...o } = opts || {};
+  const ctx = await br.newContext(Object.assign({ viewport: { width: 1280, height: 900 } }, o));
+  if (gq) await ctx.addInitScript((g) => { try { localStorage.setItem("gq", JSON.stringify(g)); } catch (e) {} }, gq);
   await ctx.route("**/firebase-config.js", (r) => r.fulfill({ contentType: "text/javascript", body: CONFIG }));
   await ctx.route(SDK + "*", async (r) => { const n = r.request().url().slice(SDK.length); if (WRAP[n]) return r.fulfill({ contentType: "text/javascript", body: WRAP[n] }); r.fulfill({ contentType: "text/javascript", body: await sdk(n.replace(".real.js", ".js")) }); });
   await ctx.route((u) => /googleapis\.com|firebaseio|firebaseapp\.com|google\.com|googleusercontent/.test(u.hostname), (r) => { leaks.push(r.request().url()); return r.abort(); });
@@ -353,25 +356,29 @@ console.log("\n== signed out with a window open, and what stays in memory ==");
 console.log("\n== the drop-down: admin, and the public pages ==");
 const LUM = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number).map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 const CR = (a, b) => { const [x, y] = [LUM(a), LUM(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
-for (const scheme of ["light", "dark"]) {
-  const s = await login(OWNER, "owner-sub", { colorScheme: scheme });
+// The admin's colour scheme follows the mode theme.js paints (.dk): day with no saved theme on any device (since
+// 2026-11-11), night with a saved night mode; the drop-down and the tints are checked in both.
+for (const c of [{ device: "light", want: "light" }, { device: "dark", want: "light" }, { device: "light", gq: { mode: "dark" }, want: "dark" }]) {
+  const scheme = c.want, tag = c.device + " device" + (c.gq ? ", saved " + c.gq.mode : "") + ", " + c.want;
+  const s = await login(OWNER, "owner-sub", { colorScheme: c.device, gq: c.gq });
   await tab(s.p, "w");
   const o = await s.p.evaluate(() => { const se = document.querySelector('[data-f="fs"]'), op = se.querySelector("option"), c = getComputedStyle(op); return { scheme: getComputedStyle(document.documentElement).colorScheme, seScheme: getComputedStyle(se).colorScheme, bg: c.backgroundColor, fg: c.color }; });
-  check(scheme + ": the admin page's color-scheme", o.scheme === scheme && o.seScheme === scheme, o);
+  check(tag + ": the admin page's color-scheme", o.scheme === scheme && o.seScheme === scheme, o);
   check(scheme + ": the option's background is opaque", /^rgb\(/.test(o.bg), o.bg);
   check(scheme + ": the option's text reads at 4.5:1 or better", CR(o.bg, o.fg) >= 4.5, CR(o.bg, o.fg).toFixed(2));
   const t = await s.p.evaluate(() => { const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return ["g", "a", "r"].map((k) => [v("--h" + k + "b"), v("--h" + k + "t"), v("--hvt")]); });
   const hex = (h) => `rgb(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)})`;
   check(scheme + ": the three tints read at 4.5:1 or better", t.every(([b, c, v]) => CR(hex(b), hex(c)) >= 4.5 && CR(hex(b), hex(v)) >= 4.5), t.map(([b, c, v]) => [CR(hex(b), hex(c)).toFixed(2), CR(hex(b), hex(v)).toFixed(2)]));
   await s.ctx.close();
+  if (c.gq) continue;
   // the public pages keep the browser's default
-  const pub = await br.newContext({ colorScheme: scheme, serviceWorkers: "block" });
+  const pub = await br.newContext({ colorScheme: c.device, serviceWorkers: "block" });
   await pub.route((u) => /googleapis\.com|firebaseio|firebaseapp\.com|google\.com|gstatic\.com|sentry/.test(u.hostname), (r) => r.abort());
   for (const url of ["/index.html", "/about/index.html", "/privacy/index.html", "/terms/index.html", "/rights/index.html"]) {
     const q = await pub.newPage();
     await q.goto(base + url, { waitUntil: "load" });
     const cs = await q.evaluate(() => [getComputedStyle(document.documentElement).colorScheme, getComputedStyle(document.body).colorScheme]);
-    check(scheme + " public " + url + ": color-scheme is untouched", cs[0] === "normal" && cs[1] === "normal", cs);
+    check(c.device + " public " + url + ": color-scheme is untouched", cs[0] === "normal" && cs[1] === "normal", cs);
     await q.close();
   }
   await pub.close();
