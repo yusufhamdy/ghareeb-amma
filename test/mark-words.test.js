@@ -55,11 +55,15 @@ test("markParts: whole written words, same text, the 9 split segments widened", 
 test("static word pages: no mark inside a word, text unchanged", () => {
   const unesc = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
   const bad = [];
-  let n = 0;
+  let n = 0, glyphs = 0;
   const texts = new Set(all.map(segsOf));
   for (const f of fs.readdirSync(path.join(PUBLIC, "word")).filter((x) => x.endsWith(".html"))) {
     // the no-break wrappers around the parentheses (K) are layout only
-    const ay = ((fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "").replace(/<span class="nb">|<\/span>/g, "");
+    // the QCF V2 page: the official text (Hafs) is the .qcf-t layer, next to the aria-hidden glyph layer .qcf-g
+    const full = (fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "";
+    const qt = full.match(/^<span class="qcf" data-p="[0-9 ]+"><span class="qcf-t">([\s\S]*?)<\/span><span class="qcf-g" aria-hidden="true">[\s\S]*<\/span><\/span>$/);
+    if (qt) glyphs++;
+    const ay = (qt ? qt[1] : full).replace(/<span class="nb">|<\/span>/g, "");
     const runs = ay.split(/(<mark>[\s\S]*?<\/mark>)/).filter((x) => x !== "").map((x) => (x.startsWith("<mark>") ? { mark: true, text: unesc(x.slice(6, -7)) } : { mark: false, text: unesc(x) }));
     bad.push(...checkRuns(runs, f));
     assert.ok(texts.has(runs.map((r) => r.text).join("")), f + ": the ayah text is before + hl + after");
@@ -67,6 +71,7 @@ test("static word pages: no mark inside a word, text unchanged", () => {
   }
   assert.deepStrictEqual(bad, []);
   assert.strictEqual(n, WORD_COUNT);
+  assert.strictEqual(glyphs, WORD_COUNT, "every word page has the QCF V2 glyph layer (every ayah matches the table)");
 });
 
 function staticServer(root) {
