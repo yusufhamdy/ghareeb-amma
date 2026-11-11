@@ -9,6 +9,9 @@
  *   - presentation: Arabic presentation forms (U+FB50-U+FDFF, U+FE70-U+FEFF) other than the ornate parentheses
  *                  U+FD3E/U+FD3F; the site's text is stored in logical letters, and the font shapes them;
  *   - bom:         a UTF-8 byte-order mark in a .js/.mjs/.html file not on the accepted list.
+ * The glyph codes of the Madinah Mushaf page fonts V2 are presentation forms by design, and are skipped only where
+ * they belong: the code field of public/qcf-v2.json ([page, "code", ...]) and the content of a glyph word
+ * <span class="w pNNN" ...>code</span> in an .html file (qcf.js glyphHtml). Anywhere else they are still reported.
  * Exempt: data/quran/hafsData_v2-0.json (the Complex's official file, committed unmodified and hash-pinned; its
  * ayah-number glyphs are presentation forms by design).
  *
@@ -38,7 +41,10 @@ function scanText(rel, buf) {
   // a UTF-16LE file (BOM FF FE, some older reports) is a valid encoding, not corruption: read it as UTF-16
   const text = (buf[0] === 0xff && buf[1] === 0xfe ? buf.slice(2).toString("utf16le") : buf.toString("utf8")).replace(/^\ufeff/, "");
   const lines = text.split("\n");
-  lines.forEach((l, i) => {
+  lines.forEach((l0, i) => {
+    let l = l0;
+    if (rel === "public/qcf-v2.json") l = l.replace(/\[(\d{3}),"[^"]*"/g, '[$1,""');
+    if (/\.html$/i.test(rel)) l = l.replace(/(<span class="w p\d{3}"[^>]*>)[^<]*(<\/span>)/g, "$1$2");
     const at = (re, kind) => { let m; re.lastIndex = 0; while ((m = re.exec(l))) hits.push({ kind, line: i + 1, col: m.index + 1, text: l.slice(Math.max(0, m.index - 20), m.index + 30) }); };
     at(/\ufffd/g, "fffd");
     at(/[\u00d8-\u00db][\u0080-\u00bf]/g, "mojibake");
