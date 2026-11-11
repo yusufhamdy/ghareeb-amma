@@ -53,6 +53,10 @@ h1.wd{font-weight:400;text-wrap:balance}
 mark{display:inline-block;line-height:1.6;padding:.08em .32em .14em;border-radius:10px;background:none;color:inherit;text-decoration:none;position:relative;isolation:isolate}
 /* an ornate parenthesis stays on the line of its first/last word or mark (qtext.js ayahHtml); a long mark still wraps inside */
 .nb{white-space:nowrap}.nb mark{white-space:normal}
+/* Madinah Mushaf page fonts V2 (qcf.css): the page glyphs are drawn about 0.86 as wide and 0.96 as tall as the Hafs
+   letters at the same size, so 1.1em shows them at the size of the Hafs text they replace; line-height 1 keeps each
+   glyph word inside the line's strut, so the lines are spaced as before */
+.qcf-g{--qcf-size:1.1em}.qcf-g .w{line-height:1}
 /* the highlight is the mark's ::before: word-gap.js sizes it to the text's real ink plus an equal 0.12em on every side;
    without that measurement it covers the mark's padding box */
 mark::before{content:"";position:absolute;z-index:-1;top:var(--hl-t,0);left:var(--hl-l,0);width:var(--hl-w,100%);height:var(--hl-h,100%);border-radius:10px;background:color-mix(in srgb,var(--ac) 20%,transparent)}
