@@ -173,7 +173,8 @@ test("publish.yml: each job has only the permissions it needs", () => {
   assert.deepStrictEqual(j.check.permissions, { contents: "read", "id-token": "write" });
   assert.deepStrictEqual(j.build.permissions, { contents: "read", "id-token": "write" });
   assert.deepStrictEqual(j.commit.permissions, { contents: "write", "pull-requests": "write" });
-  assert.deepStrictEqual(j.deploy.permissions, { contents: "read", "id-token": "write" });
+  // actions/pull-requests read: Release looks up the CI run that verified the tree (it reads nothing else)
+  assert.deepStrictEqual(j.deploy.permissions, { contents: "read", "id-token": "write", actions: "read", "pull-requests": "read" });
   assert.deepStrictEqual(j.pr.permissions, { contents: "write", "pull-requests": "write" });
   assert.deepStrictEqual(j.remember.permissions, {});
   for (const k of ["commit", "pr", "remember"]) assert.ok(!(j[k].permissions || {})["id-token"], k + " gets no Google sign-in");
@@ -209,7 +210,8 @@ test("publish.yml: a failed check reaches neither the commit nor the deploy nor 
   assert.strictEqual(j.commit.if, "needs.build.outputs.result == 'auto'");
   assert.strictEqual(j.pr.needs, "build");
   assert.strictEqual(j.pr.if, "needs.build.outputs.result == 'pr'");
-  assert.strictEqual(j.deploy.needs, "commit");
+  // build too: the tree its checks passed on goes to Release with the commit
+  assert.deepStrictEqual(j.deploy.needs, ["build", "commit"]);
   assert.strictEqual(j.deploy.if, "needs.commit.outputs.sha != ''");
   // the commit job pushes only the tested commit, on its base, never forced
   const push = j.commit.steps.find((s) => /git push/.test(s.run || "")).run;
@@ -221,7 +223,7 @@ test("publish.yml: a failed check reaches neither the commit nor the deploy nor 
 test("publish.yml: an auto-publish is deployed by release.yml, the one deploy path", () => {
   const w = workflow("publish.yml");
   assert.strictEqual(w.jobs.deploy.uses, "./.github/workflows/release.yml");
-  assert.deepStrictEqual(w.jobs.deploy.with, { sha: "${{ needs.commit.outputs.sha }}" });
+  assert.deepStrictEqual(w.jobs.deploy.with, { sha: "${{ needs.commit.outputs.sha }}", tested_tree: "${{ needs.build.outputs.tree }}" });
   assert.strictEqual(w.jobs.deploy.secrets, "inherit");
   const text = JSON.stringify(w);
   assert.ok(!/firebase deploy/.test(text), "publish.yml never deploys by itself");

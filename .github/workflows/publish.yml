@@ -139,6 +139,7 @@ jobs:
       result: ${{ steps.result.outputs.result }}
       rev: ${{ steps.plan.outputs.rev }}
       base: ${{ steps.base.outputs.sha }}
+      tree: ${{ steps.commit.outputs.tree }}
     env:
       OWNER_ALLOW: ${{ inputs.allow_removals }}
       OWNER_SURAHS: ${{ inputs.removed_surahs }}
@@ -279,6 +280,7 @@ jobs:
 
       # Only the generated site, its redirects and the content baseline; nothing else in the tree is part of a publish.
       - name: Commit the publish (locally) and bundle it
+        id: commit
         if: steps.build.outputs.changed == 'true'
         env:
           REV: ${{ steps.plan.outputs.rev }}
@@ -291,6 +293,9 @@ jobs:
           git bundle create "$RUNNER_TEMP/publish.bundle" "$(git rev-parse HEAD~1)..HEAD"
           mkdir -p "$RUNNER_TEMP/out" && mv "$RUNNER_TEMP/publish.bundle" "$RUNNER_TEMP/report.md" "$RUNNER_TEMP/summary.json" "$RUNNER_TEMP/out/"
           git rev-parse HEAD > "$RUNNER_TEMP/out/head.txt"
+          # the tree the checks above passed on, for Release to skip running them again: only when the commit holds
+          # the whole working tree the checks saw (nothing else changed or added), so it is exactly what was tested
+          if [ -z "$(git status --porcelain)" ]; then echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"; else echo "The working tree has changes outside the publish: Release will run the suite again."; fi
 
       - name: Keep the publish for the next job
         if: steps.build.outputs.changed == 'true'
@@ -367,14 +372,18 @@ jobs:
 
   deploy:
     name: Deploy (Release)
-    needs: commit
+    needs: [build, commit]
     if: needs.commit.outputs.sha != ''
     permissions:
       contents: read
       id-token: write
+      actions: read
+      pull-requests: read
     uses: ./.github/workflows/release.yml
     with:
       sha: ${{ needs.commit.outputs.sha }}
+      # Release skips its own run of the suite only if this is exactly the tree of that commit
+      tested_tree: ${{ needs.build.outputs.tree }}
     secrets: inherit
 
   pr:
