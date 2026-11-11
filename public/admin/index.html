@@ -8,6 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/qcf.css">
 <link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>
 <script src="/qfont.js"></script>
 <style>
@@ -116,6 +117,18 @@ button[aria-busy="true"]{cursor:progress}
 .sl .row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"n s e d" "n c e d";column-gap:10px;align-items:center}
 .sl .row .nb{grid-area:n}.sl .row .t{grid-area:s;min-width:0}.sl .row .cnt{grid-area:c}.sl .row [data-a="editS"]{grid-area:e}.sl .row [data-a="delS"]{grid-area:d}
 }
+/* the word editor's previews in the Madinah Mushaf page fonts (qcf.css, qcf-editor.js): a glyph word of the ayah
+   preview is clicked to highlight it; the note says when the ayah will be shown in the fallback font */
+#pv,#pw{--qcf-size:1em}
+/* qcf.js keeps the parentheses with their words in a span "nb", which in the admin is also the number badge (site.css) */
+#pv .qcf-g .nb{all:unset;white-space:nowrap}
+#pv .qcf-g .nb mark{white-space:normal}
+#pvh{display:none}
+.c2:has(#pv .qcf.on) #pvh{display:inline}
+#pv .qcf.on .qcf-g .w:not([data-t=""]){cursor:pointer;border-radius:6px}
+#pv .qcf.on .qcf-g .w:not([data-t=""]):hover{background:color-mix(in srgb,var(--ac) 14%,transparent)}
+#pvn{margin-top:6px;line-height:1.7}
+#pvn:empty{display:none}
 </style>
 </head>
 <body>
@@ -130,6 +143,9 @@ button[aria-busy="true"]{cursor:progress}
 <script src="/admin/word-merge.js"></script>
 <script src="/admin/history-logic.js"></script>
 <script src="/qtext.js"></script>
+<script src="/qcf.js"></script>
+<script src="/qcf-dom.js"></script>
+<script src="/admin/qcf-editor.js"></script>
 <script>
 
 const OWNER="yusufhamdy20@gmail.com";
@@ -548,9 +564,55 @@ function restoreDo(k,rev0){
  });
 }
 function ayHtml(s){return"﴿"+s.map(g=>{const k=QText.markParts(g);return`${esc(k.pre)}<mark>${esc(k.mark)}</mark>${esc(k.post)}`}).join(" … ")+"﴾"}
+/* The word editor in the Madinah Mushaf page fonts V2 (qcf.js, qcf-dom.js, qcf-editor.js). The previews show the page
+   glyphs once their fonts have loaded, and the Hafs rendering above (ayHtml) until then, or always when the table or the
+   fonts are not available or the text does not match the table (then a note says so). Choosing the surah and the ayah
+   number fills the ayah from the table; clicking its words in the preview picks the highlighted part. Typing the parts
+   by hand stays possible (SEC-2), and the save checks the text against the official text as before (ayah-check.js). */
+let QT=null;const QPG={};
+const qLoaded=p=>!!QPG[p];
+const QNOTE="ستظهر هذه الآية بالخط البديل لأن نصها لا يطابق جدول خطوط المصحف.";
+const QHINT="اضغط على كلمات الآية لتحديد الجزء المظلل.";
+const edNo=x=>(D&&D.surahs[x.si]||{}).no;
+/* the previews sit low in a scrolling window, where qcf-dom.js (which swaps an ayah when it nears the viewport) may not
+   see them yet: once their page fonts have loaded they are swapped here, and every later repaint is drawn swapped */
+function qOn(){document.querySelectorAll("#pv .qcf:not(.on),#pw .qcf:not(.on)").forEach(el=>{const l=String(el.getAttribute("data-p")||"").split(/\s+/).filter(Boolean);if(l.length&&l.every(qLoaded))el.classList.add("on")})}
+function qWatch(pages){if(window.QCFDom&&pages.length&&!pages.every(qLoaded))QCFDom.load(pages).then(ok=>{if(ok){pages.forEach(p=>{QPG[p]=1});qOn()}})}
+function pvParts(x){
+ const plain=ayHtml(x.segs),shown=QText.displayWord({segments:x.segs}),E=window.QCFEditor;
+ if(!E)return{pv:{html:plain,ok:false,note:false,pages:[]},pw:{html:esc(shown),pages:[]}};
+ const no=edNo(x),pv=E.preview(QT,no,x.segs,esc,plain,qLoaded),pw=E.head(QT,no,x.segs,esc,shown,qLoaded);
+ qWatch(pv.pages.concat(pw.pages));return{pv,pw};
+}
+function pvPaint(){
+ const x=ED;if(!x||x.conf||!MD||MD.kind!=="word")return;
+ const P=pvParts(x),pv=$("#pv"),pw=$("#pw"),n=$("#pvn"),h=$("#pvh");
+ if(pv)pv.innerHTML=P.pv.html;if(pw)pw.innerHTML=P.pw.html;if(n)n.textContent=P.pv.note?QNOTE:"";if(h)h.textContent=P.pv.ok?QHINT:"";
+}
+// the parts now come from the table: the helper fields follow them, and the old marks of the parts no longer apply
+function qSet(x,s){x.segs=s;x.af=s.map(g=>g.before+g.hl+g.after).join(" ");x.ah=(s[0]||{}).hl||"";Object.keys(x.err||{}).forEach(k=>{if(/^g[0-9]/.test(k))delete x.err[k]})}
+// si0: the surah the parts were written for (before a change of surah); text typed by hand is never replaced
+function qFill(t,si0){
+ const x=ED,E=window.QCFEditor;if(!x||x.conf||!E||!QT)return false;
+ const s=E.fill(QT,edNo(x),x.label,x.segs,(D&&D.surahs[si0]||{}).no);if(!s)return false;
+ const sel=selOf(t),a=typeof t.selectionStart==="number"?[t.selectionStart,t.selectionEnd]:null;
+ qSet(x,s);repaint(sel);
+ const n=sel&&$("#md "+sel);if(n&&a&&n.setSelectionRange)try{n.setSelectionRange(a[0],a[1])}catch(e){}
+ return true;
+}
+function qPick(el){
+ const x=ED,E=window.QCFEditor;if(!x||x.conf||!E||!QT||SAVING)return;
+ const no=edNo(x),P=E.preview(QT,no,x.segs,esc,"",qLoaded);if(!P.ok)return;
+ const at=E.wordAt(P.parts,[...document.querySelectorAll("#pv .qcf-g .w")].indexOf(el));if(!at||at.end)return;
+ const s=E.click(QT,no,x.segs,at.si,at.pos);if(!s)return;
+ qSet(x,s);repaint();
+}
+document.addEventListener("click",e=>{const w=e.target.closest&&e.target.closest("#pv .qcf.on .qcf-g .w");if(w)qPick(w)});
+if(window.QCFDom)QCFDom.table().then(t=>{QT=t;pvPaint()});
 function wordHtml(){
  const x=ED,er=x.err||{};
  if(x.conf)return conflictHtml(x);
+ const P=pvParts(x);
  return winHtml(x.wi<0?"إضافة كلمة":"تعديل كلمة",`<label class="lb" for="e-si">السورة</label><select class="in" id="e-si" data-f="e.si">${rows().map(r=>`<option value="${r.i}" ${r.i===x.si?"selected":""}>${esc(r.name)}</option>`).join("")}</select>
 <label class="lb" for="e-w">الكلمة</label><input class="in q" id="e-w" data-f="e.w" value="${esc(x.w)}"${fe(er,"w","w")}>${fd(er,"w","w")}
 <label class="lb" for="e-m">المعنى</label><textarea class="in" id="e-m" data-f="e.m"${fe(er,"m","m")}>${esc(x.m)}</textarea>${fd(er,"m","m")}
@@ -560,7 +622,7 @@ function wordHtml(){
 <button class="g sm2" data-a="split" style="margin:8px 0">تقسيم تلقائي</button>
 ${x.segs.map((g,i)=>`<div class="sg"><label><span>رقم الآية</span><input class="in" data-f="g.${i}.num" aria-label="رقم آية الجزء ${i+1}" value="${esc(g.num)}"></label><label><span>قبل المظلل</span><input class="in q" data-f="g.${i}.before" aria-label="النص قبل المظلل في الجزء ${i+1}" value="${esc(g.before)}"></label><label><span>المظلل</span><input class="in q" data-f="g.${i}.hl" aria-label="النص المظلل في الجزء ${i+1}" value="${esc(g.hl)}"${fe(er,"g"+i,"g"+i)}></label><label><span>بعد المظلل</span><input class="in q" data-f="g.${i}.after" aria-label="النص بعد المظلل في الجزء ${i+1}" value="${esc(g.after)}"></label></div>${fd(er,"g"+i,"g"+i)}`).join("")}
 <div class="bar"><button class="g sm2" data-a="addG">إضافة جزء</button>${x.segs.length>1?'<button class="g sm2 dg" data-a="delG">حذف آخر جزء</button>':""}</div>
-<div class="g c2" style="margin-top:10px"><div class="sm">معاينة</div><div class="q" id="pw" style="font-size:32px;line-height:1.6;color:var(--ac)">${esc(QText.displayWord({segments:x.segs}))}</div><div class="q ay" id="pv">${ayHtml(x.segs)}</div></div>`,
+<div class="g c2" style="margin-top:10px"><div class="sm">معاينة <span id="pvh">${P.pv.ok?QHINT:""}</span></div><div class="q" id="pw" style="font-size:32px;line-height:1.6;color:var(--ac)">${P.pw.html}</div><div class="q ay" id="pv">${P.pv.html}</div><div class="sm" id="pvn" role="status">${P.pv.note?QNOTE:""}</div></div>`,
 `<button class="pill btn" data-a="saveW">${IC_CHECK}حفظ</button><button class="g pill" data-a="close">إلغاء</button>`);
 }
 /* a real conflict: nothing is saved until a value is chosen for each field; every other field keeps the merged value */
@@ -807,10 +869,12 @@ document.addEventListener("input",e=>{
   else if(k==="note")EDD.note=t.value;
   return}
  if(!ED)return;
- const k=f.split(".");
+ const k=f.split("."),si0=ED.si;
  if(k[0]==="e"){ED[k[1]]=k[1]==="si"?+t.value:t.value}
  else if(k[0]==="g")ED.segs[+k[1]][k[2]]=t.value;
- const pv=$("#pv");if(pv)pv.innerHTML=ayHtml(ED.segs);const pw=$("#pw");if(pw)pw.textContent=QText.displayWord({segments:ED.segs});
+ // choosing the surah or the ayah number fills the ayah from the Mushaf fonts' table (it repaints the window)
+ if(k[0]==="e"&&(k[1]==="label"||k[1]==="si")&&qFill(t,si0))return;
+ pvPaint();
 });
 document.addEventListener("change",async e=>{
  if(e.target.dataset.f!=="imp"||!e.target.files[0])return;
