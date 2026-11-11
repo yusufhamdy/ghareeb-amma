@@ -41,7 +41,8 @@ test("glass levels: legacy 0/1/2 migrate to 1/3/5; 1..5 pass through", async () 
 
 // The settings migration (the GQ_THEME definitions block): records saved before the settings version (sv 2) had "def"
 // as the default palette (blue at night), which became neo: a saved "def" becomes "neo" once; after that "def" is the
-// green palette and stays. The removed palette "min" becomes the green palette, a missing palette the default (neo),
+// green palette and stays. The removed palette "min" becomes the green palette, a missing palette the default (the
+// green palette "def" since 2026-11-11; it was neo),
 // and the glass strength moves to 0..100.
 function themeBlock() {
   const vm = require("vm");
@@ -54,7 +55,7 @@ function themeBlock() {
 test("settings migration: palettes, the settings version and the continuous glass scale", () => {
   const T = themeBlock();
   assert.deepEqual(T.ORDER, ["neo", "gold", "def", "lav", "sun"]);
-  assert.equal(T.DEFAULT, "neo");
+  assert.equal(T.DEFAULT, "def", "a first visit gets the green palette");
   assert.equal(T.SV, 2);
   const m = (s) => T.migrate(Object.assign({}, s));
   // the old site (main d4405a7) saved its whole settings record, always with a palette, only when a setting changed
@@ -62,8 +63,10 @@ test("settings migration: palettes, the settings version and the continuous glas
   assert.equal(m({ pal: "neo", gl: 3, gv: 2 }).pal, "neo", "old neo stays neo");
   assert.equal(m({ pal: "min", gl: 3, gv: 2 }).pal, "def", "old min becomes the green palette, as before");
   assert.equal(m({ pal: "lav" }).pal, "lav");
-  assert.equal(m({}).pal, "neo", "no saved settings: neo");
-  assert.equal(m({ pal: "nope" }).pal, "neo", "unknown palette: neo");
+  assert.equal(m({}).pal, "def", "no saved settings: the green palette");
+  assert.equal(m({ pal: "nope" }).pal, "def", "unknown palette: the default");
+  assert.equal(m({ mode: "dark", sv: 2 }).pal, "def", "a current record with no palette: the default");
+  assert.equal(m({ pal: "def", sv: 2, mode: "light", gl: 50, gv: 3, style: "glass" }).pal, "def", "the first-visit defaults (they carry sv) stay green");
   assert.equal(m({ pal: "def", sv: 2, gl: 50, gv: 3 }).pal, "def", "def saved after the release (sv 2) stays green");
   assert.equal(m({ pal: "def" }).sv, 2, "every migrated record carries the settings version");
   assert.equal(m({}).sv, 2, "a new record carries the settings version");

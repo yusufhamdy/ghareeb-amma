@@ -4,8 +4,8 @@
   "description": "منصة غريب القرآن لمساعدة المستخدمين على فهم معاني كلمات القرآن.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A1128",
-  "theme_color": "#38BDF8",
+  "background_color": "#F2F0E8",
+  "theme_color": "#F2F0E8",
   "icons": [
     {
       "src": "icon-192.png",

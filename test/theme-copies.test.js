@@ -44,7 +44,7 @@ test("theme definitions: names, colours, order, default, migration and glass map
   const ref = T[0];
   // the values themselves (so a change has to be made on purpose, in every copy)
   assert.strictEqual(JSON.stringify(ref.ORDER), JSON.stringify(["neo", "gold", "def", "lav", "sun"]));
-  assert.strictEqual(ref.DEFAULT, "neo");
+  assert.strictEqual(ref.DEFAULT, "def", "a first visit gets the green palette");
   assert.strictEqual(ref.SV, 2);
   assert.strictEqual(ref.GLASS_DEFAULT, 50);
   assert.strictEqual(JSON.stringify(ref.ORDER.map((k) => ref.PAL[k].n)), JSON.stringify(["فيروزي", "ذهبي", "زمردي", "بنفسجي", "غروب"]));

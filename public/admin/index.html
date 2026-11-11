@@ -13,7 +13,7 @@
 <style>
 /* native controls and the drop-down's popup follow the page's light or dark (admin only: the public pages never load this) */
 :root{color-scheme:light;--lbt:#4d5b54;--fb:#66756d;--dgt:#9c2f1c;--hgb:#d9ebe1;--hgt:#1f6f4e;--hab:#f3e5cf;--hat:#8a5a10;--hrb:#f5dcd6;--hrt:#a8321f;--hvt:#1D2B25}
-@media(prefers-color-scheme:dark){:root{color-scheme:dark;--lbt:#aeb5d0;--fb:#8f99b8;--dgt:#ffb3a3;--hgb:#1d3a36;--hgt:#7fd6a8;--hab:#3f3322;--hat:#f0c27b;--hrb:#43262c;--hrt:#ff9a86;--hvt:#ECEFFA}}
+:root.dk{color-scheme:dark;--lbt:#aeb5d0;--fb:#8f99b8;--dgt:#ffb3a3;--hgb:#1d3a36;--hgt:#7fd6a8;--hab:#3f3322;--hat:#f0c27b;--hrb:#43262c;--hrt:#ff9a86;--hvt:#ECEFFA}
 :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 #app{max-width:760px}
 .in{width:100%;min-height:46px;border-radius:14px;padding:10px 14px;border:1px solid var(--fb);background:var(--gb);color:var(--tx);font:inherit;font-size:16px}
