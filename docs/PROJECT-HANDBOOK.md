@@ -300,13 +300,26 @@ How they are tested:
 
 | Workflow | Name | Trigger | What it does | Deploys |
 |---|---|---|---|---|
-| `.github/workflows/ci.yml` | CI | `pull_request` (all), and push to branch `rebuild` | Node 20, Java 21, `npm ci`, Playwright Chromium; `npm test`; `node scripts/ci/checks.mjs`; `pwsh scripts/check-private.ps1`; `npm run rules:test`; `npm run client:verify` | nothing |
-| `.github/workflows/release.yml` | Release | push to `main`, and `workflow_call` from Publish (input `sha`) | Checks the commit is the latest `origin/main`; Node 20, Java 21, `npm ci`, Chromium; `npm test` (no deploy on any failure); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` (the home page, and the first word of the deployed `words.json` as an app route and as its static page, never a fixed word) | **Hosting only** (never rules) |
+| `.github/workflows/ci.yml` | CI | `pull_request` (all), and push to branch `rebuild` | `changes`: a pull request that changes only `*.md` files runs no suite. `tests`: `npm test` in 4 parallel shards by test file (`scripts/ci/shard-tests.mjs`, balanced by `scripts/ci/shard-durations.json`, 2 files at a time per 2-core runner). `checks`: `npm run rules:test`, `node scripts/ci/checks.mjs`, `pwsh scripts/check-private.ps1`, `npm run client:verify`. `Verify` (the one final status): fails unless every shard and the checks passed and every test file ran exactly once on the same commit; on a Markdown-only change it runs `checks.mjs` and `check-private` instead. It then records the verified git tree as the artifact `ci-passed-tree-<tree>` (30 days). Caches: npm (setup-node), Playwright Chromium and the Firestore emulator jar, keyed on the locked versions | nothing |
+| `.github/workflows/release.yml` | Release | push to `main`, and `workflow_call` from Publish (input `sha`) | Checks the commit is the latest `origin/main`; `npm ci`; `npm test` (with Java 21 and Chromium; no deploy on any failure) unless this exact tree already passed (below); `csp-update.mjs --check`; signs in through Workload Identity; `firebase deploy --only hosting`; `node scripts/smoke-live.mjs https://ghareebalquran.com` (the home page, and the first word of the deployed `words.json` as an app route and as its static page, never a fixed word) | **Hosting only** (never rules) |
 | `.github/workflows/backup.yml` | Backup | daily cron `17 3 * * *` (03:17 UTC) and manual | Section 8 | nothing (writes the backups repo) |
 | `.github/workflows/publish.yml` | Publish | cron `*/15 * * * *` and manual, on `main`, only while `PUBLISH_ENABLED` is `true` | `check`: reads only the Firestore rev and the public challenge (REST, `ghareeb-backup`, read-only) and compares them with `public/rev.json` and `challenge.json` on `main`; the same, and the run ends. `build`: `publish-plan.mjs plan`, `publish-build.mjs --publish`, then `npm test`, rules tests, CSP check, `checks.mjs`, `check-private`, the credential guard. `commit` (auto): pushes "Publish: Firestore rev N" to `main`. `deploy`: calls Release. `pr` (otherwise): opens or updates the PR from `publish/next`. `remember`: marks a failed, unchanged or PR state so it is not rebuilt every 15 minutes. Concurrency group `publish`. Manual inputs `allow_removals` and `removed_surahs` (empty for the usual run): with a count, always a PR, past the 10% ceiling, exact count required (section 4.2) | **Hosting, through Release** (an automatic publish); never Firestore |
 | `.github/workflows/keepalive.yml` | Keepalive | monthly cron `41 5 1 * *` (05:41 UTC on the 1st) and manual, on `main` | Re-enables Publish, Backup and itself through the GitHub API (`gh api -X PUT .../actions/workflows/<file>/enable`). A workflow the owner turned off by hand (`disabled_manually`) is left off. Permissions: `actions: write` only; no checkout, commit, data or deploy | nothing |
 
-- **CI does not run on `main`.** On `main`, Release runs the full test suite before deploying.
+- **CI does not run on `main`.** On `main`, Release runs the full test suite before deploying, unless the exact git
+  tree it deploys already passed it:
+  - **a merge:** the head of the pull request merged into the commit passed a `ci.yml` run in this repository (not a
+    fork), and that run recorded this tree (`ci-passed-tree-<tree>`). CI tests a pull request's merge commit, so a
+    squash merge has the same tree only when `main` did not move after CI ran;
+  - **called by Publish:** the Publish `build` job's checks (npm test, rules tests, CSP, checks.mjs, check-private)
+    passed on this tree (input `tested_tree`). The job hands the tree over only when its commit holds the whole
+    working tree the checks saw.
+
+  A different tree, or anything not found (an expired artifact, an API error, a Markdown-only pull request), runs the
+  full suite as before. The CSP check and the smoke check always run. The step summary says which case it was.
+- **Rebalancing the shards:** each CI run's Verify job keeps the measured seconds per test file as the artifact
+  `test-durations`. Copy it to `scripts/ci/shard-durations.json` when the shards drift apart. A new test file needs no
+  change: it is found by Node's own default patterns and gets an estimate until it has a recorded time.
 - **No preview workflow.** Previews are deployed from a developer machine with the CLI (runbook 10.2). The old
   `preview.yml` was removed in PR #15: it could never run (its only trigger was `workflow_dispatch`, but its job
   required a `push` or `pull_request` event), and the secret it needed, `FIREBASE_SERVICE_ACCOUNT`, does not exist.
@@ -423,7 +436,9 @@ Temurin 21), Playwright Chromium (`npx playwright install chromium`), and PowerS
 | `npm run seed` | Seeds a local Firestore emulator with `scripts/seed-emulator.js`. |
 | `npm run csp:update` | Regenerates the CSP in `firebase.json`. |
 
-Also run in CI: `node scripts/ci/checks.mjs` and `pwsh -NoProfile -File scripts/check-private.ps1`.
+Also run in CI: `node scripts/ci/checks.mjs` and `pwsh -NoProfile -File scripts/check-private.ps1`. CI runs `npm test`
+as `node scripts/ci/shard-tests.mjs run --shard N --of 4 --jobs 2` (section 7); `node scripts/ci/shard-tests.mjs plan
+--of 4` shows the split.
 
 ### 9.2 Emulator checks run by the tests
 

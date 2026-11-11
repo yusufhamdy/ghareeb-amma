@@ -7,6 +7,20 @@ name: CI
 #
 # Deployment policy: GitHub Actions is the single official deployment path from
 # this point on. Do not run `firebase deploy` locally in parallel with a run.
+#
+# Layout (handbook 7):
+#   changes  what the pull request changes. A pull request that changes only *.md files runs no test suite: Verify
+#            still runs the static checks on it, so it gets a passing status.
+#   tests    `npm test` split into 4 shards by test file, balanced by the seconds recorded in
+#            scripts/ci/shard-durations.json (scripts/ci/shard-tests.mjs), 2 files at a time on each 2-core runner.
+#   checks   the Firestore rules tests, checks.mjs, check-private and client:verify, as before.
+#   Verify   the one final status: it fails unless every shard and the checks passed, and every test file ran in
+#            exactly one shard, on the commit Verify checked out. It then records the git tree it verified as the
+#            artifact "ci-passed-tree-<tree>", which Release reads to skip running the same suite again on exactly
+#            that tree.
+#
+# Caches (actions/cache): the npm cache (setup-node, keyed on package-lock.json), Playwright's Chromium (keyed on the
+# locked Playwright version) and the Firestore emulator jar (keyed on the locked firebase-tools version).
 
 on:
   push:
@@ -21,9 +35,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Verify
+  changes:
+    name: What changed
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.c.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+
+      - name: Only Markdown?
+        id: c
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          # a pull request is checked out as its merge commit: its first parent is the base, so this is exactly what
+          # the pull request changes on top of it. Anything else (a push, an empty diff, any other file) runs the suite.
+          code=true
+          if [ "$EVENT" = pull_request ]; then
+            files=$(git diff --name-only HEAD^1 HEAD)
+            if [ -n "$files" ] && ! printf '%s\n' "$files" | grep -qvE '\.md$'; then code=false; fi
+            echo "Changed files: $(printf '%s\n' "$files" | grep -c . || true); only Markdown: $([ "$code" = false ] && echo yes || echo no)" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+  tests:
+    name: Tests (shard ${{ matrix.shard }} of 4)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -45,11 +94,86 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browser (client verification)
-        run: npx playwright install --with-deps chromium
+      - name: Locked tool versions (cache keys)
+        id: v
+        run: |
+          node -e 'const p=require("./package-lock.json").packages;console.log("playwright="+p["node_modules/playwright-core"].version);console.log("firebase="+p["node_modules/firebase-tools"].version)' >> "$GITHUB_OUTPUT"
 
-      - name: Unit tests
-        run: npm test
+      - name: Cache Playwright Chromium
+        id: pw
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ steps.v.outputs.playwright }}
+
+      - name: Cache the Firestore emulator
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ steps.v.outputs.firebase }}
+
+      - name: Install Playwright browser
+        run: |
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium; else npx playwright install --with-deps chromium; fi
+
+      - name: Unit tests (this shard)
+        run: node scripts/ci/shard-tests.mjs run --shard ${{ matrix.shard }} --of 4 --jobs 2 --report "$RUNNER_TEMP/shard-${{ matrix.shard }}.json"
+
+      - name: Keep this shard's report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/shard-${{ matrix.shard }}.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+  checks:
+    name: Rules tests and static checks
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node 20
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Setup Java 21 (Firestore emulator runtime)
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Locked tool versions (cache keys)
+        id: v
+        run: |
+          node -e 'const p=require("./package-lock.json").packages;console.log("playwright="+p["node_modules/playwright-core"].version);console.log("firebase="+p["node_modules/firebase-tools"].version)' >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Chromium
+        id: pw
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ steps.v.outputs.playwright }}
+
+      - name: Cache the Firestore emulator
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ steps.v.outputs.firebase }}
+
+      - name: Install Playwright browser (client verification)
+        run: |
+          if [ "${{ steps.pw.outputs.cache-hit }}" = "true" ]; then npx playwright install-deps chromium; else npx playwright install --with-deps chromium; fi
 
       - name: Static checks (fonts, redirects, sitemap, secrets)
         run: node scripts/ci/checks.mjs
@@ -62,3 +186,80 @@ jobs:
 
       - name: Public page uses only the published JSON, with no Firebase request
         run: npm run client:verify
+
+  verify:
+    name: Verify
+    needs: [changes, tests, checks]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node 20
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "20"
+
+      - name: Every job passed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          TESTS: ${{ needs.tests.result }}
+          CHECKS: ${{ needs.checks.result }}
+        run: |
+          echo "changes=$CHANGES code=$CODE tests=$TESTS checks=$CHECKS"
+          [ "$CHANGES" = success ] || { echo "::error::the change check did not pass"; exit 1; }
+          if [ "$CODE" = false ]; then
+            [ "$TESTS" = skipped ] && [ "$CHECKS" = skipped ] || { echo "::error::unexpected job results for a Markdown-only change"; exit 1; }
+            echo "Only Markdown changed: no test suite. The static checks run below." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [ "$TESTS" = success ] && [ "$CHECKS" = success ] || { echo "::error::a test shard or the checks failed"; exit 1; }
+
+      - name: Static checks (a Markdown-only change)
+        if: needs.changes.outputs.code == 'false'
+        run: |
+          node scripts/ci/checks.mjs
+          pwsh -NoProfile -File scripts/check-private.ps1
+
+      - name: Get the shard reports
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: shard-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/shards
+
+      - name: Every test file ran exactly once, on this commit, and passed
+        if: needs.changes.outputs.code == 'true'
+        run: |
+          node scripts/ci/shard-tests.mjs merge --of 4 --dir "$RUNNER_TEMP/shards" --durations-out "$RUNNER_TEMP/test-durations.json" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the measured durations (for scripts/ci/shard-durations.json)
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations
+          path: ${{ runner.temp }}/test-durations.json
+          retention-days: 7
+
+      - name: Name the verified tree
+        if: needs.changes.outputs.code == 'true'
+        id: tree
+        run: |
+          tree=$(git rev-parse 'HEAD^{tree}')
+          printf '{"tree":"%s","commit":"%s","run":"%s"}\n' "$tree" "$(git rev-parse HEAD)" "$GITHUB_RUN_ID" > "$RUNNER_TEMP/ci-passed-tree.json"
+          echo "tree=$tree" >> "$GITHUB_OUTPUT"
+          echo "Verified tree: $tree" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Release (push to main) skips its own run of the suite only for exactly this tree, and only when this run
+      # passed, ran from this repository (not a fork) and was for the pull request merged into that commit.
+      - name: Record the verified tree for Release
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ci-passed-tree-${{ steps.tree.outputs.tree }}
+          path: ${{ runner.temp }}/ci-passed-tree.json
+          retention-days: 30

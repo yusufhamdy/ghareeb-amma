@@ -9,6 +9,14 @@ name: Release
 # the deploy it runs a smoke check against the live site and fails loudly if the site, its security headers or
 # its Quran font are not right.
 #
+# The test suite is skipped only when the exact git tree being deployed already passed it (handbook 7):
+#   - called by Publish: the build job's checks (npm test, rules tests, CSP, checks.mjs, check-private) passed on this
+#     tree (input tested_tree, from the same Publish run);
+#   - a merge: a CI run of ci.yml in this repository (not a fork) passed on the head of the pull request merged into
+#     this commit, and recorded this tree as verified (artifact "ci-passed-tree-<tree>"). A squash merge has the tree
+#     CI tested only when main did not move after CI ran; any difference, or anything not found, runs the suite.
+# The CSP check and the smoke check always run.
+#
 # Not deployed here: the Firestore rules (deployed by hand, with the owner's approval) and Cloud Functions (none:
 # the project is on the free Spark plan; firebase.json has no functions entry).
 #
@@ -24,10 +32,17 @@ on:
         description: "The commit on main to test and deploy (an automatic publish)"
         type: string
         required: true
+      tested_tree:
+        description: "The git tree the Publish job's checks passed on (empty: run the suite)"
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
   id-token: write
+  actions: read # find the CI run that verified this tree
+  pull-requests: read # the pull request merged into this commit
 
 concurrency:
   group: release-main
@@ -61,7 +76,40 @@ jobs:
             exit 1
           fi
 
+      - name: Was this exact tree already tested?
+        id: tested
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TARGET: ${{ inputs.sha || github.sha }}
+          TESTED_TREE: ${{ inputs.tested_tree }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          tree=$(git rev-parse "$TARGET^{tree}")
+          skip=false; why="no passing CI run found for tree $tree"
+          if [ -n "$TESTED_TREE" ]; then
+            if [ "$TESTED_TREE" = "$tree" ]; then skip=true; why="the Publish job's checks passed on tree $tree"; else why="Publish tested tree $TESTED_TREE, not $tree"; fi
+          elif [ "$EVENT" = push ]; then
+            # the pull request merged into this commit, and the head CI ran on
+            pr=$(gh api "repos/$REPO/commits/$TARGET/pulls" --jq '[.[]|select(.merged_at!=null and .base.ref=="main")][0]|select(.!=null)|"\(.number) \(.head.sha)"' 2>/dev/null)
+            if [ -z "$pr" ]; then why="no merged pull request found for $TARGET"; else
+              read -r num head <<<"$pr"
+              why="no passing CI run of pull request #$num recorded tree $tree"
+              for id in $(gh api "repos/$REPO/actions/artifacts?name=ci-passed-tree-$tree&per_page=50" --jq '.artifacts[]|select(.expired==false)|.workflow_run.id' 2>/dev/null); do
+                run=$(gh api "repos/$REPO/actions/runs/$id" --jq '[.path,.status,.conclusion,.event,.head_repository.full_name,.head_sha]|join(" ")' 2>/dev/null)
+                if [ "$run" = ".github/workflows/ci.yml completed success pull_request $REPO $head" ]; then
+                  skip=true; why="CI run $id passed the full suite on tree $tree (pull request #$num)"; break
+                fi
+              done
+            fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          if [ "$skip" = true ]; then msg="Test suite skipped: $why."; else msg="Running the full test suite: $why."; fi
+          echo "$msg" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Setup Java 21 (Firestore emulator runtime)
+        if: steps.tested.outputs.skip != 'true'
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
@@ -71,9 +119,11 @@ jobs:
         run: npm ci
 
       - name: Install Chromium for the browser tests
+        if: steps.tested.outputs.skip != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run the full test suite (no deploy on any failure)
+        if: steps.tested.outputs.skip != 'true'
         run: npm test
 
       - name: Check the CSP hashes match the pages being deployed
