@@ -142,6 +142,8 @@
       });
       var out = html.map(function (x) { return Array.isArray(x) ? "<mark>" + x.join(" ") + "</mark>" : x; });
       if (!out.length) return "";
+      // the ayah-end marker stays on the line of the word before it (never alone at a line start)
+      if (out.length > 1 && ws[ws.length - 1].end && !ws[ws.length - 1].hl) out.splice(out.length - 2, 2, out[out.length - 2] + " " + out[out.length - 1]);
       // the parentheses stay outside the mark and on the line of the first / last item (never alone at a line end)
       out[0] = OL + out[0];
       out[out.length - 1] = out[out.length - 1] + OR;

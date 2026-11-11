@@ -108,7 +108,7 @@
     if (!hit) return;
     var t = frag.textContent.replace(/[\ue000-\uf8ff\ufb50-\ufdff\ufe70-\ufeff]/g, function (c) {
       return c === "\ufd3e" || c === "\ufd3f" ? c : ""; // no glyph code ever reaches the clipboard
-    }).replace(/[ \t]+/g, " ").trim();
+    }).replace(/[ \t]+/g, " ").replace(/ (\ufd3e)/g, "$1").trim(); // the end marker has no text: no space before the closing parenthesis
     ev.clipboardData.setData("text/plain", t);
     ev.preventDefault();
   });

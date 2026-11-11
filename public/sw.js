@@ -13,6 +13,7 @@ const assetsToCache = [
     '/qtext.js',
     '/qcf.js',
     '/qcf-dom.js',
+    '/qcf-canvas.js',
     '/qcf.css',
     '/qcf-v2.json',
     '/fonts/fonts.css',
