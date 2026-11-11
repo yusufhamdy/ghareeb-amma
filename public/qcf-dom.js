@@ -1,7 +1,7 @@
 /*
  * qcf-dom.js - the browser side of qcf.js (the Madinah Mushaf page fonts V2): loads the page fonts the visible ayat
  * need, swaps each ayah from the Hafs v22 rendering to its page glyphs once all its fonts have loaded, and keeps copy
- * on the official text. Load after qcf.js; needs public/qcf.css. Exposes window.QCFDom.
+ * on the official text. Needs public/qcf.css (not qcf.js). Exposes window.QCFDom.
  *
  * Markup (QCF.html): <span class="qcf" data-p="582 583"><span class="qcf-t">official text, Hafs (QText.ayahHtml)
  * </span><span class="qcf-g" aria-hidden="true">glyphs</span></span>. Until the element gets the class "on",
@@ -38,7 +38,7 @@
     if (!fonts[page]) {
       fonts[page] = new Promise(function (res) {
         try {
-          var f = new FontFace(window.QCF.family(page), "url(" + BASE + window.QCF.FILE(page) + ")", { display: "block" });
+          var f = new FontFace("QCF2 " + page, "url(" + BASE + "QCF2" + page + ".ttf)", { display: "block" }); // = QCF.family(page), QCF.FILE(page)
           f.load().then(function (x) { document.fonts.add(x); res(true); }, function () { res(false); });
         } catch (e) { res(false); }
       });
