@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v46';
+const CACHE_NAME = 'ghareeb-pwa-v47';
 const assetsToCache = [
     '/',
     '/index.html',
@@ -11,6 +11,10 @@ const assetsToCache = [
     '/word-gap.js',
     '/qfont.js',
     '/qtext.js',
+    '/qcf.js',
+    '/qcf-dom.js',
+    '/qcf.css',
+    '/qcf-v2.json',
     '/fonts/fonts.css',
     '/fonts/kfgqpc-uthmanic-hafs-v22.ttf',
     '/fonts/amiri-arabic-700-normal.woff2',
@@ -92,6 +96,7 @@ self.addEventListener('fetch', event => {
     const isAppFile =
         url.pathname === '/words.json' ||
         url.pathname === '/challenge.json' ||
+        url.pathname === '/qcf-v2.json' ||
         url.pathname.endsWith('.js') ||
         url.pathname.endsWith('.css');
 
@@ -100,6 +105,15 @@ self.addEventListener('fetch', event => {
             fetch(req, { cache: 'no-cache' })
                 .then(res => { putInCache(req, res); return res; })
                 .catch(async () => (await fromCache(req)) || Response.error())
+        );
+        return;
+    }
+
+    // The Madinah Mushaf page fonts V2 (qcf-dom.js loads only the pages the visible ayat need): cached on first
+    // use, then served from the cache (the files never change; a new set would get new names or a new CACHE_NAME).
+    if (url.pathname.startsWith('/fonts/qcf-v2/')) {
+        event.respondWith(
+            fromCache(req).then(cached => cached || fetch(req).then(res => { putInCache(req, res); return res; }))
         );
         return;
     }
