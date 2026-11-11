@@ -726,3 +726,4 @@ IDs come from the local audit and plan (`scripts/checks/out/admin-audit/REPORT.m
 | WIF | Workload Identity Federation: keyless GitHub-to-Google sign-in |
 | Phase 1A / 1B / 2 / 5 | Remediation phases: rules lockdown / public site without Firestore / backups / safe publishing |
 | T-xx, F-xx, SEC-xx | Test, finding and security-finding IDs from the local audit and plan |
+
