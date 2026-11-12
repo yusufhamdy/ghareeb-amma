@@ -29,4 +29,10 @@ test("each rule fires", () => {
   assert.deepStrictEqual(kinds("a.css", Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("a{}")])), [], "a BOM in CSS is not flagged");
   assert.deepStrictEqual(kinds("a.md", Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from("# ok " + ch(0x0628), "utf16le")])), [], "UTF-16 files are read as UTF-16");
   assert.deepStrictEqual(kinds("a.js", "s='" + ch(0x0628, 0x0650) + "'"), [], "ordinary Arabic is fine");
+  // QCF V2 glyph codes: skipped only inside a glyph word of an .html file and in the code field of the table
+  assert.deepStrictEqual(kinds("a.html", '<span class="w p582" data-t="x">' + ch(0xfc41) + "</span>"), [], "a QCF V2 glyph word");
+  assert.deepStrictEqual(kinds("a.html", '<span class="x">' + ch(0xfc41) + "</span>"), ["presentation"], "outside a glyph word");
+  assert.deepStrictEqual(kinds("a.js", '<span class="w p582">' + ch(0xfc41) + "</span>"), ["presentation"], "only in .html files");
+  assert.deepStrictEqual(kinds("public/qcf-v2.json", '"78:1":[[582,"' + ch(0xfc41) + '","x"]]'), [], "the table's code field");
+  assert.deepStrictEqual(kinds("public/qcf-v2.json", '"78:1":[[582,"x","' + ch(0xfc41) + '"]]'), ["presentation"], "not the table's text field");
 });

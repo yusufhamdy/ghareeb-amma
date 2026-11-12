@@ -5,7 +5,8 @@
  * In every rendered ayah (the app's word pages, day cards and quiz; the static word pages; the save-image card's
  * layout pieces) the character before each <mark> is a space, the ornate parenthesis or the line start, and the
  * character after it is a space, the ornate parenthesis or the line end; and the rendered text with the marks
- * removed is exactly before + hl + after. Stored segments are untouched (qtext.js markParts is display only).
+ * removed is exactly before + hl + after. In the app an ayah drawn in the Madinah Mushaf page glyphs (qcf.js) is
+ * checked on both layers: the official text as above, and the glyph words for the same mark edges. Stored segments are untouched (qtext.js markParts is display only).
  *
  * ASCII only.
  */
@@ -54,11 +55,15 @@ test("markParts: whole written words, same text, the 9 split segments widened", 
 test("static word pages: no mark inside a word, text unchanged", () => {
   const unesc = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
   const bad = [];
-  let n = 0;
+  let n = 0, glyphs = 0;
   const texts = new Set(all.map(segsOf));
   for (const f of fs.readdirSync(path.join(PUBLIC, "word")).filter((x) => x.endsWith(".html"))) {
     // the no-break wrappers around the parentheses (K) are layout only
-    const ay = ((fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "").replace(/<span class="nb">|<\/span>/g, "");
+    // the QCF V2 page: the official text (Hafs) is the .qcf-t layer, next to the aria-hidden glyph layer .qcf-g
+    const full = (fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "";
+    const qt = full.match(/^<span class="qcf" data-p="[0-9 ]+"><span class="qcf-t">([\s\S]*?)<\/span><span class="qcf-g" aria-hidden="true">[\s\S]*<\/span><\/span>$/);
+    if (qt) glyphs++;
+    const ay = (qt ? qt[1] : full).replace(/<span class="nb">|<\/span>/g, "");
     const runs = ay.split(/(<mark>[\s\S]*?<\/mark>)/).filter((x) => x !== "").map((x) => (x.startsWith("<mark>") ? { mark: true, text: unesc(x.slice(6, -7)) } : { mark: false, text: unesc(x) }));
     bad.push(...checkRuns(runs, f));
     assert.ok(texts.has(runs.map((r) => r.text).join("")), f + ": the ayah text is before + hl + after");
@@ -66,6 +71,7 @@ test("static word pages: no mark inside a word, text unchanged", () => {
   }
   assert.deepStrictEqual(bad, []);
   assert.strictEqual(n, WORD_COUNT);
+  assert.strictEqual(glyphs, WORD_COUNT, "every word page has the QCF V2 glyph layer (every ayah matches the table)");
 });
 
 function staticServer(root) {
@@ -97,8 +103,13 @@ test("the app (word pages, day cards, quiz) and the save-image layout: no mark i
       const wait = () => new Promise((r) => setTimeout(r, 40));
       const ayahs = [];
       // text and marks in document order, through the parentheses' no-break wrappers
-      const runsOf = (el) => { const out = []; const walk = (n) => n.childNodes.forEach((c) => { if (c.nodeName === "MARK") out.push({ mark: true, text: c.textContent }); else if (c.nodeType === 3) { const l = out[out.length - 1]; if (l && !l.mark) l.text += c.data; else out.push({ mark: false, text: c.data }); } else walk(c); }); walk(el); return out; };
-      const grab = (where) => document.querySelectorAll("#app .ay, #sh .av").forEach((el) => ayahs.push({ where, runs: runsOf(el) }));
+      // skip: the layer left out (an ayah in the Madinah Mushaf page glyphs, qcf.js, holds its official text in .qcf-t
+      // and the glyph words in .qcf-g; the official text is checked as before, the glyph layer for its mark edges)
+      const runsOf = (el, skip) => { const out = []; const walk = (n) => n.childNodes.forEach((c) => { if (c.nodeName === "MARK") out.push({ mark: true, text: c.textContent }); else if (c.nodeType === 3) { const l = out[out.length - 1]; if (l && !l.mark) l.text += c.data; else out.push({ mark: false, text: c.data }); } else if (!(c.matches && c.matches(skip))) walk(c); }); walk(el); return out; };
+      const grab = (where) => document.querySelectorAll("#app .ay, #sh .av").forEach((el) => {
+        ayahs.push({ where, runs: runsOf(el, ".qcf-g") });
+        el.querySelectorAll(".qcf-g").forEach((g) => ayahs.push({ where: where + " glyphs", glyphs: true, runs: runsOf(g, ".qcf-t") }));
+      });
       for (const w of W) { location.hash = "#/word/" + w.id; await wait(); grab("word " + w.id); }
       for (let d = 1; d <= 30; d++) {
         location.hash = "#/day/" + d; await wait();
@@ -112,9 +123,10 @@ test("the app (word pages, day cards, quiz) and the save-image layout: no mark i
     const bad = [];
     for (const a of got.ayahs) bad.push(...checkRuns(a.runs, a.where));
     assert.deepStrictEqual(bad, []);
-    assert.ok(got.ayahs.filter((a) => a.where.startsWith("word ")).length >= WORD_COUNT && got.ayahs.some((a) => a.where.startsWith("day ")) && got.ayahs.some((a) => a.where === "quiz"), "word pages, day cards and the quiz were checked (" + got.ayahs.length + ")");
+    assert.ok(got.ayahs.filter((a) => !a.glyphs && a.where.startsWith("word ")).length >= WORD_COUNT && got.ayahs.some((a) => a.where.startsWith("day ")) && got.ayahs.some((a) => a.where === "quiz"), "word pages, day cards and the quiz were checked (" + got.ayahs.length + ")");
     const texts = new Set(all.map(segsOf));
-    for (const a of got.ayahs) assert.ok(texts.has(a.runs.map((r) => r.text).join("")), a.where + ": the ayah text is before + hl + after");
+    assert.ok(got.ayahs.some((a) => a.glyphs), "the ayahs are rendered with the page glyph layer too");
+    for (const a of got.ayahs.filter((x) => !x.glyphs)) assert.ok(texts.has(a.runs.map((r) => r.text).join("")), a.where + ": the ayah text is before + hl + after");
     assert.deepStrictEqual(got.cards.filter((c) => !c.ok).map((c) => c.id), [], "each card mark is the whole-word mark, drawn as one piece");
     await page.close();
   } finally {

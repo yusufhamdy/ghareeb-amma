@@ -99,18 +99,24 @@ test("K1: public/index.html structure is untouched (still inline, no shared-css 
   assert.ok(!html.includes("/theme-boot.js"), "index.html must not link the static-pages bootstrap");
 });
 
-test("K1: every static page links the shared stylesheet and the synchronous theme bootstrap only (word pages also defer /word-gap.js)", () => {
+test("K1: every static page links the shared stylesheet and the synchronous theme bootstrap only (word pages also defer /word-gap.js and /qcf-dom.js)", () => {
   const pages = [
     ...wordFiles().map((f) => "word/" + f),
     ...surahFiles().map((f) => "surah/" + f),
     ...["about", "privacy", "terms", "rights"].map((s) => s + "/index.html"),
   ];
   const WORD_GAP = '<script src="/word-gap.js" defer></script>';
+  // QCF V2: word pages (the only static pages with an ayah) load the page-font layer's stylesheet and its loader
+  const QCF_DOM = '<script src="/qcf-dom.js" defer></script>', QCF_CSS = '<link rel="stylesheet" href="/qcf.css">';
   for (const p of pages) {
     const full = read(p);
     // Word pages may add exactly one deferred /word-gap.js; every check below runs on the rest of the page.
     if (p.startsWith("word/")) assert.strictEqual(full.split(WORD_GAP).length - 1, 1, p + " must load /word-gap.js once, deferred");
     else assert.ok(!full.includes("/word-gap.js"), p + " must not load /word-gap.js");
+    if (p.startsWith("word/")) {
+      assert.strictEqual(full.split(QCF_DOM).length - 1, 1, p + " must load /qcf-dom.js once, deferred");
+      assert.ok(full.indexOf(QCF_DOM) < full.indexOf("</head>") && full.split(QCF_CSS).length - 1 === 1, p + " loads /qcf-dom.js and /qcf.css once in <head>");
+    } else assert.ok(!full.includes("/qcf-dom.js") && !full.includes("/qcf.css"), p + " must not load the QCF layer");
     // Pages with Quran text (word and surah pages) also load the Quran-face guard once, synchronously in <head>
     // (KFGQPC, 2026-10-27); the legal pages show no Quran text and do not.
     const QFONT = '<script src="/qfont.js"></script>';
@@ -119,7 +125,7 @@ test("K1: every static page links the shared stylesheet and the synchronous them
       assert.strictEqual(full.split(QFONT).length - 1, 1, p + " must load /qfont.js once");
       assert.ok(full.indexOf(QFONT) < full.indexOf("</head>"), p + " /qfont.js must be in <head>");
     } else assert.ok(!full.includes("/qfont.js"), p + " must not load /qfont.js");
-    const html = (p.startsWith("word/") ? full.replace(WORD_GAP, "") : full).replace(quranPage ? QFONT : "\u0000", "");
+    const html = (p.startsWith("word/") ? full.replace(WORD_GAP, "").replace(QCF_DOM, "") : full).replace(quranPage ? QFONT : "\u0000", "");
     assert.ok(html.includes('<link rel="stylesheet" href="/css/app.css">'), p + " must link the shared stylesheet");
     assert.ok(html.includes('<script src="/theme-boot.js"></script>'), p + " must include the theme bootstrap");
     assert.ok(html.indexOf('<script src="/theme-boot.js"></script>') < html.indexOf("</head>"), p + " theme bootstrap must be in <head>");

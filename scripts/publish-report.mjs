@@ -105,6 +105,12 @@ export function buildReport({ before, after, beforeChallenge, afterChallenge, su
   L.push("- Removed (" + summary.remove.length + "): " + (summary.remove.map((f) => "`" + f + "`").join(", ") || "none"));
   L.push("- Share images made again (" + summary.images.length + "): " + (summary.images.map((f) => "`" + f + "`").join(", ") || "none"));
   L.push("- Redirects added (" + summary.redirects.added.length + "): " + (summary.redirects.added.map((f) => "`" + f + "`").join(", ") || "none"));
+  // the ayat shown in Hafs v22 because they do not match the QCF V2 table (publish-build qcfReport: ids and positions)
+  if (summary.qcf) {
+    const q = summary.qcf;
+    L.push("- QCF V2 page fonts: " + q.matched + " of " + q.ayat + " ayat; in Hafs v22 (" + q.mismatches.length + " segments): " +
+      (q.mismatches.map((m) => "`" + m.slug + "` " + m.ayah + " segment " + m.segment + " (" + m.why + (m.positions.length ? ", positions " + m.positions.join(",") : "") + ")").join(", ") || "none"));
+  }
   if (meta.checks) {
     L.push("");
     L.push("### Checks");

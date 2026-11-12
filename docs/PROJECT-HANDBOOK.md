@@ -91,20 +91,37 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 - Visitor settings and progress are kept in `localStorage` under `gq-*` keys (for example `gq-set`, `gq-prog`).
 - Error tracking: the home page loads the Sentry loader script (added in `789179a`). The CSP allows the Sentry CDN
   and this project's Sentry ingest host.
+- **Quran text in the Madinah Mushaf page fonts V2 (QCF V2).** Every ayah is drawn word by word with the glyphs of
+  its printed Mushaf page (`public/fonts/qcf-v2/QCF2582.ttf` to `QCF2604.ttf`, Juz Amma; `SOURCE.md` there lists the
+  source and SHA-256 of each file). The one table `public/qcf-v2.json` (built offline by
+  `scripts/build-qcf-table.mjs`) holds, per word of surahs 78-114, its page, glyph code and official text: the
+  Complex's own Hafs text (`data/quran/`) split at Quran.com's word positions; codes and pages from Quran.com,
+  cross-checked with `mushaf-v2.txt` and with each font's glyph table. The stored text never changes.
+  - `public/qcf.js` (pure, shared by the site, the admin, the static pages, the images and reels) matches each
+    stored segment to whole words of the table, letter by letter, and builds the glyph layer; `public/qcf-dom.js`
+    loads only the page fonts the visible ayat need and swaps an ayah from Hafs v22 to its glyphs once they have
+    loaded; `public/qcf.css` shows one layer or the other.
+  - The official text stays in the DOM (visually hidden): screen readers, find in page and copy use it; the glyph
+    layer is `aria-hidden`, and copying a selection gives the official text, never glyph codes.
+  - Fallbacks: until the fonts load, if one fails, or if an ayah does not match the table (for example a manually
+    typed ayah, decision SEC-2), the ayah is shown in Hafs v22 as before (with `qfont.js`).
+  - The match check `node scripts/qcf-match.mjs` (ids and positions only) runs `--strict` in CI on pull requests; a
+    publish build only lists a mismatch in its summary.
 - Static SEO pages (`public/word/*.html`, `public/surah/`, legal pages) are plain HTML. The sitemap has 106 URLs: home,
   73 word pages, 28 surah pages and 4 legal pages.
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v45`**. On install it precaches `/`, `/index.html`, the icons, `/css/app.css`,
-  `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/fonts/fonts.css`, the Hafs and
-  Amiri font files, `/words.json` and `/challenge.json`. It calls `skipWaiting()`; on activate it deletes every other
+- Cache name: **`ghareeb-pwa-v47`**. On install it precaches `/`, `/index.html`, the icons, `/css/app.css`,
+  `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
+  `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
+  page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other
   cache and calls `clients.claim()`.
 - Fetch handling: only same-origin `GET`. **`/admin` and `/admin/*` are never handled** (always network).
   Navigations are network-first, falling back to the cached page, then `/index.html`, then a small offline page (503).
-  `words.json`, `challenge.json` and any `.js` or `.css` are network-first with `cache: 'no-cache'`, falling back to
+  `words.json`, `challenge.json`, `qcf-v2.json` and any `.js` or `.css` are network-first with `cache: 'no-cache'`, falling back to
   the cache. Everything else is cache-first.
-- `test/public-isolation.test.js` pins the cache name (currently asserts `v45`) and checks the worker precaches no
+- `test/public-isolation.test.js` pins the cache name (currently asserts `v47`) and checks the worker precaches no
   Firebase file. Bump the version on any release that changes cached files (runbook 10.6).
 
 ### 3.3 Content-Security-Policy and headers

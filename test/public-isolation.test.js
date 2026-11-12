@@ -36,7 +36,7 @@ test("static: migrate.js is gone, and firebase-config.js is kept for the admin",
 
 test("static: the worker neither precaches Firebase files nor keeps the old cache", () => {
   const sw = read("sw.js");
-  assert.ok(sw.includes("'ghareeb-pwa-v46'"), "the cache is v46");
+  assert.ok(sw.includes("'ghareeb-pwa-v47'"), "the cache is v47");
   assert.ok(!/migrate\.js|firebase-config\.js/.test(sw));
 });
 

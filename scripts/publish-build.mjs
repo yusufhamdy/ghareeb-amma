@@ -36,6 +36,11 @@
  *     --owner-review            a publish the owner reviews in a pull request (Publish run by hand with an exact
  *                               allow_removals): the 10% ceiling does not apply; the exact count still must match
  *
+ * QCF V2: every ayah is rendered with QCF.html (public/qcf.js, table public/qcf-v2.json): the Madinah Mushaf page
+ * fonts over the official text. An ayah that does not match the table exactly is shown in Hafs v22; the run prints
+ * one line per such segment (slug, ayah id, word positions; never text), appends them to $GITHUB_STEP_SUMMARY when
+ * set, and puts them in the --summary JSON (qcf) and the report. A mismatch never fails a publish.
+ *
  * Output (--out mode): words.json, challenge.json, sitemap.xml, word/<slug>.html, rev.json
  *   plus the static legal pages about/index.html, privacy/index.html,
  *   terms/index.html, rights/index.html (copy verbatim from shared/legal.js).
@@ -65,10 +70,20 @@ const challenge = require("../shared/challenge.js");
 const { LEGAL } = require("../shared/legal.js");
 // How Quran text is shown (shared with the app): the headword in the mushaf's spelling, the highlight on whole words.
 const QText = require("../public/qtext.js");
+// The Madinah Mushaf page fonts V2 (QCF V2): each ayah's glyphs, from the committed word table (public/qcf-v2.json).
+// An ayah that does not match the table is shown in Hafs v22 (QCF.html does that) and listed by qcfReport().
+const QCF = require("../public/qcf.js");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const SITE = "https://ghareebalquran.com";
+
+// The QCF V2 table is part of the site's code (scripts/build-qcf-table.mjs), not of the published data: read once.
+let qcfTable = null;
+export function qcfTableData() {
+  if (!qcfTable) qcfTable = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "qcf-v2.json"), "utf8"));
+  return qcfTable;
+}
 
 // --- Arabic fragments (escaped so this module stays ASCII-only) ------------
 const A = {
@@ -222,10 +237,49 @@ function strippedMeaning(word, raw) {
   return m.startsWith(prefix) ? m.slice(prefix.length).trim() : m;
 }
 
-function renderAyah(ayah) {
+function renderAyah(surahNo, ayah) {
   const segs = ayah && Array.isArray(ayah.segments) ? ayah.segments : [];
-  // the mark covers whole written words and the parentheses stay with their words, like the app (qtext.js)
-  return QText.ayahHtml({ segments: segs }, esc);
+  // the mark covers whole written words and the parentheses stay with their words, like the app (qtext.js); the
+  // glyphs of the printed Mushaf (QCF V2) are laid over the official text, which stays for screen readers and copy.
+  // An ayah that does not match the table is the Hafs v22 rendering alone.
+  return QCF.html(qcfTableData(), surahNo, { segments: segs }, esc, QText);
+}
+
+// Which ayat are not shown in the QCF V2 page fonts (no exact match with the table): ids and positions only, never
+// text, for the run summary. A mismatch never fails a publish; the ayah is shown in Hafs v22.
+export function qcfReport(records, table) {
+  const t = table || qcfTableData();
+  const out = { ayat: 0, matched: 0, pages: [], mismatches: [] };
+  const pages = new Set();
+  for (const r of records) {
+    const segs = r.ayah && Array.isArray(r.ayah.segments) ? r.ayah.segments : [];
+    const q = QCF.ayah(t, r.no, { segments: segs });
+    out.ayat++;
+    if (q.ok) out.matched++;
+    q.pages.forEach((p) => pages.add(p));
+    q.segments.forEach((p, i) => {
+      if (!p.ok) out.mismatches.push({ slug: r.slug, ayah: r.no + ":" + Number(segs[i] && segs[i].num), segment: i, why: p.why, positions: p.positions || [] });
+    });
+  }
+  out.pages = [...pages].sort((a, b) => a - b);
+  return out;
+}
+
+// The QCF V2 lines of a run summary (the Actions log and $GITHUB_STEP_SUMMARY): counts, then one line per segment
+// that is shown in Hafs v22, by slug, ayah id and word positions.
+export function qcfLines(q) {
+  const L = ["QCF V2: " + q.matched + " of " + q.ayat + " ayat in the Madinah Mushaf page fonts" + (q.mismatches.length ? "; " + (q.ayat - q.matched) + " in Hafs v22 (no exact match with public/qcf-v2.json)" : "")];
+  for (const m of q.mismatches) L.push("  Hafs v22: " + m.slug + " ayah " + m.ayah + " segment " + m.segment + " (" + m.why + ")" + (m.positions.length ? " word positions " + m.positions.join(",") : ""));
+  return L;
+}
+
+function printQcf(q) {
+  const L = qcfLines(q);
+  for (const l of L) console.log("publish-build: " + l.trim());
+  const f = process.env.GITHUB_STEP_SUMMARY;
+  if (f) {
+    try { fs.appendFileSync(f, ["", "### QCF V2", ""].concat(L.map((l) => "- " + l.trim())).join("\n") + "\n", "utf8"); } catch (e) { /* the summary is a convenience */ }
+  }
 }
 
 // Flatten the raw surah list into one record per word, in canonical order.
@@ -332,7 +386,11 @@ function staticHead(o) {
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     // the Quran face (word and surah pages show Quran text): preloaded, and guarded by qfont.js
     '<link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>\n' +
+    // the ayah's Mushaf page fonts (word pages): the layer's stylesheet, and its loader, which fetches only the page
+    // fonts the ayah needs and swaps it from Hafs v22 once they have loaded
+    (o.qcf ? '<link rel="stylesheet" href="/qcf.css">\n' : "") +
     '<script src="/theme-boot.js"></script>\n<script src="/qfont.js"></script>\n' +
+    (o.qcf ? '<script src="/qcf-dom.js" defer></script>\n' : "") +
     (o.jsonLd || []).map((j) => '<script type="application/ld+json">' + jsonLd(j) + "</script>\n").join("") +
     "</head>\n"
   );
@@ -451,7 +509,7 @@ export function renderWordPage(r) {
       { name: r.word, item: wordUrl },
     ]),
   ];
-  const ayah = renderAyah(r.ayah);
+  const ayah = renderAyah(r.no, r.ayah);
   const surahHref = "/surah/" + r.surahSlug + ".html";
   const appHref = "/#/word/" + r.no + "-" + r.idx;
   const link = (w, label) =>
@@ -467,7 +525,7 @@ export function renderWordPage(r) {
     '<div class="acts"><a class="btn o g" href="/surah/' + r.surahSlug + '.html">' + BOOK + A.ALL_SURAH + "</a></div></div>";
   const year = new Date().getFullYear();
   return (
-    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld, ogImage: SITE + "/og/word/" + r.slug + ".png", ogImageAlt: ogTitle }) +
+    staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld, ogImage: SITE + "/og/word/" + r.slug + ".png", ogImageAlt: ogTitle, qcf: true }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
     '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
@@ -893,6 +951,8 @@ export function publishToTree(input, opt) {
     words: { before: g.before.size, after: g.after.size, added: g.added, removed: g.removed },
     surahs: { before: committed.length, after: surahs.length, removed: g.removedSurahs },
     write, remove, images: images.map((x) => x.slug),
+    // the ayat shown in Hafs v22 because they do not match the QCF V2 table (ids and positions only)
+    qcf: built.qcf,
     redirects: { added: [...removedPages.keys()].filter((s) => !(fb.hosting.redirects || []).some((r) => r.source === s)), changed: redirectsChanged },
   };
   if (!summary.changed) return { summary, surahs, committed, pub, committedChallenge };
@@ -929,7 +989,7 @@ export function buildSite(surahs, challengeState) {
   for (const r of records) files["word/" + r.slug + ".html"] = renderWordPage(r);
   for (const s of surahList) files["surah/" + s.slug + ".html"] = renderSurahPage(s);
   for (const entry of LEGAL) files[entry.slug + "/index.html"] = renderLegalPage(entry);
-  return { files, hash: hashFiles(files), wordCount: records.length, surahs: surahList };
+  return { files, hash: hashFiles(files), wordCount: records.length, surahs: surahList, qcf: qcfReport(records) };
 }
 
 export function writeSite(outDir, files, meta) {
@@ -1045,6 +1105,7 @@ export async function main(argv) {
     });
     // file names and counts only: this goes to the (public) Actions log
     if (args.summary) fs.writeFileSync(path.resolve(args.summary), JSON.stringify(res.summary, null, 1) + "\n", "utf8");
+    printQcf(res.summary.qcf);
     if (!res.summary.changed) {
       console.log("publish-build: no-change");
       return 0;
@@ -1064,8 +1125,9 @@ export async function main(argv) {
   surahs = normaliseSurahs(surahs);
   guardRemovals(committed, surahs, args);
   checkChallenge(publicChallenge(challengeState), surahs, JSON.parse(fs.readFileSync(path.join(committedDir, "challenge.json"), "utf8")));
-  const { files, hash, wordCount } = buildSite(surahs, challengeState);
+  const { files, hash, wordCount, qcf } = buildSite(surahs, challengeState);
   checkSiteFiles(files, wordCount);
+  printQcf(qcf);
 
   if (args.currentUrl) {
     const live = await fetchRev(args.currentUrl);

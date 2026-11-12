@@ -1,0 +1,32 @@
+/* qcf.css - the Madinah Mushaf page fonts V2 layer (qcf.js, qcf-dom.js). Until an ayah's page fonts have loaded
+   (class "on", set by qcf-dom.js) only the official text (.qcf-t, Hafs v22, as before) is shown. With "on" the
+   glyphs (.qcf-g, aria-hidden) are shown and the official text stays in the DOM, visually hidden, for screen
+   readers, find in page and copy. Colours, the highlight (mark) and the line wrapping come from the surface, as for
+   the Hafs text; --qcf-size scales the glyphs against the surrounding Quran text (calibrated per surface). */
+.qcf-g{display:none}
+.qcf.on>.qcf-g{display:inline}
+.qcf.on>.qcf-t{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.qcf-g .w{font-size:var(--qcf-size,1em);font-weight:400;font-style:normal;letter-spacing:0;word-spacing:0;font-feature-settings:normal;font-variant-ligatures:normal}
+.qcf-g .p582{font-family:"QCF2 582"}
+.qcf-g .p583{font-family:"QCF2 583"}
+.qcf-g .p584{font-family:"QCF2 584"}
+.qcf-g .p585{font-family:"QCF2 585"}
+.qcf-g .p586{font-family:"QCF2 586"}
+.qcf-g .p587{font-family:"QCF2 587"}
+.qcf-g .p588{font-family:"QCF2 588"}
+.qcf-g .p589{font-family:"QCF2 589"}
+.qcf-g .p590{font-family:"QCF2 590"}
+.qcf-g .p591{font-family:"QCF2 591"}
+.qcf-g .p592{font-family:"QCF2 592"}
+.qcf-g .p593{font-family:"QCF2 593"}
+.qcf-g .p594{font-family:"QCF2 594"}
+.qcf-g .p595{font-family:"QCF2 595"}
+.qcf-g .p596{font-family:"QCF2 596"}
+.qcf-g .p597{font-family:"QCF2 597"}
+.qcf-g .p598{font-family:"QCF2 598"}
+.qcf-g .p599{font-family:"QCF2 599"}
+.qcf-g .p600{font-family:"QCF2 600"}
+.qcf-g .p601{font-family:"QCF2 601"}
+.qcf-g .p602{font-family:"QCF2 602"}
+.qcf-g .p603{font-family:"QCF2 603"}
+.qcf-g .p604{font-family:"QCF2 604"}

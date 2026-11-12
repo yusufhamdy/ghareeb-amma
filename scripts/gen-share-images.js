@@ -2,7 +2,9 @@
 //   public/favicon-32.png, public/og-2026-10.png (general), public/og/word/<slug>.png (one per word, 1200x630).
 // The palette is set only in this renderer's own localStorage. Nothing here changes the site, its default palette or
 // anyone's settings. Before each screenshot the computed fonts are checked, and the run fails if any differ or if a
-// word's card does not fit between the header and the domain.
+// word's card does not fit between the header and the domain. The ayah is shown in the Madinah Mushaf page fonts
+// (QCF V2, public/qcf.js): every ayah that matches the table (qcf-v2.json) must show its glyph layer, each glyph word
+// in its own page font ("QCF2 <page>"), loaded; an ayah that does not match stays in KFGQPC Hafs, checked as before.
 //   node scripts/gen-share-images.js [--only general,79-6,83-0] [--root DIR]
 // --root renders from and writes into another copy of the site (the publish build passes its tree); default public/.
 // Run scripts/gen-favicon.py first if the favicon design changed, or with --full for the general image's icon.
@@ -21,6 +23,9 @@ const VIEW = { width: 900, height: 473 }, DSF = 1.3334;
 const DOMAIN = "ghareebalquran.com";
 const AMIRI = "Amiri", PLEX = "IBM Plex Sans Arabic", KFGQPC = "KFGQPC";
 const ONLY = (() => { const i = process.argv.indexOf("--only"); return i < 0 ? null : process.argv[i + 1].split(","); })();
+// the QCF V2 module and table of the tree being rendered (the publish build's copy, or public/)
+const QCF = require(fs.existsSync(path.join(ROOT, "qcf.js")) ? path.join(ROOT, "qcf.js") : path.join(lib.ROOT, "qcf.js"));
+const QCF_TABLE = JSON.parse(fs.readFileSync(fs.existsSync(path.join(ROOT, "qcf-v2.json")) ? path.join(ROOT, "qcf-v2.json") : path.join(lib.ROOT, "qcf-v2.json"), "utf8"));
 const FULL_ICON = "data:image/svg+xml;base64," + fs.readFileSync(path.join(__dirname, "share-icon-full.svg")).toString("base64");
 
 // common to both kinds of image: no animation, no scrollbars, the domain line
@@ -69,6 +74,32 @@ async function checkFonts(page, expected, tag) {
     if (family(g.family).indexOf(g.wantFam) !== 0) throw new Error(tag + ": " + g.sel + " font is " + g.family + ", not " + g.wantFam);
     if (g.wantWeight && g.weight !== g.wantWeight) throw new Error(tag + ": " + g.sel + " weight is " + g.weight + ", not " + g.wantWeight);
     if (!g.loaded) throw new Error(tag + ": " + g.sel + " font " + g.wantFam + " is not loaded");
+  }
+}
+// the ayah's QCF V2 layer: shown ("on") exactly when the ayah matches the table, on the pages it needs, and every
+// glyph word in its own page font, loaded. A page font that is missing (or fails) leaves the layer off: an error.
+async function checkQcf(page, want, tag) {
+  if (want.ok) {
+    try { await page.waitForFunction(() => { const q = document.querySelectorAll("#app .cols .ay .qcf"); return q.length && [...q].every((e) => e.classList.contains("on")); }, null, { timeout: 15000 }); }
+    catch (e) { /* reported below */ }
+  }
+  const got = await page.evaluate(() => {
+    const q = [...document.querySelectorAll("#app .cols .ay .qcf")];
+    return { n: q.length, on: q.filter((e) => e.classList.contains("on")).length, pages: q.map((e) => e.getAttribute("data-p")).join(" "),
+      words: [...document.querySelectorAll("#app .cols .ay .qcf.on .qcf-g .w")].map((w) => {
+        const c = getComputedStyle(w), fam = c.fontFamily.split(",")[0].replace(/["']/g, "").trim(), cls = (w.className.match(/\bp(\d+)\b/) || [])[1];
+        return { fam, cls, shown: w.getClientRects().length > 0, loaded: document.fonts.check(c.fontWeight + " " + c.fontSize + " '" + fam + "'", w.textContent) };
+      }) };
+  });
+  if (!want.ok) { if (got.n) throw new Error(tag + ": the ayah does not match the QCF table but shows a glyph layer"); return; }
+  if (!got.n) throw new Error(tag + ": the ayah matches the QCF table but the page shows no glyph layer");
+  if (got.on !== got.n) throw new Error(tag + ": a QCF V2 page font did not load (" + want.pages.join(" ") + ")");
+  if (got.pages.split(" ").map(Number).sort((a, b) => a - b).join(" ") !== want.pages.join(" ")) throw new Error(tag + ": QCF pages " + got.pages + ", not " + want.pages.join(" "));
+  if (got.words.length !== want.words) throw new Error(tag + ": " + got.words.length + " glyph words shown, not " + want.words);
+  for (const w of got.words) {
+    if (!w.cls || w.fam !== QCF.family(w.cls)) throw new Error(tag + ": a glyph word's font is " + w.fam + ", not " + QCF.family(w.cls));
+    if (!w.shown) throw new Error(tag + ": a glyph word is not shown");
+    if (!w.loaded) throw new Error(tag + ": font " + w.fam + " is not loaded");
   }
 }
 async function checkColors(page, tag) {
@@ -171,6 +202,11 @@ async function words(br, base) {
   await page.addStyleTag({ content: WORD_CSS });
   await page.evaluate((domain) => { const d = document.createElement("div"); d.className = "share-domain"; d.id = "s-domain"; d.textContent = domain; document.body.appendChild(d); }, DOMAIN);
   const list = await page.evaluate(() => W.map((w) => [w.id, w.slug]));
+  // what each ayah must show: its QCF match (pages and glyph words), from the same data the page renders
+  const qcfWant = new Map((await page.evaluate(() => W.map((w) => [w.id, w.s.num, { segments: w.ay.segments }]))).map(([id, no, ay]) => {
+    const r = QCF.ayah(QCF_TABLE, no, ay);
+    return [id, { ok: r.ok, pages: r.pages, words: r.segments.reduce((n, g) => n + (g.words ? g.words.length : 0), 0) }];
+  }));
   // every word of this tree's words.json, no more and no fewer
   const want = JSON.parse(fs.readFileSync(path.join(ROOT, "words.json"), "utf8")).reduce((n, s) => n + s.words.length, 0);
   if (list.length !== want) throw new Error("expected " + want + " words, found " + list.length);
@@ -182,11 +218,15 @@ async function words(br, base) {
     await page.evaluate((id) => { location.hash = "#/word/" + id; }, id);
     await page.waitForFunction((id) => { const a = document.querySelector("#app a.pill"), b = document.querySelector('[data-id]'); return a && b && b.dataset.id === id && document.querySelector("#app .cols .wd"); }, id);
     await page.evaluate(async () => { await document.fonts.ready; window.scrollTo(0, 0); });
+    // the ayah's QCF V2 layer swaps in once its page fonts have loaded; the highlight is measured after that
+    // (checkQcf below fails the image if it never does)
+    if (qcfWant.get(id).ok) await page.waitForFunction(() => { const q = document.querySelectorAll("#app .cols .ay .qcf"); return q.length && [...q].every((e) => e.classList.contains("on")); }, null, { timeout: 15000 }).catch(() => {});
     await page.waitForTimeout(250);
     await page.waitForFunction(() => [...document.querySelectorAll("#app .cols mark")].every((m) => m.style.getPropertyValue("--hl-w")), null, { timeout: 15000 });
     try {
       await checkColors(page, id);
       await checkFonts(page, [["#app header .sn", AMIRI, "700"], ["#app>a.pill", PLEX, null], ["#s-domain", PLEX, "500"], ["#app .cols .wd", KFGQPC, null], ["#app .cols .ay", KFGQPC, null]], id);
+      await checkQcf(page, qcfWant.get(id), id);
       const m = await page.evaluate(() => {
         const r = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
         const shown = (s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length).length;

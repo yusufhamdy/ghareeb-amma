@@ -181,6 +181,11 @@ jobs:
       - name: Privacy check (private notes never in public/)
         run: pwsh -NoProfile -File scripts/check-private.ps1
 
+      # Every ayah matches the Mushaf page font table exactly (public/qcf-v2.json). Strict here only: a publish build
+      # lists a mismatch in its summary and shows that ayah in Hafs v22 instead of failing.
+      - name: Ayat match the QCF V2 table
+        run: node scripts/qcf-match.mjs --strict
+
       - name: Firestore emulator rules tests
         run: npm run rules:test
 
