@@ -193,6 +193,54 @@ test("publish.yml: the same rev ends at the cheap check; it needs no npm install
   assert.strictEqual(auth.with.create_credentials_file, false, "no credential file in the check");
 });
 
+// The check job checks out only a listed set of files (sparse checkout) and installs nothing. Its command must run in
+// exactly that tree: every module publish-plan.mjs loads (publish-build.mjs, and what that requires) must be listed.
+// From 2026-11-12 every scheduled Publish failed with MODULE_NOT_FOUND because public/qcf.js was not: this runs the
+// real command in a copy of only the listed, tracked files, against a local stand-in for the Firestore REST API.
+test("publish.yml: the check job's command runs in exactly the files its sparse checkout lists", async () => {
+  const { execFileSync, spawn } = require("child_process");
+  const http = require("http");
+  const j = workflow("publish.yml").jobs;
+  const co = j.check.steps.find((s) => /actions\/checkout/.test(s.uses || ""));
+  assert.strictEqual(co.with["sparse-checkout-cone-mode"], false, "the list is exact paths");
+  const listed = String(co.with["sparse-checkout"]).split("\n").map((s) => s.trim()).filter(Boolean);
+  const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: ROOT }).toString("utf8").split("\0").filter(Boolean);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "publish-check-"));
+  let copied = 0;
+  for (const f of tracked) {
+    if (!listed.some((p) => (p.endsWith("/") ? f.startsWith(p) : f === p))) continue;
+    fs.mkdirSync(path.join(dir, path.dirname(f)), { recursive: true });
+    fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));
+    copied++;
+  }
+  for (const p of listed) assert.ok(tracked.some((f) => (p.endsWith("/") ? f.startsWith(p) : f === p)), "listed but not in the repository: " + p);
+  assert.ok(!fs.existsSync(path.join(dir, "node_modules")), "no installed packages, as in the job");
+  const rev = JSON.parse(fs.readFileSync(path.join(PUBLIC, "rev.json"), "utf8")).rev;
+  const server = http.createServer((q, s) => {
+    if (/\/documents\/public\/data(\?|$)/.test(q.url)) { s.writeHead(200, { "content-type": "application/json" }); return s.end(JSON.stringify({ fields: { rev: { integerValue: String(rev) } } })); }
+    s.writeHead(404); s.end("{}");
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const out = path.join(dir, "github-output.txt");
+  try {
+    const step = j.check.steps.find((s) => /publish-plan\.mjs check/.test(s.run || ""));
+    const args = step.run.replace(/^node\s+/, "").replace("\"$PROJECT\"", "demo-ghareeb").split(/\s+/);
+    const env = Object.assign({}, process.env, { FIRESTORE_EMULATOR_HOST: "127.0.0.1:" + server.address().port, GITHUB_OUTPUT: out, NODE_PATH: "" });
+    const r = await new Promise((res) => {
+      const c = spawn(process.execPath, args, { cwd: dir, env });
+      let so = "", se = "";
+      c.stdout.on("data", (d) => (so += d)); c.stderr.on("data", (d) => (se += d));
+      c.on("close", (code) => res({ code, so, se }));
+    });
+    assert.strictEqual(r.code, 0, "the check command failed in the sparse tree (" + copied + " files):\n" + r.se.split("\n").filter((l) => /Error|Cannot find/.test(l)).slice(0, 3).join("\n"));
+    assert.match(r.so, /^publish-plan: (same|changed) \(data rev /m);
+    assert.match(fs.readFileSync(out, "utf8"), /^changed=/m);
+  } finally {
+    server.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("publish.yml: a failed check reaches neither the commit nor the deploy nor a pull request", () => {
   const j = workflow("publish.yml").jobs;
   const names = j.build.steps.map((s) => s.name);
