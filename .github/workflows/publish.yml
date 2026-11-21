@@ -76,6 +76,7 @@ jobs:
             scripts/publish-build.mjs
             shared/
             public/qtext.js
+            public/qcf.js
             public/rev.json
             public/challenge.json
 
