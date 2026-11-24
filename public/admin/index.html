@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>لوحة التحكم | غريب القرآن</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml"><link rel="icon" href="/favicon-32.png?v=2" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/site.css">
 <link rel="stylesheet" href="/qcf.css">
@@ -386,7 +386,7 @@ const BLOCKED=l=>"لا يمكن الحذف الآن: لن تبقى في "+DAYS(l
 function render(){
  const a=$("#app");
  if(!READY){a.innerHTML='<div class="g card" style="padding:22px">جارٍ التحميل…</div>';return}
- if(!U)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><div class="logo sn" style="font-size:34px">غريب القرآن</div><p class="sm">لوحة التحكم، للمشرفين فقط.</p><button class="pill btn" data-a="login">الدخول بحساب جوجل</button></div>`;
+ if(!U)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px"><div class="logo sn" style="font-size:34px;display:flex;align-items:center;justify-content:center;gap:.33em"><img style="width:1.15em;height:1.15em;flex:none;border-radius:22.83%;box-shadow:0 1px 3px rgba(20,40,30,.14)" src="/favicon.svg?v=2" alt="" aria-hidden="true" width="32" height="32">غريب القرآن</div><p class="sm">لوحة التحكم، للمشرفين فقط.</p><button class="pill btn" data-a="login">الدخول بحساب جوجل</button></div>`;
  if(LOADERR)return a.innerHTML=`<div class="g card" role="alert" style="padding:28px;text-align:center;margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:12px"><h1 style="font-size:24px">تعذّر تحميل بيانات لوحة التحكم</h1><p class="sm">${esc(errMsg(LOADERR,"التحميل"))} لم يتغيّر شيء في البيانات.</p><p class="sm" dir="ltr">${esc(U.email)}</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="pill btn" data-a="reload" data-busy="جارٍ التحميل…">${IC_RETRY}إعادة المحاولة</button><button class="g pill" data-a="out">${IC_OUT}تسجيل الخروج</button></div></div>`;
  if(!ADM)return a.innerHTML=`<div class="g card" style="padding:28px;text-align:center;margin-top:60px;display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font-size:44px;line-height:1.2" aria-hidden="true">&#128274;</div><h1 style="font-size:24px">غير مصرّح لك بالدخول</h1><p class="sm">هذا الحساب (<b dir="ltr">${esc(U.email)}</b>) ليس ضمن المشرفين.</p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="g pill" href="/">افتح الموقع ${IC_OPEN}</a><button class="g pill" data-a="out">${IC_OUT}تسجيل الخروج</button></div></div>`;
  const TB=[["s","السور"],["w","الكلمات"],["c","التحدي"],["a","المشرفون"],["t","أدوات"]];
