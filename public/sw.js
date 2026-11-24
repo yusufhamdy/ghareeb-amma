@@ -1,7 +1,8 @@
-const CACHE_NAME = 'ghareeb-pwa-v47';
+const CACHE_NAME = 'ghareeb-pwa-v48';
 const assetsToCache = [
     '/',
     '/index.html',
+    '/favicon.svg',
     '/icon-192.png',
     '/icon-512.png',
     '/apple-touch-icon.png',

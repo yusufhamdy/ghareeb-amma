@@ -87,6 +87,8 @@ export function qcfTableData() {
 
 // --- Arabic fragments (escaped so this module stays ASCII-only) ------------
 const A = {
+  // the brand icon before the title: public/favicon.svg, styled by .lgi in index.html (css/app.css); decorative
+  LOGO_ICON: '<img class="lgi" src="/favicon.svg?v=2" alt="" aria-hidden="true" width="32" height="32">',
   LOGO: "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646", // "Ghareeb Al-Quran"
   T_PRE: "\u0645\u0639\u0646\u0649 ", // "meaning of "
   T_SUF: " \u0641\u064a \u0627\u0644\u0642\u0631\u0622\u0646", // " in the Quran"
@@ -382,7 +384,7 @@ function staticHead(o) {
     '<link rel="canonical" href="' + esc(o.canonical) + '">\n' +
     '<meta property="og:type" content="' + esc(o.type || "website") + '"><meta property="og:title" content="' + esc(o.ogTitle) + '"><meta property="og:description" content="' + esc(o.ogDesc) + '"><meta property="og:image" content="' + img + '"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' + alt('property="og') + '<meta property="og:locale" content="ar_AR">\n' +
     '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(o.ogTitle) + '"><meta name="twitter:description" content="' + esc(o.ogDesc) + '"><meta name="twitter:image" content="' + img + '">' + alt('name="twitter') + '\n' +
-    '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
+    '<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml"><link rel="icon" href="/favicon-32.png?v=2" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     // the Quran face (word and surah pages show Quran text): preloaded, and guarded by qfont.js
     '<link rel="preload" href="/fonts/kfgqpc-uthmanic-hafs-v22.ttf" as="font" type="font/ttf" crossorigin>\n' +
@@ -527,7 +529,7 @@ export function renderWordPage(r) {
   return (
     staticHead({ title, desc, canonical: SITE + "/word/" + r.slug + ".html", ogTitle, ogDesc: desc, type: "article", jsonLd: ld, ogImage: SITE + "/og/word/" + r.slug + ".png", ogImageAlt: ogTitle, qcf: true }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
-    '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
+    '<header><a class="logo sn" href="/">' + A.LOGO_ICON + A.LOGO + "</a>" +
     '<a class="pill" href="/#/word/' + r.no + "-" + r.idx + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<a class="pill" href="/surah/' + r.surahSlug + '.html">' + esc(r.surahShort) + A.DOT_AYAH + esc(r.label) + CHEV_L + "</a>\n" +
@@ -571,7 +573,7 @@ export function renderSurahPage(s) {
   return (
     staticHead({ title, desc, canonical: SITE + "/surah/" + s.slug + ".html", ogTitle: title, ogDesc: desc, type: "website", jsonLd: ld }) +
     '<body><div id="bg"><i></i><i></i></div><div class="wrap">' +
-    '<header><a class="logo sn" href="/">' + A.LOGO + "</a>" +
+    '<header><a class="logo sn" href="/">' + A.LOGO_ICON + A.LOGO + "</a>" +
     '<a class="pill" href="/#/surah/' + s.no + '">' + EXT + A.APP + "</a></header>\n" +
     "<main>" +
     '<div class="shd"><h1 class="q">' + esc(s.name) + '</h1><div class="sub">' + count + "</div>" +
@@ -599,11 +601,11 @@ export function renderLegalPage(entry) {
     '<link rel="canonical" href="' + SITE + "/" + entry.slug + '/">\n' +
     '<meta property="og:type" content="website"><meta property="og:title" content="' + esc(entry.title) + '"><meta property="og:description" content="' + esc(entry.title) + '"><meta property="og:image" content="' + SITE + '/og-2026-10.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ar_AR">\n' +
     '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="' + esc(entry.title) + '"><meta name="twitter:description" content="' + esc(entry.title) + '"><meta name="twitter:image" content="' + SITE + '/og-2026-10.png">\n' +
-    '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">\n' +
+    '<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml"><link rel="icon" href="/favicon-32.png?v=2" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">\n' +
     '<link rel="stylesheet" href="/fonts/fonts.css">\n<link rel="stylesheet" href="/css/app.css">\n' +
     "<style>" + LEGACY_CSS + ".para{font-size:17px;line-height:1.95;margin:0 0 14px}</style>\n" +
     '<script src="/theme-boot.js"></script></head>\n' +
-    '<body><main class="legal"><a href="/" class="sn" style="font-size:28px;text-decoration:none">' + A.LOGO + "</a>\n" +
+    '<body><main class="legal"><a href="/" class="logo sn" style="font-size:28px;text-decoration:none;display:flex;width:fit-content">' + A.LOGO_ICON + A.LOGO + "</a>\n" +
     '<h1 class="aq" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
     paras + "\n" +
     '<a class="b" href="/">' + A.HOME + "</a>\n" +

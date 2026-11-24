@@ -4,8 +4,8 @@
  *   - each public/word/<slug>.html points og:image and twitter:image at /og/word/<slug>.png, with width 1200, height 630
  *     and alt; that file exists and is a 1200x630 PNG; there is no image without a page;
  *   - the generator writes the same tags, so a publish keeps them;
- *   - favicon.svg has the letter as a path (no web font, no text), the green palette and the night palette under
- *     prefers-color-scheme: dark; favicon-32.png is 32x32;
+ *   - favicon.svg has the letter as a path (no web font, no text), the green palette only (one identity, also in
+ *     dark browser tabs); favicon-32.png is 32x32;
  *   - the general image stays 1200x630.
  * ASCII only.
  */
@@ -61,14 +61,13 @@ test("the generator writes the same word-page tags, and the general image for ot
   assert.strictEqual(meta(files[surah], "property", "og:image:alt"), null);
 });
 
-test("the favicon: green by default, night when dark, the letter as a path", () => {
+test("the favicon: always the day green (no dark variant), the letter as a path", () => {
   const svg = fs.readFileSync(path.join(PUBLIC, "favicon.svg"), "utf8");
   assert.ok(!/<text|<image|font-family|@font-face|url\(http/.test(svg), "no text, image or web font");
   assert.ok(/<path class="f" d="M/.test(svg), "the letter is a path");
-  const dark = svg.indexOf("prefers-color-scheme:dark");
-  assert.ok(dark > 0, "has a dark variant");
-  for (const c of ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"]) assert.ok(svg.indexOf(c) >= 0 && svg.indexOf(c) < dark, c + " in the default");
-  for (const c of ["#0A0E1F", "#9FB4FF", "#4B5BDB", "#2FB5A8"]) assert.ok(svg.indexOf(c) > dark, c + " under dark");
+  assert.ok(!/prefers-color-scheme|@media/.test(svg), "no dark variant");
+  for (const c of ["#F2F0E8", "#1E6B50", "#8FCBAE", "#EBC98A"]) assert.ok(svg.includes(c), c + " in the design");
+  for (const c of ["#0A0E1F", "#9FB4FF", "#4B5BDB", "#2FB5A8"]) assert.ok(!svg.includes(c), c + " (the old night colours) is gone");
   assert.strictEqual((svg.match(/<rect width="100" height="100" rx="22\.83"/g) || []).length, 3, "the background has the general icon's corner radius (21/92)");
   assert.deepStrictEqual(pngSize(path.join(PUBLIC, "favicon-32.png")), [32, 32]);
   assert.strictEqual(fs.readFileSync(path.join(PUBLIC, "favicon-32.png"))[25], 6, "favicon-32.png has alpha, for its rounded corners");

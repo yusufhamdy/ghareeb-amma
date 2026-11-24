@@ -2,13 +2,14 @@
 """Writes public/favicon.svg: the hizb star with the letter ghain, for small sizes.
 
 The letter is an SVG path outlined from the site's own Amiri Bold font (glyph uni063A), because an SVG favicon cannot
-load web fonts. Green ("zumurrudi nahar") by default, the turquoise night palette under prefers-color-scheme: dark.
+load web fonts. Always the day green ("zumurrudi nahar"), also in dark browser tabs: one identity everywhere (owner
+decision, 2026-11). There is no dark variant.
 
     pip install fonttools brotli
     python scripts/gen-favicon.py
     python scripts/gen-favicon.py --full
 
-Then run scripts/gen-share-images.js, which renders favicon-32.png from public/favicon.svg.
+Then run scripts/gen-icons.mjs, which renders every icon PNG and favicon.ico from public/favicon.svg.
 
 --full writes the full variant instead, for the general share image only: thin lines and two faint outer squares, too
 fine for a favicon. It goes to scripts/share-icon-full.svg and is not served. public/favicon.svg stays as it is.
@@ -30,7 +31,6 @@ S = 100  # the viewBox side: every length below is its fraction of s times 100
 RX = 22.83  # the corner radius: the general share image's icon, 21px on 92px
 
 GREEN = {"bg": "#F2F0E8", "ac": "#1E6B50", "g1": "#8FCBAE", "o1": 0.70, "g2": "#EBC98A", "o2": 0.60}
-NIGHT = {"bg": "#0A0E1F", "ac": "#9FB4FF", "g1": "#4B5BDB", "o1": 0.55, "g2": "#2FB5A8", "o2": 0.35}
 
 
 def ghain_path():
@@ -89,8 +89,7 @@ def main():
     if "--full" in sys.argv[1:]:
         out, svg = OUT_FULL, build(palette_css(GREEN), 2, 0.9, outer_squares())
     else:
-        css = palette_css(GREEN) + "@media (prefers-color-scheme:dark){" + palette_css(NIGHT) + "}"
-        out, svg = OUT, build(css, 4.2, 2.2)
+        out, svg = OUT, build(palette_css(GREEN), 4.2, 2.2)
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         f.write(svg)
     print("wrote", out, len(svg), "bytes")

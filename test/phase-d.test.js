@@ -411,7 +411,7 @@ test("D5: admin uses a custom delete dialog and mirrored icons, never a native c
 // ---------------------------------------------------------------------------
 // D6: favicon + generated icons
 // ---------------------------------------------------------------------------
-const FAV_TAGS = ['href="/favicon.svg"', 'href="/favicon-32.png"', 'href="/apple-touch-icon.png"'];
+const FAV_TAGS = ['href="/favicon.svg?v=2"', 'href="/favicon-32.png?v=2"', 'href="/apple-touch-icon.png?v=2"'];
 
 test("D6: favicon and icons exist and every head links the svg, 32px png and apple-touch-icon", { timeout: 120000 }, async (t) => {
   // Files on disk.

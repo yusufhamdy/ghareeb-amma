@@ -177,7 +177,7 @@ function checkPwa() {
       }
       for (const icon of mf.icons || []) {
         if (!icon.src) { problems.push('manifest icon without src'); continue; }
-        if (!fs.existsSync(path.join(ROOT, 'public', icon.src.replace(/^\//, '')))) problems.push('manifest icon file missing: ' + icon.src);
+        if (!fs.existsSync(path.join(ROOT, 'public', icon.src.replace(/^\//, '').replace(/[?#].*$/, '')))) problems.push('manifest icon file missing: ' + icon.src);
       }
     }
   }

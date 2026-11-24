@@ -107,12 +107,21 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
     typed ayah, decision SEC-2), the ayah is shown in Hafs v22 as before (with `qfont.js`).
   - The match check `node scripts/qcf-match.mjs` (ids and positions only) runs `--strict` in CI on pull requests; a
     publish build only lists a mismatch in its summary.
+- **Brand icon: one identity everywhere** ("glass, emerald, day"). `public/favicon.svg` (written by
+  `scripts/gen-favicon.py`) is the one source: cream tile, green and gold glows, the eight-pointed star, the circle and
+  the letter ghain in emerald `#1E6B50`, with no dark variant. `node scripts/gen-icons.mjs` renders every PNG from it:
+  `favicon-32.png`, `favicon.ico` (16, 32, 48), the manifest's "any" icons (`icon-192.png`, `icon-512.png`, rounded
+  tile), its "maskable" icons (`icon-maskable-192.png`, `icon-maskable-512.png`: full bleed, drawing scaled to 0.8 so
+  it stays in the 80% safe zone), `apple-touch-icon.png` (180, opaque, full bleed) and the old URL
+  `icon_ultra_clean_transparent_1254px.png`. Icon links carry `?v=2`; bump it when the design changes. The same icon
+  (`.lgi`, decorative, `alt=""`) sits before the site name in every header; the word share images hide it, so they
+  stay as they were.
 - Static SEO pages (`public/word/*.html`, `public/surah/`, legal pages) are plain HTML. The sitemap has 106 URLs: home,
   73 word pages, 28 surah pages and 4 legal pages.
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v47`**. On install it precaches `/`, `/index.html`, the icons, `/css/app.css`,
+- Cache name: **`ghareeb-pwa-v48`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
   `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
   `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
   page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other
@@ -121,7 +130,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   Navigations are network-first, falling back to the cached page, then `/index.html`, then a small offline page (503).
   `words.json`, `challenge.json`, `qcf-v2.json` and any `.js` or `.css` are network-first with `cache: 'no-cache'`, falling back to
   the cache. Everything else is cache-first.
-- `test/public-isolation.test.js` pins the cache name (currently asserts `v47`) and checks the worker precaches no
+- `test/public-isolation.test.js` pins the cache name (currently asserts `v48`) and checks the worker precaches no
   Firebase file. Bump the version on any release that changes cached files (runbook 10.6).
 
 ### 3.3 Content-Security-Policy and headers

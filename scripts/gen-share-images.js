@@ -1,5 +1,6 @@
-// Renders the favicon PNG and the share images from the real site pages, in the site's green palette:
-//   public/favicon-32.png, public/og-2026-10.png (general), public/og/word/<slug>.png (one per word, 1200x630).
+// Renders the share images from the real site pages, in the site's green palette:
+//   public/og-2026-10.png (general), public/og/word/<slug>.png (one per word, 1200x630).
+// The icons (favicon-32.png, favicon.ico, the app icons) come from scripts/gen-icons.mjs.
 // The palette is set only in this renderer's own localStorage. Nothing here changes the site, its default palette or
 // anyone's settings. Before each screenshot the computed fonts are checked, and the run fails if any differ or if a
 // word's card does not fit between the header and the domain. The ayah is shown in the Madinah Mushaf page fonts
@@ -39,6 +40,7 @@ html,body{overflow:hidden!important}
 const WORD_CSS = BASE_CSS + `
 #app{min-height:${VIEW.height}px!important;height:${VIEW.height}px;max-width:none!important;width:100%!important;margin:0!important;padding:16px 0 44px!important;gap:0!important;box-sizing:border-box;display:flex!important;flex-direction:column;align-items:center}
 #app>header{width:640px;flex:none;margin:0 0 6px!important}
+#app>header .lgi{display:none!important}
 #app>a.pill{flex:none;align-self:center;margin:auto 0 12px!important}
 #app>a.pill svg{display:none!important}
 .pnb,.acts,#app>a.m,footer,.ft,.cols>.card:nth-child(2){display:none!important}
@@ -168,17 +170,6 @@ async function openSite(br, base) {
   return { ctx, page };
 }
 
-async function favicon(br, base) {
-  const ctx = await br.newContext({ viewport: { width: 32, height: 32 }, deviceScaleFactor: 1, colorScheme: "light" });
-  const page = await ctx.newPage();
-  await page.setContent(`<!doctype html><style>html,body{margin:0}img{display:block;width:32px;height:32px}</style><img src="${base}/favicon.svg">`);
-  await page.waitForFunction(() => document.images[0].complete && document.images[0].naturalWidth > 0);
-  await page.screenshot({ path: path.join(ROOT, "favicon-32.png"), omitBackground: true }); // transparent corners
-  const [w, h] = pngSize(path.join(ROOT, "favicon-32.png"));
-  if (w !== 32 || h !== 32) throw new Error("favicon-32.png is " + w + "x" + h);
-  await ctx.close();
-}
-
 async function general(br, base) {
   const { ctx, page } = await openSite(br, base);
   await page.addStyleTag({ content: GENERAL_CSS });
@@ -257,13 +248,12 @@ async function words(br, base) {
   const { server, base } = await serve(ROOT);
   const br = await chromium.launch();
   try {
-    if (!ONLY) await favicon(br, base);
     if (!ONLY || ONLY.includes("general")) await general(br, base);
     const { bad, tall } = ONLY && ONLY.every((id) => id === "general") ? { bad: [], tall: [] } : await words(br, base);
     if (tall.length) console.log("does not fit:\n  " + tall.join("\n  "));
     if (bad.length) console.log("failed:\n  " + bad.join("\n  "));
     if (bad.length || tall.length) process.exitCode = 1;
-    else console.log("share images written" + (ONLY ? " (" + ONLY.join(",") + ")" : ": favicon-32.png, og-2026-10.png, og/word/ x " + fs.readdirSync(OG_WORD).length));
+    else console.log("share images written" + (ONLY ? " (" + ONLY.join(",") + ")" : ": og-2026-10.png, og/word/ x " + fs.readdirSync(OG_WORD).length));
   } finally {
     await br.close();
     server.close();
