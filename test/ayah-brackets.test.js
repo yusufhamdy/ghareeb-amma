@@ -6,7 +6,7 @@
  * grouped into lines by their Range client rects; no line starts with the closing parenthesis U+FD3E and no line
  * ends with the opening one U+FD3F. The same on the save-image card (regular and story), whose layout pieces are
  * grouped by their baseline. An ayah shown in the Madinah Mushaf page glyphs (qcf.js, class "on") is checked on its
- * visible glyph layer; its official text layer (.qcf-t) is then visually hidden and skipped.
+ * visible glyph layer; its official text layer (.qcf-t) is visually hidden in every state but "hafs" and skipped.
  *
  * ASCII only.
  */
@@ -38,7 +38,7 @@ const LINES = `(() => {
   const fs = parseFloat(getComputedStyle(ay).fontSize), lines = [], r = document.createRange();
   let cur = null;
   const walk = (n) => n.childNodes.forEach((c) => {
-    if (c.nodeType !== 3) return c.matches && c.matches(".qcf.on > .qcf-t") ? undefined : walk(c);
+    if (c.nodeType !== 3) return c.matches && c.matches(".qcf.on > .qcf-t, .qcf:not(.hafs) > .qcf-t") ? undefined : walk(c);
     for (let i = 0; i < c.data.length; i++) {
       const ch = c.data[i];
       if (ch === " ") continue;
@@ -97,6 +97,7 @@ test("no ornate parenthesis alone at a line end or start, in the page and on the
       }
       for (const [, slug] of words) {
         await page.goto(base + "/word/" + slug + ".html", { waitUntil: "load" });
+        await page.waitForFunction(() => !document.querySelector(".ay .qcf:not(.on):not(.hafs)"), null, { timeout: 5000 }).catch(() => {});
         await page.evaluate(() => document.fonts.ready);
         const lines = await page.evaluate(LINES);
         badLines(lines).forEach((l) => bad.push("static " + slug + " @" + w + ": " + JSON.stringify(lines)));

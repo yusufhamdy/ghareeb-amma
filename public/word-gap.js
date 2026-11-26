@@ -122,8 +122,11 @@
       if (q.fontBoundingBoxAscent == null || q.actualBoundingBoxLeft == null) return null;
       var ink = rasterInk(font, wf, w.textContent, s) ||
         { left: q.actualBoundingBoxLeft, right: q.actualBoundingBoxRight, asc: q.actualBoundingBoxAscent, desc: q.actualBoundingBoxDescent };
-      // the word's box is its content area: the baseline is its top plus the font's ascent; RTL text ends at its right
-      var wr = rs[rs.length - 1], xr = (wr.right - ox) * k, base = (wr.top - oy) * k + q.fontBoundingBoxAscent;
+      // the word's box: inline, its content area (baseline = top + ascent); inline-block (qcf.css), a line box of its
+      // line-height (baseline = top + half-leading + ascent; with line-height 0, top + (ascent - descent) / 2). RTL
+      // text ends at its right.
+      var A = q.fontBoundingBoxAscent, Dd = q.fontBoundingBoxDescent, lh = cs.display === 'inline-block' ? (parseFloat(cs.lineHeight) || 0) : null;
+      var wr = rs[rs.length - 1], xr = (wr.right - ox) * k, base = (wr.top - oy) * k + (lh == null ? A : (lh - A - Dd) / 2 + A);
       l = Math.min(l, xr - ink.left); r = Math.max(r, xr + ink.right);
       t = Math.min(t, base - ink.asc); bt = Math.max(bt, base + ink.desc);
     }

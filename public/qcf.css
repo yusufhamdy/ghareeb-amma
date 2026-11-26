@@ -1,12 +1,23 @@
-/* qcf.css - the Madinah Mushaf page fonts V2 layer (qcf.js, qcf-dom.js). Until an ayah's page fonts have loaded
-   (class "on", set by qcf-dom.js) only the official text (.qcf-t, Hafs v22, as before) is shown. With "on" the
-   glyphs (.qcf-g, aria-hidden) are shown and the official text stays in the DOM, visually hidden, for screen
-   readers, find in page and copy. Colours, the highlight (mark) and the line wrapping come from the surface, as for
-   the Hafs text; --qcf-size scales the glyphs against the surrounding Quran text (calibrated per surface). */
-.qcf-g{display:none}
-.qcf.on>.qcf-g{display:inline}
-.qcf.on>.qcf-t{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-.qcf-g .w{font-size:var(--qcf-size,1em);font-weight:400;font-style:normal;letter-spacing:0;word-spacing:0;font-feature-settings:normal;font-variant-ligatures:normal}
+/* qcf.css - the Madinah Mushaf page fonts V2 layer (qcf.js, qcf-dom.js). Three states of an ayah (.qcf):
+     waiting (no class)  its page fonts are loading: the glyph layer (.qcf-g) is laid out at its final size, invisible.
+                         Every glyph word has its measured width (style="--w:...em" from the table, inline-block), so
+                         the layout never depends on the font: no Hafs flash, no empty boxes, no jump when it appears.
+     "on"                the fonts have loaded (qcf-dom.js): the glyphs are shown, in the same place.
+     "hafs"              a font failed or took longer than about 1 s: the official text in Hafs v22, as before.
+   In every state but "hafs" the official text (.qcf-t) stays in the DOM, visually hidden, for screen readers, find in
+   page and copy. Colours, the highlight (mark) and the line wrapping come from the surface; --qcf-size scales the
+   glyphs against the surrounding Quran text (calibrated per surface). Without JavaScript the static pages show Hafs
+   (a <noscript> style). */
+.qcf>.qcf-g{display:inline;visibility:hidden}
+.qcf.on>.qcf-g{visibility:visible}
+.qcf.hafs:not(.on)>.qcf-g{display:none}
+.qcf:not(.hafs)>.qcf-t,.qcf.on>.qcf-t{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* a glyph word is a box of its measured width; line-height 0 keeps its line's height that of the surrounding text, so
+   the glyph sits on the line's baseline exactly as inline text did (word-gap.js measures its ink from that baseline) */
+.qcf-g .w{display:inline-block;width:var(--w,auto);line-height:0;white-space:nowrap;font-size:var(--qcf-size,1em);font-weight:400;font-style:normal;letter-spacing:0;word-spacing:0;font-feature-settings:normal;font-variant-ligatures:normal}
+/* the browser sizes an inline text run up to its 1/64px layout unit: the same rounding, so the glyphs sit exactly
+   where inline text put them */
+@supports (width:round(up,1em,1px)){.qcf-g .w{width:round(up,var(--w,auto),.015625px)}}
 .qcf-g .p582{font-family:"QCF2 582"}
 .qcf-g .p583{font-family:"QCF2 583"}
 .qcf-g .p584{font-family:"QCF2 584"}

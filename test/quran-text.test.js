@@ -101,7 +101,7 @@ test("the static word pages show the same segments, and they pass", async () => 
     const html = fs.readFileSync(path.join(PUBLIC, "word", r.slug + ".html"), "utf8");
     let ay = (html.match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "";
     // QCF V2 (qcf.js): the official text is the .qcf-t layer; the glyph layer (.qcf-g, aria-hidden) holds page-font codes
-    const t = ay.match(/^<span class="qcf" data-p="[0-9 ]+"><span class="qcf-t">([\s\S]*?)<\/span><span class="qcf-g" aria-hidden="true">[\s\S]*<\/span><\/span>$/);
+    const t = ay.match(/^<span class="qcf" data-p="[0-9 ]+" data-qs="[0-9]+"><span class="qcf-t">([\s\S]*?)<\/span><span class="qcf-g" aria-hidden="true">[\s\S]*<\/span><\/span>$/);
     if (t) ay = t[1];
     else assert.ok(!/qcf/.test(ay), r.slug + ": a QCF layer is the whole ayah block");
     ay = ay.replace(/<span class="nb">|<\/span>/g, ""); // no-break wrappers (K) are layout only

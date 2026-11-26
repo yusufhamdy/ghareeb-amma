@@ -163,7 +163,7 @@ if (count !== 564) problems.push("expected 564 ayat, got " + count);
 if (problems.length) { console.error("STOP: " + problems.length + " problem(s)\n" + problems.join("\n")); process.exit(1); }
 
 const table = {
-  about: "Madinah Mushaf page fonts V2 (QCF V2, King Fahd Glorious Quran Printing Complex) for Juz Amma. Per ayah, one [page, code_v2, text] per word in order (position = index + 1); text is the Complex's official Hafs text (data/quran/hafsData_v2-0.json) split at Quran.com's word positions; the last entry is the ayah-end marker. Built by scripts/build-qcf-table.mjs; read by public/qcf.js.",
+  about: "Madinah Mushaf page fonts V2 (QCF V2, King Fahd Glorious Quran Printing Complex) for Juz Amma. Per ayah, one [page, code_v2, text, width] per word in order (position = index + 1); text is the Complex's official Hafs text (data/quran/hafsData_v2-0.json) split at Quran.com's word positions; the last entry is the ayah-end marker. width: the glyph's advance in em, measured by scripts/qcf-widths.mjs. Built by scripts/build-qcf-table.mjs; read by public/qcf.js.",
   source: {
     text: "data/quran/hafsData_v2-0.json (King Fahd Glorious Quran Printing Complex, UthmanicHafs_v2-0.zip)",
     words: "https://api.quran.com/api/v4/verses/by_chapter/{78..114}?words=true&word_fields=code_v2,v2_page,text_qpc_hafs,page_number&per_page=50&page=1",
@@ -177,6 +177,12 @@ const table = {
   last: LAST_PAGE,
   ayat,
 };
+// the glyph widths (scripts/qcf-widths.mjs) are kept from the current table for the same page and code; after a
+// rebuild that changes codes, run scripts/qcf-widths.mjs again
+if (fs.existsSync(OUT)) {
+  const prev = JSON.parse(fs.readFileSync(OUT, "utf8")).ayat || {};
+  for (const [k, list] of Object.entries(ayat)) list.forEach((e, i) => { const o = (prev[k] || [])[i]; if (o && o[0] === e[0] && o[1] === e[1] && o.length > 3) e[3] = o[3]; });
+}
 const out = JSON.stringify(table, null, 0).replace(/\],"(\d+:\d+)"/g, '],\n"$1"') + "\n";
 if (args.includes("--check")) {
   const same = fs.existsSync(OUT) && fs.readFileSync(OUT, "utf8") === out;
