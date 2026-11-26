@@ -24,7 +24,7 @@
  */
 (function () {
   "use strict";
-  var BASE = "/fonts/qcf-v2/", fonts = {}, tableP = null, io = null, mo = null;
+  var BASE = "/fonts/qcf-v2/", fonts = {}, loaded = {}, tableP = null, io = null, mo = null;
 
   function table() {
     if (!tableP) {
@@ -39,7 +39,7 @@
       fonts[page] = new Promise(function (res) {
         try {
           var f = new FontFace("QCF2 " + page, "url(" + BASE + "QCF2" + page + ".ttf)", { display: "block" }); // = QCF.family(page), QCF.FILE(page)
-          f.load().then(function (x) { document.fonts.add(x); res(true); }, function () { res(false); });
+          f.load().then(function (x) { document.fonts.add(x); loaded[page] = true; res(true); }, function () { res(false); });
         } catch (e) { res(false); }
       });
     }
@@ -66,6 +66,15 @@
   function watch(el) {
     if (el.__qcfw) return;
     el.__qcfw = 1;
+    // Every font it needs has already loaded (a surface drew the same ayah again, e.g. the quiz after an answer): show
+    // the glyphs at once, in the same task, so the ayah never flashes back to Hafs v22 (and its height never jumps).
+    var ps = pagesOf(el);
+    if (ps.length && ps.every(function (p) { return loaded[p]; })) {
+      el.__qcf = 1;
+      el.classList.add("on");
+      try { document.dispatchEvent(new Event("qcf")); } catch (e) {}
+      return;
+    }
     if (io) io.observe(el); else swap(el);
   }
 
