@@ -1,8 +1,8 @@
 {
  "meta": {
   "version": 2,
-  "generatedAtUtc": "2026-11-26T18:54:33.912Z",
-  "headCommit": "9e73e3bed1d61b423b6eb350de8bdcc107c71fe8",
+  "generatedAtUtc": "2026-11-26T19:35:03.033Z",
+  "headCommit": "e64c81cf65eb6f2695bacd2363acca9d31e12590",
   "method": "sha256 of every JSON leaf (fields) or of the raw bytes (hashes); committed files only; no normalization"
  },
  "fields": {
@@ -101,7 +101,7 @@
    "[7].ayahs[1].segments[0].before": "5bcebf3ff303bc40259eb90f8f8d9cdd599a01456294ae5f5f170ab1863cdb16",
    "[7].ayahs[1].segments[0].hl": "d82e3d19fee314a3c034a563a199edb4d836bb468a53711a6cd6be4762c7f694",
    "[7].ayahs[1].segments[0].num": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
-   "[7].meanings[0]": "7598aab4c44a5a0c427a2e00e77d607c491d815b2918b6b039676d00c60d6207",
+   "[7].meanings[0]": "86e373af3f4fe361bfbcdc25b48f0749c4dc8feaa8068cfd16eb9c7dad75eadb",
    "[7].meanings[1]": "5596faef168696f2a821e51c445c421f702b4d85c0a82b9b57d5401126e4cb2c",
    "[7].source": "4a983c14706c0046d70c1fe6fcbdadd2e7b862d665c15ffe9497e8c1b99de83d",
    "[7].surah": "dde400c7b0e0de5c9bb82af7f83a0dcd79f4c135597a8ab235513f141fa3bff3",
