@@ -1,8 +1,8 @@
 {
  "meta": {
   "version": 2,
-  "generatedAtUtc": "2026-11-06T17:38:21.076Z",
-  "headCommit": "1f84958c5726989f6847573328b2b9e18d29b22f",
+  "generatedAtUtc": "2026-11-26T18:54:33.912Z",
+  "headCommit": "9e73e3bed1d61b423b6eb350de8bdcc107c71fe8",
   "method": "sha256 of every JSON leaf (fields) or of the raw bytes (hashes); committed files only; no normalization"
  },
  "fields": {
@@ -786,8 +786,8 @@
    ".days[29].w[1][1]": "854d197eb1cdf4174dc65a670f2121e2737d8d361c1397f154a401c0470f712c",
    ".days[29].w[2][0]": "349c41201b62db851192665c504b350ff98c6b45fb62a8a2161f78b6534d8de9",
    ".days[29].w[2][1]": "7f4ee019f82790b4532ae4cf9fa5b041f9fac2941bd1795532e1bc9fffa1add4",
-   ".releasedUpTo": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
-   ".startDate": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+   ".releasedUpTo": "e7f6c011776e8db7cd330b54174fd76f7d0216b612387a5ffcfb81e6f0919683",
+   ".startDate": "29c899a7eeb66757d2c487522ae381f50b2d409276b71f0e2c611b0008beb0f0"
   }
  },
  "hashes": {
