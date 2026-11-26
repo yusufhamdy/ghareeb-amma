@@ -121,7 +121,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v48`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
+- Cache name: **`ghareeb-pwa-v49`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
   `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
   `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
   page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other
@@ -130,7 +130,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   Navigations are network-first, falling back to the cached page, then `/index.html`, then a small offline page (503).
   `words.json`, `challenge.json`, `qcf-v2.json` and any `.js` or `.css` are network-first with `cache: 'no-cache'`, falling back to
   the cache. Everything else is cache-first.
-- `test/public-isolation.test.js` pins the cache name (currently asserts `v48`) and checks the worker precaches no
+- `test/public-isolation.test.js` pins the cache name (currently asserts `v49`) and checks the worker precaches no
   Firebase file. Bump the version on any release that changes cached files (runbook 10.6).
 
 ### 3.3 Content-Security-Policy and headers
