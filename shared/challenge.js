@@ -4,17 +4,18 @@
  * Pure module (no Firebase dependency) so it can be unit-tested in Node and
  * used by the publish build (scripts/publish-build.mjs).
  *
- * RELEASE MODEL
+ * RELEASE MODEL (owner decision, 2026-11)
  * -------------
- * Current (implemented here): days are released SEQUENTIALLY. Day 1 is open
- * while the challenge is active; the next day unlocks only after the previous
- * day has been marked "done", and a day can only be marked done once the user
- * has viewed the meanings of ALL of its words.
+ * SCHEDULED: day N opens at 22:00 Africa/Cairo on startDate + (N - 1) days
+ * (startDate 2026-11-21: day 1 at 2026-11-21 22:00, day 7 at 2026-11-27 22:00,
+ * day 30 at 2026-12-20 22:00). `releasedUpTo` stays an admin override: days up
+ * to it are open now. An open day is open for everyone; finishing a day never
+ * opens the next one early. A day can be marked done once the user has viewed
+ * the meanings of ALL of its words. Without a startDate only the override
+ * opens days.
  *
- * Planned (NOT implemented here): each day will be tied to its own calendar
- * date, so the next day cannot open before its agreed date regardless of
- * completion. Switching to that model is intended to be a change inside
- * `computeUnlocked` / `isDayUnlocked` only - keep those the one decision point.
+ * `computeUnlocked` is THE release rule (mirrored by released() in
+ * public/index.html); every other function goes through it.
  *
  * TIMEZONE: every calendar computation uses Africa/Cairo explicitly. Never use
  * the host's or browser's local timezone.
@@ -41,6 +42,54 @@ function daysBetween(a, b) {
 }
 
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+/** The hour (Cairo time) at which each day opens. */
+const OPEN_HOUR = 22;
+
+const CAIRO_FMT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: CAIRO_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+});
+
+/** Wall-clock parts of an instant in Africa/Cairo: { date: 'YYYY-MM-DD', hour, minute, second }. */
+function cairoParts(when) {
+  const t = when == null ? Date.now() : when instanceof Date ? when.getTime() : Number(when);
+  const p = {};
+  CAIRO_FMT.formatToParts(new Date(t)).forEach((x) => { p[x.type] = x.value; });
+  return { date: p.year + '-' + p.month + '-' + p.day, hour: +p.hour % 24, minute: +p.minute, second: +p.second };
+}
+
+/** YYYY-MM-DD plus n days. */
+function addDays(s, n) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s));
+  if (!m) throw new Error('expected YYYY-MM-DD, got: ' + s);
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + n)).toISOString().slice(0, 10);
+}
+
+const validDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+/** The instant (ms) day n opens: 22:00 Cairo on startDate + (n - 1). null without a valid startDate. */
+function dayOpensAt(state, dayNumber) {
+  const s = normalizeState(state);
+  if (!validDate(s.startDate)) return null;
+  const [y, m, d] = addDays(s.startDate, Number(dayNumber) - 1).split('-').map(Number);
+  const guess = Date.UTC(y, m - 1, d, OPEN_HOUR);
+  const off = (t) => {
+    const p = cairoParts(t);
+    const [py, pm, pd] = p.date.split('-').map(Number);
+    return Date.UTC(py, pm - 1, pd, p.hour, p.minute, p.second) - t;
+  };
+  return guess - off(guess - off(guess)); // the offset at the opening instant itself (daylight saving)
+}
+
+/** Days opened by the schedule alone at an instant (0..N). */
+function scheduledCount(state, now) {
+  const s = normalizeState(state);
+  if (!validDate(s.startDate)) return 0;
+  const p = cairoParts(now);
+  const k = daysBetween(s.startDate, p.date) + (p.hour >= OPEN_HOUR ? 1 : 0);
+  return clamp(k, 0, s.days.length);
+}
 
 /**
  * Normalize a challenge state object into a safe shape.
@@ -91,39 +140,27 @@ function dayWordKeys(state, dayNumber) {
 }
 
 /**
- * Number of open days. Two inputs combine:
- *  - the sequential frontier (day 1 open; the next opens after the previous is
- *    done) - the current release rule;
- *  - an explicit admin override `releasedUpTo`, which can pre-open days.
- * The effective open count is the larger of the two.
+ * Number of open days at `now` (ms or Date; default the current time). Two
+ * inputs combine, the larger wins:
+ *  - the schedule: day N opens at 22:00 Cairo on startDate + (N - 1);
+ *  - the admin override `releasedUpTo`, which opens days up to it now.
+ * Progress never opens a day (the parameter keeps the callers' shape).
  *
- * This is THE release rule. See the planned date-based switch at the top.
+ * This is THE release rule (mirror: released() in public/index.html).
  */
-function computeUnlocked(state, progress) {
+function computeUnlocked(state, progress, now) {
   const s = normalizeState(state);
   const N = s.days.length;
-  const p = normalizeProgress(progress);
-  const done = new Set(p.done);
-
-  // Sequential prefix: keep walking while the day is done, then open the next.
-  let prefix = 0;
-  for (let d = 1; d <= N; d++) {
-    if (done.has(d)) prefix = d;
-    else break;
-  }
-  const sequential = Math.min(N, prefix + 1);
-
   const override =
     s.releasedUpTo != null && Number.isFinite(s.releasedUpTo)
       ? clamp(Math.trunc(s.releasedUpTo), 0, N)
       : 0;
-
-  return Math.max(sequential, override);
+  return Math.max(scheduledCount(s, now), override);
 }
 
 /** The current day = first open day not yet done (or the last open day). */
-function frontierDay(state, progress) {
-  const open = computeUnlocked(state, progress);
+function frontierDay(state, progress, now) {
+  const open = computeUnlocked(state, progress, now);
   const p = normalizeProgress(progress);
   for (let n = 1; n <= open; n++) {
     if (!p.done.includes(n)) return n;
@@ -132,25 +169,25 @@ function frontierDay(state, progress) {
 }
 
 /** Single decision point: is a day open right now? */
-function isDayUnlocked(state, dayNumber, progress) {
+function isDayUnlocked(state, dayNumber, progress, now) {
   const n = Number(dayNumber);
   if (!Number.isInteger(n) || n < 1) return false;
   if (n > normalizeState(state).days.length) return false;
-  return n <= computeUnlocked(state, progress);
+  return n <= computeUnlocked(state, progress, now);
 }
 
 /**
  * Visual state for a grid day.
  * Returns one of: 'locked' | 'done' | 'today' | 'available' | 'unknown'.
  */
-function dayStatus(state, dayNumber, progress) {
+function dayStatus(state, dayNumber, progress, now) {
   if (!dayById(state, dayNumber)) return 'unknown';
   const p = normalizeProgress(progress);
-  const open = computeUnlocked(state, progress);
+  const open = computeUnlocked(state, progress, now);
   const n = Number(dayNumber);
   if (n > open) return 'locked';
   if (p.done.includes(n)) return 'done';
-  if (n === frontierDay(state, progress)) return 'today';
+  if (n === frontierDay(state, progress, now)) return 'today';
   return 'available';
 }
 
@@ -167,9 +204,9 @@ function viewedAllMeanings(state, dayNumber, progress) {
  * Can the user mark this day done? Requires: day unlocked AND every meaning in
  * the day viewed. Already-done days return true (toggle-off is allowed).
  */
-function canMarkDayDone(state, dayNumber, progress) {
+function canMarkDayDone(state, dayNumber, progress, now) {
   const n = Number(dayNumber);
-  if (!isDayUnlocked(state, n, progress)) return false;
+  if (!isDayUnlocked(state, n, progress, now)) return false;
   const p = normalizeProgress(progress);
   if (p.done.includes(n)) return true; // allow un-marking
   return viewedAllMeanings(state, n, progress);
@@ -179,10 +216,10 @@ function canMarkDayDone(state, dayNumber, progress) {
  * Apply a "mark done / unmark" action, returning { progress, changed, reason }.
  * Idempotent: marking an already-done day twice does not duplicate it.
  */
-function toggleDayDone(state, dayNumber, progress) {
+function toggleDayDone(state, dayNumber, progress, now) {
   const n = Number(dayNumber);
   const p = normalizeProgress(progress);
-  if (!isDayUnlocked(state, n, progress)) {
+  if (!isDayUnlocked(state, n, progress, now)) {
     return { progress: { done: p.done.slice(), viewed: p.viewed }, changed: false, reason: 'locked' };
   }
   const already = p.done.includes(n);
@@ -278,7 +315,12 @@ function withNotesForViewer(challenge, notes, isAdmin) {
 
 module.exports = {
   CAIRO_TZ,
+  OPEN_HOUR,
   cairoDateString,
+  cairoParts,
+  addDays,
+  dayOpensAt,
+  scheduledCount,
   daysBetween,
   normalizeState,
   normalizeProgress,

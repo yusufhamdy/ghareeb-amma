@@ -121,7 +121,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v48`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
+- Cache name: **`ghareeb-pwa-v49`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
   `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
   `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
   page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other
@@ -130,7 +130,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   Navigations are network-first, falling back to the cached page, then `/index.html`, then a small offline page (503).
   `words.json`, `challenge.json`, `qcf-v2.json` and any `.js` or `.css` are network-first with `cache: 'no-cache'`, falling back to
   the cache. Everything else is cache-first.
-- `test/public-isolation.test.js` pins the cache name (currently asserts `v48`) and checks the worker precaches no
+- `test/public-isolation.test.js` pins the cache name (currently asserts `v49`) and checks the worker precaches no
   Firebase file. Bump the version on any release that changes cached files (runbook 10.6).
 
 ### 3.3 Content-Security-Policy and headers
@@ -164,7 +164,7 @@ Every path below is readable by admins only; the public site never reads Firesto
 | Path | Fields | Notes |
 |---|---|---|
 | `public/data` | `rev` (int), `surahs` (list, at most 114), `updatedAt` (timestamp), `by` (the writer's Firebase uid) | The words. Each surah entry: `surah` (name), `no` (surah number), `words`, `meanings`, `ayahs` (parallel lists by index), `source`. Each ayah: `label` and `segments`, each segment `{num, before, hl, after}` (`hl` is the highlighted word). |
-| `public/challenge` | `startDate` (null or `YYYY-MM-DD`), `releasedUpTo` (null or int), `days` (list, at most 366) | The 30-day plan. Each day `{d, w, reel...}`; `w` lists `[surahNo, word]` pairs. |
+| `public/challenge` | `startDate` (null or `YYYY-MM-DD`), `releasedUpTo` (null or int), `days` (list, at most 366) | The 30-day plan. Each day `{d, w, reel...}`; `w` lists `[surahNo, word]` pairs. Release (owner decision, 2026-11): day N opens at 22:00 Africa/Cairo on `startDate` + (N - 1) days, for everyone; `releasedUpTo` opens days up to it at once (admin override); finishing a day never opens the next early. One rule: `computeUnlocked` in `shared/challenge.js`, mirrored by `released()` in `public/index.html`, which re-checks at each opening time without a reload (`test/challenge-schedule.test.js`). |
 | `public/prev` | `rev`, `surahs`, `savedAt` | The last copy from before version history. The admin no longer writes it; kept as a last resort. |
 | `snapshots/{rev}` | `rev`, `surahs` | The full words of version `rev`. Create-only. |
 | `history/{rev}` | `rev`, `kind`, `summary` (max 300 chars), `by` (uid), `byEmail`, `at` (server time), `restoredFrom` (only when `kind` is `restore`) | One row per version. `kind` is one of `edit`, `import`, `restore`, `baseline`. Create-only. |

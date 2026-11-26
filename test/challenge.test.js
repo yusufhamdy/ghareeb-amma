@@ -2,8 +2,10 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const C = require('../shared/challenge');
 
+// Scheduled release (owner decision, 2026-11): day N opens at 22:00 Cairo on startDate + (N - 1). In November Cairo is
+// UTC+2, so day 1 opens at 2026-11-21T20:00Z, day 2 at 2026-11-22T20:00Z, ...
 const state = {
-  startDate: null,
+  startDate: '2026-11-21',
   releasedUpTo: null,
   days: [
     { d: 1, w: [[114, 'الخناس'], [113, 'غاسق اذا وقب']], reel: '' },
@@ -12,6 +14,8 @@ const state = {
     { d: 4, w: [[107, 'يكذب بالدين']], reel: '' },
   ],
 };
+const DAY1 = Date.parse('2026-11-21T20:30:00Z'); // day 1 open, day 2 not yet
+const at = (iso) => Date.parse(iso);
 
 test('cairoDateString uses Africa/Cairo', () => {
   // January in Cairo is UTC+2 (no DST): 22:30Z crosses midnight, 21:30Z does not.
@@ -25,78 +29,81 @@ test('daysBetween computes whole days', () => {
   assert.strictEqual(C.daysBetween('2026-10-08', '2026-10-05'), -3);
 });
 
-test('day 1 is unlocked initially, later days locked', () => {
+test('on the first evening day 1 is open, later days locked', () => {
   const p = { done: [] };
-  assert.strictEqual(C.computeUnlocked(state, p), 1);
-  assert.strictEqual(C.isDayUnlocked(state, 1, p), true);
-  assert.strictEqual(C.isDayUnlocked(state, 2, p), false);
-  assert.strictEqual(C.dayStatus(state, 1, p), 'today');
-  assert.strictEqual(C.dayStatus(state, 4, p), 'locked');
+  assert.strictEqual(C.computeUnlocked(state, p, DAY1), 1);
+  assert.strictEqual(C.isDayUnlocked(state, 1, p, DAY1), true);
+  assert.strictEqual(C.isDayUnlocked(state, 2, p, DAY1), false);
+  assert.strictEqual(C.dayStatus(state, 1, p, DAY1), 'today');
+  assert.strictEqual(C.dayStatus(state, 4, p, DAY1), 'locked');
+  assert.strictEqual(C.computeUnlocked(state, p, at('2026-11-21T19:59:59Z')), 0, 'nothing before the first 22:00');
 });
 
-test('next day unlocks only after previous marked done', () => {
-  assert.strictEqual(C.computeUnlocked(state, { done: [1] }), 2);
-  assert.strictEqual(C.computeUnlocked(state, { done: [1, 2] }), 3);
-  assert.strictEqual(C.computeUnlocked(state, { done: [1, 2, 3] }), 4);
-  assert.strictEqual(C.computeUnlocked(state, { done: [1, 2, 3, 4] }), 4);
+test('each day opens at its own 22:00 Cairo, whatever the progress', () => {
+  assert.strictEqual(C.computeUnlocked(state, { done: [] }, at('2026-11-22T20:00:00Z')), 2);
+  assert.strictEqual(C.computeUnlocked(state, { done: [] }, at('2026-11-23T20:00:00Z')), 3);
+  assert.strictEqual(C.computeUnlocked(state, { done: [1, 2, 3, 4] }, at('2026-11-24T20:00:00Z')), 4);
+  assert.strictEqual(C.computeUnlocked(state, { done: [] }, at('2027-01-01T00:00:00Z')), 4, 'never more than the days');
 });
 
-test('cannot skip a day (missed day keeps frontier back)', () => {
-  assert.strictEqual(C.computeUnlocked(state, { done: [1, 3] }), 2);
-  assert.strictEqual(C.dayStatus(state, 1, { done: [1, 3] }), 'done');
-  assert.strictEqual(C.dayStatus(state, 2, { done: [1, 3] }), 'today');
-  assert.strictEqual(C.dayStatus(state, 3, { done: [1, 3] }), 'locked');
+test('finishing a day never opens the next one early', () => {
+  assert.strictEqual(C.computeUnlocked(state, { done: [1] }, DAY1), 1);
+  assert.strictEqual(C.isDayUnlocked(state, 2, { done: [1] }, DAY1), false);
+  assert.strictEqual(C.dayStatus(state, 2, { done: [1, 3] }, DAY1), 'locked');
 });
 
 test('past open but not done shows as available', () => {
   // Admin override opens days 1-3; day 1 is the frontier (today), day 3 is
   // open but not the frontier => available.
   const s = Object.assign({}, state, { releasedUpTo: 3 });
-  assert.strictEqual(C.dayStatus(s, 1, { done: [] }), 'today');
-  assert.strictEqual(C.dayStatus(s, 2, { done: [] }), 'available');
-  assert.strictEqual(C.dayStatus(s, 3, { done: [] }), 'available');
-  assert.strictEqual(C.dayStatus(s, 4, { done: [] }), 'locked');
+  assert.strictEqual(C.dayStatus(s, 1, { done: [] }, DAY1), 'today');
+  assert.strictEqual(C.dayStatus(s, 2, { done: [] }, DAY1), 'available');
+  assert.strictEqual(C.dayStatus(s, 3, { done: [] }, DAY1), 'available');
+  assert.strictEqual(C.dayStatus(s, 4, { done: [] }, DAY1), 'locked');
 });
 
-test('releasedUpTo override opens days beyond the sequential frontier', () => {
-  assert.strictEqual(C.computeUnlocked(Object.assign({}, state, { releasedUpTo: 3 }), { done: [] }), 3);
-  assert.strictEqual(C.computeUnlocked(Object.assign({}, state, { releasedUpTo: 0 }), { done: [] }), 1);
-  assert.strictEqual(C.computeUnlocked(state, { done: [] }), 1);
+test('releasedUpTo override opens days beyond the schedule', () => {
+  assert.strictEqual(C.computeUnlocked(Object.assign({}, state, { releasedUpTo: 3 }), { done: [] }, DAY1), 3);
+  assert.strictEqual(C.computeUnlocked(Object.assign({}, state, { releasedUpTo: 0 }), { done: [] }, DAY1), 1);
+  assert.strictEqual(C.computeUnlocked(state, { done: [] }, DAY1), 1);
+  const noStart = Object.assign({}, state, { startDate: null });
+  assert.strictEqual(C.computeUnlocked(noStart, { done: [] }, DAY1), 0, 'no startDate: only the override opens days');
+  assert.strictEqual(C.computeUnlocked(Object.assign({}, noStart, { releasedUpTo: 2 }), { done: [] }, DAY1), 2);
 });
 
 test('done mark requires all meanings viewed', () => {
   const p = { done: [], viewed: {} };
   assert.strictEqual(C.viewedAllMeanings(state, 1, p), false);
-  assert.strictEqual(C.canMarkDayDone(state, 1, p), false);
+  assert.strictEqual(C.canMarkDayDone(state, 1, p, DAY1), false);
 
   const p2 = C.markViewed(p, 1, [114, 'الخناس']);
   assert.strictEqual(C.viewedAllMeanings(state, 1, p2), false);
   const p3 = C.markViewed(p2, 1, [113, 'غاسق اذا وقب']);
   assert.strictEqual(C.viewedAllMeanings(state, 1, p3), true);
-  assert.strictEqual(C.canMarkDayDone(state, 1, p3), true);
+  assert.strictEqual(C.canMarkDayDone(state, 1, p3, DAY1), true);
 
-  const r = C.toggleDayDone(state, 1, p3);
+  const r = C.toggleDayDone(state, 1, p3, DAY1);
   assert.strictEqual(r.changed, true);
   assert.deepStrictEqual(r.progress.done, [1]);
 });
 
 test('cannot mark a locked day done', () => {
-  const r = C.toggleDayDone(state, 2, { done: [], viewed: { 2: { '112::الصمد': true } } });
+  const r = C.toggleDayDone(state, 2, { done: [], viewed: { 2: { '112::الصمد': true } } }, DAY1);
   assert.strictEqual(r.changed, false);
   assert.strictEqual(r.reason, 'locked');
 });
 
 test('cannot mark done before viewing (reason not-viewed)', () => {
-  const r = C.toggleDayDone(state, 1, { done: [], viewed: {} });
+  const r = C.toggleDayDone(state, 1, { done: [], viewed: {} }, DAY1);
   assert.strictEqual(r.changed, false);
   assert.strictEqual(r.reason, 'not-viewed');
 });
 
 test('duplicate same-day completion is idempotent / toggles', () => {
   const p = { done: [1], viewed: { 1: { '114::الخناس': true, '113::غاسق اذا وقب': true } } };
-  const again = C.toggleDayDone(state, 1, p);
+  const again = C.toggleDayDone(state, 1, p, DAY1);
   assert.deepStrictEqual(again.progress.done, []); // second call unmarks
-  const back = C.toggleDayDone(state, 1, again.progress);
+  const back = C.toggleDayDone(state, 1, again.progress, DAY1);
   assert.deepStrictEqual(back.progress.done, [1]);
 });
 

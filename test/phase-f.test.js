@@ -533,7 +533,8 @@ test("F2: day 5 previous goes to day 4; day 1 previous and the last day next are
 
 test("F2: a locked next day shows a disabled next pill with a lock line", { timeout: 180000 }, async (t) => {
   const raw = JSON.parse(fs.readFileSync(path.join(PUBLIC, "challenge.json"), "utf8"));
-  const env = await setup(t, { ch: Object.assign({}, raw, { releasedUpTo: null }), prog: { done: [] } });
+  // scheduled release: day 1 open by the override, day 2 opens at 22:00 Cairo on its own date (far in the future here)
+  const env = await setup(t, { ch: Object.assign({}, raw, { startDate: "2099-11-21", releasedUpTo: 1 }), prog: { done: [] } });
   if (!env) return;
   try {
     const page = await env.page(1440, 900);
@@ -546,7 +547,8 @@ test("F2: a locked next day shows a disabled next pill with a lock line", { time
     assert.equal(r.tag, "BUTTON", "the next control is an aria-disabled button, not a link, while the next day is locked");
     assert.equal(r.href, null, "it has no target");
     assert.equal(r.dis, "true", "it is marked disabled");
-    assert.equal(r.ps, "\u0628\u0639\u062f \u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u064a\u0648\u0645", "its second line explains when it opens");
+    const wd = new Intl.DateTimeFormat("ar-EG", { timeZone: "UTC", weekday: "long" }).format(new Date(Date.UTC(2099, 10, 22)));
+    assert.equal(r.ps, "\u064a\u0641\u062a\u062d " + wd + " 10 \u0645\u0633\u0627\u0621\u064b", "its second line says when it opens (its weekday, 10 pm)");
     assert.ok(r.lock, "the second line carries a lock icon");
     await nav(page, "#/day/2");
     await page.waitForSelector("#app .card", { timeout: 20000 });
