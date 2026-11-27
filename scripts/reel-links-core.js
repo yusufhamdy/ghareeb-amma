@@ -37,32 +37,32 @@ const PATHS = {
 // --- Arabic normalisation and the day phrase -------------------------------------------------------------------
 function norm(s) {
   return String(s == null ? "" : s)
-    .replace(/[ً-ٰٟـ​-‏؜⁦-⁩﻿]/g, "") // diacritics, tatweel, marks
-    .replace(/[آأإٱ]/g, "ا") // alef forms -> alef
-    .replace(/ى/g, "ي") // alef maksura -> ya
-    .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x0660)) // Arabic-Indic digits
-    .replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 0x06F0)) // Extended Arabic-Indic digits
+    .replace(/[\u064B-\u065F\u0670\u0640\u200B-\u200F\u061C\u2066-\u2069\uFEFF]/g, "") // diacritics, tatweel, marks
+    .replace(/[\u0622\u0623\u0625\u0671]/g, "\u0627") // alef forms -> alef
+    .replace(/\u0649/g, "\u064A") // alef maksura -> ya
+    .replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660)) // Arabic-Indic digits
+    .replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x06F0)) // Extended Arabic-Indic digits
     .replace(/\s+/g, " ");
 }
 
-const DAY = "اليوم"; // al-yawm
+const DAY = "\u0627\u0644\u064A\u0648\u0645"; // al-yawm
 const UNITS = [null,
-  "الاول", // 1 al-awwal
-  "الثاني", // 2 al-thani
-  "الثالث", // 3 al-thalith
-  "الرابع", // 4 al-rabi
-  "الخامس", // 5 al-khamis
-  "السادس", // 6 al-sadis
-  "السابع", // 7 al-sabi
-  "الثامن", // 8 al-thamin
-  "التاسع", // 9 al-tasi
+  "\u0627\u0644\u0627\u0648\u0644", // 1 al-awwal
+  "\u0627\u0644\u062B\u0627\u0646\u064A", // 2 al-thani
+  "\u0627\u0644\u062B\u0627\u0644\u062B", // 3 al-thalith
+  "\u0627\u0644\u0631\u0627\u0628\u0639", // 4 al-rabi
+  "\u0627\u0644\u062E\u0627\u0645\u0633", // 5 al-khamis
+  "\u0627\u0644\u0633\u0627\u062F\u0633", // 6 al-sadis
+  "\u0627\u0644\u0633\u0627\u0628\u0639", // 7 al-sabi
+  "\u0627\u0644\u062B\u0627\u0645\u0646", // 8 al-thamin
+  "\u0627\u0644\u062A\u0627\u0633\u0639", // 9 al-tasi
 ];
-const HADI = "الحادي"; // al-hadi (the 1 of 11 and 21)
-const ASHAR = "عشر"; // ashar (teen)
-const TENTH = "العاشر"; // 10 al-ashir
-const TWENTY = ["العشرون", "العشرين"]; // al-ishrun/-in
-const THIRTY = ["الثلاثون", "الثلاثين"]; // al-thalathun/-in
-const WA = "و"; // wa (and)
+const HADI = "\u0627\u0644\u062D\u0627\u062F\u064A"; // al-hadi (the 1 of 11 and 21)
+const ASHAR = "\u0639\u0634\u0631"; // ashar (teen)
+const TENTH = "\u0627\u0644\u0639\u0627\u0634\u0631"; // 10 al-ashir
+const TWENTY = ["\u0627\u0644\u0639\u0634\u0631\u0648\u0646", "\u0627\u0644\u0639\u0634\u0631\u064A\u0646"]; // al-ishrun/-in
+const THIRTY = ["\u0627\u0644\u062B\u0644\u0627\u062B\u0648\u0646", "\u0627\u0644\u062B\u0644\u0627\u062B\u064A\u0646"]; // al-thalathun/-in
+const WA = "\u0648"; // wa (and)
 
 // The ordinal phrases of day n (1-30), each a list of words, normalised.
 function ordinals(n) {

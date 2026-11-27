@@ -14,7 +14,7 @@ const vm = require("vm");
 const C = require("../scripts/reel-links-core.js");
 const ROOT = path.resolve(__dirname, "..");
 
-const DAY = "اليوم";
+const DAY = "\u0627\u0644\u064A\u0648\u0645";
 const arabicDigits = (n) => String(n).replace(/[0-9]/g, (d) => String.fromCharCode(0x0660 + Number(d)));
 const forms = (n) => [DAY + " " + n, "#" + DAY + "_" + n, DAY + " " + arabicDigits(n), DAY + "_" + n].concat(C.ordinals(n).map((w) => DAY + " " + w.join(" ")), C.ordinals(n).map((w) => "#" + DAY + "_" + w.join("_")));
 
@@ -32,15 +32,15 @@ test("every form of day n names day n and no other day (1-30)", () => {
 });
 
 test("diacritics, hamza forms, tatweel and a following word don't change the match", () => {
-  const awwal = "الأَوَّلُ"; // al-awwal with hamza and diacritics
-  assert.ok(C.dayMatches(DAY.replace("ي", "يَ") + " " + awwal, 1));
-  assert.ok(C.dayMatches(DAY + "ـ 7", 7));
+  const awwal = "\u0627\u0644\u0623\u064E\u0648\u0651\u064E\u0644\u064F"; // al-awwal with hamza and diacritics
+  assert.ok(C.dayMatches(DAY.replace("\u064A", "\u064A\u064E") + " " + awwal, 1));
+  assert.ok(C.dayMatches(DAY + "\u0640 7", 7));
   const thamin = C.ordinals(8)[0][0];
-  assert.ok(C.dayMatches(DAY + " " + thamin + " ونتعلم", 8), "a word starting with wa after the ordinal");
-  assert.ok(C.dayMatches(DAY + " 7 | تحدي", 7));
+  assert.ok(C.dayMatches(DAY + " " + thamin + " \u0648\u0646\u062A\u0639\u0644\u0645", 8), "a word starting with wa after the ordinal");
+  assert.ok(C.dayMatches(DAY + " 7 | \u062A\u062D\u062F\u064A", 7));
   assert.ok(!C.dayMatches(DAY + " 17", 7) && !C.dayMatches(DAY + " 70", 7) && !C.dayMatches("7", 7) && !C.dayMatches(DAY, 7));
-  assert.ok(!C.dayMatches(DAY + " " + C.ordinals(2)[0][0] + " عشر", 2), "al-thani ashar is day 12");
-  assert.ok(!C.dayMatches(DAY + " " + C.ordinals(2)[0][0] + " والعشرون", 2), "al-thani wa-l-ishrun is day 22");
+  assert.ok(!C.dayMatches(DAY + " " + C.ordinals(2)[0][0] + " \u0639\u0634\u0631", 2), "al-thani ashar is day 12");
+  assert.ok(!C.dayMatches(DAY + " " + C.ordinals(2)[0][0] + " \u0648\u0627\u0644\u0639\u0634\u0631\u0648\u0646", 2), "al-thani wa-l-ishrun is day 22");
   assert.ok(!C.dayMatches("", 1) && !C.dayMatches(null, 1) && !C.dayMatches(DAY + " 1", 0));
 });
 
