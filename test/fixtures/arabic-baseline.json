@@ -1,8 +1,8 @@
 {
  "meta": {
   "version": 2,
-  "generatedAtUtc": "2026-11-27T17:24:06.516Z",
-  "headCommit": "8f760b4a9de09da97b981363c31ff77cef00aaed",
+  "generatedAtUtc": "2026-11-27T20:39:51.476Z",
+  "headCommit": "36257480245df525bb4bb33c00ca32241fa353e1",
   "method": "sha256 of every JSON leaf (fields) or of the raw bytes (hashes); committed files only; no normalization"
  },
  "fields": {
@@ -632,6 +632,9 @@
    ".days[5].w[1][1]": "b3c925654e9525578b808a6a437fc083216e1a19038e937f7f4c4ae2d1c20323",
    ".days[6].d": "7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451",
    ".days[6].reel": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+   ".days[6].reelIg": "19fce2d17994bf6582f63d74a4f5c1fa22ea6430c8ffac1e04b30da4df6521e2",
+   ".days[6].reelTt": "6d1b15074b6022326a8d7ab0f74771dbf0a57763406493c3be27e8242f2c5e38",
+   ".days[6].reelYt": "a3e1009599e9cffeb68aaf9733a10db5173467cb6dd3516adc6f2d43ca3a9944",
    ".days[6].w[0][0]": "5ef6fdf32513aa7cd11f72beccf132b9224d33f271471fff402742887a171edf",
    ".days[6].w[0][1]": "7bf6a990f84488de5d69cb51d6859f29558ed9093c2fe770681f70aa009e693d",
    ".days[6].w[1][0]": "5ef6fdf32513aa7cd11f72beccf132b9224d33f271471fff402742887a171edf",
