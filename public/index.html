@@ -500,6 +500,57 @@ svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }
+/* Card grids: a short row (a grid with fewer cards than columns, or the last row of a grid of two or more rows) is
+   centred, and every card keeps its full-row width. The grid keeps its own 1fr columns; the last r cards (r = cards mod
+   columns) move by (columns - r) / 2 column steps (a step = one track + the column gap; a percentage inset of a grid
+   item is a share of its track). Full rows match none of these rules and are laid out as before. Each rule names its
+   grid's column count and gap in that width range: word cards 12px, surahs 28px (glass) / 12px (shade), quiz options
+   12px, challenge days 0 (glass). Shade's challenge days (fixed 44px cells, as many columns as fit) are a wrapping flex
+   row with the same cells and gaps: full rows sit exactly where the centred grid put them, and a short row is centred. */
+.shade .cg.cg{display:flex!important;flex-wrap:wrap;justify-content:center}
+@media(max-width:600px){
+body:not(.shade) .cg:has(>:last-child:nth-child(6n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(2.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(6n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(2 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(6n+3))>:nth-last-child(-n+3){position:relative;inset-inline-start:calc(1.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(6n+4))>:nth-last-child(-n+4){position:relative;inset-inline-start:calc(1 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(6n+5))>:nth-last-child(-n+5){position:relative;inset-inline-start:calc(0.5 * 100%)}
+.shade .list.sl:has(>:last-child:nth-child(2n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+}
+@media(min-width:601px) and (max-width:1024px){
+.snav>.list.rs:has(>:last-child:nth-child(2n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+.opts:has(>:last-child:nth-child(2n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+body:not(.shade) .list.sl:has(>:last-child:nth-child(2n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(0.5 * (100% + 28px))}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(4.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(4 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+3))>:nth-last-child(-n+3){position:relative;inset-inline-start:calc(3.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+4))>:nth-last-child(-n+4){position:relative;inset-inline-start:calc(3 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+5))>:nth-last-child(-n+5){position:relative;inset-inline-start:calc(2.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+6))>:nth-last-child(-n+6){position:relative;inset-inline-start:calc(2 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+7))>:nth-last-child(-n+7){position:relative;inset-inline-start:calc(1.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+8))>:nth-last-child(-n+8){position:relative;inset-inline-start:calc(1 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+9))>:nth-last-child(-n+9){position:relative;inset-inline-start:calc(0.5 * 100%)}
+.shade .list.sl:has(>:last-child:nth-child(3n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(1 * (100% + 12px))}
+.shade .list.sl:has(>:last-child:nth-child(3n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+}
+@media(min-width:1025px){
+.snav>.list.rs:has(>:last-child:nth-child(3n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(1 * (100% + 12px))}
+.snav>.list.rs:has(>:last-child:nth-child(3n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+.opts:has(>:last-child:nth-child(2n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+body:not(.shade) .list.sl:has(>:last-child:nth-child(3n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(1 * (100% + 28px))}
+body:not(.shade) .list.sl:has(>:last-child:nth-child(3n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(0.5 * (100% + 28px))}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(4.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(4 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+3))>:nth-last-child(-n+3){position:relative;inset-inline-start:calc(3.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+4))>:nth-last-child(-n+4){position:relative;inset-inline-start:calc(3 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+5))>:nth-last-child(-n+5){position:relative;inset-inline-start:calc(2.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+6))>:nth-last-child(-n+6){position:relative;inset-inline-start:calc(2 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+7))>:nth-last-child(-n+7){position:relative;inset-inline-start:calc(1.5 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+8))>:nth-last-child(-n+8){position:relative;inset-inline-start:calc(1 * 100%)}
+body:not(.shade) .cg:has(>:last-child:nth-child(10n+9))>:nth-last-child(-n+9){position:relative;inset-inline-start:calc(0.5 * 100%)}
+.shade .list.sl:has(>:last-child:nth-child(4n+1))>:nth-last-child(-n+1){position:relative;inset-inline-start:calc(1.5 * (100% + 12px))}
+.shade .list.sl:has(>:last-child:nth-child(4n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(1 * (100% + 12px))}
+.shade .list.sl:has(>:last-child:nth-child(4n+3))>:nth-last-child(-n+3){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
+}
 </style>
 </head>
 <body>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ghareeb-pwa-v50';
+const CACHE_NAME = 'ghareeb-pwa-v51';
 const assetsToCache = [
     '/',
     '/index.html',

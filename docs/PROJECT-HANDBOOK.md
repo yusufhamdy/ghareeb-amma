@@ -125,12 +125,21 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   `icon_ultra_clean_transparent_1254px.png`. Icon links carry `?v=2`; bump it when the design changes. The same icon
   (`.lgi`, decorative, `alt=""`) sits before the site name in every header; the word share images hide it, so they
   stay as they were.
+- **Card grids: a short row is centred.** In the grids of cards (a surah's words in the app and on the static surah
+  pages, the surahs list, quiz options, challenge days), a short row (a grid with fewer cards than columns, or the
+  last row of a longer grid) is centred and every card keeps its full-row width. The grid keeps its 1fr columns and
+  the last r cards (r = cards mod columns) move by (columns - r) / 2 column steps (`position:relative;
+  inset-inline-start`), so the width is exactly the full-row width. Shade's challenge days (fixed 44px cells, as many
+  columns as fit) are a wrapping flex row with the same cells and gaps instead. Full rows are laid out as before. The
+  rules sit at the end of the `<style>` block in `public/index.html`, one width range each (to 600px, 601-1024px, from
+  1025px), and name each grid's column count and gap: change them together with those grids. Search results are a
+  single column, so they are always full rows.
 - Static SEO pages (`public/word/*.html`, `public/surah/`, legal pages) are plain HTML. The sitemap has 106 URLs: home,
   73 word pages, 28 surah pages and 4 legal pages.
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v50`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
+- Cache name: **`ghareeb-pwa-v51`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
   `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
   `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
   page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other
