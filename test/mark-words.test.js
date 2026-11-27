@@ -61,7 +61,7 @@ test("static word pages: no mark inside a word, text unchanged", () => {
     // the no-break wrappers around the parentheses (K) are layout only
     // the QCF V2 page: the official text (Hafs) is the .qcf-t layer, next to the aria-hidden glyph layer .qcf-g
     const full = (fs.readFileSync(path.join(PUBLIC, "word", f), "utf8").match(/<div class="ay q">([\s\S]*?)<\/div>/) || [])[1] || "";
-    const qt = full.match(/^<span class="qcf" data-p="[0-9 ]+"><span class="qcf-t">([\s\S]*?)<\/span><span class="qcf-g" aria-hidden="true">[\s\S]*<\/span><\/span>$/);
+    const qt = full.match(/^<span class="qcf" data-p="[0-9 ]+" data-qs="[0-9]+"><span class="qcf-t">([\s\S]*?)<\/span><span class="qcf-g" aria-hidden="true">[\s\S]*<\/span><\/span>$/);
     if (qt) glyphs++;
     const ay = (qt ? qt[1] : full).replace(/<span class="nb">|<\/span>/g, "");
     const runs = ay.split(/(<mark>[\s\S]*?<\/mark>)/).filter((x) => x !== "").map((x) => (x.startsWith("<mark>") ? { mark: true, text: unesc(x.slice(6, -7)) } : { mark: false, text: unesc(x) }));

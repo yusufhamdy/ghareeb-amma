@@ -5,8 +5,10 @@
  * page generator (scripts/publish-build.mjs), the save and share images and the match check (test/qcf.test.js).
  *
  * Data (never changed by this module):
- *   table  public/qcf-v2.json (scripts/build-qcf-table.mjs): table.ayat["78:1"] = [[page, code_v2, text_qpc_hafs],
- *          ...], one entry per word in order (position = index + 1); the last entry is the ayah-end marker.
+ *   table  public/qcf-v2.json (scripts/build-qcf-table.mjs): table.ayat["78:1"] = [[page, code_v2, text_qpc_hafs,
+ *          width], ...], one entry per word in order (position = index + 1); the last entry is the ayah-end marker.
+ *          width: the glyph's advance in em (scripts/qcf-widths.mjs), so a glyph word has its final width before its
+ *          font has loaded.
  *   fonts  public/fonts/qcf-v2/QCF2{page}.ttf, pages table.first..table.last (582-604), unmodified. Each code_v2
  *          is one glyph (or a few) of its own page's font; an ayah that crosses a page uses each word's own page.
  *   ayah   as stored in words.json / Firestore: { label, segments: [{ num, before, hl, after }] }. label may name
@@ -18,7 +20,7 @@
  *   QCF.segment(table, surah, seg)
  *       Matches one segment to its ayah's words. before + hl + after (outer spaces removed) must equal, letter by
  *       letter, a run of whole words of the table's QPC Hafs text of ayah seg.num, joined by single spaces.
- *       -> { ok: true, words: [{ pos, page, code, text, hl, end }] }   (text: the official word; end: the ayah-end
+ *       -> { ok: true, words: [{ pos, page, code, text, width, hl, end }] }   (text: the official word; end: the ayah-end
  *          marker, added when the segment reaches the ayah's last word; hl: the word is (partly) in seg.hl, so the
  *          highlight always covers whole words, like QText.markParts)
  *       -> { ok: false, why: "ayah" | "text", positions: [word positions that differ] }
@@ -27,13 +29,17 @@
  *       ok only when every segment matched; a caller then shows the whole ayah with the fallback (Hafs) font.
  *   QCF.glyphHtml(parts, esc)  the HTML adapter: the glyph layer of a matched ayah (QCF.ayah result) as HTML.
  *       Each segment in ornate parentheses (drawn by the surrounding Quran font, as today) kept with its first and
- *       last word; each word <span class="w p582" data-t="official word">code</span>; a run of highlighted words in
- *       one <mark>. The caller puts it inside aria-hidden="true" next to the official text (see qcf-dom.js).
+ *       last word; each word <span class="w p582" style="--w:0.79em" data-t="official word">code</span> (the
+ *       width from the table: qcf.css lays the word out as an inline-block of that width, so the ayah has its final
+ *       size before its font loads); a run of highlighted words in one <mark>. The caller puts it inside
+ *       aria-hidden="true" next to the official text (see qcf-dom.js).
  *   QCF.html(table, surah, ayah, esc, QText)
- *       The whole ayah for a page: '<span class="qcf" data-p="582 583"><span class="qcf-t">official text (Hafs,
- *       QText.ayahHtml)</span><span class="qcf-g" aria-hidden="true">glyphs</span></span>'. When the ayah does not
- *       match the table it is QText.ayahHtml alone (the Hafs rendering). public/qcf.css shows the glyph layer only
- *       once public/qcf-dom.js has loaded every page font the ayah needs (class "on").
+ *       The whole ayah for a page: '<span class="qcf" data-p="582 583" data-qs="78"><span class="qcf-t">official text
+ *       (Hafs, QText.ayahHtml)</span><span class="qcf-g" aria-hidden="true">glyphs</span></span>'. When the ayah does
+ *       not match the table it is QText.ayahHtml alone (the Hafs rendering). public/qcf.css: until public/qcf-dom.js
+ *       has loaded every page font the ayah needs, the glyph layer holds the ayah's final space, invisible (never the
+ *       Hafs rendering first); class "on" shows the glyphs, class "hafs" (a font failed or took over ~1 s) the Hafs
+ *       rendering. data-qs: the surah, used to warm its other page fonts.
  *   QCF.layout(items, maxWidth, gap)  the canvas adapter: greedy right-to-left line breaking of measured items
  *       ({ w: width, ... }) -> [{ items, width }], each item given x: its distance from the line's right edge.
  *       Lines wrap to the given width (the card), not to the Mushaf's lines.
@@ -113,11 +119,11 @@
     var first = starts[k], last = ends[k + t.length], words = [];
     for (var i = first; i <= last; i++) {
       var r = J.r[i];
-      words.push({ pos: i + 1, page: e[i][0], code: e[i][1], text: e[i][2], hl: he > hs && r[0] < he && r[1] > hs, end: false });
+      words.push({ pos: i + 1, page: e[i][0], code: e[i][1], text: e[i][2], width: e[i][3], hl: he > hs && r[0] < he && r[1] > hs, end: false });
     }
     if (last === e.length - 2) {
       var m = e[e.length - 1];
-      words.push({ pos: e.length, page: m[0], code: m[1], text: m[2], hl: false, end: true });
+      words.push({ pos: e.length, page: m[0], code: m[1], text: m[2], width: m[3], hl: false, end: true });
     }
     return { ok: true, words: words };
   }
@@ -134,7 +140,7 @@
     var nb = function (x) { return '<span class="nb">' + x + "</span>"; };
     return parts.segments.map(function (p) {
       var ws = p.words, html = [], run = null;
-      var word = function (w) { return '<span class="w p' + w.page + '" data-t="' + (w.end ? "" : esc(w.text)) + '">' + esc(w.code) + "</span>"; };
+      var word = function (w) { return '<span class="w p' + w.page + '"' + (w.width > 0 ? ' style="--w:' + w.width + 'em"' : "") + ' data-t="' + (w.end ? "" : esc(w.text)) + '">' + esc(w.code) + "</span>"; };
       ws.forEach(function (w) {
         var x = word(w);
         if (w.hl) { if (run) run.push(x); else { run = [x]; html.push(run); } }
@@ -155,7 +161,7 @@
   function html(table, surah, ay, esc, QText) {
     var plain = QText.ayahHtml(ay, esc), parts = ayah(table, surah, ay);
     if (!parts.ok) return plain;
-    return '<span class="qcf" data-p="' + parts.pages.join(" ") + '"><span class="qcf-t">' + plain +
+    return '<span class="qcf" data-p="' + parts.pages.join(" ") + '" data-qs="' + Number(surah) + '"><span class="qcf-t">' + plain +
       '</span><span class="qcf-g" aria-hidden="true">' + glyphHtml(parts, esc) + "</span></span>";
   }
 

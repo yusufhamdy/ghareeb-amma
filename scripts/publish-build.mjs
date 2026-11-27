@@ -391,6 +391,8 @@ function staticHead(o) {
     // the ayah's Mushaf page fonts (word pages): the layer's stylesheet, and its loader, which fetches only the page
     // fonts the ayah needs and swaps it from Hafs v22 once they have loaded
     (o.qcf ? '<link rel="stylesheet" href="/qcf.css">\n' : "") +
+    // without JavaScript qcf-dom.js never runs: show the ayat in Hafs v22 (qcf.css keeps them invisible while waiting)
+    (o.qcf ? "<noscript><style>.qcf>.qcf-g{display:none}.qcf>.qcf-t{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;clip-path:none;white-space:normal}</style></noscript>\n" : "") +
     '<script src="/theme-boot.js"></script>\n<script src="/qfont.js"></script>\n' +
     (o.qcf ? '<script src="/qcf-dom.js" defer></script>\n' : "") +
     (o.jsonLd || []).map((j) => '<script type="application/ld+json">' + jsonLd(j) + "</script>\n").join("") +

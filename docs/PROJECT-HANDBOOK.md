@@ -103,8 +103,17 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
     loaded; `public/qcf.css` shows one layer or the other.
   - The official text stays in the DOM (visually hidden): screen readers, find in page and copy use it; the glyph
     layer is `aria-hidden`, and copying a selection gives the official text, never glyph codes.
-  - Fallbacks: until the fonts load, if one fails, or if an ayah does not match the table (for example a manually
-    typed ayah, decision SEC-2), the ayah is shown in Hafs v22 as before (with `qfont.js`).
+  - No flash of Hafs v22. Every glyph word carries its measured width (the table's fourth field, from
+    `scripts/qcf-widths.mjs`; `qcf.js` writes it as an inline-block width), so an ayah has its final size before its
+    page font loads. While the font loads the ayah is invisible, in its final space. Fonts already loaded in the page
+    (a registry in `qcf-dom.js`) show the glyphs in the same paint, for example moving between words or the quiz.
+  - Fallbacks: if a page font fails or isn't ready about 1 s after it started loading, or if an ayah does not match
+    the table (for example a manually typed ayah, decision SEC-2), the ayah is shown in Hafs v22 as before (with
+    `qfont.js`). Without JavaScript, the static pages show Hafs (a `<noscript>` style).
+  - Warming: after the first paint, in idle time, `qcf-dom.js` loads the page fonts of the released challenge days'
+    surahs and of the surah of every ayah on screen. It loads all 23 only when the connection allows (not Save-Data,
+    not cellular, not 2g/3g). The service worker serves them cache-first. Firebase serves the .ttf files with
+    Brotli (`Content-Encoding: br`): 3.7 MiB for all 23, from 6.6 MiB on disk.
   - The match check `node scripts/qcf-match.mjs` (ids and positions only) runs `--strict` in CI on pull requests; a
     publish build only lists a mismatch in its summary.
 - **Brand icon: one identity everywhere** ("glass, emerald, day"). `public/favicon.svg` (written by
@@ -121,7 +130,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v49`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
+- Cache name: **`ghareeb-pwa-v50`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
   `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
   `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
   page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other
@@ -130,7 +139,7 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   Navigations are network-first, falling back to the cached page, then `/index.html`, then a small offline page (503).
   `words.json`, `challenge.json`, `qcf-v2.json` and any `.js` or `.css` are network-first with `cache: 'no-cache'`, falling back to
   the cache. Everything else is cache-first.
-- `test/public-isolation.test.js` pins the cache name (currently asserts `v49`) and checks the worker precaches no
+- `test/public-isolation.test.js` pins the cache name (currently asserts `v50`) and checks the worker precaches no
   Firebase file. Bump the version on any release that changes cached files (runbook 10.6).
 
 ### 3.3 Content-Security-Policy and headers

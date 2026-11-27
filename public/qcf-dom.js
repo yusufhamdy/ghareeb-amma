@@ -3,28 +3,38 @@
  * need, swaps each ayah from the Hafs v22 rendering to its page glyphs once all its fonts have loaded, and keeps copy
  * on the official text. Needs public/qcf.css (not qcf.js). Exposes window.QCFDom.
  *
- * Markup (QCF.html): <span class="qcf" data-p="582 583"><span class="qcf-t">official text, Hafs (QText.ayahHtml)
- * </span><span class="qcf-g" aria-hidden="true">glyphs</span></span>. Until the element gets the class "on",
- * qcf.css shows only .qcf-t (the current rendering, with qfont.js's guard). With "on", .qcf-t stays in the DOM,
- * visually hidden (screen readers, find in page and copy use it) and .qcf-g shows the glyphs.
+ * Markup (QCF.html): <span class="qcf" data-p="582 583" data-qs="78"><span class="qcf-t">official text, Hafs
+ * (QText.ayahHtml)</span><span class="qcf-g" aria-hidden="true">glyphs</span></span>. States (qcf.css):
+ *   waiting (no class)  the glyph layer holds the ayah's final space, invisible (every glyph word has its measured
+ *                       width), while its page fonts load: never the Hafs rendering first, never empty boxes.
+ *   "on"                every page font it needs has loaded: the glyphs. When they are already loaded in this
+ *                       document (a loaded-pages registry), "on" is set in the same task the ayah is put in the DOM
+ *                       (the MutationObserver runs before the next paint), so the first paint already has the glyphs.
+ *   "hafs"              a font failed, or it was not ready WAIT ms after its loading started: the official text in
+ *                       Hafs v22, as before. It still switches to the glyphs when the font arrives later.
+ * In every state but "hafs" .qcf-t stays in the DOM, visually hidden (screen readers, find in page and copy use it).
  *
  *   QCFDom.table()        Promise of the table (/qcf-v2.json), fetched once; resolves null if it can't be loaded
  *                         (then QCF.html gives the Hafs rendering).
  *   QCFDom.load(pages)    Promise<boolean>: true when every page font of the list has loaded (each fetched once,
  *                         from /fonts/qcf-v2/, through the service worker cache); false if any failed.
- *   QCFDom.scan(root)     finds .qcf elements under root (default document) and swaps each one when it comes near the
- *                         viewport. Elements added later are found by a MutationObserver started on first use, so a
- *                         surface only has to put QCF.html in the DOM.
+ *   QCFDom.loaded(pages)  boolean, synchronous: every page font of the list has loaded in this document.
+ *   QCFDom.scan(root)     finds .qcf elements under root (default document) and handles each one: at once when its
+ *                         fonts are loaded, else when it comes near the viewport. Elements added later are found by a
+ *                         MutationObserver started on first use, so a surface only has to put QCF.html in the DOM.
  *   QCFDom.ready(pages)   for a canvas: same as load(), call it before drawing with QCF.family(page).
+ *   QCFDom.warm(surahs)   in idle time, after the first paint: loads the page fonts of those surahs (the site passes
+ *                         the released challenge days' surahs; every ayah on a page adds its own surah, data-qs), and
+ *                         all the pages first..last when the connection allows it (not Save-Data, not cellular, not
+ *                         2g/3g). Never blocks rendering; each font is fetched once.
  * After every swap a "qcf" event is dispatched on document (word-gap.js measures again).
- * A font that fails keeps its ayat in Hafs v22: glyphs are never shown before their font has loaded, so no
- * private-use code point is ever drawn by another font (no empty boxes).
+ * Glyphs are never shown before their font has loaded, so no private-use code point is ever drawn by another font.
  *
  * ASCII-ONLY (see test/arabic-guard.test.js).
  */
 (function () {
   "use strict";
-  var BASE = "/fonts/qcf-v2/", fonts = {}, loaded = {}, tableP = null, io = null, mo = null;
+  var BASE = "/fonts/qcf-v2/", WAIT = 1000, fonts = {}, loaded = {}, tableP = null, io = null, mo = null;
 
   function table() {
     if (!tableP) {
@@ -46,37 +56,89 @@
     return fonts[page];
   }
 
+  function nums(pages) { return (pages || []).map(Number).filter(function (p) { return p > 0; }); }
   function load(pages) {
-    var list = (pages || []).map(Number).filter(function (p) { return p > 0; });
-    return Promise.all(list.map(font)).then(function (ok) { return ok.every(Boolean); });
+    return Promise.all(nums(pages).map(font)).then(function (ok) { return ok.every(Boolean); });
+  }
+  function isLoaded(pages) {
+    var l = nums(pages);
+    return l.length > 0 && l.every(function (p) { return loaded[p]; });
   }
 
   function pagesOf(el) { return String(el.getAttribute("data-p") || "").split(/\s+/).filter(Boolean); }
 
+  function show(el) {
+    el.classList.remove("hafs");
+    el.classList.add("on");
+    try { document.dispatchEvent(new Event("qcf")); } catch (e) {}
+  }
+
   function swap(el) {
     if (el.__qcf) return;
     el.__qcf = 1;
+    // still invisible after WAIT ms (a slow or failing font): the Hafs rendering, as before, until the font arrives
+    var t = setTimeout(function () { if (!el.classList.contains("on")) el.classList.add("hafs"); }, WAIT);
     load(pagesOf(el)).then(function (ok) {
-      if (!ok) return; // stays on Hafs v22
-      el.classList.add("on");
-      try { document.dispatchEvent(new Event("qcf")); } catch (e) {}
+      clearTimeout(t);
+      if (ok) show(el); else el.classList.add("hafs");
     });
   }
 
   function watch(el) {
     if (el.__qcfw) return;
     el.__qcfw = 1;
-    // Every font it needs has already loaded (a surface drew the same ayah again, e.g. the quiz after an answer): show
-    // the glyphs at once, in the same task, so the ayah never flashes back to Hafs v22 (and its height never jumps).
-    var ps = pagesOf(el);
-    if (ps.length && ps.every(function (p) { return loaded[p]; })) {
+    var s = Number(el.getAttribute("data-qs"));
+    if (s > 0) warm([s]);
+    // Every font it needs has already loaded in this document (a later page view, the next word, the quiz after an
+    // answer): the glyphs at once, in the same task, so the first paint of this ayah already shows them.
+    if (isLoaded(pagesOf(el))) {
       el.__qcf = 1;
-      el.classList.add("on");
-      try { document.dispatchEvent(new Event("qcf")); } catch (e) {}
+      show(el);
       return;
     }
     if (io) io.observe(el); else swap(el);
   }
+
+  // Warming: after the first paint, in idle time; never blocks rendering.
+  var idle = window.requestIdleCallback ? function (f) { window.requestIdleCallback(f, { timeout: 4000 }); } : function (f) { setTimeout(f, 300); };
+  var warmQ = {}, warmT = false, allDone = false, painted = false;
+  function roomy() {
+    var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!c) return true;
+    if (c.saveData) return false;
+    if (c.type === "cellular") return false;
+    return !/(^|-)(2g|3g)$/.test(String(c.effectiveType || ""));
+  }
+  function flush() {
+    warmT = false;
+    table().then(function (t) {
+      if (!t) return;
+      var want = {};
+      Object.keys(t.ayat).forEach(function (k) {
+        if (warmQ[k.split(":")[0]]) t.ayat[k].forEach(function (e) { want[e[0]] = 1; });
+      });
+      var list = Object.keys(want).map(Number).sort(function (a, b) { return a - b; });
+      if (!allDone && roomy()) { allDone = true; for (var p = t.first; p <= t.last; p++) if (!want[p]) list.push(p); }
+      // one font at a time, each in its own idle slot
+      (function next() {
+        var p = list.shift();
+        if (p == null) return;
+        idle(function () { font(p).then(next, next); });
+      })();
+    });
+  }
+  function warm(surahs) {
+    (surahs || []).forEach(function (s) { s = Number(s); if (s > 0) warmQ[s] = 1; });
+    if (warmT) return;
+    warmT = true;
+    if (painted) idle(flush);
+  }
+  function afterPaint() {
+    painted = true;
+    if (warmT) idle(flush); else { warmT = true; idle(flush); }
+  }
+  if (document.readyState === "complete") setTimeout(afterPaint, 0);
+  else window.addEventListener("load", function () { setTimeout(afterPaint, 0); });
 
   function scan(root) {
     if (!io && window.IntersectionObserver) {
@@ -122,7 +184,7 @@
     ev.preventDefault();
   });
 
-  window.QCFDom = { table: table, load: load, ready: load, scan: scan, BASE: BASE };
+  window.QCFDom = { table: table, load: load, ready: load, loaded: isLoaded, scan: scan, warm: warm, BASE: BASE, WAIT: WAIT };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { scan(); });
   else scan();
 })();
