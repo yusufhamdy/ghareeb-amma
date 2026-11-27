@@ -500,6 +500,36 @@ svg.i-cv{transform:none!important;transition:none!important}:is(svg.im,svg.im *,
 :is(a.g,button.g,.btn,.opt,.pnb,.chip,a.row):hover,:is(a.g,button.g,.btn,.opt,.pnb,.chip):active,a.row:hover{transform:none!important}.so:before{transform:none!important}
 .reelstrip{transition:opacity .3s}
 }
+/* Card grids with fewer cards than columns (a single short row): the cards are centred and keep their full-row width.
+   The grid keeps its own 1fr columns, so each card has exactly the width it has in a full row; the short row is moved
+   to the middle by (columns - cards) / 2 column steps (a step = one track + the column gap; a percentage inset of a
+   grid item is a share of its track). A full row, or a grid of two or more rows, matches none of these rules and is
+   laid out as before. --n: the number of cards (1-9). The gaps are the grids' own: word cards 12px, surahs 28px
+   (glass) / 12px (shade), quiz options 12px, challenge days 0 (glass; shade's auto-fill tracks become auto-fit, which
+   is the same layout when the first row is full and centres a short row). */
+:is(.snav>.list.rs,.list.sl,.opts,.cg):not(:has(>:nth-child(2))){--n:1}
+:is(.snav>.list.rs,.list.sl,.opts,.cg):has(>:nth-child(2)):not(:has(>:nth-child(3))){--n:2}
+:is(.list.sl,.cg):has(>:nth-child(3)):not(:has(>:nth-child(4))){--n:3}
+.cg:has(>:nth-child(4)):not(:has(>:nth-child(5))){--n:4}
+.cg:has(>:nth-child(5)):not(:has(>:nth-child(6))){--n:5}
+.cg:has(>:nth-child(6)):not(:has(>:nth-child(7))){--n:6}
+.cg:has(>:nth-child(7)):not(:has(>:nth-child(8))){--n:7}
+.cg:has(>:nth-child(8)):not(:has(>:nth-child(9))){--n:8}
+.cg:has(>:nth-child(9)):not(:has(>:nth-child(10))){--n:9}
+body:not(.shade) .cg:not(:has(>:nth-child(6)))>*{position:relative;inset-inline-start:calc((6 - var(--n)) / 2 * 100%)}
+.shade .cg.cg{grid-template-columns:repeat(auto-fit,44px)!important}
+.shade .list.sl:not(:has(>:nth-child(2)))>*{inset-inline-start:calc((2 - var(--n)) / 2 * (100% + 12px))}
+@media(min-width:601px){
+.snav>.list.rs:not(:has(>:nth-child(2)))>*,.opts:not(:has(>:nth-child(2)))>*{position:relative;inset-inline-start:calc((2 - var(--n)) / 2 * (100% + 12px))}
+.list.sl:not(:has(>:nth-child(2)))>*{position:relative;inset-inline-start:calc((2 - var(--n)) / 2 * (100% + 28px))}
+body:not(.shade) .cg:not(:has(>:nth-child(10)))>*{position:relative;inset-inline-start:calc((10 - var(--n)) / 2 * 100%)}
+.shade .list.sl:not(:has(>:nth-child(3)))>*{inset-inline-start:calc((3 - var(--n)) / 2 * (100% + 12px))}
+}
+@media(min-width:1025px){
+.snav>.list.rs:not(:has(>:nth-child(3)))>*{position:relative;inset-inline-start:calc((3 - var(--n)) / 2 * (100% + 12px))}
+.list.sl:not(:has(>:nth-child(3)))>*{position:relative;inset-inline-start:calc((3 - var(--n)) / 2 * (100% + 28px))}
+.shade .list.sl:not(:has(>:nth-child(4)))>*{inset-inline-start:calc((4 - var(--n)) / 2 * (100% + 12px))}
+}
 </style>
 </head>
 <body>
