@@ -115,7 +115,8 @@ try {
     const r = run(work);
     ok(r.next === "commit and deploy", "commit and deploy (" + r.next + ")");
     const c = changed(before, treeFiles(path.join(work, "site")));
-    ok(c.length === 3 && c.includes("words.json") && c.includes("rev.json") && c.filter((f) => f.startsWith("word/")).length === 1, "changed: " + c.join(", "));
+    const cm = c.filter((f) => f !== "sitemap.xml"); // the sitemap changes only when the build date differs from the page's stored date
+    ok(cm.length === 4 && cm.includes("words.json") && cm.includes("rev.json") && cm.includes(".sitemap-dates.json") && cm.filter((f) => f.startsWith("word/")).length === 1, "changed: " + c.join(", "));
     ok(readJson(path.join(work, "site", "rev.json")).rev === PUBLISHED + 1, "rev.json is the new rev");
     const again = run(work);
     ok(again.next === "nothing", "the next run finds the site current (" + again.next + ")");

@@ -615,7 +615,8 @@ export function renderLegalPage(entry) {
   );
 }
 
-function buildSitemap(records, surahList) {
+function buildSitemap(records, surahList, dates) {
+  const lm = (u) => (dates && dates[u] ? "<lastmod>" + dates[u].lastmod + "</lastmod>" : "");
   // The committed sitemap lists each surah's words in ascending ayah order
   // (the static pages keep the raw data order). Stable tie-break on data index.
   const ordered = records
@@ -625,15 +626,15 @@ function buildSitemap(records, surahList) {
   let xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    "<url><loc>" + SITE + "/</loc><priority>1.0</priority></url>\n";
+    "<url><loc>" + SITE + "/</loc>" + lm("/") + "<priority>1.0</priority></url>\n";
   for (const r of ordered) {
-    xml += "<url><loc>" + SITE + "/word/" + r.slug + ".html</loc><priority>0.6</priority></url>\n";
+    xml += "<url><loc>" + SITE + "/word/" + r.slug + ".html</loc>" + lm("/word/" + r.slug + ".html") + "<priority>0.6</priority></url>\n";
   }
   for (const s of surahList || []) {
-    xml += "<url><loc>" + SITE + "/surah/" + s.slug + ".html</loc><priority>0.5</priority></url>\n";
+    xml += "<url><loc>" + SITE + "/surah/" + s.slug + ".html</loc>" + lm("/surah/" + s.slug + ".html") + "<priority>0.5</priority></url>\n";
   }
   for (const entry of LEGAL) {
-    xml += "<url><loc>" + SITE + "/" + entry.slug + "/</loc><priority>0.4</priority></url>\n";
+    xml += "<url><loc>" + SITE + "/" + entry.slug + "/</loc>" + lm("/" + entry.slug + "/") + "<priority>0.4</priority></url>\n";
   }
   return xml + "</urlset>\n";
 }
@@ -876,6 +877,9 @@ export function checkSiteFiles(files, wordCount) {
   for (const u of locs) { const f = fileOf(u); if (f && !(f in files)) p.push("the sitemap lists " + u + ", which is not generated"); }
   const listed = new Set(locs.map(fileOf));
   for (const f of Object.keys(files)) if (/^(word|surah)\/[^/]+\.html$/.test(f) && !listed.has(f)) p.push(f + " is not in the sitemap");
+  const urls = [...String(files["sitemap.xml"] || "").matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => m[1]);
+  const noDate = urls.filter((u) => !/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/.test(u)).length;
+  if (noDate) p.push(noDate + " sitemap URLs have no valid <lastmod>");
   if (p.length) throw new Error("refusing to publish; generated site:\n" + p.join("\n"));
 }
 
@@ -979,8 +983,44 @@ export function makeShareImages(site, ids) {
   if (r.status !== 0) throw new Error("share images failed (exit " + r.status + ")\n" + String(r.stdout || "").slice(-2000) + String(r.stderr || "").slice(-2000));
 }
 
+// The sitemap's <lastmod>: the date each page's content last changed, kept in public/.sitemap-dates.json
+// ({ "<path>": { lastmod: "YYYY-MM-DD", hash } }; a dotfile, so Hosting doesn't serve it, and Publish commits it with
+// the rest of public/). A page whose content hash is unchanged keeps its date; a changed or new page gets `today`
+// (UTC). So the dates don't move on a rebuild or a deploy, only when a page changes. The home page's content is
+// index.html with the words; every other page is its own file.
+export const DATES_FILE = ".sitemap-dates.json";
+export function pageOfUrl(u) {
+  return u === "/" ? ["index.html", "words.json"] : [u.endsWith("/") ? u.slice(1) + "index.html" : u.slice(1)];
+}
+export function sitemapDates(files, urls, prev, today) {
+  const out = {};
+  for (const u of urls) {
+    const h = crypto.createHash("sha256");
+    for (const f of pageOfUrl(u)) { h.update(f); h.update("\u0000"); h.update(String(files[f] == null ? "" : files[f])); h.update("\u0000"); }
+    const hash = h.digest("hex").slice(0, 32);
+    const was = prev && prev[u];
+    out[u] = { lastmod: was && was.hash === hash && /^\d{4}-\d{2}-\d{2}$/.test(was.lastmod) ? was.lastmod : today, hash };
+  }
+  return out;
+}
+function readDates(p) {
+  try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch (e) { return {}; }
+}
+
+// The home page's links to every surah page, in the initial HTML of public/index.html between the surah-links markers,
+// inside the container the app replaces: crawlers that don't run scripts (Bing) find every surah page from the home
+// page. Hidden when scripts run (.sfb in index.html), so the page looks the same. The names are the surah pages' own.
+const SURAH_LINKS = /<!-- surah-links:begin -->[\s\S]*?<!-- surah-links:end -->/;
+export function indexHtml(surahList, template) {
+  const html = template == null ? fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8") : template;
+  if (!SURAH_LINKS.test(html)) throw new Error("public/index.html has no surah-links markers");
+  const links = [...surahList].sort((a, b) => a.no - b.no).map((x) => '<a href="/surah/' + x.slug + '.html">' + esc(x.name) + "</a>").join("");
+  return html.replace(SURAH_LINKS, () => '<!-- surah-links:begin --><nav class="sfb" aria-label="\u0627\u0644\u0633\u0648\u0631">' + links + "</nav><!-- surah-links:end -->");
+}
+
 // Build the whole site in memory. Returns { files, hash, wordCount }.
-export function buildSite(surahs, challengeState) {
+// opt.dates: the previous dates (default: the committed public/.sitemap-dates.json); opt.today: "YYYY-MM-DD" (UTC now)
+export function buildSite(surahs, challengeState, opt = {}) {
   validateInput(surahs);
   const records = buildRecords(surahs);
   validateRecords(records);
@@ -988,11 +1028,16 @@ export function buildSite(surahs, challengeState) {
   const files = {};
   files["words.json"] = JSON.stringify(surahs, null, 2);
   files["challenge.json"] = JSON.stringify(publicChallenge(challengeState), null, 1);
-  files["sitemap.xml"] = buildSitemap(records, surahList);
   files["css/app.css"] = appCss();
+  files["index.html"] = indexHtml(surahList);
   for (const r of records) files["word/" + r.slug + ".html"] = renderWordPage(r);
   for (const s of surahList) files["surah/" + s.slug + ".html"] = renderSurahPage(s);
   for (const entry of LEGAL) files[entry.slug + "/index.html"] = renderLegalPage(entry);
+  const urls = ["/"].concat(records.map((r) => "/word/" + r.slug + ".html"), surahList.map((s) => "/surah/" + s.slug + ".html"), LEGAL.map((e) => "/" + e.slug + "/"));
+  const prev = opt.dates || readDates(path.join(ROOT, "public", DATES_FILE));
+  const dates = sitemapDates(files, urls, prev, opt.today || new Date().toISOString().slice(0, 10));
+  files[DATES_FILE] = JSON.stringify(dates, null, 1) + "\n";
+  files["sitemap.xml"] = buildSitemap(records, surahList, dates);
   return { files, hash: hashFiles(files), wordCount: records.length, surahs: surahList, qcf: qcfReport(records) };
 }
 

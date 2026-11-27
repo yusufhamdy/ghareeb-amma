@@ -95,7 +95,7 @@ test("F1: every surah links to its neighbours and the boundaries are disabled", 
     await page.waitForFunction(() => typeof S !== "undefined" && S.length > 1);
     const data = await page.evaluate((labels) => {
       const info = (el) => el ? {
-        tag: el.tagName, href: el.getAttribute("href"), dis: el.getAttribute("aria-disabled"),
+        tag: el.tagName, href: el.getAttribute("data-r"), dis: el.getAttribute("aria-disabled"),
         op: el.style.opacity, pe: el.style.pointerEvents, text: (el.textContent || "").trim(), svg: !!el.querySelector("svg"),
       } : null;
       const out = [];

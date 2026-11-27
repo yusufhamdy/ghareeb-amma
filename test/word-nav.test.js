@@ -93,11 +93,11 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
     // ---- surah list: count + data order (app's own ordering) ----
     await nav("#/surahs", () => {
       const r = document.querySelector("#app .list .row");
-      return location.hash === "#/surahs" && r && r.getAttribute("href").indexOf("#/surah/") === 0;
+      return location.hash === "#/surahs" && r && r.getAttribute("data-r").indexOf("#/surah/") === 0;
     });
     const surahs = await page.$$eval("#app .list .row", (rows) => rows.map((r) => {
       const sp = r.querySelectorAll("span");
-      return { num: +r.getAttribute("href").split("/").pop(), name: sp[1] ? sp[1].textContent.trim() : "" };
+      return { num: +r.getAttribute("data-r").split("/").pop(), name: sp[1] ? sp[1].textContent.trim() : "" };
     }));
     assert.equal(surahs.length, entries.length, "surah count matches words.json entries");
     assert.ok(surahs.every((s, i) => i === 0 || s.num > surahs[i - 1].num), "surahs are in ascending data order");
@@ -109,10 +109,10 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
       // this surah's page (avoids matching a stale list from the previous route)
       await nav("#/surah/" + s.num, (n) => {
         const r = document.querySelector("#app .list .row");
-        return location.hash === "#/surah/" + n && r && r.getAttribute("href") === "#/word/" + n + "-0";
+        return location.hash === "#/surah/" + n && r && r.getAttribute("data-r") === "#/word/" + n + "-0";
       }, s.num);
       bySurah[s.num] = await page.$$eval("#app .list .row", (rows) => rows.map((r) => ({
-        id: r.getAttribute("href").split("/").pop(),
+        id: r.getAttribute("data-r").split("/").pop(),
         word: r.querySelector(".w").textContent.trim(),
         meaning: r.querySelector(".t div").textContent.trim(),
         pill: r.querySelector(".t .m").textContent.trim(),
@@ -144,7 +144,7 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
           const chev = (el) => el && el.querySelector("path") ? (el.querySelector("path").getAttribute("d") || "") : "";
           const rect = (el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
           return {
-            pill: { href: pill && pill.getAttribute("href"), text: pill ? pill.textContent.trim() : null, chev: chev(pill) },
+            pill: { href: pill && pill.getAttribute("data-r"), text: pill ? pill.textContent.trim() : null, chev: chev(pill) },
             cards: cards.map((c) => {
               const mn = c.querySelector(".mn");
               return {
@@ -156,9 +156,9 @@ test("STEP 4: word-page navigation, pill, split cards, button order", { timeout:
                 m: (c.querySelector(".m") || {}).textContent ? c.querySelector(".m").textContent.trim() : null,
               };
             }),
-            pv: pv ? { tag: pv.tagName, href: pv.getAttribute("href"), text: pv.textContent.trim(), ad: pv.getAttribute("aria-disabled"), op: pv.style.opacity, chev: chev(pv), r: rect(pv), vis: pv.offsetWidth > 0 && pv.offsetHeight > 0 } : null,
-            nx: nx ? { tag: nx.tagName, href: nx.getAttribute("href"), text: nx.textContent.trim(), ad: nx.getAttribute("aria-disabled"), op: nx.style.opacity, chev: chev(nx), r: rect(nx), vis: nx.offsetWidth > 0 && nx.offsetHeight > 0 } : null,
-            acts: qa("#app .acts.v3 > *:not(.pr), #app .acts.v3 > .pr > *").map((a) => ({ tag: a.tagName, href: a.getAttribute("href"), da: a.getAttribute("data-a"), did: a.getAttribute("data-id") })),
+            pv: pv ? { tag: pv.tagName, href: pv.getAttribute("data-r"), text: pv.textContent.trim(), ad: pv.getAttribute("aria-disabled"), op: pv.style.opacity, chev: chev(pv), r: rect(pv), vis: pv.offsetWidth > 0 && pv.offsetHeight > 0 } : null,
+            nx: nx ? { tag: nx.tagName, href: nx.getAttribute("data-r"), text: nx.textContent.trim(), ad: nx.getAttribute("aria-disabled"), op: nx.style.opacity, chev: chev(nx), r: rect(nx), vis: nx.offsetWidth > 0 && nx.offsetHeight > 0 } : null,
+            acts: qa("#app .acts.v3 > *:not(.pr), #app .acts.v3 > .pr > *").map((a) => ({ tag: a.tagName, href: a.getAttribute("data-r"), da: a.getAttribute("data-a"), did: a.getAttribute("data-id") })),
             colsR: rect(cols),
             grid: getComputedStyle(q("#app .cw")).gridTemplateAreas.replace(/\s+/g, " ").trim(),
           };

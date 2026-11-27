@@ -139,7 +139,7 @@ test("publish generator reproduces the committed static site byte-for-byte", asy
     );
   }
   const surahKeys = Object.values(seo.SURAH_SLUG).map((s) => "surah/" + s + ".html");
-  const expected = ["words.json", "challenge.json", "sitemap.xml", "css/app.css"]
+  const expected = ["words.json", "challenge.json", "sitemap.xml", "css/app.css", "index.html", ".sitemap-dates.json"]
     .concat(fileSlugs.map((f) => "word/" + f + ".html"))
     .concat(surahKeys)
     .concat(legal.LEGAL.map((e) => e.slug + "/index.html"))

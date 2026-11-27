@@ -293,7 +293,7 @@ test("B6: action buttons carry icons and forward arrows sit last", { timeout: 12
     await page.waitForSelector('#app [data-a="card"]', { timeout: 20000 });
     assert.ok((await btn('#app [data-a="card"]')).svg, "save-as-image button has the download icon");
     assert.ok((await btn('#app [data-a="rnd"]')).svg, "word-page draw button has the shuffle icon");
-    assert.ok((await btn('#app a.btn[href^="#/surah/"]')).svg, "other-words button has the book icon");
+    assert.ok((await btn('#app a.btn[data-r^="#/surah/"]')).svg, "other-words button has the book icon");
 
     await page.evaluate(() => { location.hash = "#/day/1"; });
     await page.waitForSelector("#app .cw.dnav .nx", { timeout: 20000 });

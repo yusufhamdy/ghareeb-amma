@@ -122,7 +122,8 @@ async function syntheticMode() {
     const r1 = publish(work);
     ok(r1.status === 0 && /publish-build: changed/.test(r1.out), "1. the publish ran (exit " + r1.status + ")");
     const c1 = changedFiles(before, treeFiles(path.join(work, "site")));
-    ok(JSON.stringify(c1) === JSON.stringify(["rev.json", "word/" + slug + ".html", "words.json"]), "1. changed files: " + c1.join(", "));
+    // the page's date too (and the sitemap when the build date differs from the page's stored date)
+    ok(JSON.stringify(c1.filter((f) => f !== "sitemap.xml")) === JSON.stringify([".sitemap-dates.json", "rev.json", "word/" + slug + ".html", "words.json"]), "1. changed files: " + c1.join(", "));
     ok(r1.summary && r1.summary.rev === 8 && r1.summary.images.length === 0 && r1.summary.remove.length === 0, "1. rev 8, no share image, nothing removed");
     ok(fs.readFileSync(path.join(work, "firebase.json"), "utf8") === fbBefore, "1. firebase.json unchanged (no redirect)");
     const md = fs.readFileSync(path.join(work, "report.md"), "utf8");
