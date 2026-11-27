@@ -671,6 +671,39 @@ Commit `firebase.json` with the change, and say in the PR which hash changed and
 
 Section 8: rehearse first, then restore as a new version through the admin, with the owner's approval.
 
+### 10.10 Adding a challenge day's video links (owner)
+
+`node scripts/reel-links.mjs --day N` (`scripts/reel-links.mjs`, logic in `scripts/reel-links-core.js`) finds day N's
+Instagram reel, TikTok video and YouTube Short on the owner's profiles, writes them to Firestore and publishes them.
+
+- **What it may touch:** only day N's **empty** link fields (`reelIg`, `reelTt`, `reelYt`) in `public/challenge`. It
+  writes in one transaction that re-reads the document, refuses if it changed since the owner saw the links, and
+  verifies that every other field is unchanged. It never overwrites a link that is already set (it reports it; change
+  it in the admin), and it accepts only https links of one post on the platform's own host
+  (`instagram.com/reel/...`, `tiktok.com/@user/video/...`, `youtube.com/shorts/...`). Nothing else in Firestore:
+  no other day, no word, no note.
+- **Approval:** the owner running it is the owner's approval for that write and for the one Publish run it starts
+  (on `main`, `allow_removals` empty). It then checks that the live day N page shows the links (a day that is still
+  locked is checked with the page clock set to its opening time). An agent never runs it against production.
+- **How it finds the links:** the newest post whose caption or title names day N ("<al-yawm> N", the ordinal word up
+  to day 30, or "#<al-yawm>_N"; Arabic-Indic or Western digits). Instagram: the reels tab, each reel's own page,
+  newest first by the time in its shortcode. TikTok: the profile, newest first by the time in the video id. YouTube:
+  the Shorts tab only (the challenge videos are Shorts), saved as `https://www.youtube.com/shorts/<id>`; the browser
+  runs in Arabic, because YouTube shows a title auto-translated into the viewer's language. Read only, one page at a
+  time with pauses; it never likes, comments, follows, posts or types, and takes no screenshots.
+- **Outside the repository** (on the owner's machine only): the handles,
+  `%LOCALAPPDATA%\ghareeb-reel-links\config.json`, and the browser profile with the owner's sign-ins,
+  `%LOCALAPPDATA%\ghareeb-reel-links-profile`. The script never asks for or stores a password.
+- **First run:** `node scripts/reel-links.mjs --login` opens a normal window with the three sign-in pages; the owner
+  signs in and closes it. Then `--day N` runs headless, prints the links and asks for `yes` (or pass `--yes`).
+  `--find-only` searches without reading or writing Firestore; `--headed` searches in a visible window when a platform
+  asks for a check; `--no-publish` leaves the publish to the next scheduled run.
+- **Credentials:** firebase-admin with the owner's application default credentials (`gcloud auth
+  application-default login`), as `scripts/fix-ayat-firestore.mjs`.
+- **Tests:** `test/reel-links.test.js` (day matching for days 1-30 in every form, link checks, the write plan; Shorts
+  links pass the admin, the publish build and the site's buttons) and `test/reel-links-cmd-emulator.test.js` (the
+  command against the Firestore emulator).
+
 ## 11. Hard rules for any agent or developer
 
 These are also in `AGENTS.md`.
