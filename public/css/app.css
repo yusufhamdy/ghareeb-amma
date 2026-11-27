@@ -524,6 +524,8 @@ body:not(.shade) .cg:has(>:last-child:nth-child(10n+9))>:nth-last-child(-n+9){po
 .shade .list.sl:has(>:last-child:nth-child(4n+2))>:nth-last-child(-n+2){position:relative;inset-inline-start:calc(1 * (100% + 12px))}
 .shade .list.sl:has(>:last-child:nth-child(4n+3))>:nth-last-child(-n+3){position:relative;inset-inline-start:calc(0.5 * (100% + 12px))}
 }
+/* the surah links in the initial HTML (crawlers without JS): hidden when scripts run, the app replaces them */
+.sfb{display:none}
 
 footer{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--ln);text-align:center}
 .para{font-size:17px;line-height:1.95;margin:0 0 14px}

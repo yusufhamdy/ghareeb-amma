@@ -136,10 +136,22 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   single column, so they are always full rows.
 - Static SEO pages (`public/word/*.html`, `public/surah/`, legal pages) are plain HTML. The sitemap has 106 URLs: home,
   73 word pages, 28 surah pages and 4 legal pages.
+- **Crawlable links.** Search engines ignore everything after `#`, so the app's surah and word links carry the static
+  page as `href` (`/surah/<slug>.html`, `/word/<slug>.html`, the slugs the publish build uses) and the app route in
+  `data-r`. A plain left click is routed in the app (`location.hash = data-r`, no page load); Ctrl/Cmd/middle click
+  and "open in new tab" open the static page. The initial HTML of `public/index.html` also links every surah page
+  (between the `surah-links` markers, inside `#app`, which the app replaces): hidden when scripts run (`.sfb`), shown
+  by a `<noscript>` style without them. `scripts/publish-build.mjs` writes that block from the data, so a publish that
+  adds or removes a surah updates it.
+- **Sitemap dates.** Every URL has a `<lastmod>`: the date its content last changed, kept with a content hash in
+  `public/.sitemap-dates.json` (a dotfile: Hosting doesn't serve it; Publish commits it). A page whose content is
+  unchanged keeps its date; a changed or new page gets the build date (UTC). So a rebuild or a deploy never moves the
+  dates. The home page's content is `index.html` with `words.json`. The dates were seeded on 2026-11-27 from the last
+  commit that changed each page.
 
 ### 3.2 Service worker (`public/sw.js`)
 
-- Cache name: **`ghareeb-pwa-v51`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
+- Cache name: **`ghareeb-pwa-v52`**. On install it precaches `/`, `/index.html`, `/favicon.svg` (the header logo) and the icons, `/css/app.css`,
   `/theme-boot.js`, `/quiz-core.js`, `/word-gap.js`, `/qfont.js`, `/qtext.js`, `/qcf.js`, `/qcf-dom.js`, `/qcf.css`,
   `/qcf-v2.json`, `/fonts/fonts.css`, the Hafs and Amiri font files, `/words.json` and `/challenge.json`. The QCF V2
   page fonts (`/fonts/qcf-v2/`) are cached on first use and then served from the cache. It calls `skipWaiting()`; on activate it deletes every other

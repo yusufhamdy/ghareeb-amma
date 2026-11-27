@@ -445,7 +445,7 @@ test("H4: the surah heading is a name line over a 15px count line, then the word
         await page.waitForSelector("#app .list.sl .row", { timeout: 20000 });
         // the list already renders each surah's name and word count
         const list = await page.$$eval("#app .list.sl .row", (rows) => rows.map((r) => ({
-          href: r.getAttribute("href"),
+          href: r.getAttribute("data-r"),
           name: (r.querySelector(".q") || {}).textContent || "",
           count: (r.querySelector(".m") || {}).textContent || "",
         })));

@@ -39,7 +39,7 @@ function siteCopy() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gq-publish-"));
   const site = path.join(dir, "site");
   fs.mkdirSync(site);
-  for (const f of ["words.json", "challenge.json", "sitemap.xml"]) fs.copyFileSync(path.join(PUBLIC, f), path.join(site, f));
+  for (const f of ["words.json", "challenge.json", "sitemap.xml", "index.html", ".sitemap-dates.json"]) fs.copyFileSync(path.join(PUBLIC, f), path.join(site, f));
   for (const d of ["word", "surah", "css", ...LEGAL]) fs.cpSync(path.join(PUBLIC, d), path.join(site, d), { recursive: true });
   fs.mkdirSync(path.join(site, "og", "word"), { recursive: true });
   for (const f of fs.readdirSync(path.join(PUBLIC, "og", "word"))) fs.writeFileSync(path.join(site, "og", "word", f), "");
