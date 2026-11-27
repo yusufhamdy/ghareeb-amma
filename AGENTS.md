@@ -43,6 +43,14 @@ the handbook describe what is deployed now.
 9. Don't stop mid-step during a release step. When blocked, report and wait.
 10. Refer to people by role (owner, admin), not by name or e-mail address.
 
+## Challenge video links command
+
+`node scripts/reel-links.mjs --day N` adds day N's video links (Instagram, TikTok, YouTube Shorts) from the owner's
+profiles. It may touch only day N's **empty** link fields (`reelIg`, `reelTt`, `reelYt`) in Firestore
+`public/challenge` (never a link that is already set, and nothing else), then starts one Publish run on `main`. The
+owner running it is the owner's approval for that write and that Publish run. It is the owner's command: an agent never
+runs it against production (tests use the emulator). Handbook 10.10.
+
 ## Before you open a PR
 
 ```
