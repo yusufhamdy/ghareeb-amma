@@ -157,8 +157,12 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 - **Sitemap dates.** Every URL has a `<lastmod>`: the date its content last changed, kept with a content hash in
   `public/.sitemap-dates.json` (a dotfile: Hosting doesn't serve it; Publish commits it). A page whose content is
   unchanged keeps its date; a changed or new page gets the build date (UTC). So a rebuild or a deploy never moves the
-  dates. The home page's content is `index.html` with `words.json`. The dates were seeded on 2026-11-27 from the last
-  commit that changed each page.
+  dates. The hash covers only the page's own content, the data it shows, never its HTML (`pageContents` in
+  `scripts/publish-build.mjs`), so a template change (scripts, CSS, head tags, `?v=` strings, the footer year) moves no
+  date: word page = headword, ayah, meaning, source, surah and ayah label; surah page = its name and its words; legal
+  page = its title and paragraphs; home = `words.json` with the home's `<title>` and meta description. The dates were
+  seeded on 2026-11-27 from the last commit that changed each page; on 2026-11-28 the hashes moved to this scheme
+  with every date kept.
 - **Home title, description and structured data.** The home `<title>`, `og:title` and `twitter:title` carry the
   Arabic name and "Ghareeb Al Quran"; the description, `og:description` and `twitter:description` say the same thing
   in one sentence. The app's `pageTitle()` returns the same home title, so it doesn't change it back after the app

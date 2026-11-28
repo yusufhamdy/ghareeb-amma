@@ -71,19 +71,32 @@ test("every sitemap URL has a valid <lastmod>, the dates file covers exactly the
   assert.strictEqual(Object.keys(dates).length, urls.length);
 });
 
-test("a changed page gets a new date; every other page keeps its date", async () => {
+test("a meaning edit on one word moves only that word's date and the home's (words.json changed)", async () => {
   const mod = await loadPublish();
   const words = JSON.parse(JSON.stringify(WORDS));
   words[0].meanings[0] = String(words[0].meanings[0]) + " .";
   const { files } = mod.buildSite(words, CHALLENGE, { today: "2099-01-01" });
   const before = JSON.parse(read(mod.DATES_FILE)), after = JSON.parse(files[mod.DATES_FILE]);
   const moved = Object.keys(after).filter((u) => after[u].lastmod !== before[u].lastmod).sort();
-  const changed = Object.keys(after).filter((u) => mod.pageOfUrl(u).some((f) => files[f] !== read(f))).sort();
-  assert.ok(moved.includes("/"), "the home page (its words changed)");
-  assert.strictEqual(moved.filter((u) => u.startsWith("/word/")).length, 1, "one word page");
-  assert.deepStrictEqual(moved, changed, "exactly the pages whose content changed");
-  assert.ok(moved.length <= 3, "nothing else");
+  const changedWordPages = Object.keys(files).filter((f) => f.startsWith("word/") && files[f] !== read(f)).map((f) => "/" + f);
+  assert.strictEqual(changedWordPages.length, 1, "the edit changes one word page");
+  assert.deepStrictEqual(moved, ["/"].concat(changedWordPages).sort(), "that word page and the home page only");
   assert.ok(moved.every((u) => after[u].lastmod === "2099-01-01"));
+});
+
+test("a template-only change (a script tag, CSS, a ?v= string) moves no date", async () => {
+  const mod = await loadPublish();
+  const tpl = read("index.html");
+  assert.ok(tpl.includes("?v=2") && tpl.includes("</style>") && tpl.includes("</body>"));
+  const changed = tpl.split("?v=2").join("?v=3").replace("</style>", "#zz-test{color:red}</style>").replace("</body>", '<script src="/zz-test.js" defer></script></body>');
+  const { files } = mod.buildSite(WORDS, CHALLENGE, { today: "2099-01-01", template: changed });
+  assert.notStrictEqual(files["index.html"], read("index.html"), "the home HTML did change");
+  assert.strictEqual(files[mod.DATES_FILE], read(mod.DATES_FILE), "every date and hash is kept");
+  assert.strictEqual(files["sitemap.xml"], read("sitemap.xml"));
+  // the word, surah and legal pages' dates hash their data, never their HTML
+  const recs = mod.buildSite(WORDS, CHALLENGE, { today: "2099-01-01" });
+  const contents = mod.pageContents(WORDS, [], recs.surahs, files["index.html"]);
+  assert.ok(Object.keys(contents).length > 1 && !/<script|<link|<style|\?v=/.test(JSON.stringify(Object.entries(contents).filter(([u]) => u !== "/"))), "no markup in the page contents");
 });
 
 test("app links: static hrefs that exist, in-app routing on a plain click, the static page on Ctrl+click", { timeout: 240000 }, async () => {
