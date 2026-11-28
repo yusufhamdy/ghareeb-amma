@@ -51,7 +51,7 @@ const legalT = {}; for (const k of ["about", "privacy", "terms", "rights"]) lega
       // ---- M3 titles ----
       for (const x of D.W) { await p.evaluate((h) => { location.hash = h; }, "#/word/" + x.id); const t = await p.evaluate(() => document.title); ok("M3", t === W2F[x.id].title, `${w} word ${x.id} title ${t} vs ${W2F[x.id].title}`); }
       for (const s of D.S) { await p.evaluate((h) => { location.hash = h; }, "#/surah/" + s.num); const t = await p.evaluate(() => document.title); ok("M3", t === S2F[s.num].title, `${w} surah ${s.num} title ${t}`); }
-      const TT = { "#/": "غريب القرآن - معاني كلمات جزء عم", "#/surahs": "السور | غريب القرآن", "#/challenge": "تحدي غريب عمّ | غريب القرآن", "#/day/1": "اليوم 1 | غريب القرآن", "#/day/7": "اليوم 7 | غريب القرآن", "#/quiz": "اختبر نفسك | غريب القرآن", "#/nope": "404 | غريب القرآن", "#/word/999-9": "404 | غريب القرآن" };
+      const TT = { "#/": "غريب القرآن | Ghareeb Al Quran - معاني كلمات جزء عم", "#/surahs": "السور | غريب القرآن", "#/challenge": "تحدي غريب عمّ | غريب القرآن", "#/day/1": "اليوم 1 | غريب القرآن", "#/day/7": "اليوم 7 | غريب القرآن", "#/quiz": "اختبر نفسك | غريب القرآن", "#/nope": "404 | غريب القرآن", "#/word/999-9": "404 | غريب القرآن" };
       for (const k of ["about", "privacy", "terms", "rights"]) TT["#/" + k] = legalT[k];
       for (const [h, t] of Object.entries(TT)) { await go(p, h); const got = await p.evaluate(() => document.title); ok("M3", got === t, `${w} ${h} title ${got} want ${t}`); }
       // ---- S3 shell, S13 h1 ----

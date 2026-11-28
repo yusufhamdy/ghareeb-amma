@@ -35,9 +35,9 @@ const LOGO = "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646"; //
 const WORD_T_PRE = "\u0645\u0639\u0646\u0649 "; // "meaning of "
 const WORD_T_IN_SURAH = " \u0641\u064a \u0633\u0648\u0631\u0629 "; // " in surah "
 const HOME_TITLE =
-  "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646 - \u0645\u0639\u0627\u0646\u064a \u0643\u0644\u0645\u0627\u062a \u062c\u0632\u0621 \u0639\u0645";
+  "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646 | Ghareeb Al Quran - \u0645\u0639\u0627\u0646\u064a \u0643\u0644\u0645\u0627\u062a \u062c\u0632\u0621 \u0639\u0645";
 const HOME_DESC =
-  "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646: \u0645\u0639\u0627\u0646\u064a \u0643\u0644\u0645\u0627\u062a \u062c\u0632\u0621 \u0639\u0645 (\u063a\u0631\u064a\u0628 \u0639\u0645) \u062d\u0633\u0628 \u0627\u0644\u0633\u0648\u0631\u0629\u060c \u0645\u0639 \u0627\u0644\u0622\u064a\u0629 \u0648\u0627\u0644\u0645\u0639\u0646\u0649.";
+  "\u063a\u0631\u064a\u0628 \u0627\u0644\u0642\u0631\u0622\u0646 (Ghareeb Al Quran): \u0645\u0639\u0627\u0646\u064a \u0627\u0644\u0643\u0644\u0645\u0627\u062a \u0627\u0644\u063a\u0631\u064a\u0628\u0629 \u0641\u064a \u062c\u0632\u0621 \u0639\u0645 \u0628\u0623\u0633\u0644\u0648\u0628 \u0645\u0628\u0633\u0651\u0637\u060c \u0645\u0639 \u0627\u0644\u0622\u064a\u0629 \u0648\u0627\u0644\u0645\u0639\u0646\u0649 \u0648\u0645\u0635\u062f\u0631\u0647.";
 const SURAH_T_PRE = "\u0645\u0639\u0627\u0646\u064a \u0643\u0644\u0645\u0627\u062a \u0633\u0648\u0631\u0629 "; // "meanings of the words of surah "
 
 // The exact diacritics the title/description stripper removes (U+064B-U+065F,
@@ -206,13 +206,16 @@ test("K2: home head carries the exact home title/description, equal og/twitter c
   assert.ok(html.includes('<link rel="canonical" href="https://ghareebalquran.com/">'));
 });
 
-test("K2: home carries one ASCII-only WebSite JSON-LD block", () => {
+test("K2: home carries ASCII-only WebSite and Organization JSON-LD blocks", () => {
   const blocks = ldBlocks(read("index.html"));
-  assert.strictEqual(blocks.length, 1, "home has exactly one JSON-LD block");
+  assert.strictEqual(blocks.length, 2, "home has a WebSite and an Organization JSON-LD block (test/home-meta.test.js checks their fields)");
   assert.ok(blocks[0].includes('"@type":"WebSite"'));
-  assert.ok(blocks[0].includes('"url":"https://ghareebalquran.com/"'));
-  assert.ok(isAscii(blocks[0]), "home JSON-LD is ASCII-escaped");
-  assert.doesNotThrow(() => JSON.parse(blocks[0]));
+  assert.ok(blocks[1].includes('"@type":"Organization"'));
+  for (const b of blocks) {
+    assert.ok(b.includes('"url":"https://ghareebalquran.com/"'));
+    assert.ok(isAscii(b), "home JSON-LD is ASCII-escaped");
+    assert.doesNotThrow(() => JSON.parse(b));
+  }
 });
 
 test("K2: word pages use the stripped title/description patterns with equal og/twitter copies", async () => {
