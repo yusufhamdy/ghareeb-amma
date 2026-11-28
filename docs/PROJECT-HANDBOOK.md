@@ -148,6 +148,14 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
   unchanged keeps its date; a changed or new page gets the build date (UTC). So a rebuild or a deploy never moves the
   dates. The home page's content is `index.html` with `words.json`. The dates were seeded on 2026-11-27 from the last
   commit that changed each page.
+- **Home title, description and structured data.** The home `<title>`, `og:title` and `twitter:title` carry the
+  Arabic name and "Ghareeb Al Quran"; the description, `og:description` and `twitter:description` say the same thing
+  in one sentence. The app's `pageTitle()` returns the same home title, so it doesn't change it back after the app
+  renders. The head has two JSON-LD blocks (Arabic as `\u` escapes): a `WebSite` (name, alternate spellings, url,
+  `inLanguage: ar`, publisher -> the Organization by `@id`) and an `Organization` (name, url, `/icon-512.png` as
+  logo, `sameAs` = the footer's three profile links in `SOC`). They live only in `public/index.html`. The publish
+  build copies that file and changes only the surah-links block, so a Publish keeps them. `test/home-meta.test.js`
+  checks the strings, both blocks, and that `sameAs` equals the footer.
 
 ### 3.2 Service worker (`public/sw.js`)
 
