@@ -73,6 +73,7 @@ test("automated runs answer the beacon locally: npm test and the CI shards load 
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
   assert.ok(/^node --require \.\/scripts\/ci\/no-analytics\.cjs --test /.test(pkg.scripts.test), "npm test");
   assert.ok(/spawn\(process\.execPath, \["--require", path\.join\(REPO, "scripts", "ci", "no-analytics\.cjs"\), "--test"/.test(fs.readFileSync(path.join(ROOT, "scripts", "ci", "shard-tests.mjs"), "utf8")), "the CI shard runner");
+  assert.ok(fs.readFileSync(path.join(ROOT, "scripts", "verify-client-firestore.mjs"), "utf8").includes("createRequire(import.meta.url)('./ci/no-analytics.cjs');"), "npm run client:verify (CI)");
   require(path.join(ROOT, "scripts", "ci", "no-analytics.cjs"));
   assert.ok(/no-analytics\.cjs/.test(process.env.NODE_OPTIONS || ""), "passed on to child processes");
   const { chromium } = require("playwright");
