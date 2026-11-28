@@ -91,6 +91,17 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 - Visitor settings and progress are kept in `localStorage` under `gq-*` keys (for example `gq-set`, `gq-prog`).
 - Error tracking: the home page loads the Sentry loader script (added in `789179a`). The CSP allows the Sentry CDN
   and this project's Sentry ingest host.
+- **Visit counts: Cloudflare Web Analytics** (cookieless; the site stays on Firebase Hosting). Every public page (home,
+  word, surah and legal pages) ends with the beacon snippet just before `</body>`; the admin page has none. The static
+  pages get it from `CF_BEACON` in `scripts/publish-build.mjs`, the home page has it in `public/index.html`, so a
+  Publish keeps it. The service worker leaves cross-origin requests to the network, so it never caches the beacon.
+  The privacy text (`shared/legal.js`, the app's privacy view) says the site uses it. Hash routes: the beacon reports
+  each in-app route change as a new page view (navigation type "routing-apis") but with the landing page's URL
+  without the hash, so in-app views show as extra views of the page the visitor landed on (usually `/`); per-word and
+  per-surah counts come only from the static pages. **Automated runs never reach Cloudflare:**
+  `scripts/ci/no-analytics.cjs` answers `*.cloudflareinsights.com` locally in every Playwright context; `npm test`
+  and the CI shard runner load it, and a check against the live site or the preview must load it too
+  (`node --require ./scripts/ci/no-analytics.cjs ...`).
 - **Quran text in the Madinah Mushaf page fonts V2 (QCF V2).** Every ayah is drawn word by word with the glyphs of
   its printed Mushaf page (`public/fonts/qcf-v2/QCF2582.ttf` to `QCF2604.ttf`, Juz Amma; `SOURCE.md` there lists the
   source and SHA-256 of each file). The one table `public/qcf-v2.json` (built offline by
@@ -146,8 +157,12 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 - **Sitemap dates.** Every URL has a `<lastmod>`: the date its content last changed, kept with a content hash in
   `public/.sitemap-dates.json` (a dotfile: Hosting doesn't serve it; Publish commits it). A page whose content is
   unchanged keeps its date; a changed or new page gets the build date (UTC). So a rebuild or a deploy never moves the
-  dates. The home page's content is `index.html` with `words.json`. The dates were seeded on 2026-11-27 from the last
-  commit that changed each page.
+  dates. The hash covers only the page's own content, the data it shows, never its HTML (`pageContents` in
+  `scripts/publish-build.mjs`), so a template change (scripts, CSS, head tags, `?v=` strings, the footer year) moves no
+  date: word page = headword, ayah, meaning, source, surah and ayah label; surah page = its name and its words; legal
+  page = its title and paragraphs; home = `words.json` with the home's `<title>` and meta description. The dates were
+  seeded on 2026-11-27 from the last commit that changed each page; on 2026-11-28 the hashes moved to this scheme
+  with every date kept.
 - **Home title, description and structured data.** The home `<title>`, `og:title` and `twitter:title` carry the
   Arabic name and "Ghareeb Al Quran"; the description, `og:description` and `twitter:description` say the same thing
   in one sentence. The app's `pageTitle()` returns the same home title, so it doesn't change it back after the app
@@ -176,8 +191,9 @@ Local-only (git-ignored, see `.gitignore`): `node_modules/`; `backup/firestore/`
 - One CSP for all paths, in `firebase.json` under `hosting.headers` (`source: "**"`). It is **generated** by
   `scripts/csp-update.mjs`, never edited by hand. `script-src` allows `'self'`, the sha256 hash of each inline
   script (3 hashes at this commit), the Sentry CDNs, `https://www.gstatic.com/firebasejs/` (admin SDK) and
-  `https://apis.google.com` (admin Google sign-in). `connect-src` allows Firestore, Firebase Auth (identitytoolkit,
-  securetoken) and the Sentry ingest host. `frame-src` allows only the Firebase Auth domain. `object-src 'none'`,
+  `https://apis.google.com` (admin Google sign-in) and `https://static.cloudflareinsights.com` (the analytics
+  beacon). `connect-src` allows Firestore, Firebase Auth (identitytoolkit, securetoken), the Sentry ingest host and
+  `https://cloudflareinsights.com` (the beacon's reports). `frame-src` allows only the Firebase Auth domain. `object-src 'none'`,
   `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`.
 - When any inline `<script>` in any HTML file under `public/` changes, run `npm run csp:update` and commit
   `firebase.json` (runbook 10.7). `node scripts/csp-update.mjs --check` fails if `firebase.json` is stale; it runs in
@@ -494,7 +510,7 @@ Temurin 21), Playwright Chromium (`npx playwright install chromium`), and PowerS
 
 | Command | What it runs |
 |---|---|
-| `npm test` | Every `test/*.test.js` with `node --test --test-concurrency=2 --test-timeout=600000` (287 tests at this commit; about 11 minutes locally). Includes browser tests and emulator suites that start their own emulators on their own ports. |
+| `npm test` | Every `test/*.test.js` with `node --require ./scripts/ci/no-analytics.cjs --test --test-concurrency=2 --test-timeout=600000` (the preload keeps every browser from reaching Cloudflare Web Analytics) (287 tests at this commit; about 11 minutes locally). Includes browser tests and emulator suites that start their own emulators on their own ports. |
 | `npm run rules:test` | The three rules suites in the Firestore emulator (section 6). |
 | `npm run client:verify` | Seeds the emulator, then `scripts/verify-client-firestore.mjs`: the public page uses only the published JSON, with no Firebase request. |
 | `npm run seed` | Seeds a local Firestore emulator with `scripts/seed-emulator.js`. |

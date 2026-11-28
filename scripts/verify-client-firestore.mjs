@@ -35,6 +35,8 @@ const ROOT = path.resolve('public');
 // What the app must show: counted from the published files the emulator is seeded from (scripts/seed-emulator.js),
 // so a published removal (handbook 4.2) needs no change here.
 const { deriveSurahNo } = createRequire(import.meta.url)('../src/utils/migrate.js');
+// The Cloudflare Web Analytics beacon is answered locally, so this check never counts as a visit (no-analytics.cjs).
+createRequire(import.meta.url)('./ci/no-analytics.cjs');
 const DATA = JSON.parse(fs.readFileSync(path.join(ROOT, 'words.json'), 'utf8'));
 const EXPECT = {
   surahs: DATA.length,
