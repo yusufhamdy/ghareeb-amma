@@ -10,9 +10,9 @@
  *   - scripts: the site itself, the inline scripts by their sha256 hash (no 'unsafe-inline'), the Sentry loader
  *     (js-de.sentry-cdn.com) and the Sentry SDK it loads (browser.sentry-cdn.com), the Firebase SDK
  *     (www.gstatic.com/firebasejs, used by the admin only) and, for the admin's Google sign-in,
- *     apis.google.com;
+ *     apis.google.com, and the Cloudflare Web Analytics beacon (static.cloudflareinsights.com, every public page);
  *   - connections: the site, Firestore, Firebase Auth (identitytoolkit, and securetoken for token refresh) and the
- *     Sentry ingest host of this project;
+ *     Sentry ingest host of this project, and the Cloudflare Web Analytics endpoint (cloudflareinsights.com);
  *   - frames: the Firebase Auth domain (the admin's sign-in helper frame); nothing may frame the site
  *     (frame-ancestors 'none', plus X-Frame-Options: DENY). The Google sign-in itself (accounts.google.com) opens
  *     in its own window or by redirect, which this policy does not govern;
@@ -86,11 +86,11 @@ export function missingFromPolicy(dir) {
 export function policy() {
   return [
     "default-src 'self'",
-    "script-src 'self' " + hashes().join(" ") + " https://js-de.sentry-cdn.com https://browser.sentry-cdn.com https://www.gstatic.com/firebasejs/ https://apis.google.com",
+    "script-src 'self' " + hashes().join(" ") + " https://js-de.sentry-cdn.com https://browser.sentry-cdn.com https://www.gstatic.com/firebasejs/ https://apis.google.com https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://www.google.com",
     "font-src 'self'",
-    "connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com " + SENTRY_INGEST,
+    "connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com " + SENTRY_INGEST + " https://cloudflareinsights.com",
     "frame-src " + AUTH_DOMAIN,
     "worker-src 'self'",
     "manifest-src 'self'",

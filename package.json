@@ -17,7 +17,7 @@
     "rules:test": "firebase emulators:exec --project demo-ghareeb --only firestore \"node --test test/rules-emulator.test.js test/rules-access-matrix.test.js test/rules-history.test.js\"",
     "seed": "firebase emulators:exec --project demo-ghareeb --only firestore \"node scripts/seed-emulator.js\"",
     "client:verify": "firebase emulators:exec --project demo-ghareeb --only firestore \"node scripts/seed-emulator.js && node scripts/verify-client-firestore.mjs\"",
-    "test": "node --test --test-concurrency=2 --test-timeout=600000",
+    "test": "node --require ./scripts/ci/no-analytics.cjs --test --test-concurrency=2 --test-timeout=600000",
     "csp:update": "node scripts/csp-update.mjs"
   }
 }

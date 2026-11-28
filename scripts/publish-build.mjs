@@ -68,6 +68,8 @@ const require = createRequire(import.meta.url);
 const seo = require("../shared/seo.js");
 const challenge = require("../shared/challenge.js");
 const { LEGAL } = require("../shared/legal.js");
+// Cloudflare Web Analytics (cookieless visit counts): on every public page, before </body>. Not on the admin page.
+export const CF_BEACON = '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{"token": "e4ae8446ec884d63b0308848a90d22ea"}\'></script>';
 // How Quran text is shown (shared with the app): the headword in the mushaf's spelling, the highlight on whole words.
 const QText = require("../public/qtext.js");
 // The Madinah Mushaf page fonts V2 (QCF V2): each ayah's glyphs, from the committed word table (public/qcf-v2.json).
@@ -544,7 +546,7 @@ export function renderWordPage(r) {
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
     '<script src="/word-gap.js" defer></script>' +
-    "</div></body></html>"
+    "</div>" + CF_BEACON + "</body></html>"
   );
 }
 
@@ -585,7 +587,7 @@ export function renderSurahPage(s) {
     '<div class="acts"><a class="btn o g mib" href="/#/surah/' + s.no + '">' + BOOK + A.ALL_SURAS + "</a></div>\n" +
     "</main>" +
     '<footer><div class="fl"><a href="/about/">' + A.F_ABOUT + '</a><a href="/privacy/">' + A.F_PRIVACY + '</a><a href="/terms/">' + A.F_TERMS + '</a><a href="/rights/">' + A.F_RIGHTS + '</a></div><div class="m">' + A.COPY + " " + year + " " + A.LOGO + "</div></footer>\n" +
-    "</div></body></html>"
+    "</div>" + CF_BEACON + "</body></html>"
   );
 }
 
@@ -611,7 +613,7 @@ export function renderLegalPage(entry) {
     '<h1 class="aq" style="font-size:40px">' + esc(entry.title) + "</h1>\n" +
     paras + "\n" +
     '<a class="b" href="/">' + A.HOME + "</a>\n" +
-    "</main></body></html>"
+    "</main>" + CF_BEACON + "</body></html>"
   );
 }
 

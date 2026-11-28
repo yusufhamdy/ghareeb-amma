@@ -125,7 +125,10 @@ test("K1: every static page links the shared stylesheet and the synchronous them
       assert.strictEqual(full.split(QFONT).length - 1, 1, p + " must load /qfont.js once");
       assert.ok(full.indexOf(QFONT) < full.indexOf("</head>"), p + " /qfont.js must be in <head>");
     } else assert.ok(!full.includes("/qfont.js"), p + " must not load /qfont.js");
-    const html = (p.startsWith("word/") ? full.replace(WORD_GAP, "").replace(QCF_DOM, "") : full).replace(quranPage ? QFONT : "\u0000", "");
+    // Every public page ends with the Cloudflare Web Analytics beacon (test/cf-analytics.test.js): third-party, not app JS.
+    const CF = '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{"token": "e4ae8446ec884d63b0308848a90d22ea"}\'></script>';
+    assert.strictEqual(full.split(CF + "</body>").length - 1, 1, p + " ends with the analytics beacon once");
+    const html = (p.startsWith("word/") ? full.replace(WORD_GAP, "").replace(QCF_DOM, "") : full).replace(quranPage ? QFONT : "\u0000", "").replace(CF, "");
     assert.ok(html.includes('<link rel="stylesheet" href="/css/app.css">'), p + " must link the shared stylesheet");
     assert.ok(html.includes('<script src="/theme-boot.js"></script>'), p + " must include the theme bootstrap");
     assert.ok(html.indexOf('<script src="/theme-boot.js"></script>') < html.indexOf("</head>"), p + " theme bootstrap must be in <head>");

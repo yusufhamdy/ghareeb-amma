@@ -65,7 +65,7 @@ const COUNTS = ["tests", "suites", "pass", "fail", "cancelled", "skipped", "todo
 function runFile(f) {
   return new Promise((resolve) => {
     const t0 = Date.now();
-    const p = spawn(process.execPath, ["--test", "--test-reporter=tap", "--test-timeout=" + TIMEOUT_MS, f], { cwd: REPO, env: process.env });
+    const p = spawn(process.execPath, ["--require", path.join(REPO, "scripts", "ci", "no-analytics.cjs"), "--test", "--test-reporter=tap", "--test-timeout=" + TIMEOUT_MS, f], { cwd: REPO, env: process.env });
     let out = "";
     p.stdout.on("data", (d) => (out += d)); p.stderr.on("data", (d) => (out += d));
     p.on("close", (code, signal) => {

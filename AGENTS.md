@@ -63,6 +63,9 @@ node scripts/ci/checks.mjs
 ```
 
 - If you changed any inline `<script>` under `public/`, run `npm run csp:update` and commit `firebase.json`.
+- Browser checks against the live site or the preview load `scripts/ci/no-analytics.cjs`
+  (`node --require ./scripts/ci/no-analytics.cjs ...`), so they never count as visits in Cloudflare Web Analytics.
+  `npm test` and CI load it already.
 - If you changed files the service worker caches, bump `CACHE_NAME` in `public/sw.js` and the version asserted in
   `test/public-isolation.test.js`.
 - CI (`.github/workflows/ci.yml`) runs on every PR. Only the owner approves a merge to `main`.
